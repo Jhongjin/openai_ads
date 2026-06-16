@@ -1,0 +1,120 @@
+# 사내용 ChatGPT 광고 RAG 챗봇
+
+나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문에 대해 출처와 신뢰등급이 붙은 답변을 받을 수 있는 경량 PoC입니다.
+
+## 구조
+
+- `official`: OpenAI 공식 Help Center, 정책, 공지 URL
+- `kr_ops`: 완성된 국내 영업 가이드와 OpenAI 담당자 회신 확정 정보
+- `pending`: OpenAI 확인 대기 항목
+- 벡터 저장소: Supabase Postgres + `pgvector`
+- DB schema: `openai_ads_rag`
+
+크리테오 원문은 인덱싱하지 않습니다. 로컬 문서 파일명에 `criteo`, `Criteo`, `CRITEO`, `크리테오`가 포함되면 자동 제외됩니다.
+
+## 설치
+
+Python 3.11 이상에서 동작하며, Vercel 배포 환경과 맞추기 위해 `.python-version`은 `3.12`로 고정했습니다.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+Copy-Item config.example.yaml config.yaml
+```
+
+`.env`에 `OPENAI_API_KEY`를 입력합니다.
+
+Supabase는 기존 프로젝트 DB와 분리되도록 별도 schema를 사용합니다.
+
+```dotenv
+SUPABASE_URL=https://yotbhhtwvvshwxxcxazl.supabase.co
+SUPABASE_SCHEMA=openai_ads_rag
+SUPABASE_DB_URL=postgresql://postgres.yotbhhtwvvshwxxcxazl:[YOUR-PASSWORD]@[YOUR-POOLER-HOST]:6543/postgres?sslmode=require
+```
+
+`SUPABASE_DB_URL`은 Supabase Dashboard의 pooled connection string을 권장합니다.
+
+## 문서 배치
+
+- 국내 운영 확정 문서: `data/kr_ops/*.md` 또는 `data/kr_ops/*.txt`
+- 확인 대기 문서: `data/pending/*.md` 또는 `data/pending/*.txt`
+- 공식 URL 목록: `config.yaml`의 `collections.official.urls`
+
+각 청크에는 `source_tier`, `source_url`, `title`, `crawled_at` 메타데이터가 저장됩니다.
+
+## 인덱싱
+
+최초 1회는 `supabase/migrations/001_openai_ads_rag.sql`을 Supabase SQL Editor에서 실행하거나, DB 사용자에게 schema/extension 생성 권한이 있다면 `python ingest.py`가 자동으로 schema와 table을 생성합니다.
+
+전체 재인덱싱:
+
+```powershell
+python ingest.py
+```
+
+특정 컬렉션만 재인덱싱:
+
+```powershell
+python ingest.py --collection official
+python ingest.py --collection kr_ops --collection pending
+```
+
+공식 문서는 `robots.txt`를 확인한 뒤 크롤링합니다. 크롤링 실패 URL은 경고로 출력되고, 성공한 문서만 인덱싱됩니다.
+
+## 실행
+
+FastAPI:
+
+```powershell
+uvicorn app:app --reload --port 8000
+```
+
+Streamlit:
+
+```powershell
+streamlit run ui.py
+```
+
+Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다.
+
+API 직접 호출:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8000/chat `
+  -ContentType "application/json" `
+  -Body '{"question":"ChatGPT 광고 최소 집행금액 얼마야?"}'
+```
+
+## 답변 가드레일
+
+- 공식 출처: `✅공식`
+- 국내 운영 확정 출처: `🟡국내운영`
+- 확인 대기 출처: `⚠️확인대기`
+- `pending`만 검색되면 확정 답변 대신 "현재 OpenAI 확인 대기 중입니다"로 답합니다.
+- 검색 근거가 없으면 "자료에 없음"으로 답합니다.
+- 크리테오 경유 세부 질문은 "크리테오 코리아 확인 필요"로 라우팅합니다.
+- 모든 답변 말미에는 "베타 단계 — 최신은 공식 페이지 재확인" 안내가 포함됩니다.
+
+## 운영 팁
+
+- 공식 URL이 바뀌면 `config.yaml`만 수정한 뒤 `python ingest.py --collection official`을 실행합니다.
+- OpenAI 담당자 회신으로 확정된 항목은 `pending`에서 제거하고 `kr_ops` 문서로 옮긴 뒤 두 컬렉션을 재인덱싱합니다.
+- Supabase 안의 다른 프로젝트 테이블과 충돌하지 않도록 앱은 `openai_ads_rag.documents`만 읽고 씁니다.
+
+## Vercel 배포
+
+Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
+
+- `OPENAI_API_KEY`
+- `OPENAI_CHAT_MODEL`
+- `OPENAI_EMBEDDING_MODEL`
+- `OPENAI_EMBEDDING_DIMENSIONS`
+- `SUPABASE_URL`
+- `SUPABASE_DB_URL`
+- `SUPABASE_SCHEMA`
+- `RAG_CONFIG_PATH`
+
+배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. Vercel은 채팅 API와 정적 UI를 서빙하고, 재크롤링/재인덱싱은 로컬 또는 별도 배치에서 실행하는 구조입니다.

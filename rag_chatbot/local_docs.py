@@ -1,0 +1,74 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from fnmatch import fnmatch
+from pathlib import Path
+from typing import Iterable
+
+from langchain_core.documents import Document
+
+from .config import project_root, resolve_path
+
+
+SUPPORTED_SUFFIXES = {".md", ".markdown", ".txt"}
+
+
+def _is_ignored(path: Path, patterns: Iterable[str]) -> bool:
+    normalized = str(path).replace("\\", "/")
+    name = path.name
+    return any(fnmatch(name, pattern) or fnmatch(normalized, pattern) for pattern in patterns)
+
+
+def _title_from_text(text: str, fallback: str) -> str:
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            return stripped.lstrip("#").strip() or fallback
+    return fallback
+
+
+def iter_local_files(paths: Iterable[str], ignore_patterns: Iterable[str]) -> list[Path]:
+    files: list[Path] = []
+    for raw_path in paths:
+        path = resolve_path(raw_path)
+        if not path.exists():
+            continue
+        candidates = [path] if path.is_file() else list(path.rglob("*"))
+        for candidate in candidates:
+            if not candidate.is_file():
+                continue
+            if candidate.suffix.lower() not in SUPPORTED_SUFFIXES:
+                continue
+            if _is_ignored(candidate, ignore_patterns):
+                continue
+            files.append(candidate)
+    return sorted(files)
+
+
+def load_local_documents(
+    paths: Iterable[str],
+    *,
+    source_tier: str,
+    ignore_patterns: Iterable[str],
+) -> list[Document]:
+    documents: list[Document] = []
+    for path in iter_local_files(paths, ignore_patterns):
+        text = path.read_text(encoding="utf-8")
+        if not text.strip():
+            continue
+        resolved = path.resolve()
+        documents.append(
+            Document(
+                page_content=text.strip(),
+                metadata={
+                    "source_tier": source_tier,
+                    "source_url": resolved.as_uri(),
+                    "title": _title_from_text(text, path.stem),
+                    "crawled_at": datetime.now(timezone.utc).isoformat(),
+                    "local_path": str(resolved.relative_to(project_root()))
+                    if resolved.is_relative_to(project_root())
+                    else str(resolved),
+                },
+            )
+        )
+    return documents

@@ -1,0 +1,47 @@
+chunking:
+  chunk_size_tokens: 700
+  chunk_overlap_tokens: 100
+
+retrieval:
+  top_k_per_collection: 4
+  min_relevance_score: 0.25
+
+database:
+  provider: "supabase"
+  schema: "openai_ads_rag"
+  embedding_dimensions: 1536
+  embedding_batch_size: 96
+
+crawler:
+  respect_robots_txt: true
+  user_agent: "nasmedia-chatgpt-ads-rag/0.1 (+internal-poc)"
+  request_timeout_seconds: 30
+
+collections:
+  official:
+    tier_label: "✅공식"
+    urls:
+      - "https://help.openai.com/en/articles/20001207"
+      - "https://help.openai.com/en/articles/20001210"
+      - "https://help.openai.com/en/articles/20001211"
+      - "https://help.openai.com/en/articles/20001212"
+      - "https://help.openai.com/en/articles/20001213"
+      - "https://help.openai.com/en/articles/20001214"
+      - "https://help.openai.com/en/articles/20001217"
+      - "https://help.openai.com/en/articles/20001243"
+      - "https://openai.com/policies/ad-policies"
+      - "https://openai.com/index/testing-ads-in-chatgpt"
+  kr_ops:
+    tier_label: "🟡국내운영"
+    paths:
+      - "data/kr_ops"
+  pending:
+    tier_label: "⚠️확인대기"
+    paths:
+      - "data/pending"
+
+ignored_local_patterns:
+  - "*criteo*"
+  - "*Criteo*"
+  - "*CRITEO*"
+  - "*크리테오*"
