@@ -273,6 +273,23 @@
         color: var(--ink);
       }
 
+      .ghost {
+        min-height: 34px;
+        border: 1px solid transparent;
+        background: transparent;
+        padding: 0 10px;
+        color: #4d5358;
+      }
+
+      .ghost:hover {
+        border-color: #d0d5dd;
+        background: #f9fafb;
+      }
+
+      .ghost.danger {
+        color: var(--red-ink);
+      }
+
       button:disabled {
         cursor: wait;
         opacity: 0.65;
@@ -387,11 +404,34 @@
         padding: 18px;
       }
 
+      .form-card-header {
+        margin-bottom: 14px;
+      }
+
+      .form-card-header.action-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
       .form-card h2 {
         margin: 0 0 14px;
         color: #0f1115;
         font-size: 17px;
         line-height: 1.35;
+      }
+
+      .form-card-header h2 {
+        margin-bottom: 4px;
+      }
+
+      .form-card-header p {
+        margin: 0;
+        color: #697077;
+        font-size: 13px;
+        line-height: 1.45;
       }
 
       .field {
@@ -428,6 +468,22 @@
         font: inherit;
       }
 
+      input[readonly],
+      .readonly-pill {
+        border: 1px dashed #cfd6df;
+        background: #f8fafc;
+        color: #4d5358;
+      }
+
+      .readonly-pill {
+        display: flex;
+        min-height: 42px;
+        align-items: center;
+        border-radius: var(--radius-md, 6px);
+        padding: 10px 12px;
+        font-weight: 800;
+      }
+
       input:focus,
       select:focus {
         border-color: #161616;
@@ -446,6 +502,36 @@
         color: #8a5a00;
         font-size: 12px;
         font-weight: 800;
+      }
+
+      .char-counter {
+        color: #4d5358;
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .ad-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .ad-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 14px;
+      }
+
+      .ad-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .ad-card-header strong {
+        color: #0f1115;
+        font-size: 14px;
       }
 
       .radio-row,
@@ -2110,62 +2196,15 @@
           <div class="input-band">
             <label>OpenAI 광고 집행 의뢰 접수</label>
             <p class="section-note">
-              광고주 계정 생성과 캠페인 세팅에 필요한 기본 정보를 접수합니다. 제출 내용은 연결된 구글 시트에 자동 기록됩니다.
+              공식 워크북 구조에 맞춰 캠페인, 광고그룹, 소재를 나누어 접수합니다. 제출 내용은 구글 시트의 campaigns / adgroups / ads / ops_meta 탭에 자동 기록됩니다.
             </p>
           </div>
 
           <section class="form-card">
-            <h2>광고주/계정 정보</h2>
-            <div class="form-grid">
-              <div class="field">
-                <label class="required" for="advertiser-name">광고주명</label>
-                <input id="advertiser-name" name="advertiserName" required />
-              </div>
-              <div class="field">
-                <label class="required" for="legal-name">법인 정식 명칭</label>
-                <input id="legal-name" name="legalName" required />
-              </div>
-              <div class="field full">
-                <label class="required" for="website-url">광고주 웹사이트 URL</label>
-                <input id="website-url" name="websiteUrl" type="url" placeholder="https://example.com" required />
-              </div>
-              <div class="field">
-                <label for="target-country">타겟 국가</label>
-                <select id="target-country" name="targetCountry">
-                  <option selected>대한민국</option>
-                  <option>미국</option>
-                  <option>일본</option>
-                  <option>기타</option>
-                </select>
-                <span class="field-warning">계정 생성 후 변경 불가</span>
-              </div>
-              <div class="field">
-                <label for="billing-currency">청구 통화</label>
-                <select id="billing-currency" name="billingCurrency">
-                  <option selected value="KRW">KRW</option>
-                  <option value="USD">USD</option>
-                </select>
-                <span class="field-warning">계정 생성 후 변경 불가</span>
-              </div>
-              <div class="field">
-                <label for="timezone">시간대</label>
-                <select id="timezone" name="timezone">
-                  <option selected>Asia/Seoul</option>
-                  <option>UTC</option>
-                  <option>America/New_York</option>
-                  <option>Asia/Tokyo</option>
-                </select>
-                <span class="field-warning">계정 생성 후 변경 불가</span>
-              </div>
-              <div class="field">
-                <label for="invoice-email">인보이스 수신 이메일</label>
-                <input id="invoice-email" name="invoiceEmail" type="email" placeholder="invoice@example.com" />
-              </div>
+            <div class="form-card-header">
+              <h2>운영팀용 추가 정보</h2>
+              <p>공식 업로드 시트에는 들어가지 않고 ops_meta 탭에 접수번호와 함께 기록됩니다.</p>
             </div>
-          </section>
-
-          <section class="form-card">
-            <h2>캠페인 개요</h2>
             <div class="form-grid">
               <div class="field full">
                 <span class="radio-group-label required">집행 경로</span>
@@ -2175,56 +2214,37 @@
                 </div>
               </div>
               <div class="field">
-                <label class="required" for="campaign-name">캠페인명</label>
-                <input id="campaign-name" name="campaignName" required />
+                <label class="required" for="advertiser-name">광고주명</label>
+                <input id="advertiser-name" name="advertiserName" required />
               </div>
               <div class="field">
-                <span class="radio-group-label required">캠페인 목표</span>
-                <div class="radio-row">
-                  <label class="option-chip"><input type="radio" name="campaignObjective" value="views" checked /> Views = CPM</label>
-                  <label class="option-chip"><input id="objective-clicks" type="radio" name="campaignObjective" value="clicks" /> Clicks = CPC</label>
-                </div>
-                <span class="field-help" id="objective-help">크리테오 경유 선택 시 CPM으로 고정됩니다.</span>
+                <label class="required" for="legal-name">법인 정식 명칭</label>
+                <input id="legal-name" name="legalName" required />
               </div>
               <div class="field">
-                <span class="radio-group-label required">예산 유형</span>
-                <div class="radio-row">
-                  <label class="option-chip"><input type="radio" name="budgetType" value="total" checked /> 캠페인 총예산</label>
-                  <label class="option-chip"><input type="radio" name="budgetType" value="daily" /> 일예산</label>
-                </div>
+                <label class="required" for="brn">BRN / 사업자등록번호</label>
+                <input id="brn" name="brn" placeholder="123-45-67890" required />
+                <span class="field-help">VAT 판정에 사용합니다. 한국 사업자등록번호/세금ID 제공 시 0%, 미제공 시 10% 기준입니다.</span>
+              </div>
+              <div class="field full">
+                <label class="required" for="advertiser-homepage-url">advertiser 공식 홈페이지 URL</label>
+                <input id="advertiser-homepage-url" name="advertiserHomepageUrl" type="url" placeholder="https://example.com" required />
+                <span class="field-help">OpenAI 정책 리뷰용입니다. 개별 소재 랜딩 URL과 별도로 공식 홈페이지를 입력해 주세요.</span>
               </div>
               <div class="field">
-                <label class="required" for="budget-amount">예산 금액</label>
-                <input id="budget-amount" name="budgetAmount" type="number" min="1" step="1" placeholder="4000000" required />
+                <label>청구 통화</label>
+                <div class="readonly-pill">KRW 고정</div>
+                <span class="field-warning">계정 생성 후 변경 불가</span>
               </div>
               <div class="field">
-                <label class="required" for="start-date">시작일</label>
-                <input id="start-date" name="startDate" type="date" required />
+                <label>시간대</label>
+                <div class="readonly-pill">Asia/Seoul 고정</div>
+                <span class="field-warning">계정 생성 후 변경 불가</span>
               </div>
               <div class="field">
-                <label class="required" for="end-date">종료일</label>
-                <input id="end-date" name="endDate" type="date" required />
+                <label class="required" for="invoice-email">인보이스 수신 이메일</label>
+                <input id="invoice-email" name="invoiceEmail" type="email" placeholder="invoice@example.com" required />
               </div>
-              <p class="budget-note full">
-                예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000. 기준 미달은 제출을 막지 않고 영업 담당자가 별도 확인합니다.
-              </p>
-            </div>
-          </section>
-
-          <section class="form-card">
-            <h2>준비상태 체크</h2>
-            <div class="checkbox-grid">
-              <label class="check-chip"><input type="checkbox" name="adsManagerReady" /> Ads Manager 계정 생성 완료</label>
-              <label class="check-chip"><input type="checkbox" name="paymentReady" /> 결제수단 등록 완료</label>
-              <label class="check-chip"><input type="checkbox" name="crawlerReady" /> 랜딩 URL 크롤러 허용 점검 완료</label>
-              <label class="check-chip"><input type="checkbox" name="faviconReady" /> 파비콘 준비 완료</label>
-            </div>
-            <p class="field-help">카드 정보는 수집하지 않습니다. 준비 여부만 체크해 주세요.</p>
-          </section>
-
-          <section class="form-card">
-            <h2>담당자/메모</h2>
-            <div class="form-grid">
               <div class="field">
                 <label class="required" for="contact-name">광고주 담당자명</label>
                 <input id="contact-name" name="contactName" required />
@@ -2238,7 +2258,7 @@
                 <input id="contact-email" name="contactEmail" type="email" required />
               </div>
               <div class="field">
-                <label class="required" for="sales-owner">나스미디어 영업담당자</label>
+                <label class="required" for="sales-owner">케이티나스미디어 영업담당자</label>
                 <input id="sales-owner" name="salesOwner" required />
               </div>
               <div class="field full">
@@ -2246,6 +2266,148 @@
                 <textarea id="intake-notes" name="notes" placeholder="추가 요청사항이나 세팅 참고사항을 입력하세요."></textarea>
               </div>
             </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-header">
+              <h2>① 캠페인 정보</h2>
+              <p>campaigns 탭에 공식 워크북 컬럼명으로 기록됩니다.</p>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label class="required" for="campaign-name">캠페인명</label>
+                <input id="campaign-name" name="campaign_name" required />
+                <span class="field-help">campaign_name · 특수문자 불가</span>
+              </div>
+              <div class="field">
+                <label class="required" for="budget-max">예산 금액</label>
+                <input id="budget-max" name="budget_max" type="number" min="1" step="1" placeholder="4000000" required />
+                <span class="field-help">budget_max · 이 캠페인 최대 지출액(계정 통화 KRW 기준)</span>
+              </div>
+              <div class="field">
+                <span class="radio-group-label">예산 유형</span>
+                <div class="radio-row">
+                  <label class="option-chip"><input type="radio" name="budget_type" value="lifetime" checked /> 총예산(lifetime)</label>
+                  <label class="option-chip"><input type="radio" name="budget_type" value="daily" /> 일예산(daily)</label>
+                </div>
+                <span class="field-help">일예산은 베타 중입니다.</span>
+              </div>
+              <div class="field">
+                <span class="radio-group-label required">캠페인 목표</span>
+                <div class="radio-row">
+                  <label class="option-chip"><input type="radio" name="objective" value="views" checked /> Views = CPM</label>
+                  <label class="option-chip"><input id="objective-clicks" type="radio" name="objective" value="clicks" /> Clicks = CPC</label>
+                </div>
+                <span class="field-help" id="objective-help">광고그룹 입찰 방식을 결정합니다. Clicks는 베타 중이며, 크리테오 경유 선택 시 CPM으로 고정됩니다.</span>
+              </div>
+              <div class="field">
+                <label for="launch-date">시작일</label>
+                <input id="launch-date" name="launch_date" type="date" />
+                <span class="field-help">launch_date · YYYY-MM-DD</span>
+              </div>
+              <div class="field">
+                <label for="end-date">종료일</label>
+                <input id="end-date" name="end_date" type="date" />
+                <span class="field-help">예산 소진이 먼저면 그때 종료됩니다. 종료일은 시작일 이후여야 합니다.</span>
+              </div>
+              <div class="field">
+                <label for="target-countries">국가</label>
+                <select id="target-countries" name="target_countries">
+                  <option selected value="KR">대한민국(KR)</option>
+                  <option value="US">미국(US)</option>
+                  <option value="JP">일본(JP)</option>
+                </select>
+                <span class="field-help">target_countries · 2자리 코드 배열로 저장됩니다. 예: ["KR"]</span>
+              </div>
+              <p class="budget-note full">
+                예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000(시스템 표기값, 실무상 더 높게 권장). 기준 미달 제출은 막지 않고 영업담당자가 별도 확인합니다.
+              </p>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-header">
+              <h2>② 광고그룹 정보</h2>
+              <p>adgroups 탭에 기록됩니다. 캠페인명은 위 캠페인 정보와 자동 연결됩니다.</p>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="campaign-name-mirror">campaign_name</label>
+                <input id="campaign-name-mirror" readonly />
+                <span class="field-help">위 캠페인명과 자동 연결됩니다.</span>
+              </div>
+              <div class="field">
+                <label class="required" for="adgroup-name">광고그룹명</label>
+                <input id="adgroup-name" name="adgroup_name" required />
+                <span class="field-help">adgroup_name · 특수문자 불가</span>
+              </div>
+              <div class="field">
+                <label for="max-bid">최대 입찰가</label>
+                <input id="max-bid" name="max_bid" type="number" min="1" step="1" placeholder="선택 입력" />
+                <span class="field-help">현재는 Clicks 캠페인의 최대 CPC에만 적용 가능합니다. KRW 기준입니다.</span>
+              </div>
+              <div class="field">
+                <label for="keywords">키워드</label>
+                <input id="keywords" name="keywords" placeholder="키워드1, 키워드2" />
+                <span class="field-help">쉼표 구분 입력 후 JSON 배열로 저장됩니다. 상한은 없습니다.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-header action-header">
+              <div>
+                <h2>③ 소재 정보</h2>
+                <p>ads 탭에 소재 수만큼 행이 추가됩니다. 소재 추가 버튼으로 여러 개를 접수할 수 있습니다.</p>
+              </div>
+              <button class="secondary" id="add-ad" type="button">소재 추가</button>
+            </div>
+            <div class="ad-list" id="ad-list">
+              <article class="ad-card" data-ad-item>
+                <div class="ad-card-header">
+                  <strong>소재 1</strong>
+                  <button class="ghost danger remove-ad" type="button" hidden>삭제</button>
+                </div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label>adgroup_name</label>
+                    <input class="adgroup-name-mirror" readonly />
+                    <span class="field-help">위 광고그룹명과 자동 연결됩니다.</span>
+                  </div>
+                  <div class="field">
+                    <label class="required" for="ad-title-1">광고 제목</label>
+                    <input id="ad-title-1" class="ad-title" name="title" maxlength="24" required />
+                    <span class="char-counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
+                  </div>
+                  <div class="field full">
+                    <label class="required" for="ad-copy-1">광고 설명</label>
+                    <input id="ad-copy-1" class="ad-copy" name="copy" maxlength="48" required />
+                    <span class="char-counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
+                  </div>
+                  <div class="field full">
+                    <label class="required" for="ad-link-1">랜딩 URL</label>
+                    <input id="ad-link-1" class="ad-link" name="link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
+                    <span class="field-help">UTM 등 추적 파라미터 포함 가능</span>
+                  </div>
+                  <div class="field full">
+                    <label class="required" for="ad-image-link-1">이미지 URL</label>
+                    <input id="ad-image-link-1" class="ad-image-link" name="image_link" type="url" placeholder="https://example.com/image.jpg" required />
+                    <span class="field-help">정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <h2>준비상태 체크</h2>
+            <div class="checkbox-grid">
+              <label class="check-chip"><input type="checkbox" name="adsManagerReady" /> Ads Manager 계정 생성 완료</label>
+              <label class="check-chip"><input type="checkbox" name="paymentReady" /> 결제수단 등록 완료</label>
+              <label class="check-chip"><input type="checkbox" name="crawlerReady" /> 랜딩 URL 크롤러 허용 점검 완료</label>
+              <label class="check-chip"><input type="checkbox" name="faviconReady" /> 파비콘 준비 완료</label>
+            </div>
+            <p class="field-help">카드 정보는 수집하지 않습니다. 준비 여부만 체크해 주세요.</p>
           </section>
 
           <div class="honeypot" aria-hidden="true">
@@ -2305,19 +2467,17 @@
                   </div>
                   <div class="slide-item">
                     <strong>광고 제목</strong>
-                    <span>16~18자 권장</span>
+                    <span>최대 제목 24자 / 권장 16~18자</span>
                     <div class="slide-mini-badges">
-                      <span class="slide-pill">권장 기준</span>
+                      <span class="slide-pill">OpenAI 공식 워크북 기준</span>
                       <span class="slide-pill">정식 오픈 시 Ads Manager 재확인</span>
-                      <span class="slide-pill">공식 도움말 글자수 미명시</span>
                     </div>
                   </div>
                   <div class="slide-item">
                     <strong>광고 설명</strong>
-                    <span>32~36자 권장</span>
+                    <span>최대 설명 48자 / 권장 32~36자</span>
                     <div class="slide-mini-badges">
-                      <span class="slide-pill">권장 기준</span>
-                      <span class="slide-pill">공식 도움말 글자수 미명시</span>
+                      <span class="slide-pill">OpenAI 공식 워크북 기준</span>
                     </div>
                   </div>
                   <div class="slide-item">
@@ -2480,7 +2640,7 @@ Allow: /</pre>
         및 담당자 확인이 필요합니다.
       </span>
       <span id="intake-notice">
-        ※ 접수 폼은 광고 계정 생성과 캠페인 세팅을 위한 기본 정보를 수집합니다. 계정 생성 후 타겟 국가·청구 통화·시간대는 변경이 어려우니 제출 전 다시 확인해 주세요.
+        ※ 접수 폼은 공식 워크북 구조에 맞춰 campaigns·adgroups·ads·ops_meta 탭으로 기록됩니다. 청구 통화는 KRW, 시간대는 Asia/Seoul로 고정되니 제출 전 다시 확인해 주세요.
       </span>
       <span id="slides-notice">
         ※ 광고주 안내 자료는 OpenAI ChatGPT Ads 베타 기준입니다. 정책·금액·정산 조건은 변동될 수 있으며, 최종 조건은 영업 담당자를 통해 별도 안내드립니다.
@@ -2549,6 +2709,11 @@ Allow: /</pre>
       const intakeStatus = document.querySelector("#intake-status");
       const formStartedAt = document.querySelector("#form-started-at");
       const objectiveClicks = document.querySelector("#objective-clicks");
+      const addAdButton = document.querySelector("#add-ad");
+      const adList = document.querySelector("#ad-list");
+      const campaignNameInput = document.querySelector("#campaign-name");
+      const campaignNameMirror = document.querySelector("#campaign-name-mirror");
+      const adgroupNameInput = document.querySelector("#adgroup-name");
       const slidesPrintButton = document.querySelector("#slides-print");
 
       const crawlerVerdictLabel = {
@@ -2938,37 +3103,134 @@ Allow: /</pre>
         return intakeForm.querySelector(`input[name="${name}"]:checked`)?.value || "";
       }
 
+      function intakeLimits() {
+        return selectedValue("executionRoute") === "criteo"
+          ? { title: 30, copy: 60, titleHelp: "크리테오 기준", copyHelp: "크리테오 기준" }
+          : { title: 24, copy: 48, titleHelp: "권장 16~18자", copyHelp: "권장 32~36자" };
+      }
+
+      function splitKeywords(value) {
+        return String(value || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function optionalNumber(value) {
+        const text = String(value || "").trim();
+        return text ? Number(text) : null;
+      }
+
+      function isSafeWorkbookName(value) {
+        return /^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ _-]+$/u.test(String(value || "").trim());
+      }
+
+      function syncNameMirrors() {
+        const campaignName = campaignNameInput.value.trim();
+        const adgroupName = adgroupNameInput.value.trim();
+        campaignNameMirror.value = campaignName;
+        adList.querySelectorAll(".adgroup-name-mirror").forEach((input) => {
+          input.value = adgroupName;
+        });
+      }
+
+      function updateAdCounters(item) {
+        const limits = intakeLimits();
+        const titleInput = item.querySelector(".ad-title");
+        const copyInput = item.querySelector(".ad-copy");
+        const titleCounter = item.querySelector('[data-counter-for="title"]');
+        const copyCounter = item.querySelector('[data-counter-for="copy"]');
+
+        titleInput.maxLength = limits.title;
+        copyInput.maxLength = limits.copy;
+        if (titleInput.value.length > limits.title) titleInput.value = titleInput.value.slice(0, limits.title);
+        if (copyInput.value.length > limits.copy) copyInput.value = copyInput.value.slice(0, limits.copy);
+        titleCounter.textContent = `${titleInput.value.length} / ${limits.title}자 · ${limits.titleHelp}`;
+        copyCounter.textContent = `${copyInput.value.length} / ${limits.copy}자 · ${limits.copyHelp}`;
+      }
+
+      function updateAdListState() {
+        const items = [...adList.querySelectorAll("[data-ad-item]")];
+        items.forEach((item, index) => {
+          const number = index + 1;
+          item.querySelector(".ad-card-header strong").textContent = `소재 ${number}`;
+          item.querySelector(".remove-ad").hidden = items.length === 1;
+
+          const titleInput = item.querySelector(".ad-title");
+          const copyInput = item.querySelector(".ad-copy");
+          const linkInput = item.querySelector(".ad-link");
+          const imageInput = item.querySelector(".ad-image-link");
+          titleInput.id = `ad-title-${number}`;
+          copyInput.id = `ad-copy-${number}`;
+          linkInput.id = `ad-link-${number}`;
+          imageInput.id = `ad-image-link-${number}`;
+          item.querySelector('label[for^="ad-title"]').setAttribute("for", titleInput.id);
+          item.querySelector('label[for^="ad-copy"]').setAttribute("for", copyInput.id);
+          item.querySelector('label[for^="ad-link"]').setAttribute("for", linkInput.id);
+          item.querySelector('label[for^="ad-image-link"]').setAttribute("for", imageInput.id);
+          updateAdCounters(item);
+        });
+        syncNameMirrors();
+      }
+
+      function addAdItem() {
+        const template = adList.querySelector("[data-ad-item]");
+        const item = template.cloneNode(true);
+        item.querySelectorAll("input").forEach((input) => {
+          if (!input.readOnly) input.value = "";
+        });
+        adList.append(item);
+        updateAdListState();
+        item.querySelector(".ad-title").focus();
+      }
+
+      function resetAdsToOne() {
+        const items = [...adList.querySelectorAll("[data-ad-item]")];
+        items.slice(1).forEach((item) => item.remove());
+        items[0].querySelectorAll("input").forEach((input) => {
+          if (!input.readOnly) input.value = "";
+        });
+        updateAdListState();
+      }
+
       function syncObjectiveForRoute() {
         const route = selectedValue("executionRoute");
         if (route === "criteo") {
-          intakeForm.querySelector('input[name="campaignObjective"][value="views"]').checked = true;
+          intakeForm.querySelector('input[name="objective"][value="views"]').checked = true;
           objectiveClicks.disabled = true;
           objectiveClicks.closest(".option-chip").style.opacity = "0.55";
         } else {
           objectiveClicks.disabled = false;
           objectiveClicks.closest(".option-chip").style.opacity = "1";
         }
+        updateAdListState();
       }
 
       function validateIntakeForm() {
+        syncNameMirrors();
         if (!intakeForm.reportValidity()) return false;
 
-        const today = localDateString(new Date());
-        const startDate = intakeForm.elements.startDate.value;
-        const endDate = intakeForm.elements.endDate.value;
-        if (startDate < today) {
-          setIntakeStatus("시작일은 오늘 이후여야 합니다.", "error");
-          intakeForm.elements.startDate.focus();
+        if (!isSafeWorkbookName(intakeForm.elements.campaign_name.value)) {
+          setIntakeStatus("캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
+          intakeForm.elements.campaign_name.focus();
           return false;
         }
-        if (endDate < startDate) {
+        if (!isSafeWorkbookName(intakeForm.elements.adgroup_name.value)) {
+          setIntakeStatus("광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
+          intakeForm.elements.adgroup_name.focus();
+          return false;
+        }
+
+        const launchDate = intakeForm.elements.launch_date.value;
+        const endDate = intakeForm.elements.end_date.value;
+        if (launchDate && endDate && endDate < launchDate) {
           setIntakeStatus("종료일은 시작일 이후여야 합니다.", "error");
-          intakeForm.elements.endDate.focus();
+          intakeForm.elements.end_date.focus();
           return false;
         }
         if (
           selectedValue("executionRoute") === "criteo" &&
-          selectedValue("campaignObjective") !== "views"
+          selectedValue("objective") !== "views"
         ) {
           setIntakeStatus("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.", "error");
           return false;
@@ -2978,32 +3240,51 @@ Allow: /</pre>
 
       function intakePayload() {
         const data = new FormData(intakeForm);
+        const campaignName = data.get("campaign_name")?.trim();
+        const adgroupName = data.get("adgroup_name")?.trim();
+        const ads = [...adList.querySelectorAll("[data-ad-item]")].map((item) => ({
+          adgroup_name: adgroupName,
+          title: item.querySelector(".ad-title").value.trim(),
+          copy: item.querySelector(".ad-copy").value.trim(),
+          link: item.querySelector(".ad-link").value.trim(),
+          image_link: item.querySelector(".ad-image-link").value.trim(),
+        }));
         return {
-          advertiserName: data.get("advertiserName")?.trim(),
-          legalName: data.get("legalName")?.trim(),
-          websiteUrl: data.get("websiteUrl")?.trim(),
-          targetCountry: data.get("targetCountry"),
-          billingCurrency: data.get("billingCurrency"),
-          timezone: data.get("timezone"),
-          invoiceEmail: data.get("invoiceEmail")?.trim(),
-          executionRoute: selectedValue("executionRoute"),
-          campaignName: data.get("campaignName")?.trim(),
-          campaignObjective: selectedValue("campaignObjective"),
-          budgetType: selectedValue("budgetType"),
-          budgetAmount: Number(data.get("budgetAmount")),
-          startDate: data.get("startDate"),
-          endDate: data.get("endDate"),
-          adsManagerReady: data.has("adsManagerReady"),
-          paymentReady: data.has("paymentReady"),
-          crawlerReady: data.has("crawlerReady"),
-          faviconReady: data.has("faviconReady"),
-          contactName: data.get("contactName")?.trim(),
-          contactPhone: data.get("contactPhone")?.trim(),
-          contactEmail: data.get("contactEmail")?.trim(),
-          salesOwner: data.get("salesOwner")?.trim(),
-          notes: data.get("notes")?.trim(),
-          honeypot: data.get("honeypot") || "",
-          formStartedAt: Number(data.get("formStartedAt")),
+          opsMeta: {
+            executionRoute: selectedValue("executionRoute"),
+            advertiserName: data.get("advertiserName")?.trim(),
+            legalName: data.get("legalName")?.trim(),
+            brn: data.get("brn")?.trim(),
+            advertiserHomepageUrl: data.get("advertiserHomepageUrl")?.trim(),
+            invoiceEmail: data.get("invoiceEmail")?.trim(),
+            adsManagerReady: data.has("adsManagerReady"),
+            paymentReady: data.has("paymentReady"),
+            crawlerReady: data.has("crawlerReady"),
+            faviconReady: data.has("faviconReady"),
+            contactName: data.get("contactName")?.trim(),
+            contactPhone: data.get("contactPhone")?.trim(),
+            contactEmail: data.get("contactEmail")?.trim(),
+            salesOwner: data.get("salesOwner")?.trim(),
+            notes: data.get("notes")?.trim(),
+            honeypot: data.get("honeypot") || "",
+            formStartedAt: Number(data.get("formStartedAt")),
+          },
+          campaign: {
+            campaign_name: campaignName,
+            budget_max: Number(data.get("budget_max")),
+            budget_type: selectedValue("budget_type") || "lifetime",
+            launch_date: data.get("launch_date") || null,
+            end_date: data.get("end_date") || null,
+            objective: selectedValue("objective"),
+            target_countries: [data.get("target_countries") || "KR"],
+          },
+          adgroup: {
+            campaign_name: campaignName,
+            adgroup_name: adgroupName,
+            max_bid: optionalNumber(data.get("max_bid")),
+            keywords: splitKeywords(data.get("keywords")),
+          },
+          ads,
         };
       }
 
@@ -3030,6 +3311,7 @@ Allow: /</pre>
             "success",
           );
           intakeForm.reset();
+          resetAdsToOne();
           formStartedAt.value = String(Date.now());
           syncObjectiveForRoute();
         } catch (error) {
@@ -3183,13 +3465,22 @@ Allow: /</pre>
       intakeForm.querySelectorAll('input[name="executionRoute"]').forEach((input) => {
         input.addEventListener("change", syncObjectiveForRoute);
       });
-      formStartedAt.value = String(Date.now());
-      const today = localDateString(new Date());
-      intakeForm.elements.startDate.min = today;
-      intakeForm.elements.endDate.min = today;
-      intakeForm.elements.startDate.addEventListener("change", () => {
-        intakeForm.elements.endDate.min = intakeForm.elements.startDate.value || today;
+      addAdButton.addEventListener("click", addAdItem);
+      adList.addEventListener("click", (event) => {
+        const button = event.target.closest(".remove-ad");
+        if (!button) return;
+        button.closest("[data-ad-item]").remove();
+        updateAdListState();
       });
+      adList.addEventListener("input", (event) => {
+        const item = event.target.closest("[data-ad-item]");
+        if (item) updateAdCounters(item);
+      });
+      campaignNameInput.addEventListener("input", syncNameMirrors);
+      adgroupNameInput.addEventListener("input", syncNameMirrors);
+      formStartedAt.value = String(Date.now());
+      syncObjectiveForRoute();
+      updateAdListState();
       document.querySelectorAll(".slide-update-date").forEach((item) => {
         item.textContent = LAST_UPDATED;
       });

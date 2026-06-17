@@ -45,11 +45,11 @@ class AdvertiserSlidesStaticTests(unittest.TestCase):
         html = slides_panel_html()
 
         required = [
-            "16~18자 권장",
-            "32~36자 권장",
+            "최대 제목 24자 / 권장 16~18자",
+            "최대 설명 48자 / 권장 32~36자",
+            "OpenAI 공식 워크북 기준",
             "제목 30자 / 설명 60자",
             "정식 오픈 시 Ads Manager 재확인",
-            "공식 도움말 글자수 미명시",
             "광고 카피 작성 가이드",
             "건강한 저녁, 빠르게 준비하고 싶다면?",
             "User-agent: OAI-SearchBot",
@@ -63,6 +63,7 @@ class AdvertiserSlidesStaticTests(unittest.TestCase):
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+        self.assertNotIn("공식 도움말 글자수 미명시", html)
 
     def test_checklist_tab_removed_from_top_navigation(self) -> None:
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")

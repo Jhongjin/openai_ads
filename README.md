@@ -72,22 +72,58 @@ Invoke-RestMethod -Method Post `
 
 `집행 의뢰 접수` 탭 또는 `/intake`는 광고 계정 생성과 캠페인 세팅에 필요한 정보를 구글 시트로 접수합니다.
 
-- 광고주/계정 정보, 캠페인 개요, 준비상태, 담당자 정보를 입력합니다.
-- 타겟 국가, 청구 통화, 시간대는 계정 생성 후 변경이 어렵다는 경고를 화면에 표시합니다.
-- 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정됩니다.
+- OpenAI 공식 워크북 구조에 맞춰 `campaigns`, `adgroups`, `ads` 3개 탭에 업로드용 컬럼을 기록하고, 운영팀 추가 항목은 `ops_meta` 탭에 분리 기록합니다.
+- 캠페인 1개, 광고그룹 1개, 소재 N개 구조입니다. 소재를 2개 넣으면 `ads` 탭에 2행이 추가됩니다.
+- 청구 통화는 `KRW`, 시간대는 `Asia/Seoul`로 고정 표시합니다.
+- 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정되고, 소재 글자수 상한은 제목 30자 / 설명 60자로 전환됩니다.
+- OpenAI 직접 CBT는 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
 - 예산 기준은 경고만 표시하고 제출을 막지 않습니다.
 - 카드 정보는 수집하지 않고 준비 여부만 체크합니다.
 - 제출 성공 시 `KT-OAI-YYYYMMDD-NNN` 형식의 접수번호와 KST 타임스탬프를 반환합니다.
 
-서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body에 `SHEETS_SHARED_SECRET` 값을 함께 넣습니다. Apps Script 웹앱은 이 공유 토큰을 검증하도록 구성해야 합니다.
+서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body는 `secret` + `data` 구조로 맞춥니다. Apps Script 웹앱은 `secret` 값을 Script Properties의 `SHEETS_SHARED_SECRET`와 비교해 검증합니다. 예시 코드는 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs)에 있으며, Apps Script의 Script Properties에 `SHEETS_SHARED_SECRET` 값을 등록한 뒤 새 버전으로 배포합니다.
 
-API 직접 호출:
+Apps Script로 전달되는 최종 body:
 
-```powershell
-Invoke-RestMethod -Method Post `
-  -Uri http://localhost:8000/intake `
-  -ContentType "application/json" `
-  -Body '{"advertiserName":"테스트","legalName":"테스트 주식회사","websiteUrl":"https://example.com","executionRoute":"openai_cbt","campaignName":"테스트 캠페인","campaignObjective":"views","budgetType":"total","budgetAmount":4000000,"startDate":"2026-06-18","endDate":"2026-06-30","contactName":"홍길동","contactPhone":"010-0000-0000","contactEmail":"client@example.com","salesOwner":"나스 담당자","formStartedAt":1781712000000}'
+```json
+{
+    "secret": "환경변수 SHEETS_SHARED_SECRET 값",
+    "data": {
+      "campaign": {
+        "campaign_name": "summer_sale",
+        "budget_max": "5000000",
+        "budget_type": "lifetime",
+        "launch_date": "2026-07-01",
+        "end_date": "2026-07-31",
+        "objective": "views",
+        "target_countries": ["KR"]
+      },
+      "adgroups": [
+        { "adgroup_name": "ag_main", "max_bid": "", "keywords": ["키워드1", "키워드2"] }
+      ],
+      "ads": [
+        { "adgroup_name": "ag_main", "title": "여름 특가", "copy": "지금 준비하세요", "link": "https://example.com", "image_link": "https://example.com/img.png" },
+        { "adgroup_name": "ag_main", "title": "두 번째 소재", "copy": "또 다른 메시지", "link": "https://example.com/2", "image_link": "https://example.com/img2.png" }
+      ],
+      "ops": {
+        "route": "OpenAI 직접 CBT",
+        "advertiser_name": "광고주명",
+        "legal_name": "법인 정식 명칭",
+        "brn": "123-45-67890",
+        "homepage": "https://example.com",
+        "invoice_email": "invoice@example.com",
+        "contact_name": "홍길동",
+        "contact_phone": "010-0000-0000",
+        "contact_email": "client@example.com",
+        "sales_owner": "영업담당자명",
+        "ready_ads_manager": true,
+        "ready_payment": true,
+        "ready_crawler": true,
+        "ready_favicon": true,
+        "note": ""
+      }
+    }
+}
 ```
 
 ## 광고주 안내 자료

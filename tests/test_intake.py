@@ -16,56 +16,94 @@ def valid_payload() -> dict:
     tomorrow = datetime.now(KST).date() + timedelta(days=1)
     end = tomorrow + timedelta(days=14)
     return {
-        "advertiserName": "테스트 광고주",
-        "legalName": "테스트 주식회사",
-        "websiteUrl": "https://example.com",
-        "targetCountry": "대한민국",
-        "billingCurrency": "KRW",
-        "timezone": "Asia/Seoul",
-        "invoiceEmail": "invoice@example.com",
-        "executionRoute": "openai_cbt",
-        "campaignName": "ChatGPT Ads 테스트",
-        "campaignObjective": "clicks",
-        "budgetType": "total",
-        "budgetAmount": 4000000,
-        "startDate": tomorrow.isoformat(),
-        "endDate": end.isoformat(),
-        "adsManagerReady": True,
-        "paymentReady": True,
-        "crawlerReady": True,
-        "faviconReady": True,
-        "contactName": "홍길동",
-        "contactPhone": "010-0000-0000",
-        "contactEmail": "client@example.com",
-        "salesOwner": "나스 담당자",
-        "notes": "테스트",
-        "honeypot": "",
-        "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
+        "opsMeta": {
+            "executionRoute": "openai_cbt",
+            "advertiserName": "테스트 광고주",
+            "legalName": "테스트 주식회사",
+            "brn": "123-45-67890",
+            "advertiserHomepageUrl": "https://example.com",
+            "invoiceEmail": "invoice@example.com",
+            "adsManagerReady": True,
+            "paymentReady": True,
+            "crawlerReady": True,
+            "faviconReady": True,
+            "contactName": "홍길동",
+            "contactPhone": "010-0000-0000",
+            "contactEmail": "client@example.com",
+            "salesOwner": "케이티나스 담당자",
+            "notes": "테스트",
+            "honeypot": "",
+            "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
+        },
+        "campaign": {
+            "campaign_name": "ChatGPT Ads 테스트",
+            "budget_max": 4000000,
+            "budget_type": "lifetime",
+            "launch_date": tomorrow.isoformat(),
+            "end_date": end.isoformat(),
+            "objective": "clicks",
+            "target_countries": ["KR"],
+        },
+        "adgroup": {
+            "campaign_name": "ChatGPT Ads 테스트",
+            "adgroup_name": "테스트 그룹",
+            "max_bid": 1200,
+            "keywords": ["밀키트", "저녁"],
+        },
+        "ads": [
+            {
+                "adgroup_name": "테스트 그룹",
+                "title": "건강한 저녁 준비",
+                "copy": "빠르게 차리는 균형 잡힌 한 끼",
+                "link": "https://example.com/landing?utm_source=openai",
+                "image_link": "https://example.com/image1.jpg",
+            },
+            {
+                "adgroup_name": "테스트 그룹",
+                "title": "퇴근 후 간편 식사",
+                "copy": "오늘 저녁 고민을 줄여주는 밀키트",
+                "link": "https://example.com/landing-2",
+                "image_link": "https://example.com/image2.png",
+            },
+        ],
     }
 
 
 class IntakeValidationTests(unittest.TestCase):
-    def test_valid_payload_builds_sheet_payload_with_secret(self) -> None:
+    def test_valid_payload_builds_four_sheet_sections(self) -> None:
         submission = IntakeSubmission.model_validate(valid_payload())
 
         payload = build_sheet_payload(
             submission,
-            receipt_number="KT-OAI-20260617-001",
-            submitted_at_kst="2026-06-17 12:00:00",
             shared_secret="secret",
         )
 
-        self.assertEqual(payload["shared_secret"], "secret")
-        self.assertEqual(payload["receiptNumber"], "KT-OAI-20260617-001")
-        self.assertEqual(payload["submittedAtKst"], "2026-06-17 12:00:00")
-        self.assertEqual(payload["readyStatus"]["crawlerReady"], True)
-        self.assertNotIn("honeypot", payload)
+        self.assertEqual(payload["secret"], "secret")
+        self.assertEqual(payload["data"]["campaign"]["campaign_name"], "ChatGPT Ads 테스트")
+        self.assertEqual(payload["data"]["campaign"]["budget_max"], "4000000")
+        self.assertEqual(payload["data"]["campaign"]["target_countries"], ["KR"])
+        self.assertEqual(len(payload["data"]["adgroups"]), 1)
+        self.assertEqual(len(payload["data"]["ads"]), 2)
+        self.assertEqual(payload["data"]["adgroups"][0]["keywords"], ["밀키트", "저녁"])
+        self.assertEqual(payload["data"]["adgroups"][0]["max_bid"], "1200")
+        self.assertEqual(payload["data"]["ops"]["route"], "OpenAI 직접 CBT")
+        self.assertEqual(payload["data"]["ops"]["brn"], "123-45-67890")
+        self.assertEqual(payload["data"]["ops"]["homepage"], "https://example.com")
+        self.assertNotIn("honeypot", payload["data"]["ops"])
+        self.assertNotIn("receiptNumber", payload)
+
+    def test_rejects_special_characters_in_names(self) -> None:
+        payload = valid_payload()
+        payload["campaign"]["campaign_name"] = "캠페인#1"
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
 
     def test_rejects_reversed_dates(self) -> None:
         payload = valid_payload()
-        payload["endDate"] = payload["startDate"]
-        payload["startDate"] = (
-            datetime.fromisoformat(payload["endDate"]).date() + timedelta(days=1)
+        payload["campaign"]["end_date"] = payload["campaign"]["launch_date"]
+        payload["campaign"]["launch_date"] = (
+            datetime.fromisoformat(payload["campaign"]["end_date"]).date() + timedelta(days=1)
         ).isoformat()
 
         with self.assertRaises(ValidationError):
@@ -73,9 +111,34 @@ class IntakeValidationTests(unittest.TestCase):
 
     def test_criteo_forces_views_objective(self) -> None:
         payload = valid_payload()
-        payload["executionRoute"] = "criteo"
-        payload["campaignObjective"] = "clicks"
+        payload["opsMeta"]["executionRoute"] = "criteo"
+        payload["campaign"]["objective"] = "clicks"
 
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
+    def test_openai_title_and_copy_limits_are_official_workbook_limits(self) -> None:
+        payload = valid_payload()
+        payload["ads"][0]["title"] = "가" * 25
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
+        payload = valid_payload()
+        payload["ads"][0]["copy"] = "나" * 49
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
+    def test_criteo_uses_30_60_limits(self) -> None:
+        payload = valid_payload()
+        payload["opsMeta"]["executionRoute"] = "criteo"
+        payload["campaign"]["objective"] = "views"
+        payload["ads"][0]["title"] = "가" * 30
+        payload["ads"][0]["copy"] = "나" * 60
+        IntakeSubmission.model_validate(payload)
+
+        payload["ads"][0]["title"] = "가" * 31
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
