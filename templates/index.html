@@ -939,6 +939,181 @@
         line-height: 1.45;
       }
 
+      .guide-process-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .guide-step-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 15px;
+      }
+
+      .guide-step-card strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--brand-dark);
+        font-size: 13px;
+      }
+
+      .guide-step-card span {
+        color: #344054;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .guide-two-column {
+        display: grid;
+        grid-template-columns: minmax(0, 1.04fr) minmax(280px, 0.96fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .guide-two-column figure,
+      .guide-preview-layout figure {
+        margin: 0;
+      }
+
+      .guide-field-table {
+        display: grid;
+        overflow: hidden;
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .guide-field-row {
+        display: grid;
+        grid-template-columns: 132px 1fr;
+        border-bottom: 1px solid #edf1f5;
+      }
+
+      .guide-field-row:last-child {
+        border-bottom: 0;
+      }
+
+      .guide-field-row strong,
+      .guide-field-row span {
+        padding: 9px 11px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .guide-field-row strong {
+        background: #fbfcfe;
+        color: #111827;
+      }
+
+      .guide-field-row span {
+        color: #344054;
+      }
+
+      .guide-image-frame {
+        position: relative;
+        display: grid;
+        min-height: 260px;
+        overflow: hidden;
+        border: 1.5px dashed #b7c0cc;
+        border-radius: 8px;
+        background: repeating-linear-gradient(
+          -45deg,
+          #fafafa,
+          #fafafa 10px,
+          #f3f5f8 10px,
+          #f3f5f8 20px
+        );
+      }
+
+      .guide-image-frame img {
+        display: none;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #fff;
+      }
+
+      .guide-image-frame.has-image {
+        border-style: solid;
+        background: #fff;
+      }
+
+      .guide-image-frame.has-image img {
+        display: block;
+      }
+
+      .guide-image-frame.has-image .guide-placeholder {
+        display: none;
+      }
+
+      .guide-placeholder {
+        display: grid;
+        place-items: center;
+        padding: 22px;
+        text-align: center;
+      }
+
+      .guide-placeholder strong {
+        display: block;
+        margin-bottom: 7px;
+        color: #1f2937;
+        font-size: 15px;
+      }
+
+      .guide-placeholder span {
+        display: block;
+        color: #697077;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .guide-caption {
+        margin: 8px 0 0;
+        color: #4d5358;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .guide-note {
+        margin: 10px 0 0;
+        border-left: 4px solid var(--brand);
+        background: #fff7f7;
+        padding: 9px 11px;
+        color: #4d5358;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .guide-preview-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(300px, 1.08fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .guide-preview-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .guide-preview-card h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+
+      .guide-channel-note {
+        margin: 10px 0 0;
+        color: #4d5358;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
       .slide-footer {
         display: flex;
         gap: 12px;
@@ -1152,8 +1327,8 @@
 
       .tabs {
         display: grid;
-        width: min(980px, 100%);
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        width: min(1120px, 100%);
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 8px;
         border: 0;
         background: transparent;
@@ -1192,6 +1367,10 @@
 
       .tab[data-tab="slides"] {
         --tab-color: var(--slides-color);
+      }
+
+      .tab[data-tab="setupGuide"] {
+        --tab-color: #8f1d1d;
       }
 
       .tab-icon {
@@ -1876,7 +2055,7 @@
           display: grid;
           width: calc(100vw - 28px) !important;
           max-width: calc(100vw - 28px);
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           overflow: hidden;
         }
 
@@ -1923,7 +2102,14 @@
 
         .slide-grid,
         .slide-grid.three,
-        .crawler-steps {
+        .crawler-steps,
+        .guide-process-grid,
+        .guide-two-column,
+        .guide-preview-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .guide-field-row {
           grid-template-columns: 1fr;
         }
 
@@ -1946,7 +2132,7 @@
         .tabs,
         .notice,
         .no-print,
-        .panel:not(#slides-panel) {
+        .panel {
           display: none !important;
         }
 
@@ -1955,7 +2141,8 @@
           padding: 0;
         }
 
-        #slides-panel {
+        body.print-slides #slides-panel,
+        body.print-guide #setup-guide-panel {
           display: block !important;
         }
 
@@ -2051,6 +2238,10 @@
         <button class="tab" data-tab="slides" type="button">
           <span class="tab-icon">PDF</span>
           <span>광고주 안내 자료</span>
+        </button>
+        <button class="tab" data-tab="setupGuide" type="button">
+          <span class="tab-icon">SET</span>
+          <span>캠페인 세팅 가이드</span>
         </button>
       </nav>
 
@@ -2768,6 +2959,201 @@ Allow: /</pre>
           </div>
         </div>
       </section>
+
+      <section class="panel" id="setup-guide-panel">
+        <div class="slide-panel-shell">
+          <div class="input-band slides-toolbar no-print">
+            <div>
+              <label>캠페인 세팅 가이드</label>
+              <p class="section-note">
+                Ads Manager에서 캠페인 → 광고그룹 → 광고를 생성하는 실무 절차 안내 문서입니다.
+              </p>
+            </div>
+            <button class="primary" id="setup-guide-print" type="button">PDF로 저장</button>
+          </div>
+
+          <div class="slide-deck" aria-label="광고 캠페인 세팅 가이드 슬라이드">
+            <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">Ads Manager 세팅 프로세스</p>
+                <h2 class="slide-title">광고 캠페인 세팅 가이드</h2>
+                <p class="slide-subtitle">캠페인 → 광고그룹 → 광고 생성 프로세스</p>
+                <p class="guide-channel-note">
+                  광고 관리자 URL:
+                  <a href="https://ads.openai.com/" target="_blank" rel="noreferrer">https://ads.openai.com/</a>
+                </p>
+                <div class="guide-process-grid">
+                  <div class="guide-step-card">
+                    <strong>STEP 1 · 캠페인</strong>
+                    <span>캠페인명, 유형, 목표, 위치, 예산, 스케줄을 설정합니다.</span>
+                  </div>
+                  <div class="guide-step-card">
+                    <strong>STEP 2 · 광고그룹</strong>
+                    <span>광고그룹명, 최대 CPC 입찰가, 기본 광고 URL, 컨텍스트 힌트를 입력합니다.</span>
+                  </div>
+                  <div class="guide-step-card">
+                    <strong>STEP 3 · 광고 만들기</strong>
+                    <span>광고 이름, URL, 헤드라인, 설명, 이미지를 등록합니다.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr</span>
+                <span class="slide-page-number">1/5</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 1 · 캠페인</p>
+                <h2 class="slide-section-title">캠페인 만들기</h2>
+                <div class="guide-two-column">
+                  <div class="guide-field-table">
+                    <div class="guide-field-row"><strong>캠페인 이름</strong><span>필수 입력, 3자 이상</span></div>
+                    <div class="guide-field-row"><strong>유형</strong><span>표준 기본 / 제품피드</span></div>
+                    <div class="guide-field-row"><strong>목표</strong><span>클릭 기본 / 도달·전환 coming soon</span></div>
+                    <div class="guide-field-row"><strong>위치</strong><span>대한민국</span></div>
+                    <div class="guide-field-row"><strong>예산</strong><span>일예산 또는 총예산. 최초 설정 후 유형 변경 불가, 금액 변경 가능</span></div>
+                    <div class="guide-field-row"><strong>스케줄</strong><span>시작·종료일과 시간까지 설정, GMT+9 기준</span></div>
+                  </div>
+                  <div>
+                    <figure>
+                      <div class="guide-image-frame">
+                        <img data-guide-image data-src="/images/guide/campaign_step1.png" alt="캠페인 만들기 화면" />
+                        <div class="guide-placeholder">
+                          <div>
+                            <strong>캡처 이미지 삽입 위치</strong>
+                            <span>/public/images/guide/campaign_step1.png</span>
+                          </div>
+                        </div>
+                      </div>
+                      <figcaption class="guide-caption">캠페인 만들기 화면</figcaption>
+                    </figure>
+                    <p class="guide-note">캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>예산 유형은 최초 설정 후 변경할 수 없으므로 제출 전 확인하세요.</span>
+                <span class="slide-page-number">2/5</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 2 · 광고그룹</p>
+                <h2 class="slide-section-title">광고그룹 만들기</h2>
+                <div class="guide-two-column">
+                  <div class="guide-field-table">
+                    <div class="guide-field-row"><strong>광고그룹 이름</strong><span>필수 입력, 3자 이상</span></div>
+                    <div class="guide-field-row"><strong>최대 CPC 입찰가</strong><span>4,000원은 게재 경쟁력이 낮을 수 있음 / 4,100원 이상은 경쟁력 있을 가능성</span></div>
+                    <div class="guide-field-row"><strong>기본 광고 URL</strong><span>광고그룹 기본 랜딩 URL을 입력합니다.</span></div>
+                    <div class="guide-field-row"><strong>컨텍스트 힌트</strong><span>선택 입력. 매칭 참고용이며 정확 일치 규칙은 아닙니다.</span></div>
+                  </div>
+                  <div>
+                    <figure>
+                      <div class="guide-image-frame">
+                        <img data-guide-image data-src="/images/guide/campaign_step2.png" alt="광고그룹 만들기 화면" />
+                        <div class="guide-placeholder">
+                          <div>
+                            <strong>캡처 이미지 삽입 위치</strong>
+                            <span>/public/images/guide/campaign_step2.png</span>
+                          </div>
+                        </div>
+                      </div>
+                      <figcaption class="guide-caption">광고그룹 만들기 화면</figcaption>
+                    </figure>
+                    <p class="guide-note">캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>컨텍스트 힌트는 시스템의 매칭 참고 정보이며 키워드 exact match가 아닙니다.</span>
+                <span class="slide-page-number">3/5</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 3 · 광고</p>
+                <h2 class="slide-section-title">광고 만들기</h2>
+                <div class="guide-two-column">
+                  <div class="guide-field-table">
+                    <div class="guide-field-row"><strong>광고 이름</strong><span>필수 입력, 3자 이상</span></div>
+                    <div class="guide-field-row"><strong>광고 URL</strong><span>소재 단위 랜딩 URL을 입력합니다.</span></div>
+                    <div class="guide-field-row"><strong>헤드라인</strong><span>3~50자. 한글·영문·숫자·띄어쓰기 1자 카운트, 특수문자/이모지 가능</span></div>
+                    <div class="guide-field-row"><strong>설명</strong><span>3~100자. 한글·영문·숫자·띄어쓰기 1자 카운트, 특수문자/이모지 가능</span></div>
+                    <div class="guide-field-row"><strong>광고 이미지</strong><span>PNG/JPG, 정사각형, 최소 256×256px 권장</span></div>
+                  </div>
+                  <div>
+                    <figure>
+                      <div class="guide-image-frame">
+                        <img data-guide-image data-src="/images/guide/campaign_step3.png" alt="광고 만들기 화면" />
+                        <div class="guide-placeholder">
+                          <div>
+                            <strong>캡처 이미지 삽입 위치</strong>
+                            <span>/public/images/guide/campaign_step3.png</span>
+                          </div>
+                        </div>
+                      </div>
+                      <figcaption class="guide-caption">광고 만들기 화면</figcaption>
+                    </figure>
+                    <p class="guide-note">캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>헤드라인 50자/설명 100자는 Ads Manager 직접 입력 화면 기준입니다.</span>
+                <span class="slide-page-number">4/5</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">미리보기</p>
+                <h2 class="slide-section-title">광고 소재 미리보기</h2>
+                <div class="guide-preview-layout">
+                  <div class="guide-preview-card">
+                    <h3>미리보기 구성 요소</h3>
+                    <div class="guide-field-table">
+                      <div class="guide-field-row"><strong>① 광고 계정명</strong><span>광고 단위 상단에 노출되는 계정명</span></div>
+                      <div class="guide-field-row"><strong>② 제목</strong><span>3~50자</span></div>
+                      <div class="guide-field-row"><strong>③ 설명</strong><span>3~100자</span></div>
+                      <div class="guide-field-row"><strong>④ 랜딩 URL</strong><span>클릭 시 이동하는 광고 URL</span></div>
+                      <div class="guide-field-row"><strong>⑤ 이미지</strong><span>정사각형, 최소 256×256px</span></div>
+                    </div>
+                    <p class="guide-note">본 문서 글자수는 Ads Manager 직접 입력 화면 기준(헤드라인 50자/설명 100자)이며 접수 폼(24/48)·크리테오 경유(30/60)와는 별개 채널 기준입니다.</p>
+                  </div>
+                  <div>
+                    <figure>
+                      <div class="guide-image-frame">
+                        <img data-guide-image data-src="/images/guide/campaign_preview.png" alt="광고 소재 미리보기" />
+                        <div class="guide-placeholder">
+                          <div>
+                            <strong>캡처 이미지 삽입 위치</strong>
+                            <span>/public/images/guide/campaign_preview.png</span>
+                          </div>
+                        </div>
+                      </div>
+                      <figcaption class="guide-caption">광고 소재 미리보기</figcaption>
+                    </figure>
+                    <p class="guide-note">캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>케이티나스미디어 미디어채널실 / openai@nasmedia.co.kr</span>
+                <span class="slide-page-number">5/5</span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div class="notice">
@@ -2801,11 +3187,15 @@ Allow: /</pre>
       <span id="slides-notice">
         ※ 광고주 안내 자료는 OpenAI ChatGPT Ads 베타 기준입니다. 정책·금액·정산 조건은 변동될 수 있으며, 최종 조건은 영업 담당자를 통해 별도 안내드립니다.
       </span>
+      <span id="setup-guide-notice">
+        ※ 캠페인 세팅 가이드는 Ads Manager 직접 입력 화면 기준입니다. 접수 폼 글자수와 크리테오 경유 기준은 별도 채널 기준으로 구분해 주세요.
+      </span>
     </div>
 
     <script>
       const LAST_UPDATED = "2026-06-17";
       const SLIDES_PDF_FILENAME = `ChatGPT광고_집행준비안내_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
+      const SETUP_GUIDE_PDF_FILENAME = `ChatGPT광고_캠페인세팅가이드_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const ENTRY_NOTICE_STORAGE_KEY = "openaiAdsEntryNoticeDismissedDate";
       const pageMain = document.querySelector("main");
       const entryNotice = document.querySelector("#entry-notice");
@@ -2821,6 +3211,7 @@ Allow: /</pre>
         checklist: document.querySelector("#checklist-panel"),
         intake: document.querySelector("#intake-panel"),
         slides: document.querySelector("#slides-panel"),
+        setupGuide: document.querySelector("#setup-guide-panel"),
       };
       const notices = {
         chat: document.querySelector("#chat-notice"),
@@ -2829,6 +3220,7 @@ Allow: /</pre>
         checklist: document.querySelector("#checklist-notice"),
         intake: document.querySelector("#intake-notice"),
         slides: document.querySelector("#slides-notice"),
+        setupGuide: document.querySelector("#setup-guide-notice"),
       };
 
       tabs.forEach((tab) => {
@@ -2878,6 +3270,7 @@ Allow: /</pre>
       const campaignNameMirror = document.querySelector("#campaign-name-mirror");
       const adgroupNameInput = document.querySelector("#adgroup-name");
       const slidesPrintButton = document.querySelector("#slides-print");
+      const setupGuidePrintButton = document.querySelector("#setup-guide-print");
 
       const crawlerVerdictLabel = {
         allow: "✅ 접근 가능",
@@ -3696,6 +4089,38 @@ Allow: /</pre>
         }
       }
 
+      function hydrateGuideImages() {
+        document.querySelectorAll("[data-guide-image]").forEach((image) => {
+          const frame = image.closest(".guide-image-frame");
+          const markLoaded = () => frame.classList.add("has-image");
+          const markMissing = () => frame.classList.remove("has-image");
+          const source = image.dataset.src;
+          image.addEventListener("load", markLoaded);
+          image.addEventListener("error", markMissing);
+          if (!source) return;
+          fetch(source, { method: "HEAD", cache: "no-store" })
+            .then((response) => {
+              if (response.ok) {
+                image.src = source;
+              } else {
+                markMissing();
+              }
+            })
+            .catch(markMissing);
+        });
+      }
+
+      function printDocument(printClass, filename) {
+        const previousTitle = document.title;
+        document.body.classList.add(printClass);
+        document.title = filename;
+        window.print();
+        window.setTimeout(() => {
+          document.body.classList.remove(printClass);
+          document.title = previousTitle;
+        }, 1000);
+      }
+
       chatSendButton.addEventListener("click", runChat);
       chatInput.addEventListener("keydown", (event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
@@ -3733,14 +4158,13 @@ Allow: /</pre>
       document.querySelectorAll(".slide-update-date").forEach((item) => {
         item.textContent = LAST_UPDATED;
       });
+      hydrateGuideImages();
       initEntryNotice();
       slidesPrintButton.addEventListener("click", () => {
-        const previousTitle = document.title;
-        document.title = SLIDES_PDF_FILENAME;
-        window.print();
-        window.setTimeout(() => {
-          document.title = previousTitle;
-        }, 1000);
+        printDocument("print-slides", SLIDES_PDF_FILENAME);
+      });
+      setupGuidePrintButton.addEventListener("click", () => {
+        printDocument("print-guide", SETUP_GUIDE_PDF_FILENAME);
       });
       syncObjectiveForRoute();
     </script>
