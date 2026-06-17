@@ -13,7 +13,11 @@ from rag_chatbot.config import project_root
 
 
 app = FastAPI(title="Nasmedia ChatGPT Ads RAG", version="0.1.0")
-app.mount("/images", StaticFiles(directory=project_root() / "public" / "images"), name="images")
+app.mount(
+    "/images",
+    StaticFiles(directory=project_root() / "public" / "images", check_dir=False),
+    name="images",
+)
 
 
 class ChatRequest(BaseModel):
