@@ -16,7 +16,7 @@ from .config import (
 from .crawler import crawl_urls
 from .db import ensure_database, insert_documents, reset_collection
 from .embeddings import embed_texts
-from .local_docs import load_local_documents
+from .local_docs import load_inline_documents, load_local_documents
 
 
 def _collection_config(config: dict, name: str) -> dict:
@@ -63,21 +63,27 @@ def _official_documents(config: dict) -> tuple[list[Document], list[str]]:
     collection = _collection_config(config, "official")
     crawler = config.get("crawler") or {}
     urls = collection.get("urls") or []
-    return crawl_urls(
+    documents, errors = crawl_urls(
         urls,
         user_agent=str(crawler.get("user_agent", "nasmedia-rag-poc/0.1")),
         timeout_seconds=int(crawler.get("request_timeout_seconds", 30)),
         respect_robots_txt=bool(crawler.get("respect_robots_txt", True)),
     )
+    documents.extend(load_inline_documents(collection.get("documents") or [], source_tier="official"))
+    return documents, errors
 
 
 def _local_documents(config: dict, collection_name: str) -> list[Document]:
     collection = _collection_config(config, collection_name)
-    return load_local_documents(
+    documents = load_local_documents(
         collection.get("paths") or [],
         source_tier=collection_name,
         ignore_patterns=config.get("ignored_local_patterns") or [],
     )
+    documents.extend(
+        load_inline_documents(collection.get("documents") or [], source_tier=collection_name)
+    )
+    return documents
 
 
 def ingest_collections(

@@ -4,7 +4,7 @@ chunking:
 
 retrieval:
   top_k_per_collection: 4
-  min_relevance_score: 0.25
+  min_relevance_score: 0.32
 
 database:
   provider: "supabase"
@@ -22,23 +22,81 @@ collections:
     tier_label: "✅공식"
     urls:
       - "https://help.openai.com/en/articles/20001207"
-      - "https://help.openai.com/en/articles/20001210"
-      - "https://help.openai.com/en/articles/20001211"
+      - "https://help.openai.com/en/articles/20001209"
       - "https://help.openai.com/en/articles/20001212"
-      - "https://help.openai.com/en/articles/20001213"
-      - "https://help.openai.com/en/articles/20001214"
-      - "https://help.openai.com/en/articles/20001217"
-      - "https://help.openai.com/en/articles/20001243"
+      - "https://developers.openai.com/api/docs/bots"
       - "https://openai.com/policies/ad-policies"
       - "https://openai.com/index/testing-ads-in-chatgpt"
+    documents:
+      - title: "Ads in ChatGPT: The Basics"
+        source_url: "https://help.openai.com/en/articles/20001207"
+        content: |
+          한국어 요약: ChatGPT 광고는 관련 대화 아래 영역에 노출된다. 광고 구성요소는 광고주명, 파비콘/로고, 제목, 설명문, 랜딩 페이지, 이미지 소재다.
+          Ads in ChatGPT help advertisers reach users in relevant conversational contexts. Ads appear below relevant ChatGPT conversations.
+          The ad format includes advertiser name, favicon or advertiser logo, title/headline, copy/description, landing page, and image asset/creative.
+          Ads Manager Beta reporting includes impressions, clicks, spend, CTR, average CPC, average CPM, and conversions.
+          Pricing supports CPM and CPC buying options. OpenAI recommends a starting max CPC bid of $3-5 USD per click, and the default max bid for CPM campaigns is $60 CPM. These are bid guidance values, not a guaranteed exact media unit price.
+      - title: "Launch Campaigns"
+        source_url: "https://help.openai.com/en/articles/20001209"
+        content: |
+          한국어 요약: 광고 문구 글자 수 제한은 제목 16~24자 권장, 최대 50자이며, 설명문은 32~48자 권장, 최대 100자다. 이미지 URL은 공개 접근 가능한 직접 PNG/JPG 링크이고 정사각형, 최대 1200x1200 조건을 따른다.
+          Campaign launch requires an Ads Manager Beta account, advertiser account setup with name and favicon, billing profile/payment method, and prepared campaign/ad group/ad inputs.
+          Campaigns define objective, budget, and country targeting. Ad groups organize themes, intents, and context hints. Ads are the creative units shown to users.
+          For ads, required fields include ad group name, ad title, ad copy, landing page URL, and image URL.
+          Ad title guidance is 16-24 characters recommended and 50 characters maximum. Ad copy guidance is 32-48 characters recommended and 100 characters maximum.
+          Landing page URLs must be valid, reachable, and not blocked by OpenAI crawlers. Image URLs must be publicly accessible direct PNG or JPG files, square, and no larger than 1200 x 1200.
+      - title: "Create Ads for ChatGPT"
+        source_url: "https://help.openai.com/en/articles/20001212"
+        content: |
+          한국어 요약: 랜딩 URL은 가장 관련성 높은 목적지여야 하며, 유효하고 접근 가능해야 하고, OpenAI 사용자 에이전트 OAI-AdsBot 및 OAI-SearchBot을 차단하면 안 된다. UTM 등 추적 파라미터를 목적지 URL에 직접 붙일 수 있다.
+          ChatGPT ad titles and copy should be clear, specific, useful, and accurate. Ads should align with conversational user intent rather than keyword-only matching.
+          Landing pages should link to the most relevant destination, create a seamless path to action, and may include UTM tracking parameters directly in the destination URL.
+          Landing pages must use valid links and must not block OpenAI user agents OAI-AdsBot and OAI-SearchBot.
+          Images should be simple, relevant, uncluttered, and aligned with the ad message.
+      - title: "Overview of OpenAI Crawlers"
+        source_url: "https://developers.openai.com/api/docs/bots"
+        content: |
+          한국어 요약: OAI-AdsBot은 ChatGPT 광고로 제출된 랜딩 페이지의 안전성과 정책 준수 여부를 확인하는 광고 로봇이다. OAI-SearchBot은 ChatGPT 검색 결과 노출을 위한 검색 로봇이다.
+          OAI-AdsBot is used to validate the safety of web pages submitted as ads on ChatGPT. When an ad is submitted, OpenAI may visit the landing page to ensure it complies with policies.
+          OpenAI may also use landing page content to determine when the ad is most relevant to show to users. OAI-AdsBot only visits pages submitted as ads, and data collected by OAI-AdsBot is not used to train generative AI foundation models.
+          OAI-SearchBot is used to surface websites in search results in ChatGPT search features. To help ensure a site appears in search results, OpenAI recommends allowing OAI-SearchBot in robots.txt and allowing requests from published IP ranges.
+      - title: "OpenAI Ad Policies"
+        source_url: "https://openai.com/policies/ad-policies/"
+        content: |
+          OpenAI ads, landing pages, creatives, and claims must comply with OpenAI ad policies. Ads can be rejected if they are misleading, inconsistent with the landing page, unsafe, or include disallowed content.
+          Policy and brand-safety constraints can affect whether an ad is accepted or shown.
+      - title: "Testing ads in ChatGPT"
+        source_url: "https://openai.com/index/testing-ads-in-chatgpt/"
+        content: |
+          OpenAI announced testing ads in ChatGPT as a beta experience. Because the product is in beta, policy, eligibility, and operational details may change and should be reconfirmed on official pages or with OpenAI contacts.
   kr_ops:
     tier_label: "🟡국내운영"
     paths:
       - "data/kr_ops"
+    documents:
+      - title: "국내 운영 메모"
+        source_url: "internal://kr_ops/operating-notes"
+        content: |
+          나스미디어 영업 운영 메모: 광고주에게 안내할 때 공식 문서와 국내 운영 가이드가 충돌하면 공식 최대값과 국내 권장값을 함께 제시한다.
+          크리테오 원문은 인덱싱하지 않는다. 크리테오 경유 세부 조건, 청구, 인보이스, 최소 집행금액은 크리테오 코리아 확인이 필요하다.
+          베타 단계이므로 수치, 정책, 인벤토리, 검수 기준은 변동 가능성이 있다. 제안서 반영 전 OpenAI 공식 페이지와 담당자 확인을 우선한다.
+          광고주 준비물은 랜딩 URL, 파비콘 또는 로고 직접 이미지 URL, 제목/본문 문구, 이미지 소재 URL, 추적 파라미터 필요 여부이다.
   pending:
     tier_label: "⚠️확인대기"
     paths:
       - "data/pending"
+    documents:
+      - title: "확인 대기 6항목"
+        source_url: "internal://pending/openai-ads-beta-items"
+        content: |
+          아래 항목은 현재 OpenAI 확인 대기 중이다. 확정 회신 전에는 숫자나 확정 조건을 광고주 안내, 제안서, 운영 가이드에서 단정하지 않는다.
+          1. 한국 최소 집행금액 또는 최소 예산.
+          2. 10% 제한, 10% 관련 조건, 예산 또는 노출 관련 10% 룰.
+          3. VAT 별도 여부, 부가세 포함/별도 여부.
+          4. 트래커 집행 의무, 트래킹 파라미터 또는 써드파티 트래커 필수 여부.
+          5. 인벤토리 공유 가능 여부, 노출 인벤토리 또는 지면 상세 공유.
+          6. 한글 최대 자수, 한국어 글자 수 환산, 한글 기준 제목/본문 최대 자수.
+          답변 원칙: "현재 OpenAI 확인 대기 중입니다. 확정 후 정확히 안내드리겠습니다."
 
 ignored_local_patterns:
   - "*criteo*"

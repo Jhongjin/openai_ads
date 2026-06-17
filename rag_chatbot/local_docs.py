@@ -72,3 +72,31 @@ def load_local_documents(
             )
         )
     return documents
+
+
+def load_inline_documents(
+    entries: Iterable[dict],
+    *,
+    source_tier: str,
+) -> list[Document]:
+    documents: list[Document] = []
+    crawled_at = datetime.now(timezone.utc).isoformat()
+    for index, entry in enumerate(entries, start=1):
+        content = str(entry.get("content") or "").strip()
+        if not content:
+            continue
+        title = str(entry.get("title") or f"{source_tier} inline document {index}")
+        source_url = str(entry.get("source_url") or f"internal://{source_tier}/{index}")
+        documents.append(
+            Document(
+                page_content=content,
+                metadata={
+                    "source_tier": source_tier,
+                    "source_url": source_url,
+                    "title": title,
+                    "crawled_at": crawled_at,
+                    "inline_config": True,
+                },
+            )
+        )
+    return documents

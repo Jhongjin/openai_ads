@@ -41,7 +41,7 @@ class RuntimeSettings(BaseSettings):
         default="http://localhost:8000", alias="CHAT_API_BASE_URL"
     )
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
 
 
 def project_root() -> Path:
@@ -49,7 +49,9 @@ def project_root() -> Path:
 
 
 def load_settings() -> RuntimeSettings:
-    load_dotenv(project_root() / ".env")
+    root = project_root()
+    load_dotenv(root / ".env", override=False)
+    load_dotenv(root / ".env.local", override=False)
     return RuntimeSettings()
 
 

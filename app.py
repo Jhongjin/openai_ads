@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import os
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -61,6 +63,10 @@ class FaviconCheckResultResponse(BaseModel):
     preview_url: str | None
 
 
+class IngestResponse(BaseModel):
+    counts: dict[str, int]
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -77,6 +83,11 @@ def index() -> FileResponse:
 
 @app.get("/checker", include_in_schema=False)
 def checker_page() -> FileResponse:
+    return _index_file()
+
+
+@app.get("/rag", include_in_schema=False)
+def rag_page() -> FileResponse:
     return _index_file()
 
 
@@ -113,3 +124,19 @@ async def check_favicon(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return [FaviconCheckResultResponse(**result.to_dict()) for result in results]
+
+
+@app.post("/admin/reindex", response_model=IngestResponse, include_in_schema=False)
+async def admin_reindex(request: Request) -> IngestResponse:
+    token = os.getenv("INGEST_TOKEN")
+    provided = request.headers.get("x-ingest-token")
+    if not token or provided != token:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    try:
+        from rag_chatbot.ingestion import ingest_collections
+
+        counts = await asyncio.to_thread(ingest_collections)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return IngestResponse(counts=counts)

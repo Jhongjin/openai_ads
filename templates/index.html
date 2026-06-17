@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenAI 광고 셀프 체크</title>
+    <title>OpenAI 광고 사내 도구</title>
     <style>
       :root {
         --bg: #f5f7fb;
@@ -105,6 +105,94 @@
 
       .panel.active {
         display: block;
+      }
+
+      .chat-layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .chat-history {
+        display: grid;
+        min-height: 260px;
+        gap: 12px;
+      }
+
+      .chat-empty,
+      .message {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .chat-empty {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .message {
+        display: grid;
+        gap: 10px;
+      }
+
+      .message-question {
+        color: var(--ink);
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .message-answer {
+        color: #242a33;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .source-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .source-chip {
+        display: inline-flex;
+        max-width: 100%;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        padding: 5px 9px;
+        color: #344054;
+        font-size: 12px;
+        line-height: 1.25;
+        text-decoration: none;
+      }
+
+      .source-chip:hover {
+        border-color: #9db7ff;
+      }
+
+      .source-badge {
+        border-radius: 999px;
+        padding: 2px 6px;
+        font-weight: 800;
+      }
+
+      .source-badge.official {
+        background: #e0ecff;
+        color: #155eef;
+      }
+
+      .source-badge.kr_ops {
+        background: var(--gray-bg);
+        color: var(--gray-ink);
+      }
+
+      .source-badge.pending {
+        background: var(--orange-bg);
+        color: var(--orange-ink);
       }
 
       .input-band {
@@ -366,7 +454,7 @@
         .tabs {
           display: grid;
           width: 100%;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
         }
 
         .controls {
@@ -383,19 +471,42 @@
   <body>
     <main>
       <header>
-        <h1>OpenAI 광고 셀프 체크</h1>
-        <p class="subcopy">광고주 랜딩 URL과 파비콘 URL을 사전 점검합니다.</p>
+        <h1>OpenAI 광고 사내 도구</h1>
+        <p class="subcopy">광고 질문 답변과 랜딩 URL·파비콘 사전 점검을 한 곳에서 처리합니다.</p>
         <p class="sales-note">
-          광고주의 홈페이지 주소와 로고(파비콘) 이미지 주소를 넣으면, OpenAI 광고에 바로 쓸 수 있는지 자동으로 점검해 드립니다. 결과가 빨간색이어도 대부분 '수정하면 되는' 항목이니 권장 조치를 따라 주세요.
+          OpenAI 광고 관련 질문에 사내·공식 자료를 근거로 답합니다. 확인 대기 항목은 '확인 중'으로 안내되며, 임의로 추측하지 않습니다.
         </p>
       </header>
 
       <nav class="tabs" aria-label="검사 선택">
-        <button class="tab active" data-tab="crawler" type="button">랜딩 URL 검사</button>
+        <button class="tab active" data-tab="chat" type="button">RAG 챗봇</button>
+        <button class="tab" data-tab="crawler" type="button">랜딩 URL 검사</button>
         <button class="tab" data-tab="favicon" type="button">파비콘 검사</button>
       </nav>
 
-      <section class="panel active" id="crawler-panel">
+      <section class="panel active" id="chat-panel">
+        <div class="chat-layout">
+          <div class="chat-history" id="chat-history">
+            <div class="chat-empty">
+              질문을 입력하면 공식·내부운영·확인대기 근거를 함께 보여드립니다.
+            </div>
+          </div>
+
+          <div class="input-band">
+            <label for="chat-question">질문</label>
+            <textarea
+              id="chat-question"
+              placeholder="예: ChatGPT 광고 노출 위치가 어디야?&#10;예: 한국 최소 집행금액 얼마야?"
+            ></textarea>
+            <div class="controls">
+              <button class="primary" id="chat-send" type="button">질문하기</button>
+              <span class="hint">확인 대기 항목과 크리테오 세부사항은 고정 안내로 처리됩니다.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="crawler-panel">
         <div class="input-band">
           <label for="urls">랜딩 URL</label>
           <textarea
@@ -466,7 +577,10 @@
     </main>
 
     <div class="notice">
-      <span class="active" id="crawler-notice">
+      <span class="active" id="chat-notice">
+        ※ 베타 기준으로 정책·수치가 변동될 수 있습니다. 최종 확정은 OpenAI 공식 페이지 및 담당자 확인이 필요합니다.
+      </span>
+      <span id="crawler-notice">
         ※ 본 점검은 사이트의 크롤러 허용 설정(robots.txt) 기준 1차 셀프 체크입니다. 설정이 통과해도 Cloudflare·Akamai 등 방화벽이나 안티봇(403·429)에서 별도로 차단될 수 있습니다. 최종 확정은 광고주 개발팀의 실제 OpenAI 광고 로봇 접근 테스트가 필요합니다. (참고: openai.com/adsbot.json, openai.com/searchbot.json)
       </span>
       <span id="favicon-notice">
@@ -477,10 +591,12 @@
     <script>
       const tabs = document.querySelectorAll(".tab");
       const panels = {
+        chat: document.querySelector("#chat-panel"),
         crawler: document.querySelector("#crawler-panel"),
         favicon: document.querySelector("#favicon-panel"),
       };
       const notices = {
+        chat: document.querySelector("#chat-notice"),
         crawler: document.querySelector("#crawler-notice"),
         favicon: document.querySelector("#favicon-notice"),
       };
@@ -514,6 +630,10 @@
       const faviconResultsBody = document.querySelector("#favicon-results");
       let latestFaviconResults = [];
 
+      const chatInput = document.querySelector("#chat-question");
+      const chatSendButton = document.querySelector("#chat-send");
+      const chatHistory = document.querySelector("#chat-history");
+
       const crawlerVerdictLabel = {
         allow: "✅ 접근 가능",
         warn: "⚠️ 확인 필요",
@@ -525,6 +645,12 @@
         warn: "⚠️ 확인 필요",
         fail: "🚫 교체 필요",
         wait: "⏳ 대기",
+      };
+
+      const sourceTierLabel = {
+        official: "공식",
+        kr_ops: "내부운영",
+        pending: "확인대기",
       };
 
       function splitCrawlerUrls() {
@@ -546,6 +672,64 @@
         if (className) td.className = className;
         td.textContent = text || "";
         return td;
+      }
+
+      function clearChatEmpty() {
+        const empty = chatHistory.querySelector(".chat-empty");
+        if (empty) empty.remove();
+      }
+
+      function sourceElement(source) {
+        const href = source.source_url || "";
+        const wrapper =
+          href.startsWith("http://") || href.startsWith("https://")
+            ? document.createElement("a")
+            : document.createElement("span");
+        wrapper.className = "source-chip";
+        if (wrapper.tagName === "A") {
+          wrapper.href = href;
+          wrapper.target = "_blank";
+          wrapper.rel = "noreferrer";
+        }
+
+        const badge = document.createElement("span");
+        const tier = source.source_tier || "kr_ops";
+        badge.className = `source-badge ${tier}`;
+        badge.textContent = sourceTierLabel[tier] || tier;
+
+        const title = document.createElement("span");
+        title.textContent = source.title || href || "출처";
+        wrapper.append(badge, title);
+        return wrapper;
+      }
+
+      function appendChatMessage(question, answer, sources = []) {
+        clearChatEmpty();
+        const article = document.createElement("article");
+        article.className = "message";
+
+        const questionEl = document.createElement("div");
+        questionEl.className = "message-question";
+        questionEl.textContent = question;
+
+        const answerEl = document.createElement("div");
+        answerEl.className = "message-answer";
+        answerEl.textContent = answer || "응답이 비어 있습니다.";
+
+        const sourceList = document.createElement("div");
+        sourceList.className = "source-list";
+        if (sources.length) {
+          sources.forEach((source) => sourceList.append(sourceElement(source)));
+        } else {
+          const empty = document.createElement("span");
+          empty.className = "source-chip";
+          empty.textContent = "근거 없음";
+          sourceList.append(empty);
+        }
+
+        article.append(questionEl, answerEl, sourceList);
+        chatHistory.append(article);
+        article.scrollIntoView({ block: "end", behavior: "smooth" });
       }
 
       function renderCrawlerSummary(results) {
@@ -708,6 +892,45 @@
         downloadCsv("openai_ads_favicon_check.csv", header, rows);
       }
 
+      async function runChat() {
+        const question = chatInput.value.trim();
+        if (!question) {
+          chatInput.focus();
+          return;
+        }
+
+        chatSendButton.disabled = true;
+        chatSendButton.textContent = "답변 중";
+        chatInput.value = "";
+        appendChatMessage(question, "답변을 생성하고 있습니다.", []);
+        const pendingMessage = chatHistory.lastElementChild;
+
+        try {
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || response.statusText);
+          }
+          pendingMessage.remove();
+          appendChatMessage(question, payload.answer, payload.sources || []);
+        } catch (error) {
+          pendingMessage.remove();
+          appendChatMessage(
+            question,
+            `응답 오류 — ${error.message}`,
+            [],
+          );
+        } finally {
+          chatSendButton.disabled = false;
+          chatSendButton.textContent = "질문하기";
+          chatInput.focus();
+        }
+      }
+
       async function runCrawlerCheck() {
         const urls = splitCrawlerUrls();
         if (!urls.length) {
@@ -796,6 +1019,12 @@
         }
       }
 
+      chatSendButton.addEventListener("click", runChat);
+      chatInput.addEventListener("keydown", (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+          runChat();
+        }
+      });
       checkButton.addEventListener("click", runCrawlerCheck);
       downloadButton.addEventListener("click", downloadCrawlerCsv);
       faviconCheckButton.addEventListener("click", runFaviconCheck);
