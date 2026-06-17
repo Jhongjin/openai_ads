@@ -10,6 +10,7 @@ from rag_chatbot.mail_collector import (
     MailCollectorSettings,
     _imap_utf7_encode,
     parse_message,
+    render_approved_mail_markdown,
     record_message_diagnostics,
     render_mail_markdown,
 )
@@ -139,6 +140,48 @@ class MailCollectorTests(unittest.TestCase):
         self.assertEqual(safe["to_cc_openai_domain"], 1)
         self.assertNotIn("민감한 제목", str(safe))
         self.assertNotIn("민감한 본문", str(safe))
+
+    def test_sheet_rows_default_to_needs_review(self) -> None:
+        item = parse_message("105", message(sender="ads-korea@openai.com"), settings())
+        assert item is not None
+
+        row = item.to_sheet_row()
+
+        self.assertEqual(row["status"], "needs_review")
+        self.assertEqual(row["review_status"], "needs_review")
+        self.assertEqual(row["approved_summary"], "")
+        self.assertEqual(row["last_embedded_at"], "")
+
+    def test_approved_markdown_uses_only_manager_summary(self) -> None:
+        markdown = render_approved_mail_markdown(
+            [
+                {
+                    "subject": "민감한 원문 제목",
+                    "received_at": "2026-06-17 10:00:00 KST",
+                    "from_name": "OpenAI",
+                    "from_email": "ads-korea@openai.com",
+                    "message_id": "<mail-2@example.com>",
+                    "duplicate_hash": "abc123",
+                    "rag_document_id": "openai-mail-abc123",
+                    "approved_by": "manager",
+                    "approved_at": "2026-06-18",
+                    "approved_title": "승인된 운영 업데이트",
+                    "approved_summary": "승인된 확정 요약만 RAG에 반영한다.",
+                    "body_text": "원문 전체는 자동 인덱싱하지 않는다.",
+                },
+                {
+                    "subject": "요약 없는 승인 행",
+                    "approved_summary": "",
+                    "body_text": "이 내용도 들어가면 안 된다.",
+                },
+            ]
+        )
+
+        self.assertIn("승인된 확정 요약만 RAG에 반영한다.", markdown)
+        self.assertIn("승인된 운영 업데이트", markdown)
+        self.assertNotIn("민감한 원문 제목", markdown)
+        self.assertNotIn("원문 전체는 자동 인덱싱하지 않는다.", markdown)
+        self.assertNotIn("요약 없는 승인 행", markdown)
 
 
 if __name__ == "__main__":

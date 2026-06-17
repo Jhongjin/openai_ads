@@ -18,6 +18,14 @@ const MAIL_SHEET_HEADERS = [
   "duplicate_hash",
   "status",
   "last_embedded_at",
+  "review_status",
+  "review_note",
+  "approved_title",
+  "approved_summary",
+  "approved_by",
+  "approved_at",
+  "supersedes_duplicate_hash",
+  "rag_ingested_at",
 ];
 
 function doPost(e) {
@@ -30,8 +38,12 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "unauthorized" });
     }
 
-    const rows = normalizeRows_((payload.data && payload.data.rows) || payload.rows);
     const sheet = ensureSheet_(MAIL_SHEET_NAME, MAIL_SHEET_HEADERS);
+    if (payload.action === "approved_for_rag") {
+      return jsonResponse_(approvedRows_(sheet));
+    }
+
+    const rows = normalizeRows_((payload.data && payload.data.rows) || payload.rows);
     const existingHashes = existingHashSet_(sheet);
     const appendRows = rows.filter((row) => {
       const hash = String(row.duplicate_hash || "");
@@ -78,13 +90,70 @@ function existingHashSet_(sheet) {
 function ensureSheet_(sheetName, headers) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
-  const currentHeaders = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const width = Math.max(headers.length, sheet.getLastColumn() || headers.length);
+  const currentHeaders = sheet.getRange(1, 1, 1, width).getValues()[0];
   const needsHeader = currentHeaders.every((cell) => !cell);
   if (needsHeader) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.setFrozenRows(1);
+  } else {
+    const existing = new Set(currentHeaders.map((cell) => String(cell || "")));
+    const missing = headers.filter((header) => !existing.has(header));
+    if (missing.length) {
+      sheet.getRange(1, currentHeaders.length + 1, 1, missing.length).setValues([missing]);
+    }
   }
   return sheet;
+}
+
+function approvedRows_(sheet) {
+  const rows = objectRows_(sheet);
+  const supersededHashes = new Set(
+    rows
+      .map((row) => String(row.supersedes_duplicate_hash || "").trim())
+      .filter(Boolean),
+  );
+  const approved = [];
+  let skippedMissingSummary = 0;
+  let supersededRows = 0;
+
+  rows.forEach((row) => {
+    const reviewStatus = String(row.review_status || row.status || "").trim().toLowerCase();
+    const hash = String(row.duplicate_hash || "").trim();
+    if (reviewStatus !== "approved_for_rag") return;
+    if (hash && supersededHashes.has(hash)) {
+      supersededRows += 1;
+      return;
+    }
+    if (!String(row.approved_summary || "").trim()) {
+      skippedMissingSummary += 1;
+      return;
+    }
+    approved.push(row);
+  });
+
+  return {
+    ok: true,
+    rows: approved,
+    approvedRows: approved.length,
+    skippedMissingSummary,
+    supersededRows,
+  };
+}
+
+function objectRows_(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return [];
+  const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map((header) => String(header || ""));
+  const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  return values.map((row) => {
+    const item = {};
+    headers.forEach((header, index) => {
+      if (header) item[header] = row[index];
+    });
+    return item;
+  });
 }
 
 function normalizeRows_(rows) {

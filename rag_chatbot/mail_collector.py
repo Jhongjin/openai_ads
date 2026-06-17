@@ -33,6 +33,7 @@ DEFAULT_TARGET_SENDERS = (
 )
 DEFAULT_TARGET_RECIPIENTS = ("openai@nasmedia.co.kr",)
 DEFAULT_RAG_DOC_PATH = "data/kr_ops/openai_email_confirmations.md"
+DEFAULT_APPROVED_RAG_DOC_PATH = "data/kr_ops/openai_email_approved_updates.md"
 KST = ZoneInfo("Asia/Seoul")
 MAX_SHEET_CELL_CHARS = 45_000
 
@@ -180,6 +181,14 @@ class CollectedMail:
             "duplicate_hash": self.duplicate_hash,
             "status": self.status,
             "last_embedded_at": self.last_embedded_at,
+            "review_status": self.status,
+            "review_note": "",
+            "approved_title": "",
+            "approved_summary": "",
+            "approved_by": "",
+            "approved_at": "",
+            "supersedes_duplicate_hash": "",
+            "rag_ingested_at": "",
         }
 
 
@@ -324,8 +333,8 @@ def parse_message(
         tags=", ".join(tags),
         rag_document_id=rag_document_id,
         duplicate_hash=duplicate_hash,
-        status="rag_indexed_candidate",
-        last_embedded_at=collected_at_kst,
+        status="needs_review",
+        last_embedded_at="",
     )
 
 
@@ -409,6 +418,94 @@ def post_rows_to_sheet(messages: Iterable[CollectedMail], settings: MailCollecto
         return response.json()
     except json.JSONDecodeError:
         return {"ok": True, "posted": len(rows), "response": response.text[:500]}
+
+
+def fetch_approved_rows_from_sheet(settings: MailCollectorSettings) -> dict:
+    if not settings.webhook_url or not settings.webhook_secret:
+        return {
+            "ok": False,
+            "rows": [],
+            "error": "MAIL_COLLECTOR_SHEETS_WEBHOOK_URL/SECRET not set",
+        }
+    response = httpx.post(
+        settings.webhook_url,
+        json={"secret": settings.webhook_secret, "action": "approved_for_rag"},
+        timeout=30,
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        return {"ok": False, "rows": [], "error": "Unexpected approved rows response"}
+    rows = payload.get("rows") or []
+    if not isinstance(rows, list):
+        return {"ok": False, "rows": [], "error": "Approved rows response did not include rows[]"}
+    payload["rows"] = rows
+    return payload
+
+
+def render_approved_mail_markdown(rows: Iterable[dict]) -> str:
+    approved_rows = [
+        row for row in rows if str(row.get("approved_summary") or "").strip()
+    ]
+    generated_at = _now_kst()
+    lines = [
+        "# 승인된 OpenAI 담당자 이메일 확정사항",
+        "",
+        "출처 등급: 나스미디어 내부 자료",
+        "출처명: OpenAI 담당자 이메일 회신 승인본",
+        f"문서 생성일시(KST): {generated_at}",
+        "",
+        "이 문서는 Google Sheet에 영구 누적된 OpenAI 광고 관련 메일 중",
+        "관리자가 `review_status=approved_for_rag`로 승인하고 `approved_summary`를 작성한 행만 RAG에 반영한다.",
+        "원문 메일 전체를 자동 인덱싱하지 않으며, 이전 내용이 변경된 경우 기존 행은 `superseded` 처리하거나",
+        "새 행의 `supersedes_duplicate_hash`에 이전 중복 해시를 기입한다.",
+        "",
+    ]
+    for index, row in enumerate(approved_rows, start=1):
+        summary = _normalize_text(str(row.get("approved_summary") or ""))
+        title = str(row.get("approved_title") or "").strip() or f"OpenAI 담당자 이메일 승인 사항 {index}"
+        duplicate_hash = str(row.get("duplicate_hash") or "").strip()
+        source_id = str(row.get("rag_document_id") or "").strip() or (
+            f"openai-mail-{duplicate_hash[:16]}" if duplicate_hash else f"openai-mail-approved-{index}"
+        )
+        lines.extend(
+            [
+                f"## {index}. {title}",
+                "",
+                f"- RAG 문서 ID: {source_id}",
+                f"- 메일 수신일시: {row.get('received_at') or '-'}",
+                f"- 발신자: {row.get('from_name') or '-'} <{row.get('from_email') or '-'}>",
+                f"- Message-ID: {row.get('message_id') or '-'}",
+                f"- 중복 해시: {duplicate_hash or '-'}",
+                f"- 승인자: {row.get('approved_by') or '-'}",
+                f"- 승인일시: {row.get('approved_at') or '-'}",
+                f"- 대체한 이전 해시: {row.get('supersedes_duplicate_hash') or '-'}",
+                "",
+                "### 승인 요약",
+                "",
+                summary,
+                "",
+            ]
+        )
+        note = _normalize_text(str(row.get("review_note") or ""))
+        if note:
+            lines.extend(["### 검토 메모", "", note, ""])
+    return "\n".join(lines).strip() + "\n"
+
+
+def write_approved_mail_markdown(rows: Iterable[dict], path_value: str | Path) -> Path | None:
+    rows = [row for row in rows if str(row.get("approved_summary") or "").strip()]
+    path = Path(path_value)
+    if not path.is_absolute():
+        path = project_root() / path
+    if not rows:
+        if path.exists():
+            path.unlink()
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_approved_mail_markdown(rows), encoding="utf-8")
+    return path
 
 
 def _bool_env(name: str, default: bool) -> bool:
@@ -653,7 +750,18 @@ def main(argv: list[str] | None = None) -> int:
         "--write-rag-doc",
         nargs="?",
         const=DEFAULT_RAG_DOC_PATH,
-        help="Write matching emails to a temporary kr_ops markdown file.",
+        help="Legacy/unsafe: write raw matching emails to a temporary kr_ops markdown file.",
+    )
+    parser.add_argument(
+        "--write-approved-rag-doc",
+        nargs="?",
+        const=DEFAULT_APPROVED_RAG_DOC_PATH,
+        help="Fetch manager-approved mail summaries from Google Sheet and write only those to kr_ops.",
+    )
+    parser.add_argument(
+        "--require-approved-summary",
+        action="store_true",
+        help="Fail approved RAG sync if approved rows exist without approved_summary.",
     )
     parser.add_argument("--post-sheet", action="store_true", help="Post matching rows to Google Sheets webhook.")
     parser.add_argument("--require-sheet", action="store_true", help="Fail if sheet posting is requested but not configured.")
@@ -663,6 +771,36 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     settings = MailCollectorSettings.from_env(top_override=args.top)
+
+    if args.write_approved_rag_doc:
+        approved_payload = fetch_approved_rows_from_sheet(settings)
+        if not approved_payload.get("ok"):
+            raise RuntimeError(str(approved_payload.get("error") or approved_payload))
+        rows = list(approved_payload.get("rows") or [])
+        missing_summary = int(approved_payload.get("skippedMissingSummary") or 0)
+        if args.require_approved_summary and missing_summary:
+            raise RuntimeError(
+                f"{missing_summary} approved mail rows are missing approved_summary. "
+                "Fill approved_summary or change review_status before RAG sync."
+            )
+        written = write_approved_mail_markdown(rows, args.write_approved_rag_doc)
+        if written:
+            print(f"[ok] wrote approved RAG mail document: {written}")
+        else:
+            print("[ok] no approved mail RAG document written")
+        print(
+            "[approved-sheet] "
+            + json.dumps(
+                {
+                    "approvedRows": len(rows),
+                    "skippedMissingSummary": missing_summary,
+                    "supersededRows": int(approved_payload.get("supersededRows") or 0),
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
+
     diagnostics = MailDiagnostics() if args.diagnostics else None
     messages = collect_matching_messages(settings, diagnostics=diagnostics)
     print(f"[ok] matched OpenAI mail messages: {len(messages)}")

@@ -26,7 +26,7 @@ jobs:
       MAIL_COLLECTOR_USER: ${{ secrets.MAIL_COLLECTOR_USER }}
       MAIL_COLLECTOR_PASSWORD: ${{ secrets.MAIL_COLLECTOR_PASSWORD }}
       MAIL_COLLECTOR_FOLDER: ${{ secrets.MAIL_COLLECTOR_FOLDER || 'INBOX' }}
-      MAIL_COLLECTOR_TOP: ${{ secrets.MAIL_COLLECTOR_TOP || '50' }}
+      MAIL_COLLECTOR_TOP: ${{ secrets.MAIL_COLLECTOR_TOP || '1000' }}
       MAIL_COLLECTOR_TARGET_RECIPIENTS: openai@nasmedia.co.kr
       MAIL_COLLECTOR_TARGET_SENDERS: michaelcho@openai.com,harrisonk@openai.com,ads-korea@openai.com,nigel@openai.com
       MAIL_COLLECTOR_SHEETS_WEBHOOK_URL: ${{ secrets.MAIL_COLLECTOR_SHEETS_WEBHOOK_URL }}
@@ -45,7 +45,10 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Collect matching OpenAI manager mail
-        run: python -m rag_chatbot.mail_collector --diagnostics --write-rag-doc data/kr_ops/openai_email_confirmations.md --post-sheet
+        run: python -m rag_chatbot.mail_collector --diagnostics --post-sheet
 
-      - name: Reindex kr_ops with collected mail document
+      - name: Build approved mail RAG document
+        run: python -m rag_chatbot.mail_collector --write-approved-rag-doc data/kr_ops/openai_email_approved_updates.md --require-approved-summary
+
+      - name: Reindex kr_ops with approved mail document
         run: python ingest.py --collection kr_ops
