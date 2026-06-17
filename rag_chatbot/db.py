@@ -39,7 +39,9 @@ def db_connection(
     settings = settings or load_settings()
     require_supabase_db_url(settings)
     schema = _validate_schema_name(settings.supabase_schema)
-    kwargs = {"row_factory": row_factory} if row_factory is not None else {}
+    kwargs = {"prepare_threshold": None}
+    if row_factory is not None:
+        kwargs["row_factory"] = row_factory
     with psycopg.connect(settings.supabase_db_url, **kwargs) as conn:
         conn.execute(
             sql.SQL("set search_path to {}, public, extensions").format(
@@ -281,31 +283,32 @@ def insert_documents(
         return
 
     with db_connection(settings) as conn:
-        conn.executemany(
-            sql.SQL(
-                """
-                insert into {}.documents (
-                    id,
-                    collection,
-                    source_tier,
-                    source_url,
-                    title,
-                    content,
-                    chunk_index,
-                    lang,
-                    article_id,
-                    content_hash,
-                    source_updated_at,
-                    source_updated_at_is_fallback,
-                    crawled_at,
-                    metadata,
-                    embedding
-                )
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
-                """
-            ).format(sql.Identifier(schema)),
-            rows,
-        )
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                sql.SQL(
+                    """
+                    insert into {}.documents (
+                        id,
+                        collection,
+                        source_tier,
+                        source_url,
+                        title,
+                        content,
+                        chunk_index,
+                        lang,
+                        article_id,
+                        content_hash,
+                        source_updated_at,
+                        source_updated_at_is_fallback,
+                        crawled_at,
+                        metadata,
+                        embedding
+                    )
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
+                    """
+                ).format(sql.Identifier(schema)),
+                rows,
+            )
 
 
 def fetch_similar_documents(
