@@ -100,7 +100,7 @@ def _kr_ops_confirmed_source_payload() -> list[dict[str, Any]]:
             "collection": "kr_ops",
             "score": 1.0,
             "source_tier": "kr_ops",
-            "title": "OpenAI·크리테오 확정 운영 회신",
+            "title": "OpenAI/크리테오 확정 회신(2026-06-17)",
             "source_url": "internal://kr_ops/openai-criteo-confirmed-2026-06",
             "source_updated_at": "2026-06-17",
             "source_updated_at_is_fallback": False,
@@ -114,7 +114,7 @@ def _pending_route_source_payload() -> list[dict[str, Any]]:
             "collection": "pending",
             "score": 1.0,
             "source_tier": "pending",
-            "title": "확인 대기 6항목",
+            "title": "확인 대기 항목",
             "source_url": "internal://pending/openai-ads-beta-items",
         }
     ]
@@ -130,30 +130,51 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
     is_direct = any(term in lowered for term in ("openai 직접", "openai", "cbt", "직접"))
     is_both_route = is_criteo and is_direct
 
+    if "슬라이드" in lowered and _contains_any(lowered, ("최소 집행", "최소 예산", "금액")):
+        return '광고주 전달용 슬라이드에는 "최소 집행 약정 400만원 / 상세 조건은 영업 담당 안내" 톤으로 표기합니다. 크리테오 1,000만원 조건은 슬라이드에 직접 박지 않고 내부 영업 안내로 처리합니다.'
+
     if _contains_any(lowered, ("최소 집행", "최소 예산", "minimum spend")):
         if is_both_route:
             return (
-                "최소 집행금액은 경로별로 다릅니다. OpenAI 직접(CBT)은 400만원 Net 기준이고, "
-                "크리테오 경유는 캠페인별 월 기준 2,500만원입니다. "
-                "크리테오 세부 수수료 등은 크리테오 코리아 확인이 필요합니다."
+                "최소 집행금액은 경로별로 다릅니다. OpenAI 직접(CBT)은 400만원 Net 기준이며 "
+                "기간 제한 없이 광고비 소진 시까지 운영됩니다. 크리테오 경유는 1,000만원 Net 기준, "
+                "월 단위 구좌제로 1개월 무제한 노출 조건입니다."
             )
         if is_criteo:
             return (
-                "크리테오 경유 최소 집행금액은 캠페인별 월 기준 2,500만원입니다. "
-                "세부 수수료 등은 크리테오 코리아 확인이 필요합니다."
+                "크리테오 경유 최소 집행금액은 1,000만원 Net 기준입니다. "
+                "월 단위 구좌제로 운영되며 1개월 무제한 노출 조건입니다."
             )
         if is_direct:
-            return "OpenAI 직접(CBT) 최소 집행금액은 400만원이며 Net 기준입니다."
+            return (
+                "OpenAI 직접(CBT) 최소 집행금액은 400만원 Net 기준입니다. "
+                "기간 제한은 없고 광고비 소진 시까지 운영됩니다."
+            )
         return (
-            "최소 집행금액은 경로별로 다릅니다. OpenAI 직접(CBT)은 400만원 Net 기준이고, "
-            "크리테오 경유는 캠페인별 월 기준 2,500만원입니다. "
-            "크리테오 세부 수수료 등은 크리테오 코리아 확인이 필요합니다."
+            "최소 집행금액은 경로별로 다릅니다. OpenAI 직접(CBT)은 400만원 Net 기준이며 "
+            "기간 제한 없이 광고비 소진 시까지 운영됩니다. 크리테오 경유는 1,000만원 Net 기준, "
+            "월 단위 구좌제로 1개월 무제한 노출 조건입니다."
+        )
+
+    if _contains_any(lowered, ("vat", "부가세", "세금", "세금id", "tax", "brn", "사업자등록")):
+        return "VAT는 한국 사업자등록번호(BRN)/세금ID 제공 시 0%, 미제공 시 10%로 적용됩니다."
+
+    if _contains_any(lowered, ("트래커", "트래킹", "픽셀", "tracker", "전환 추적", "conversion")):
+        return (
+            "전환 추적(트래커)은 노출/클릭 캠페인에서는 필수는 아니지만 강력 권장됩니다. "
+            "향후 전환 최적화 캠페인은 전환 추적 설정이 필요합니다."
+        )
+
+    if _contains_any(lowered, ("수수료", "마크업", "fee", "commission", "호스팅", "카페24", "메이크샵")):
+        return (
+            "OpenAI CBT와 크리테오 경유 모두 마크업 진행이 필요합니다. "
+            "크리테오는 호스팅사(카페24, 메이크샵 등) 연동 운영 시 호스팅 fee 5%가 발생합니다."
         )
 
     if _contains_any(lowered, ("10%", "10％", "10퍼", "십프로", "노출 제한")):
         return (
-            "한국 런칭 초기에는 전체 광고 자격 유저의 10%에게 노출 후 점진 확대됩니다. "
-            "크리테오 경유 캠페인도 동일하게 적용되며 예외는 없습니다."
+            "CBT·런칭 초기에는 한국 유저(Free&Go) 10%에게 노출 후 점진 확대됩니다. "
+            "크리테오 경유도 동일하게 적용되며 예외는 없습니다."
         )
 
     if _contains_any(lowered, ("인벤토리", "inventory", "유저 풀", "풀 공유")):
@@ -164,26 +185,78 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
 
     if _contains_any(lowered, ("입찰", "과금", "cpc", "cpm", "bid", "billing")):
         if is_both_route:
-            return "입찰/과금 방식은 OpenAI CBT는 CPC·CPM 모두 가능하고, 크리테오 경유는 CPM만 가능합니다."
+            return (
+                "입찰/과금 방식은 OpenAI CBT는 CPC·CPM 선택 가능하고 최대 입찰가 조정도 가능합니다. "
+                "크리테오 경유는 CPM만 가능하며 입찰 조정은 불가합니다. 입찰 단위는 KRW입니다."
+            )
         if is_criteo:
             return (
-                "크리테오 경유는 CPM만 가능합니다. "
-                "세부 수수료 등은 크리테오 코리아 확인이 필요합니다."
+                "크리테오 경유는 CPM만 가능하며 입찰 조정은 불가합니다. 입찰 단위는 KRW입니다."
             )
         if is_direct:
-            return "OpenAI CBT는 CPC와 CPM 모두 가능합니다."
-        return "입찰/과금 방식은 OpenAI CBT는 CPC·CPM 모두 가능하고, 크리테오 경유는 CPM만 가능합니다."
+            return (
+                "OpenAI CBT는 CPC와 CPM을 선택할 수 있고 최대 입찰가(CPM·CPC) 조정이 가능합니다. "
+                "캠페인 레벨은 예산(총액/일), 광고그룹 레벨은 CPM/CPC 최대 입찰가 단위이며 입찰 단위는 KRW입니다. "
+                "최대 입찰가 상향은 노출 개선에 도움될 수 있지만 relevance-weighted, second-price auction 구조상 노출량 증가나 보장은 아닙니다."
+            )
+        return (
+            "입찰/과금 방식은 OpenAI CBT는 CPC·CPM 선택 가능하고 최대 입찰가 조정도 가능합니다. "
+            "크리테오 경유는 CPM만 가능하며 입찰 조정은 불가합니다. 입찰 단위는 KRW입니다. "
+            "최대 입찰가 상향은 노출 개선에 도움될 수 있지만 노출량 증가나 보장은 아닙니다."
+        )
 
     if _contains_any(lowered, ("인보이스", "invoice", "청구", "정산")):
         if is_criteo:
             return (
                 "크리테오 인보이스 방식은 기존 크리테오 광고 상품 정산과 동일 방식 예정입니다. "
-                "단, 추후 변경될 수 있습니다. 세부 수수료 등은 크리테오 코리아 확인이 필요합니다."
+                "단, 추후 변경될 수 있습니다. 미집행 계정 페널티는 없고 실제 집행분만 청구됩니다."
             )
         return (
             "OpenAI 인보이스는 나스미디어가 광고 계정 전체를 통합해 단일 인보이스를 발행하고, "
-            "인보이스 내 광고주별 집행금액을 개별 표기합니다."
+            "인보이스 내 광고주별 집행금액을 개별 표기합니다. 실제 집행분 기준 익월 첫 영업일 7일 이내 발행되며, "
+            "미집행 계정 페널티는 없고 실제 집행분만 청구됩니다."
         )
+
+    if _contains_any(lowered, ("예산 한도", "cap", "캡", "예산 변경", "한도 변경")):
+        return (
+            "예산 한도(Cap)는 변경 가능하지만 OpenAI 측 별도 요청이 필요하고 시간이 소요됩니다. "
+            "운영 중 확대 가능성이 있으면 사전 요청을 권장합니다."
+        )
+
+    if _contains_any(lowered, ("랜딩", "외부몰", "자사몰", "스마트스토어", "브랜드스토어", "쿠팡", "올리브영")):
+        return (
+            "랜딩 페이지는 자사몰과 외부몰(네이버 브랜드스토어·스마트스토어, 쿠팡, 올리브영 등) 제품 페이지 모두 허용됩니다. "
+            "단, OpenAI 크롤러가 접근 가능해야 합니다. 트래커 advertiser URL은 정책 심사용으로 공식 홈페이지를 권장합니다."
+        )
+
+    if _contains_any(lowered, ("불가 업종", "제한 업종", "금융", "건강", "의료", "보험", "카드", "대출", "의약품", "건기식")):
+        return (
+            "금융·건강/의료는 불가 업종이나 협의 후 진행 가능한 케이스가 있어 매체 측 재확인을 권장합니다. "
+            "금융은 예금/계좌, 신용카드, 보험, 자동차 대출/리스, 주택담보 대출, 투자/증권/로보어드바이저가 허용 세부 범위입니다. "
+            "건강/의료는 일반의약품(OTC), 건강기능식품/영양제가 허용 세부 범위입니다."
+        )
+
+    if _contains_any(lowered, ("차이", "다른", "비교", "셀프서브", "소재 세팅", "소재세팅", "세팅", "운영 방식")) and (
+        is_criteo or is_direct or "openai" in lowered
+    ):
+        return (
+            "OpenAI 직접은 광고계정에 접근해 셀프서브로 세팅·운영하는 방식입니다. 글로벌 소통 구조라 이슈 발생 시 커뮤니케이션 시간이 오래 걸릴 수 있습니다. "
+            "크리테오 경유는 캠페인 브리프와 소재를 전달하면 크리테오가 직접 세팅해 안정적으로 운영할 수 있습니다."
+        )
+
+    if _contains_any(lowered, ("문제", "이슈", "문의", "헬프센터", "support", "지원")):
+        if is_criteo:
+            return "크리테오 경유 운영 중 개별 이슈는 크리테오 코리아 담당자 측과 확인해 처리합니다."
+        return "OpenAI 직접 운영 문제는 ChatGPT Ads 헬프센터를 참고하거나 ads-support@openai.com으로 문의합니다. 단, 글로벌 소통 구조라 시간이 소요될 수 있습니다."
+
+    if _contains_any(lowered, ("런칭", "런칭일", "일정", "오픈", "출시", "정식")):
+        return (
+            "한국 런칭은 2026년 6월 18일 확정입니다. 시차로 계정별 실제 적용 시점은 다를 수 있습니다. "
+            "정식 오픈은 7월 중순 예정(셀프서브)이며, 크리테오는 2026년 6월 18일 정식 런칭으로 CBT 개념은 아닙니다."
+        )
+
+    if _contains_any(lowered, ("벤치마크", "레퍼런스", "공개 사례", "평균 성과", "표준 벤치마크")):
+        return "글로벌·한국 모두 초기 단계라 현재 공개 사례나 표준 벤치마크는 없습니다. 업데이트 시 추가 안내 예정입니다."
 
     if _contains_any(
         lowered,
@@ -201,6 +274,13 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
         return (
             "한글 소재 최대 자수는 경로별로 다릅니다. OpenAI 직접은 제목 최대 50자(16~24자 권장), "
             "설명 최대 100자(32~48자 권장)입니다. 크리테오 경유는 제목 30자, 설명 60자이며 국문 띄어쓰기를 포함합니다."
+        )
+
+    if is_criteo:
+        return (
+            "크리테오 경유 확정 운영값 기준으로, 최소 집행금액은 1,000만원 Net이며 월 단위 구좌제(1개월 무제한 노출)입니다. "
+            "과금은 CPM만 가능하고 입찰 조정은 불가합니다. 캠페인 브리프와 소재를 전달하면 크리테오가 직접 세팅하며, "
+            "운영 중 개별 이슈는 크리테오 코리아 담당자 확인이 필요합니다."
         )
 
     return None
@@ -234,11 +314,6 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
         }
 
     if is_criteo_query(normalized):
-        if is_criteo_confirmed_query(normalized):
-            return {
-                "answer": criteo_route_answer(),
-                "sources": _route_source_payload(),
-            }
         return {"answer": criteo_route_answer(), "sources": _route_source_payload()}
 
     from .retrieval import retrieve
