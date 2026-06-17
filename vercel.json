@@ -19,6 +19,10 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/check-favicon",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/checker",
       "destination": "/api/index.py"
     }

@@ -39,6 +39,26 @@ class CheckResultResponse(BaseModel):
     robots_txt: str
 
 
+class FaviconCheckRequest(BaseModel):
+    urls: list[str] = Field(..., min_length=1, max_length=100)
+
+
+class FaviconCheckResultResponse(BaseModel):
+    input_url: str
+    normalized_url: str
+    verdict: str
+    badge: str
+    size: str
+    width: int | None
+    height: int | None
+    format: str
+    background: str
+    reason: str
+    action: str
+    http_status: int | None
+    preview_url: str | None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -74,3 +94,16 @@ async def check(request: CheckRequest) -> list[CheckResultResponse]:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return [CheckResultResponse(**result.to_dict()) for result in results]
+
+
+@app.post("/check-favicon", response_model=list[FaviconCheckResultResponse])
+async def check_favicon(
+    request: FaviconCheckRequest,
+) -> list[FaviconCheckResultResponse]:
+    try:
+        from favicon_checker import check_favicon_urls
+
+        results = await check_favicon_urls(request.urls)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return [FaviconCheckResultResponse(**result.to_dict()) for result in results]

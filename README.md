@@ -32,6 +32,27 @@ Invoke-RestMethod -Method Post `
 - 특정 봇만 있고 OAI 또는 `*` 그룹이 없으면: `⚠️ 개발팀 확인 권장`
 - 기본 판정이 `✅`여도 입력 URL path가 적용 그룹의 `Disallow`에 걸리면 `⚠️`로 낮춥니다.
 
+## 파비콘 규격 셀프 체크
+
+첫 화면의 `파비콘 검사` 탭 또는 `POST /check-favicon`에서 OpenAI 광고 등록용 파비콘 URL을 1차 점검합니다.
+
+- 줄바꿈 또는 쉼표로 여러 URL을 입력합니다.
+- `TBD` 또는 빈 값은 `⏳ 광고주 회신 대기`로 분류합니다.
+- Google Drive/Docs 공유 뷰어 링크, `/view`, `?usp=sharing`, `text/html` 응답은 직접 이미지 링크가 아니므로 `🚫`로 판정합니다.
+- `image/*` 응답만 Pillow로 열어 실제 픽셀을 검사합니다.
+- `.ico`는 포함된 최대 해상도 프레임 기준으로 판정합니다.
+- 256×256 미만은 `🚫`, 비정사각형/투명 배경은 `⚠️`, 직접 링크 + 256×256 이상 + 정사각형 + 불투명 배경은 `✅`입니다.
+- 파일명에 `16x16`, `32x32` 등이 있으면 실측과 별개로 저해상도 의심을 사유에 병기합니다.
+
+API 직접 호출:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8000/check-favicon `
+  -ContentType "application/json" `
+  -Body '{"urls":["https://example.com/favicon.png","TBD"]}'
+```
+
 ## 구조
 
 - `official`: OpenAI 공식 Help Center, 정책, 공지 URL
@@ -40,6 +61,7 @@ Invoke-RestMethod -Method Post `
 - 벡터 저장소: Supabase Postgres + `pgvector`
 - DB schema: `openai_ads_rag`
 - 크롤러 체크 API: `POST /check`
+- 파비콘 체크 API: `POST /check-favicon`
 - RAG 챗 API: `POST /chat`
 
 크리테오 원문은 인덱싱하지 않습니다. 로컬 문서 파일명에 `criteo`, `Criteo`, `CRITEO`, `크리테오`가 포함되면 자동 제외됩니다.
@@ -109,13 +131,13 @@ Streamlit:
 streamlit run ui.py
 ```
 
-Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다. `/check`는 robots.txt 셀프 체크, `/chat`은 RAG Q&A입니다.
+Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다. `/check`는 robots.txt 셀프 체크, `/check-favicon`은 파비콘 규격 체크, `/chat`은 RAG Q&A입니다.
 
 검증:
 
 ```powershell
 python -m unittest discover -s tests
-python -B -m py_compile app.py checker.py ingest.py ui.py api\index.py
+python -B -m py_compile app.py checker.py favicon_checker.py ingest.py ui.py api\index.py
 ```
 
 RAG API 직접 호출:
@@ -159,3 +181,23 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. Vercel은 채팅 API와 정적 UI를 서빙하고, 재크롤링/재인덱싱은 로컬 또는 별도 배치에서 실행하는 구조입니다.
 
 크롤러 셀프 체크(`/check`)는 Supabase 인덱싱 없이도 동작합니다.
+
+파비콘 셀프 체크(`/check-favicon`)도 Supabase 인덱싱 없이 동작합니다.
+
+## 연동 필요 정보
+
+Vercel:
+
+- GitHub repo: `https://github.com/Jhongjin/openai_ads.git`
+- Framework: FastAPI/Python Function
+- Entry: `api/index.py`가 루트 `app.py`의 `app`을 import
+- Python version: `.python-version`의 `3.12`
+- Environment Variables: 위 `Vercel 배포` 섹션의 값
+
+Supabase:
+
+- Project URL: `https://yotbhhtwvvshwxxcxazl.supabase.co`
+- Database connection string: Supabase Dashboard에서 복사한 pooled Postgres URL
+- Schema: `openai_ads_rag`
+- Migration: `supabase/migrations/001_openai_ads_rag.sql`
+- Required extension: `vector` (`pgvector`)

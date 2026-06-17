@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OAI 광고 크롤러 셀프 체크</title>
+    <title>OpenAI 광고 셀프 체크</title>
     <style>
       :root {
         --bg: #f5f7fb;
@@ -19,6 +19,8 @@
         --orange-ink: #915c00;
         --red-bg: #fde9e8;
         --red-ink: #b42318;
+        --gray-bg: #eef2f6;
+        --gray-ink: #475467;
       }
 
       * {
@@ -39,11 +41,11 @@
       main {
         width: min(1180px, 100%);
         margin: 0 auto;
-        padding: 28px 22px 96px;
+        padding: 28px 22px 112px;
       }
 
       header {
-        margin-bottom: 22px;
+        margin-bottom: 18px;
       }
 
       h1 {
@@ -57,6 +59,41 @@
         color: var(--muted);
         font-size: 15px;
         line-height: 1.5;
+      }
+
+      .tabs {
+        display: inline-flex;
+        gap: 4px;
+        margin: 0 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 4px;
+      }
+
+      .tab {
+        min-height: 36px;
+        border: 0;
+        border-radius: 6px;
+        padding: 0 14px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        background: var(--blue);
+        color: #fff;
+      }
+
+      .panel {
+        display: none;
+      }
+
+      .panel.active {
+        display: block;
       }
 
       .input-band {
@@ -147,7 +184,7 @@
 
       table {
         width: 100%;
-        min-width: 900px;
+        min-width: 960px;
         border-collapse: collapse;
       }
 
@@ -180,7 +217,7 @@
       .badge {
         display: inline-flex;
         align-items: center;
-        min-width: 74px;
+        min-width: 76px;
         justify-content: center;
         border-radius: 999px;
         padding: 5px 10px;
@@ -189,7 +226,8 @@
         white-space: nowrap;
       }
 
-      .badge.allow {
+      .badge.allow,
+      .badge.pass {
         background: var(--green-bg);
         color: var(--green-ink);
       }
@@ -199,9 +237,15 @@
         color: var(--orange-ink);
       }
 
-      .badge.block {
+      .badge.block,
+      .badge.fail {
         background: var(--red-bg);
         color: var(--red-ink);
+      }
+
+      .badge.wait {
+        background: var(--gray-bg);
+        color: var(--gray-ink);
       }
 
       details {
@@ -226,6 +270,31 @@
         word-break: break-word;
       }
 
+      .preview {
+        width: 52px;
+        height: 52px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background:
+          linear-gradient(45deg, #eceff3 25%, transparent 25%),
+          linear-gradient(-45deg, #eceff3 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #eceff3 75%),
+          linear-gradient(-45deg, transparent 75%, #eceff3 75%);
+        background-color: #fff;
+        background-position:
+          0 0,
+          0 8px,
+          8px -8px,
+          -8px 0;
+        background-size: 16px 16px;
+        object-fit: contain;
+      }
+
+      .no-preview {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
       .notice {
         position: fixed;
         right: 0;
@@ -240,13 +309,27 @@
         box-shadow: 0 -6px 18px rgb(15 23 42 / 8%);
       }
 
+      .notice span {
+        display: none;
+      }
+
+      .notice span.active {
+        display: block;
+      }
+
       @media (max-width: 720px) {
         main {
-          padding: 20px 14px 132px;
+          padding: 20px 14px 148px;
         }
 
         h1 {
           font-size: 22px;
+        }
+
+        .tabs {
+          display: grid;
+          width: 100%;
+          grid-template-columns: 1fr 1fr;
         }
 
         .controls {
@@ -263,47 +346,115 @@
   <body>
     <main>
       <header>
-        <h1>OAI 광고 크롤러 셀프 체크</h1>
-        <p class="subcopy">
-          광고주 랜딩 URL을 입력하면 robots.txt 기준으로 OAI-AdsBot / OAI-SearchBot 접근 가능 여부를 1차 확인합니다.
-        </p>
+        <h1>OpenAI 광고 셀프 체크</h1>
+        <p class="subcopy">광고주 랜딩 URL과 파비콘 URL을 사전 점검합니다.</p>
       </header>
 
-      <section class="input-band">
-        <label for="urls">랜딩 URL</label>
-        <textarea
-          id="urls"
-          placeholder="https://example.com/landing&#10;https://example.co.kr/event/page"
-        ></textarea>
-        <div class="controls">
-          <button class="primary" id="check" type="button">점검하기</button>
-          <button class="secondary" id="download" type="button" disabled>CSV 내보내기</button>
-          <span class="hint">여러 개는 줄바꿈으로 입력하세요. URL당 robots.txt 요청 타임아웃은 10초입니다.</span>
+      <nav class="tabs" aria-label="검사 선택">
+        <button class="tab active" data-tab="crawler" type="button">크롤러 검사</button>
+        <button class="tab" data-tab="favicon" type="button">파비콘 검사</button>
+      </nav>
+
+      <section class="panel active" id="crawler-panel">
+        <div class="input-band">
+          <label for="urls">랜딩 URL</label>
+          <textarea
+            id="urls"
+            placeholder="https://example.com/landing&#10;https://example.co.kr/event/page"
+          ></textarea>
+          <div class="controls">
+            <button class="primary" id="check" type="button">점검하기</button>
+            <button class="secondary" id="download" type="button" disabled>CSV 내보내기</button>
+            <span class="hint">여러 개는 줄바꿈으로 입력하세요. URL당 robots.txt 요청 타임아웃은 10초입니다.</span>
+          </div>
         </div>
+
+        <div class="summary" id="summary"></div>
+
+        <section class="table-wrap" id="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>입력 URL</th>
+                <th>판정</th>
+                <th>사유</th>
+                <th>권장 조치</th>
+              </tr>
+            </thead>
+            <tbody id="results"></tbody>
+          </table>
+        </section>
       </section>
 
-      <div class="summary" id="summary"></div>
+      <section class="panel" id="favicon-panel">
+        <div class="input-band">
+          <label for="favicon-urls">파비콘 URL</label>
+          <textarea
+            id="favicon-urls"
+            placeholder="https://example.com/favicon.png&#10;https://example.co.kr/favicon.ico&#10;TBD"
+          ></textarea>
+          <div class="controls">
+            <button class="primary" id="favicon-check" type="button">검사하기</button>
+            <button class="secondary" id="favicon-download" type="button" disabled>CSV 내보내기</button>
+            <span class="hint">여러 개는 줄바꿈 또는 쉼표로 입력하세요. URL당 요청 타임아웃은 10초입니다.</span>
+          </div>
+        </div>
 
-      <section class="table-wrap" id="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>입력 URL</th>
-              <th>판정</th>
-              <th>사유</th>
-              <th>권장 조치</th>
-            </tr>
-          </thead>
-          <tbody id="results"></tbody>
-        </table>
+        <div class="summary" id="favicon-summary"></div>
+
+        <section class="table-wrap" id="favicon-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>입력 URL</th>
+                <th>판정</th>
+                <th>실측 사이즈</th>
+                <th>형식</th>
+                <th>배경</th>
+                <th>사유</th>
+                <th>권장 조치</th>
+                <th>미리보기</th>
+              </tr>
+            </thead>
+            <tbody id="favicon-results"></tbody>
+          </table>
+        </section>
       </section>
     </main>
 
     <div class="notice">
-      ※ 본 점검은 robots.txt 기준 1차 셀프 체크입니다. robots.txt가 통과해도 Cloudflare·Akamai 등 방화벽이나 안티봇(403·429)에서 별도로 차단될 수 있습니다. 최종 확정은 광고주 개발팀의 실제 OAI-AdsBot 접근 테스트가 필요합니다. (참고: openai.com/adsbot.json, openai.com/searchbot.json)
+      <span class="active" id="crawler-notice">
+        ※ 본 점검은 robots.txt 기준 1차 셀프 체크입니다. robots.txt가 통과해도 Cloudflare·Akamai 등 방화벽이나 안티봇(403·429)에서 별도로 차단될 수 있습니다. 최종 확정은 광고주 개발팀의 실제 OAI-AdsBot 접근 테스트가 필요합니다. (참고: openai.com/adsbot.json, openai.com/searchbot.json)
+      </span>
+      <span id="favicon-notice">
+        ※ 본 점검은 파비콘 규격 1차 셀프 체크입니다. 최종 등록 가능 여부는 OpenAI 광고팀 검수로 확정됩니다. 직접 링크가 아니거나 규격 미달 시 광고주에 교체 요청하거나 colleen@openai.com 으로 공유하세요. (요건: 공개 직접 링크 · 256×256 이상 · 원형 크롭 가능 · 흰 배경)
+      </span>
     </div>
 
     <script>
+      const tabs = document.querySelectorAll(".tab");
+      const panels = {
+        crawler: document.querySelector("#crawler-panel"),
+        favicon: document.querySelector("#favicon-panel"),
+      };
+      const notices = {
+        crawler: document.querySelector("#crawler-notice"),
+        favicon: document.querySelector("#favicon-notice"),
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const target = tab.dataset.tab;
+          tabs.forEach((item) => item.classList.toggle("active", item === tab));
+          Object.entries(panels).forEach(([key, panel]) => {
+            panel.classList.toggle("active", key === target);
+          });
+          Object.entries(notices).forEach(([key, notice]) => {
+            notice.classList.toggle("active", key === target);
+          });
+        });
+      });
+
       const urlsInput = document.querySelector("#urls");
       const checkButton = document.querySelector("#check");
       const downloadButton = document.querySelector("#download");
@@ -312,17 +463,39 @@
       const resultsBody = document.querySelector("#results");
       let latestResults = [];
 
-      const verdictLabel = {
+      const faviconInput = document.querySelector("#favicon-urls");
+      const faviconCheckButton = document.querySelector("#favicon-check");
+      const faviconDownloadButton = document.querySelector("#favicon-download");
+      const faviconSummary = document.querySelector("#favicon-summary");
+      const faviconTableWrap = document.querySelector("#favicon-table-wrap");
+      const faviconResultsBody = document.querySelector("#favicon-results");
+      let latestFaviconResults = [];
+
+      const crawlerVerdictLabel = {
         allow: "✅ 허용",
         warn: "⚠️ 확인",
         block: "🚫 차단",
       };
 
-      function splitUrls() {
+      const faviconVerdictLabel = {
+        pass: "✅ 통과",
+        warn: "⚠️ 확인",
+        fail: "🚫 부적합",
+        wait: "⏳ 대기",
+      };
+
+      function splitCrawlerUrls() {
         return urlsInput.value
           .split(/\r?\n/)
           .map((value) => value.trim())
           .filter(Boolean);
+      }
+
+      function splitFaviconUrls() {
+        return faviconInput.value
+          .split(/[\r\n,]+/)
+          .map((value) => value.trim())
+          .filter((value) => value || value.toUpperCase() === "TBD");
       }
 
       function textCell(text, className = "") {
@@ -332,7 +505,7 @@
         return td;
       }
 
-      function renderSummary(results) {
+      function renderCrawlerSummary(results) {
         const counts = { allow: 0, warn: 0, block: 0 };
         results.forEach((item) => {
           counts[item.verdict] = (counts[item.verdict] || 0) + 1;
@@ -341,7 +514,7 @@
         summary.style.display = "block";
       }
 
-      function renderResults(results) {
+      function renderCrawlerResults(results) {
         resultsBody.replaceChildren();
         results.forEach((item) => {
           const row = document.createElement("tr");
@@ -355,7 +528,7 @@
           const verdictTd = document.createElement("td");
           const badge = document.createElement("span");
           badge.className = `badge ${item.verdict}`;
-          badge.textContent = verdictLabel[item.verdict] || item.badge || item.verdict;
+          badge.textContent = crawlerVerdictLabel[item.verdict] || item.badge || item.verdict;
           verdictTd.append(badge);
 
           const reasonTd = textCell(item.reason);
@@ -373,20 +546,68 @@
         tableWrap.style.display = "block";
       }
 
+      function renderFaviconSummary(results) {
+        const counts = { pass: 0, warn: 0, fail: 0, wait: 0 };
+        results.forEach((item) => {
+          counts[item.verdict] = (counts[item.verdict] || 0) + 1;
+        });
+        faviconSummary.textContent = `✅ ${counts.pass} · ⚠️ ${counts.warn} · 🚫 ${counts.fail} · ⏳ ${counts.wait}`;
+        faviconSummary.style.display = "block";
+      }
+
+      function renderFaviconResults(results) {
+        faviconResultsBody.replaceChildren();
+        results.forEach((item) => {
+          const row = document.createElement("tr");
+
+          const urlTd = textCell(item.input_url, "url-cell");
+          const meta = document.createElement("div");
+          meta.className = "hint";
+          meta.textContent = item.normalized_url || "";
+          urlTd.append(meta);
+
+          const verdictTd = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = `badge ${item.verdict}`;
+          badge.textContent = faviconVerdictLabel[item.verdict] || item.badge || item.verdict;
+          verdictTd.append(badge);
+
+          const previewTd = document.createElement("td");
+          if (item.preview_url) {
+            const image = document.createElement("img");
+            image.className = "preview";
+            image.src = item.preview_url;
+            image.alt = "파비콘 미리보기";
+            image.referrerPolicy = "no-referrer";
+            previewTd.append(image);
+          } else {
+            const empty = document.createElement("span");
+            empty.className = "no-preview";
+            empty.textContent = "-";
+            previewTd.append(empty);
+          }
+
+          row.append(
+            urlTd,
+            verdictTd,
+            textCell(item.size || "-"),
+            textCell(item.format || "-"),
+            textCell(item.background || "-"),
+            textCell(item.reason),
+            textCell(item.action),
+            previewTd,
+          );
+          faviconResultsBody.append(row);
+        });
+        faviconTableWrap.style.display = "block";
+      }
+
       function csvEscape(value) {
         return `"${String(value ?? "").replaceAll('"', '""')}"`;
       }
 
-      function downloadCsv() {
-        if (!latestResults.length) return;
-        const header = ["입력 URL", "판정", "사유", "권장 조치", "robots.txt URL"];
-        const rows = latestResults.map((item) => [
-          item.input_url,
-          verdictLabel[item.verdict] || item.verdict,
-          item.reason,
-          item.action,
-          item.robots_url,
-        ]);
+      function downloadCsv(filename, header, rows) {
+        if (!rows.length) return;
         const csv = [header, ...rows]
           .map((row) => row.map(csvEscape).join(","))
           .join("\n");
@@ -394,15 +615,49 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "oai_adsbot_check.csv";
+        link.download = filename;
         document.body.append(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
       }
 
-      async function runCheck() {
-        const urls = splitUrls();
+      function downloadCrawlerCsv() {
+        const header = ["입력 URL", "판정", "사유", "권장 조치", "robots.txt URL"];
+        const rows = latestResults.map((item) => [
+          item.input_url,
+          crawlerVerdictLabel[item.verdict] || item.verdict,
+          item.reason,
+          item.action,
+          item.robots_url,
+        ]);
+        downloadCsv("oai_adsbot_check.csv", header, rows);
+      }
+
+      function downloadFaviconCsv() {
+        const header = [
+          "입력 URL",
+          "판정",
+          "실측 사이즈",
+          "형식",
+          "배경",
+          "사유",
+          "권장 조치",
+        ];
+        const rows = latestFaviconResults.map((item) => [
+          item.input_url,
+          faviconVerdictLabel[item.verdict] || item.verdict,
+          item.size,
+          item.format,
+          item.background,
+          item.reason,
+          item.action,
+        ]);
+        downloadCsv("openai_ads_favicon_check.csv", header, rows);
+      }
+
+      async function runCrawlerCheck() {
+        const urls = splitCrawlerUrls();
         if (!urls.length) {
           urlsInput.focus();
           return;
@@ -423,8 +678,8 @@
             throw new Error(payload.detail || response.statusText);
           }
           latestResults = payload;
-          renderSummary(latestResults);
-          renderResults(latestResults);
+          renderCrawlerSummary(latestResults);
+          renderCrawlerResults(latestResults);
           downloadButton.disabled = false;
         } catch (error) {
           latestResults = [
@@ -436,16 +691,63 @@
               robots_txt: "",
             },
           ];
-          renderSummary(latestResults);
-          renderResults(latestResults);
+          renderCrawlerSummary(latestResults);
+          renderCrawlerResults(latestResults);
         } finally {
           checkButton.disabled = false;
           checkButton.textContent = "점검하기";
         }
       }
 
-      checkButton.addEventListener("click", runCheck);
-      downloadButton.addEventListener("click", downloadCsv);
+      async function runFaviconCheck() {
+        const urls = splitFaviconUrls();
+        if (!urls.length) {
+          faviconInput.focus();
+          return;
+        }
+
+        faviconCheckButton.disabled = true;
+        faviconCheckButton.textContent = "검사 중";
+        faviconDownloadButton.disabled = true;
+
+        try {
+          const response = await fetch("/check-favicon", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || response.statusText);
+          }
+          latestFaviconResults = payload;
+          renderFaviconSummary(latestFaviconResults);
+          renderFaviconResults(latestFaviconResults);
+          faviconDownloadButton.disabled = false;
+        } catch (error) {
+          latestFaviconResults = [
+            {
+              input_url: "요청 오류",
+              verdict: "warn",
+              size: "-",
+              format: "-",
+              background: "-",
+              reason: `확인 불가 — ${error.message}`,
+              action: "잠시 후 재시도하거나 개발팀 확인 필요",
+            },
+          ];
+          renderFaviconSummary(latestFaviconResults);
+          renderFaviconResults(latestFaviconResults);
+        } finally {
+          faviconCheckButton.disabled = false;
+          faviconCheckButton.textContent = "검사하기";
+        }
+      }
+
+      checkButton.addEventListener("click", runCrawlerCheck);
+      downloadButton.addEventListener("click", downloadCrawlerCsv);
+      faviconCheckButton.addEventListener("click", runFaviconCheck);
+      faviconDownloadButton.addEventListener("click", downloadFaviconCsv);
     </script>
   </body>
 </html>
