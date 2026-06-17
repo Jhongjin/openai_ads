@@ -101,6 +101,11 @@ def intake_page() -> FileResponse:
     return _index_file()
 
 
+@app.get("/slides", include_in_schema=False)
+def slides_page() -> FileResponse:
+    return _index_file()
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     try:

@@ -2,7 +2,7 @@
 
 나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부와 파비콘 규격을 1차 셀프 체크할 수 있는 경량 PoC입니다.
 
-첫 화면(`/`)은 RAG 챗봇입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 준비물`, `집행 의뢰 접수`를 사용할 수 있습니다.
+첫 화면(`/`)은 RAG 챗봇입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 준비물`, `집행 의뢰 접수`, `광고주 안내 자료`를 사용할 수 있습니다.
 
 ## RAG 챗봇
 
@@ -97,6 +97,15 @@ Invoke-RestMethod -Method Post `
   -Body '{"advertiserName":"테스트","legalName":"테스트 주식회사","websiteUrl":"https://example.com","executionRoute":"openai_cbt","campaignName":"테스트 캠페인","campaignObjective":"views","budgetType":"total","budgetAmount":4000000,"startDate":"2026-06-18","endDate":"2026-06-30","contactName":"홍길동","contactPhone":"010-0000-0000","contactEmail":"client@example.com","salesOwner":"나스 담당자","formStartedAt":1781712000000}'
 ```
 
+## 광고주 안내 자료
+
+`광고주 안내 자료` 탭 또는 `/slides`는 광고주 전달용 5장 슬라이드 문서입니다.
+
+- 16:9 슬라이드형 레이아웃으로 소재 준비물, 랜딩 페이지 기술 준비, 집행 조건, 다음 단계를 안내합니다.
+- 내부 출처 배지, 내부 분류, 확인 대기 표현은 노출하지 않습니다.
+- 슬라이드 4에는 "OpenAI ChatGPT Ads 베타 기준이며, 정책 및 금액은 변동될 수 있습니다. VAT 등 세부 정산 조건은 별도 안내드립니다." 문구를 포함합니다.
+- `PDF로 저장` 버튼은 브라우저 인쇄(`window.print()`)를 호출하며, 인쇄 CSS에서 슬라이드 한 장이 한 페이지로 분리됩니다.
+
 ## 구조
 
 - `official`: OpenAI 공식 Help Center, 정책, 공지 URL
@@ -108,6 +117,7 @@ Invoke-RestMethod -Method Post `
 - 파비콘 체크 API: `POST /check-favicon`
 - RAG 챗 API: `POST /chat`
 - 집행 의뢰 접수 API: `POST /intake`
+- 광고주 안내 자료 페이지: `GET /slides`
 
 공식 가이드 허브: <https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads>
 
