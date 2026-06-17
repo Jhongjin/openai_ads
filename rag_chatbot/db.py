@@ -237,6 +237,28 @@ def delete_legacy_documents(
         return int(cursor.rowcount or 0)
 
 
+def delete_source_identity_prefix(
+    *,
+    collection_name: str,
+    source_identity_prefix: str,
+    settings: RuntimeSettings | None = None,
+) -> int:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    with db_connection(settings) as conn:
+        cursor = conn.execute(
+            sql.SQL(
+                """
+                delete from {}.documents
+                where collection = %s
+                  and metadata->>'source_identity' like %s
+                """
+            ).format(sql.Identifier(schema)),
+            (collection_name, f"{source_identity_prefix}%"),
+        )
+        return int(cursor.rowcount or 0)
+
+
 def insert_documents(
     *,
     collection_name: str,

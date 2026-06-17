@@ -19,6 +19,7 @@ from .crawler import crawl_urls
 from .db import (
     delete_legacy_documents,
     delete_source_documents,
+    delete_source_identity_prefix,
     ensure_database,
     insert_documents,
     reset_collection,
@@ -119,6 +120,7 @@ def _official_documents(config: dict) -> tuple[list[Document], list[str], dict[s
         "official_changed_documents": 0,
         "official_unchanged_documents": 0,
         "official_legacy_deleted": 0,
+        "official_stale_inline_deleted": 0,
         "help_center_ko_articles": 0,
         "help_center_en_articles": 0,
         "help_center_failed": 0,
@@ -235,6 +237,12 @@ def ingest_collections(
                 collection_name="official",
                 settings=settings,
             )
+            if any(str(item.metadata.get("article_id") or "") for item in documents):
+                official_stats["official_stale_inline_deleted"] = delete_source_identity_prefix(
+                    collection_name="official",
+                    source_identity_prefix="inline:official:https://help.openai.com/",
+                    settings=settings,
+                )
             documents, unchanged = _changed_official_documents(documents)
             official_stats["official_changed_documents"] = len(documents)
             official_stats["official_unchanged_documents"] = unchanged

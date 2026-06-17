@@ -7,12 +7,11 @@ import re
 from typing import Iterable
 from urllib.parse import urljoin, urlparse
 
-import httpx
 from bs4 import BeautifulSoup
 from langchain_core.documents import Document
 from markdownify import markdownify as to_markdown
 
-from .crawler import can_fetch
+from .crawler import can_fetch, fetch_page
 
 
 ARTICLE_RE = re.compile(r"/articles/(\d+)")
@@ -207,60 +206,64 @@ def crawl_help_center_collections(
         "help_center_failed": 0,
     }
 
-    headers = {"User-Agent": user_agent}
-    with httpx.Client(headers=headers, follow_redirects=True, timeout=timeout_seconds) as client:
-        for configured_lang, start_url in starts.items():
-            lang = "ko" if configured_lang.lower().startswith("ko") else "en"
-            visited_collections: set[str] = set()
-            article_urls: set[str] = set()
-            queue: deque[str] = deque([start_url])
+    for configured_lang, start_url in starts.items():
+        lang = "ko" if configured_lang.lower().startswith("ko") else "en"
+        visited_collections: set[str] = set()
+        article_urls: set[str] = set()
+        queue: deque[str] = deque([start_url])
 
-            while queue:
-                collection_url = queue.popleft()
-                if collection_url in visited_collections:
-                    continue
-                visited_collections.add(collection_url)
-                try:
-                    if respect_robots_txt and not can_fetch(collection_url, user_agent):
-                        raise PermissionError(f"Blocked by robots.txt: {collection_url}")
-                    response = client.get(collection_url)
-                    response.raise_for_status()
-                    found_articles, found_collections = _extract_links(
-                        response.text,
-                        str(response.url),
-                        lang,
-                    )
-                    article_urls.update(found_articles)
-                    for found in sorted(found_collections):
-                        if found not in visited_collections:
-                            queue.append(found)
-                except Exception as exc:
-                    stats["help_center_failed"] += 1
-                    errors.append(f"{collection_url} -> {exc}")
+        while queue:
+            collection_url = queue.popleft()
+            if collection_url in visited_collections:
+                continue
+            visited_collections.add(collection_url)
+            try:
+                page = fetch_page(
+                    collection_url,
+                    user_agent=user_agent,
+                    timeout_seconds=timeout_seconds,
+                    respect_robots_txt=respect_robots_txt,
+                )
+                found_articles, found_collections = _extract_links(
+                    page.text,
+                    page.final_url,
+                    lang,
+                )
+                article_urls.update(found_articles)
+                for found in sorted(found_collections):
+                    if found not in visited_collections:
+                        queue.append(found)
+            except Exception as exc:
+                stats["help_center_failed"] += 1
+                errors.append(f"{collection_url} -> {exc}")
 
-            for article_url in sorted(article_urls):
-                try:
-                    if respect_robots_txt and not can_fetch(article_url, user_agent):
-                        raise PermissionError(f"Blocked by robots.txt: {article_url}")
-                    crawled_at = datetime.now(timezone.utc)
-                    response = client.get(article_url)
-                    response.raise_for_status()
-                    final_url = str(response.url)
-                    article_lang = _language_from_url(final_url, lang)
-                    document = _article_to_document(
-                        response.text,
-                        final_url,
-                        article_lang,
-                        crawled_at,
-                    )
-                    if document.page_content:
-                        documents.append(document)
-                        if article_lang == "ko":
-                            stats["help_center_ko_articles"] += 1
-                        elif article_lang == "en":
-                            stats["help_center_en_articles"] += 1
-                except Exception as exc:
-                    stats["help_center_failed"] += 1
-                    errors.append(f"{article_url} -> {exc}")
+        for article_url in sorted(article_urls):
+            try:
+                if respect_robots_txt and not can_fetch(article_url, user_agent):
+                    raise PermissionError(f"Blocked by robots.txt: {article_url}")
+                crawled_at = datetime.now(timezone.utc)
+                page = fetch_page(
+                    article_url,
+                    user_agent=user_agent,
+                    timeout_seconds=timeout_seconds,
+                    respect_robots_txt=False,
+                )
+                final_url = page.final_url
+                article_lang = _language_from_url(final_url, lang)
+                document = _article_to_document(
+                    page.text,
+                    final_url,
+                    article_lang,
+                    crawled_at,
+                )
+                if document.page_content:
+                    documents.append(document)
+                    if article_lang == "ko":
+                        stats["help_center_ko_articles"] += 1
+                    elif article_lang == "en":
+                        stats["help_center_en_articles"] += 1
+            except Exception as exc:
+                stats["help_center_failed"] += 1
+                errors.append(f"{article_url} -> {exc}")
 
     return documents, errors, stats
