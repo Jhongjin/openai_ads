@@ -4,7 +4,9 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
 import re
+import time
 from typing import Iterable
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -12,7 +14,13 @@ from bs4 import BeautifulSoup
 from langchain_core.documents import Document
 from markdownify import markdownify as to_markdown
 
-from .crawler import can_fetch, fetch_page
+from .crawler import (
+    can_fetch,
+    fetch_page,
+    fetch_reader_page,
+    reader_fallback_enabled,
+    reader_markdown_to_content,
+)
 
 
 ARTICLE_RE = re.compile(r"/articles/(\d+)")
@@ -39,7 +47,12 @@ def relative_updated_date(
         return None
 
     days = 0
-    if re.search(r"\b(an?|one)\s+day\s+ago\b", lowered) or "하루 전" in lowered or "어제" in lowered:
+    if (
+        re.search(r"\b(an?|one)\s+day\s+ago\b", lowered)
+        or "yesterday" in lowered
+        or "하루 전" in lowered
+        or "어제" in lowered
+    ):
         days = 1
     elif match := re.search(r"\b(\d+)\s+days?\s+ago\b", lowered):
         days = int(match.group(1))
@@ -142,6 +155,21 @@ def _extract_links(html: str, base_url: str, lang: str) -> tuple[set[str], set[s
     collection_urls: set[str] = set()
     for anchor in soup.find_all("a", href=True):
         url = _normalize_help_link(base_url, str(anchor.get("href") or ""))
+        if not url or not _locale_matches(url, lang):
+            continue
+        path = urlparse(url).path
+        if ARTICLE_RE.search(path):
+            article_urls.add(url)
+        elif COLLECTION_RE.search(path):
+            collection_urls.add(url)
+    return article_urls, collection_urls
+
+
+def _extract_markdown_links(markdown: str, base_url: str, lang: str) -> tuple[set[str], set[str]]:
+    article_urls: set[str] = set()
+    collection_urls: set[str] = set()
+    for raw_url in re.findall(r"https?://help\.openai\.com/[^\s)\]\"]+", markdown):
+        url = _normalize_help_link(base_url, raw_url.rstrip(".,;:"))
         if not url or not _locale_matches(url, lang):
             continue
         path = urlparse(url).path
@@ -374,6 +402,115 @@ def _crawl_help_center_loader_data(
     return documents, errors
 
 
+def _article_document_from_reader_markdown(
+    text: str,
+    source_url: str,
+    lang: str,
+    crawled_at: datetime,
+) -> Document | None:
+    title, markdown = reader_markdown_to_content(text)
+    article_id = _article_id(source_url)
+    title = title or source_url
+    markdown = markdown.strip()
+    if not markdown:
+        return None
+
+    updated_at, is_fallback = relative_updated_date(markdown[:1200], crawled_at) or (
+        _date_string(crawled_at),
+        True,
+    )
+    identity = f"help:{article_id}:{lang}"
+    return Document(
+        page_content=markdown,
+        metadata={
+            "source_tier": "official",
+            "source_url": source_url,
+            "title": title,
+            "crawled_at": crawled_at.isoformat(),
+            "source_updated_at": updated_at,
+            "source_updated_at_is_fallback": is_fallback,
+            "lang": lang,
+            "article_id": article_id,
+            "content_hash": content_hash(title, markdown),
+            "source_identity": identity,
+            "reader_fallback": True,
+        },
+    )
+
+
+def _reader_delay() -> None:
+    delay = float(os.getenv("READER_FALLBACK_DELAY_SECONDS", "0.8") or 0)
+    if delay > 0:
+        time.sleep(delay)
+
+
+def _crawl_help_center_reader(
+    start_url: str,
+    *,
+    lang: str,
+    user_agent: str,
+    timeout_seconds: int,
+    respect_robots_txt: bool,
+) -> tuple[list[Document], list[str]]:
+    errors: list[str] = []
+    documents: list[Document] = []
+    visited_collections: set[str] = set()
+    article_urls: set[str] = set()
+    queue: deque[str] = deque([start_url])
+
+    while queue:
+        collection_url = queue.popleft()
+        if collection_url in visited_collections:
+            continue
+        visited_collections.add(collection_url)
+        try:
+            if respect_robots_txt and not can_fetch(collection_url, user_agent):
+                raise PermissionError(f"Blocked by robots.txt: {collection_url}")
+            _reader_delay()
+            page = fetch_reader_page(
+                collection_url,
+                timeout_seconds=timeout_seconds,
+                user_agent=user_agent,
+            )
+            found_articles, found_collections = _extract_markdown_links(
+                page.text,
+                page.final_url,
+                lang,
+            )
+            article_urls.update(found_articles)
+            for found in sorted(found_collections):
+                if found not in visited_collections:
+                    queue.append(found)
+        except Exception as exc:
+            errors.append(f"{collection_url} -> {exc}")
+
+    for article_url in sorted(article_urls):
+        try:
+            if respect_robots_txt and not can_fetch(article_url, user_agent):
+                raise PermissionError(f"Blocked by robots.txt: {article_url}")
+            crawled_at = datetime.now(timezone.utc)
+            _reader_delay()
+            page = fetch_reader_page(
+                article_url,
+                timeout_seconds=timeout_seconds,
+                user_agent=user_agent,
+            )
+            final_url = page.final_url
+            article_lang = _language_from_url(final_url, lang)
+            document = _article_document_from_reader_markdown(
+                page.text,
+                final_url,
+                article_lang,
+                crawled_at,
+            )
+            if document is not None:
+                documents.append(document)
+        except Exception as exc:
+            errors.append(f"{article_url} -> {exc}")
+
+    return documents, errors
+
+
 def _article_to_document(html: str, final_url: str, lang: str, crawled_at: datetime) -> Document:
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript", "svg", "form"]):
@@ -442,6 +579,28 @@ def crawl_help_center_collections(
             errors.extend(data_errors)
             stats["help_center_failed"] += len(data_errors)
             continue
+
+        if reader_fallback_enabled():
+            reader_documents, reader_errors = _crawl_help_center_reader(
+                start_url,
+                lang=lang,
+                user_agent=str(user_agent),
+                timeout_seconds=timeout_seconds,
+                respect_robots_txt=respect_robots_txt,
+            )
+            if reader_documents:
+                documents.extend(reader_documents)
+                if lang == "ko":
+                    stats["help_center_ko_articles"] += len(reader_documents)
+                elif lang == "en":
+                    stats["help_center_en_articles"] += len(reader_documents)
+                stats["help_center_failed"] += len(reader_errors)
+                stats["help_center_reader_articles"] = (
+                    stats.get("help_center_reader_articles", 0) + len(reader_documents)
+                )
+                errors.extend(reader_errors)
+                continue
+            errors.extend(reader_errors)
 
         visited_collections: set[str] = set()
         article_urls: set[str] = set()

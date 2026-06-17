@@ -225,6 +225,8 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `SUPABASE_SCHEMA` (기본 `openai_ads_rag`)
 - `OPENAI_EMBEDDING_MODEL`, `OPENAI_EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE` (기본값 사용 가능)
 
+GitHub-hosted runner에서 OpenAI Help Center 원문 요청이 403으로 막히는 경우가 있어, 워크플로는 `ENABLE_READER_FALLBACK=true`로 공식 URL reader fallback을 사용합니다. 저장되는 `source_url`은 원래 OpenAI 공식 URL을 유지하고, fallback 수집 문서는 갱신일을 파싱하지 못하면 `source_updated_at_is_fallback=true`로 표시됩니다. reader 요청은 `READER_FALLBACK_DELAY_SECONDS=1.2`와 429 백오프로 천천히 실행합니다. `REQUIRE_HELP_CENTER_MIN_ARTICLES=30` 보호 조건이 있어 KO/EN Help Center article을 충분히 수집하지 못하면 크론 실행은 실패로 종료됩니다.
+
 ## 연동 필요 정보
 
 Vercel:

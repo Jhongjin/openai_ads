@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 import shutil
 import subprocess
+import time
 from typing import Iterable
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
@@ -27,6 +29,26 @@ class FetchedPage:
     text: str
     status_code: int
     used_curl_fallback: bool = False
+    used_reader_fallback: bool = False
+
+
+_READER_ALLOWED_HOSTS = {
+    "help.openai.com",
+    "openai.com",
+    "developers.openai.com",
+}
+
+
+def _looks_like_challenge_page(text: str) -> bool:
+    lowered = text.lower()
+    return (
+        "just a moment" in lowered
+        and (
+            "cloudflare" in lowered
+            or "enable javascript" in lowered
+            or "verification successful" in lowered
+        )
+    )
 
 
 def _robots_url(url: str) -> str:
@@ -64,6 +86,85 @@ def _is_cloudflare_challenge(response: httpx.Response) -> bool:
         response.status_code == 403
         and response.headers.get("cf-mitigated", "").lower() == "challenge"
     )
+
+
+def reader_fallback_enabled() -> bool:
+    return os.getenv("ENABLE_READER_FALLBACK", "").lower() in {"1", "true", "yes", "on"}
+
+
+def _reader_fallback_allowed(url: str) -> bool:
+    host = urlparse(url).netloc.lower()
+    return host in _READER_ALLOWED_HOSTS or any(
+        host.endswith(f".{allowed}") for allowed in _READER_ALLOWED_HOSTS
+    )
+
+
+def _reader_url(url: str) -> str:
+    return f"https://r.jina.ai/http://{url}"
+
+
+def reader_markdown_to_content(text: str) -> tuple[str, str]:
+    title = ""
+    content = text
+    lines = text.splitlines()
+    for line in lines[:8]:
+        if line.startswith("Title:"):
+            title = line.removeprefix("Title:").strip()
+            break
+
+    marker = "Markdown Content:"
+    if marker in text:
+        content = text.split(marker, 1)[1].strip()
+
+    cleaned_lines: list[str] = []
+    for line in content.splitlines():
+        if line.startswith(("Title:", "URL Source:")):
+            continue
+        cleaned_lines.append(line.rstrip())
+    return title, "\n".join(cleaned_lines).strip()
+
+
+def fetch_reader_page(
+    url: str,
+    *,
+    timeout_seconds: int,
+    user_agent: str | None = None,
+) -> FetchedPage:
+    if not _reader_fallback_allowed(url):
+        raise RuntimeError(f"Reader fallback is not allowed for this host: {url}")
+
+    attempts = (
+        {"X-Respond-With": "markdown"},
+        {"X-Respond-With": "markdown", "X-No-Cache": "true"},
+    )
+    last_error = ""
+    for round_index in range(5):
+        for extra_headers in attempts:
+            headers = {
+                "User-Agent": user_agent or _BROWSER_USER_AGENT,
+                **extra_headers,
+            }
+            with httpx.Client(
+                headers=headers,
+                follow_redirects=True,
+                timeout=timeout_seconds,
+            ) as client:
+                response = client.get(_reader_url(url))
+                if response.status_code >= 400:
+                    last_error = f"HTTP {response.status_code}"
+                    continue
+                if _looks_like_challenge_page(response.text):
+                    last_error = "challenge page"
+                    continue
+                return FetchedPage(
+                    final_url=url,
+                    text=response.text,
+                    status_code=response.status_code,
+                    used_reader_fallback=True,
+                )
+        if round_index < 4 and ("429" in last_error or "challenge" in last_error):
+            time.sleep(min(20, 2 ** (round_index + 1)))
+    raise RuntimeError(f"Reader fallback failed ({last_error or 'unknown error'}): {url}")
 
 
 def _curl_binary() -> str | None:
@@ -163,12 +264,36 @@ def fetch_page(
 
     headers = {"User-Agent": user_agent}
     with httpx.Client(headers=headers, follow_redirects=True, timeout=timeout_seconds) as client:
-        response = client.get(url)
+        try:
+            response = client.get(url)
+        except httpx.HTTPError:
+            if reader_fallback_enabled():
+                return fetch_reader_page(
+                    url,
+                    timeout_seconds=timeout_seconds,
+                    user_agent=user_agent,
+                )
+            raise
         if _is_cloudflare_challenge(response):
             try:
                 return _fetch_with_curl_cffi(url, timeout_seconds)
             except Exception:
-                return _fetch_with_curl(url, timeout_seconds)
+                try:
+                    return _fetch_with_curl(url, timeout_seconds)
+                except Exception:
+                    if reader_fallback_enabled():
+                        return fetch_reader_page(
+                            url,
+                            timeout_seconds=timeout_seconds,
+                            user_agent=user_agent,
+                        )
+                    raise
+        if response.status_code >= 400 and reader_fallback_enabled():
+            return fetch_reader_page(
+                url,
+                timeout_seconds=timeout_seconds,
+                user_agent=user_agent,
+            )
         response.raise_for_status()
         return FetchedPage(
             final_url=str(response.url),
@@ -208,6 +333,8 @@ def fetch_url(
         respect_robots_txt=respect_robots_txt,
     )
     title, markdown = html_to_markdown(page.text)
+    if page.used_reader_fallback:
+        title, markdown = reader_markdown_to_content(page.text)
     final_url = page.final_url
     if not markdown:
         raise ValueError(f"No indexable content found: {url}")
@@ -219,6 +346,7 @@ def fetch_url(
             "source_url": final_url,
             "title": title or final_url,
             "crawled_at": datetime.now(timezone.utc).isoformat(),
+            "reader_fallback": page.used_reader_fallback,
         },
     )
 

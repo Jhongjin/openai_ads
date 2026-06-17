@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 from datetime import datetime, timezone
 from typing import Iterable
 from urllib.parse import urlparse
@@ -233,6 +235,17 @@ def ingest_collections(
             documents, errors, official_stats = _official_documents(config)
             for error in errors:
                 print(f"[warn] {error}")
+            min_help_articles = int(os.getenv("REQUIRE_HELP_CENTER_MIN_ARTICLES", "0") or 0)
+            if min_help_articles:
+                help_articles = int(official_stats.get("help_center_ko_articles", 0)) + int(
+                    official_stats.get("help_center_en_articles", 0)
+                )
+                if help_articles < min_help_articles:
+                    raise RuntimeError(
+                        "Help Center reindex fetched too few articles: "
+                        f"{help_articles} < {min_help_articles}. "
+                        "Check GitHub Actions network access or reader fallback."
+                    )
             official_stats["official_legacy_deleted"] = delete_legacy_documents(
                 collection_name="official",
                 settings=settings,
@@ -260,6 +273,8 @@ def ingest_collections(
         for key, value in official_stats.items():
             counts[key] = int(value)
         print(f"[ok] {collection_name}: {len(documents)} docs, {len(chunks)} chunks")
+        if official_stats:
+            print(f"[stats] {collection_name}: {json.dumps(official_stats, ensure_ascii=False)}")
 
     return counts
 
