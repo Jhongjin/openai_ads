@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections import deque
 from datetime import datetime, timedelta, timezone
 import hashlib
+import json
 import re
 from typing import Iterable
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 from langchain_core.documents import Document
@@ -156,6 +157,223 @@ def _article_id(url: str) -> str:
     return match.group(1) if match else ""
 
 
+def _data_url(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path
+    if not path.endswith(".data"):
+        path = f"{path.rstrip('/')}.data"
+    return urlunparse(parsed._replace(path=path, query="", fragment=""))
+
+
+def _strings_from_router_data(text: str) -> list[str]:
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [item for item in payload if isinstance(item, str)]
+
+
+def _ids_from_router_data(text: str) -> set[str]:
+    return set(re.findall(r"\b200012\d+\b", text))
+
+
+def _looks_like_article_data(strings: list[str], article_id: str) -> bool:
+    return "routes/articles" in strings and "article" in strings and article_id in strings
+
+
+def _textual_router_strings(strings: list[str]) -> list[str]:
+    ignored = {
+        "root",
+        "routes/lang-root",
+        "routes/articles",
+        "routes/collections",
+        "data",
+        "article",
+        "collection",
+        "breadcrumbs",
+        "content",
+        "updatedAt",
+        "contentfulEntryId",
+        "routeLanguage",
+        "countryCode",
+        "href",
+        "label",
+        "id",
+        "description",
+        "defaultMessage",
+        "messageDescriptor",
+        "usingFallbackLocale",
+    }
+    seen: set[str] = set()
+    selected: list[str] = []
+    for raw in strings:
+        text = _clean_text(raw)
+        if not text or text in ignored:
+            continue
+        if re.fullmatch(r"200012\d+", text):
+            continue
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}T.*Z", text):
+            continue
+        if text.startswith(("/", "http://", "https://")):
+            continue
+        if len(text) < 8:
+            continue
+        if not re.search(r"[A-Za-z가-힣]", text):
+            continue
+        if text in seen:
+            continue
+        seen.add(text)
+        selected.append(text)
+    return selected
+
+
+def _title_from_router_strings(strings: list[str], article_id: str, fallback: str) -> str:
+    ignored = {
+        "title",
+        "slug",
+        "subtitle",
+        "seoTitle",
+        "description",
+        "content",
+        "updatedAt",
+        "contentfulEntryId",
+    }
+    try:
+        start = strings.index(article_id) + 1
+    except ValueError:
+        start = 0
+    for text in strings[start : start + 8]:
+        cleaned = _clean_text(text)
+        if (
+            len(cleaned) >= 4
+            and cleaned not in ignored
+            and not re.fullmatch(r"200012\d+", cleaned)
+        ):
+            return cleaned
+    for text in _textual_router_strings(strings):
+        if len(text) < 80:
+            return text
+    return fallback
+
+
+def _article_document_from_router_data(
+    text: str,
+    source_url: str,
+    lang: str,
+    crawled_at: datetime,
+) -> Document | None:
+    strings = _strings_from_router_data(text)
+    article_id = _article_id(source_url)
+    if not _looks_like_article_data(strings, article_id):
+        return None
+    title = _title_from_router_strings(strings, article_id, source_url)
+    content_parts = _textual_router_strings(strings)
+    content = "\n\n".join([title, *content_parts]).strip()
+    if not content:
+        return None
+
+    updated_at = _date_string(crawled_at)
+    identity = f"help:{article_id}:{lang}"
+    return Document(
+        page_content=content,
+        metadata={
+            "source_tier": "official",
+            "source_url": source_url,
+            "title": title,
+            "crawled_at": crawled_at.isoformat(),
+            "source_updated_at": updated_at,
+            "source_updated_at_is_fallback": True,
+            "lang": lang,
+            "article_id": article_id,
+            "content_hash": content_hash(title, content),
+            "source_identity": identity,
+            "loader_data_fallback": True,
+        },
+    )
+
+
+def _article_url_from_id(start_url: str, article_id: str, lang: str) -> str:
+    parsed = urlparse(start_url)
+    locale = "ko-kr" if lang == "ko" else "en"
+    return f"{parsed.scheme}://{parsed.netloc}/{locale}/articles/{article_id}"
+
+
+def _collection_url_from_id(start_url: str, collection_id: str, lang: str) -> str:
+    parsed = urlparse(start_url)
+    locale = "ko-kr" if lang == "ko" else "en"
+    return f"{parsed.scheme}://{parsed.netloc}/{locale}/collections/{collection_id}"
+
+
+def _crawl_help_center_loader_data(
+    start_url: str,
+    *,
+    lang: str,
+    user_agent: str,
+    timeout_seconds: int,
+    respect_robots_txt: bool,
+) -> tuple[list[Document], list[str]]:
+    errors: list[str] = []
+    documents: list[Document] = []
+    seen_collections: set[str] = set()
+    seen_articles: set[str] = set()
+    article_ids: set[str] = set()
+    collection_queue: deque[str] = deque([start_url])
+
+    while collection_queue:
+        collection_url = collection_queue.popleft()
+        collection_id = re.search(r"/collections/(\d+)", urlparse(collection_url).path)
+        collection_key = collection_id.group(1) if collection_id else collection_url
+        if collection_key in seen_collections:
+            continue
+        seen_collections.add(collection_key)
+        try:
+            if respect_robots_txt and not can_fetch(collection_url, user_agent):
+                raise PermissionError(f"Blocked by robots.txt: {collection_url}")
+            page = fetch_page(
+                _data_url(collection_url),
+                user_agent=user_agent,
+                timeout_seconds=timeout_seconds,
+                respect_robots_txt=False,
+            )
+            ids = _ids_from_router_data(page.text)
+            article_ids.update(ids)
+            for candidate in ids:
+                if candidate not in seen_collections:
+                    collection_queue.append(_collection_url_from_id(start_url, candidate, lang))
+        except Exception:
+            continue
+
+    for article_id in sorted(article_ids):
+        if article_id in seen_articles:
+            continue
+        seen_articles.add(article_id)
+        article_url = _article_url_from_id(start_url, article_id, lang)
+        try:
+            if respect_robots_txt and not can_fetch(article_url, user_agent):
+                raise PermissionError(f"Blocked by robots.txt: {article_url}")
+            crawled_at = datetime.now(timezone.utc)
+            page = fetch_page(
+                _data_url(article_url),
+                user_agent=user_agent,
+                timeout_seconds=timeout_seconds,
+                respect_robots_txt=False,
+            )
+            document = _article_document_from_router_data(
+                page.text,
+                article_url,
+                lang,
+                crawled_at,
+            )
+            if document is not None:
+                documents.append(document)
+        except Exception as exc:
+            if "HTTP 404" not in str(exc):
+                errors.append(f"{article_url} -> {exc}")
+    return documents, errors
+
+
 def _article_to_document(html: str, final_url: str, lang: str, crawled_at: datetime) -> Document:
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript", "svg", "form"]):
@@ -208,6 +426,23 @@ def crawl_help_center_collections(
 
     for configured_lang, start_url in starts.items():
         lang = "ko" if configured_lang.lower().startswith("ko") else "en"
+        data_documents, data_errors = _crawl_help_center_loader_data(
+            start_url,
+            lang=lang,
+            user_agent=user_agent,
+            timeout_seconds=timeout_seconds,
+            respect_robots_txt=respect_robots_txt,
+        )
+        if data_documents:
+            documents.extend(data_documents)
+            if lang == "ko":
+                stats["help_center_ko_articles"] += len(data_documents)
+            elif lang == "en":
+                stats["help_center_en_articles"] += len(data_documents)
+            errors.extend(data_errors)
+            stats["help_center_failed"] += len(data_errors)
+            continue
+
         visited_collections: set[str] = set()
         article_urls: set[str] = set()
         queue: deque[str] = deque([start_url])
