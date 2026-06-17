@@ -122,6 +122,35 @@ def _fetch_with_curl(url: str, timeout_seconds: int) -> FetchedPage:
     )
 
 
+def _fetch_with_curl_cffi(url: str, timeout_seconds: int) -> FetchedPage:
+    try:
+        from curl_cffi import requests as curl_requests
+    except ImportError as exc:
+        raise RuntimeError("curl_cffi fallback is unavailable.") from exc
+
+    response = curl_requests.get(
+        url,
+        impersonate="chrome120",
+        headers={
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        },
+        timeout=timeout_seconds,
+        allow_redirects=True,
+    )
+    final_url = str(response.url or url)
+    if response.status_code >= 400:
+        raise RuntimeError(
+            f"curl_cffi fallback failed with HTTP {response.status_code}: {final_url}"
+        )
+    return FetchedPage(
+        final_url=final_url,
+        text=response.text,
+        status_code=int(response.status_code),
+        used_curl_fallback=True,
+    )
+
+
 def fetch_page(
     url: str,
     *,
@@ -136,7 +165,10 @@ def fetch_page(
     with httpx.Client(headers=headers, follow_redirects=True, timeout=timeout_seconds) as client:
         response = client.get(url)
         if _is_cloudflare_challenge(response):
-            return _fetch_with_curl(url, timeout_seconds)
+            try:
+                return _fetch_with_curl_cffi(url, timeout_seconds)
+            except Exception:
+                return _fetch_with_curl(url, timeout_seconds)
         response.raise_for_status()
         return FetchedPage(
             final_url=str(response.url),
