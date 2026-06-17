@@ -131,13 +131,13 @@ Streamlit:
 streamlit run ui.py
 ```
 
-Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다. `/check`는 robots.txt 셀프 체크, `/check-favicon`은 파비콘 규격 체크, `/chat`은 RAG Q&A입니다.
+Vercel은 루트 `app.py`의 FastAPI `app`을 zero-config 엔트리포인트로 감지합니다. `/check`는 robots.txt 셀프 체크, `/check-favicon`은 파비콘 규격 체크, `/chat`은 RAG Q&A입니다.
 
 검증:
 
 ```powershell
 python -m unittest discover -s tests
-python -B -m py_compile app.py checker.py favicon_checker.py ingest.py ui.py api\index.py
+python -B -m py_compile app.py checker.py favicon_checker.py ingest.py ui.py
 ```
 
 RAG API 직접 호출:
@@ -190,7 +190,7 @@ Vercel:
 
 - GitHub repo: `https://github.com/Jhongjin/openai_ads.git`
 - Framework: FastAPI/Python Function
-- Entry: `api/index.py`가 루트 `app.py`의 `app`을 import
+- Entry: 루트 `app.py`의 FastAPI `app` (custom `functions` 설정 없음)
 - Python version: `.python-version`의 `3.12`
 - Environment Variables: 위 `Vercel 배포` 섹션의 값
 
