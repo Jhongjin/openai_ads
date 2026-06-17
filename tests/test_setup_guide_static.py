@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 import unittest
 
+from fastapi.testclient import TestClient
+
+from app import app
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -82,6 +86,13 @@ class SetupGuideStaticTests(unittest.TestCase):
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+
+    def test_setup_guide_images_are_served_as_static_assets(self) -> None:
+        client = TestClient(app)
+        response = client.get("/images/guide/campaign_step1.png")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "image/png")
 
 
 if __name__ == "__main__":

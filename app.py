@@ -6,12 +6,14 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
 from rag_chatbot.config import project_root
 
 
 app = FastAPI(title="Nasmedia ChatGPT Ads RAG", version="0.1.0")
+app.mount("/images", StaticFiles(directory=project_root() / "public" / "images"), name="images")
 
 
 class ChatRequest(BaseModel):

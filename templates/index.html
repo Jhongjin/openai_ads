@@ -1013,7 +1013,7 @@
 
       .guide-two-column {
         display: grid;
-        grid-template-columns: minmax(0, 1.04fr) minmax(280px, 0.96fr);
+        grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
         gap: 18px;
         align-items: start;
       }
@@ -1043,9 +1043,9 @@
 
       .guide-field-row strong,
       .guide-field-row span {
-        padding: 9px 11px;
-        font-size: 13px;
-        line-height: 1.45;
+        padding: 8px 10px;
+        font-size: 12.5px;
+        line-height: 1.42;
       }
 
       .guide-field-row strong {
@@ -1061,6 +1061,7 @@
         position: relative;
         display: grid;
         min-height: 260px;
+        aspect-ratio: var(--guide-image-ratio, 16 / 9);
         overflow: hidden;
         border: 1.5px dashed #b7c0cc;
         border-radius: 8px;
@@ -1082,6 +1083,7 @@
       }
 
       .guide-image-frame.has-image {
+        min-height: 0;
         border-style: solid;
         background: #fff;
       }
@@ -4140,7 +4142,15 @@ Allow: /</pre>
       function hydrateGuideImages() {
         document.querySelectorAll("[data-guide-image]").forEach((image) => {
           const frame = image.closest(".guide-image-frame");
-          const markLoaded = () => frame.classList.add("has-image");
+          const markLoaded = () => {
+            if (image.naturalWidth && image.naturalHeight) {
+              frame.style.setProperty(
+                "--guide-image-ratio",
+                `${image.naturalWidth} / ${image.naturalHeight}`,
+              );
+            }
+            frame.classList.add("has-image");
+          };
           const markMissing = () => frame.classList.remove("has-image");
           const source = image.dataset.src;
           image.addEventListener("load", markLoaded);
