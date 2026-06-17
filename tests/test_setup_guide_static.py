@@ -28,6 +28,11 @@ class SetupGuideStaticTests(unittest.TestCase):
         self.assertIn("white-space: nowrap", html)
         self.assertIn("ChatGPT광고_캠페인세팅가이드_케이티나스미디어_", html)
         self.assertIn("print-guide", html)
+        self.assertIn("size: A4 landscape", html)
+        self.assertIn("width: 297mm", html)
+        self.assertIn(".guide-two-column", html)
+        self.assertIn("grid-template-columns: minmax(58mm, 0.72fr) minmax(0, 1.28fr) !important", html)
+        self.assertIn("object-fit: contain", html)
 
     def test_setup_guide_has_cover_three_steps_and_preview(self) -> None:
         html = setup_guide_html()

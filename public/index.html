@@ -2189,12 +2189,21 @@
 
       @media print {
         @page {
-          size: landscape;
+          size: A4 landscape;
           margin: 0;
         }
 
-        body {
+        html {
+          width: 297mm;
           background: #fff;
+        }
+
+        body {
+          width: 297mm;
+          min-height: 0;
+          background: #fff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         header,
@@ -2206,7 +2215,7 @@
         }
 
         main {
-          width: 100%;
+          width: 297mm;
           padding: 0;
         }
 
@@ -2221,20 +2230,201 @@
         }
 
         .slide-card {
-          width: 100vw;
-          height: 100vh;
+          box-sizing: border-box;
+          width: 297mm;
+          height: 210mm;
           min-height: 0;
           margin: 0;
+          padding: 12mm 14mm 10mm 16mm;
           page-break-after: always;
           break-after: page;
+          break-inside: avoid;
           border: 0;
           border-radius: 0;
           box-shadow: none;
+          aspect-ratio: auto;
         }
 
         .slide-card:last-child {
           page-break-after: auto;
           break-after: auto;
+        }
+
+        .slide-card.dense,
+        .slide-card.ad-material-slide {
+          padding: 10mm 12mm 8mm 14mm;
+        }
+
+        .slide-title {
+          font-size: 32pt;
+        }
+
+        .slide-section-title {
+          margin-bottom: 7mm;
+          font-size: 26pt;
+        }
+
+        .slide-kicker {
+          margin-bottom: 4mm;
+          font-size: 11pt;
+        }
+
+        .slide-subtitle {
+          font-size: 17pt;
+        }
+
+        .slide-update {
+          top: 9mm;
+          right: 13mm;
+          font-size: 9pt;
+        }
+
+        .slide-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 3mm;
+        }
+
+        .slide-grid.three,
+        .slide-card.ad-material-slide .slide-grid,
+        .crawler-steps,
+        .guide-process-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 3mm;
+        }
+
+        .slide-item {
+          padding: 3mm;
+        }
+
+        .slide-item strong {
+          margin-bottom: 1.5mm;
+          font-size: 10.5pt;
+        }
+
+        .slide-item span,
+        .slide-item p {
+          font-size: 9.5pt;
+          line-height: 1.35;
+        }
+
+        .slide-card.ad-material-slide {
+          gap: 3mm;
+        }
+
+        .slide-card.ad-material-slide .slide-grid {
+          gap: 2.4mm;
+        }
+
+        .slide-card.ad-material-slide .slide-item {
+          padding: 2.4mm 2.8mm;
+        }
+
+        .slide-card.ad-material-slide .slide-item strong {
+          font-size: 10pt;
+        }
+
+        .slide-card.ad-material-slide .slide-item span,
+        .slide-card.ad-material-slide .slide-item p {
+          font-size: 8.8pt;
+          line-height: 1.28;
+        }
+
+        .slide-card.ad-material-slide .slide-pill {
+          padding: 1mm 2mm;
+          font-size: 7.8pt;
+        }
+
+        .copy-guide {
+          margin-top: 2.5mm;
+        }
+
+        .copy-guide h3 {
+          padding: 2mm 3mm;
+          font-size: 9.8pt;
+        }
+
+        .copy-guide-table > div {
+          padding: 1.6mm 2.4mm;
+          font-size: 8.2pt;
+          line-height: 1.22;
+        }
+
+        .copy-guide .slide-callout,
+        .slide-callout {
+          margin-top: 3mm;
+          padding: 2.5mm 3mm;
+          font-size: 9pt;
+          line-height: 1.35;
+        }
+
+        .crawler-code {
+          font-size: 8.4pt;
+          line-height: 1.28;
+        }
+
+        .guide-two-column {
+          grid-template-columns: minmax(58mm, 0.72fr) minmax(0, 1.28fr) !important;
+          gap: 6mm;
+        }
+
+        .guide-preview-layout {
+          grid-template-columns: minmax(62mm, 0.78fr) minmax(0, 1.22fr) !important;
+          gap: 6mm;
+        }
+
+        .guide-field-row {
+          grid-template-columns: 31mm 1fr !important;
+        }
+
+        .guide-field-row strong,
+        .guide-field-row span {
+          padding: 2.2mm 2.6mm;
+          font-size: 8.8pt;
+          line-height: 1.28;
+        }
+
+        .guide-image-frame {
+          min-height: 0;
+          height: 100mm;
+          aspect-ratio: auto !important;
+        }
+
+        .guide-preview-layout .guide-image-frame {
+          height: 102mm;
+        }
+
+        .guide-image-frame img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          object-position: center top;
+        }
+
+        .guide-caption {
+          margin-top: 2mm;
+          font-size: 8.5pt;
+        }
+
+        .guide-note {
+          margin-top: 2mm;
+          padding: 2mm 2.6mm;
+          font-size: 8pt;
+          line-height: 1.28;
+        }
+
+        .guide-preview-card {
+          padding: 3mm;
+        }
+
+        .guide-preview-card h3 {
+          margin-bottom: 2.4mm;
+          font-size: 10.5pt;
+        }
+
+        .slide-footer {
+          padding-top: 3mm;
+          font-size: 9pt;
+          line-height: 1.25;
         }
       }
     </style>
