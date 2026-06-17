@@ -55,6 +55,10 @@
         letter-spacing: 0;
       }
 
+      body.modal-open {
+        overflow: hidden;
+      }
+
       main {
         width: min(1180px, 100%);
         margin: 0 auto;
@@ -87,6 +91,95 @@
         padding: 10px 12px;
         font-size: 14px;
         line-height: 1.5;
+      }
+
+      .notice-modal-overlay {
+        position: fixed;
+        z-index: 1000;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        overflow-y: auto;
+        background: rgb(15 17 21 / 68%);
+        padding: 24px;
+      }
+
+      .notice-modal-overlay[hidden] {
+        display: none;
+      }
+
+      .notice-modal {
+        width: min(640px, 100%);
+        border: 1px solid rgb(255 255 255 / 24%);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 24px 72px rgb(0 0 0 / 28%);
+        color: var(--ink);
+      }
+
+      .notice-modal-head {
+        border-bottom: 1px solid #e6eaf0;
+        padding: 22px 24px 16px;
+      }
+
+      .notice-modal-title {
+        margin: 0 0 8px;
+        font-size: 22px;
+        line-height: 1.3;
+      }
+
+      .notice-modal-date {
+        display: inline-flex;
+        border-radius: 999px;
+        background: #fff1f1;
+        padding: 5px 9px;
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .notice-modal-body {
+        padding: 18px 24px 8px;
+      }
+
+      .notice-modal-list {
+        display: grid;
+        gap: 11px;
+        margin: 0;
+        padding-left: 18px;
+        color: #344054;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .notice-modal-list strong {
+        color: #111827;
+      }
+
+      .notice-modal-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px 24px;
+      }
+
+      .notice-modal-checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        color: #4d5358;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .notice-modal-checkbox input {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        accent-color: var(--brand);
       }
 
       .tabs {
@@ -1744,6 +1837,31 @@
           overflow-x: clip;
         }
 
+        .notice-modal-overlay {
+          align-items: start;
+          padding: 16px;
+        }
+
+        .notice-modal-head,
+        .notice-modal-body,
+        .notice-modal-actions {
+          padding-right: 18px;
+          padding-left: 18px;
+        }
+
+        .notice-modal-title {
+          font-size: 19px;
+        }
+
+        .notice-modal-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .notice-modal-actions .primary {
+          width: 100%;
+        }
+
         h1 {
           font-size: 22px;
         }
@@ -1866,6 +1984,44 @@
     </style>
   </head>
   <body>
+    <div
+      class="notice-modal-overlay"
+      id="entry-notice"
+      role="presentation"
+      aria-hidden="true"
+      hidden
+    >
+      <section
+        class="notice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="entry-notice-title"
+        aria-describedby="entry-notice-desc"
+        tabindex="-1"
+      >
+        <div class="notice-modal-head">
+          <h2 class="notice-modal-title" id="entry-notice-title">📢 OpenAI 광고 집행 의뢰 안내</h2>
+          <span class="notice-modal-date">최종 업데이트: <span class="notice-update-date"></span></span>
+        </div>
+        <div class="notice-modal-body" id="entry-notice-desc">
+          <ul class="notice-modal-list">
+            <li><strong>글자수</strong> — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자</li>
+            <li><strong>이미지</strong> — 1:1 정사각형, 640×640~1200×1200, PNG/JPG, 공개 직접접근 링크, 로고를 메인 비주얼로 쓰지 말 것</li>
+            <li><strong>랜딩</strong> — OpenAI 크롤러(OAI-AdsBot) 접근 허용 필수, 차단 시 노출 제한 가능</li>
+            <li><strong>청구</strong> — 청구 통화 KRW 고정 / 시간대 Asia/Seoul</li>
+            <li><strong>문의</strong> — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</li>
+          </ul>
+        </div>
+        <div class="notice-modal-actions">
+          <label class="notice-modal-checkbox">
+            <input id="entry-notice-skip" type="checkbox" />
+            <span>오늘 더 이상 보지 않기</span>
+          </label>
+          <button class="primary" id="entry-notice-close" type="button">확인하고 시작하기</button>
+        </div>
+      </section>
+    </div>
+
     <main>
       <header>
         <h1>OpenAI 광고 사내 도구</h1>
@@ -2650,6 +2806,13 @@ Allow: /</pre>
     <script>
       const LAST_UPDATED = "2026-06-17";
       const SLIDES_PDF_FILENAME = `ChatGPT광고_집행준비안내_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
+      const ENTRY_NOTICE_STORAGE_KEY = "openaiAdsEntryNoticeDismissedDate";
+      const pageMain = document.querySelector("main");
+      const entryNotice = document.querySelector("#entry-notice");
+      const entryNoticeDialog = entryNotice.querySelector(".notice-modal");
+      const entryNoticeClose = document.querySelector("#entry-notice-close");
+      const entryNoticeSkip = document.querySelector("#entry-notice-skip");
+      let entryNoticePreviousFocus = null;
       const tabs = document.querySelectorAll(".tab");
       const panels = {
         chat: document.querySelector("#chat-panel"),
@@ -2734,6 +2897,90 @@ Allow: /</pre>
         kr_ops: "나스미디어 내부 자료",
         pending: "확인 대기 (미확정)",
       };
+
+      function todayInKst() {
+        const parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Seoul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).formatToParts(new Date());
+        const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+        return `${values.year}-${values.month}-${values.day}`;
+      }
+
+      function isRootPage() {
+        return window.location.pathname === "/" || window.location.pathname === "/index.html";
+      }
+
+      function focusableInEntryNotice() {
+        return [
+          ...entryNotice.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        ].filter((element) => !element.disabled && !element.hidden && element.getClientRects().length > 0);
+      }
+
+      function openEntryNotice() {
+        entryNoticePreviousFocus = document.activeElement;
+        entryNotice.hidden = false;
+        entryNotice.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        if ("inert" in pageMain) pageMain.inert = true;
+        pageMain.setAttribute("aria-hidden", "true");
+        entryNoticeClose.focus();
+      }
+
+      function closeEntryNotice() {
+        if (entryNoticeSkip.checked) {
+          try {
+            window.localStorage.setItem(ENTRY_NOTICE_STORAGE_KEY, todayInKst());
+          } catch {
+            /* localStorage may be unavailable in strict browser modes. */
+          }
+        }
+        entryNotice.hidden = true;
+        entryNotice.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        if ("inert" in pageMain) pageMain.inert = false;
+        pageMain.removeAttribute("aria-hidden");
+        if (entryNoticePreviousFocus && typeof entryNoticePreviousFocus.focus === "function") {
+          entryNoticePreviousFocus.focus();
+        }
+      }
+
+      function trapEntryNoticeFocus(event) {
+        if (entryNotice.hidden || event.key !== "Tab") return;
+        const focusable = focusableInEntryNotice();
+        if (!focusable.length) {
+          event.preventDefault();
+          entryNoticeDialog.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      function initEntryNotice() {
+        document.querySelectorAll(".notice-update-date").forEach((item) => {
+          item.textContent = LAST_UPDATED;
+        });
+        if (!isRootPage()) return;
+        let dismissedDate = "";
+        try {
+          dismissedDate = window.localStorage.getItem(ENTRY_NOTICE_STORAGE_KEY) || "";
+        } catch {
+          dismissedDate = "";
+        }
+        if (dismissedDate !== todayInKst()) openEntryNotice();
+      }
 
       function splitCrawlerUrls() {
         return urlsInput.value
@@ -3478,12 +3725,15 @@ Allow: /</pre>
       });
       campaignNameInput.addEventListener("input", syncNameMirrors);
       adgroupNameInput.addEventListener("input", syncNameMirrors);
+      entryNoticeClose.addEventListener("click", closeEntryNotice);
+      document.addEventListener("keydown", trapEntryNoticeFocus);
       formStartedAt.value = String(Date.now());
       syncObjectiveForRoute();
       updateAdListState();
       document.querySelectorAll(".slide-update-date").forEach((item) => {
         item.textContent = LAST_UPDATED;
       });
+      initEntryNotice();
       slidesPrintButton.addEventListener("click", () => {
         const previousTitle = document.title;
         document.title = SLIDES_PDF_FILENAME;
