@@ -101,6 +101,44 @@ class MailCollectorSettings:
         )
 
 
+@dataclass
+class MailDiagnostics:
+    mailbox_total: int = 0
+    inspected_messages: int = 0
+    fetched_messages: int = 0
+    parsed_messages: int = 0
+    fetch_failures: int = 0
+    empty_fetches: int = 0
+    matched_messages: int = 0
+    target_sender_matches: int = 0
+    target_recipient_matches: int = 0
+    both_target_sender_and_recipient: int = 0
+    from_openai_domain: int = 0
+    to_cc_openai_domain: int = 0
+    to_cc_nasmedia_domain: int = 0
+    to_cc_openai_nasmedia_exact: int = 0
+    missing_to_cc_headers: int = 0
+
+    def to_safe_dict(self) -> dict[str, int]:
+        return {
+            "mailbox_total": self.mailbox_total,
+            "inspected_messages": self.inspected_messages,
+            "fetched_messages": self.fetched_messages,
+            "parsed_messages": self.parsed_messages,
+            "fetch_failures": self.fetch_failures,
+            "empty_fetches": self.empty_fetches,
+            "matched_messages": self.matched_messages,
+            "target_sender_matches": self.target_sender_matches,
+            "target_recipient_matches": self.target_recipient_matches,
+            "both_target_sender_and_recipient": self.both_target_sender_and_recipient,
+            "from_openai_domain": self.from_openai_domain,
+            "to_cc_openai_domain": self.to_cc_openai_domain,
+            "to_cc_nasmedia_domain": self.to_cc_nasmedia_domain,
+            "to_cc_openai_nasmedia_exact": self.to_cc_openai_nasmedia_exact,
+            "missing_to_cc_headers": self.missing_to_cc_headers,
+        }
+
+
 @dataclass(frozen=True)
 class CollectedMail:
     collected_at_kst: str
@@ -145,7 +183,10 @@ class CollectedMail:
         }
 
 
-def collect_matching_messages(settings: MailCollectorSettings) -> list[CollectedMail]:
+def collect_matching_messages(
+    settings: MailCollectorSettings,
+    diagnostics: MailDiagnostics | None = None,
+) -> list[CollectedMail]:
     client: imaplib.IMAP4
     if settings.secure:
         client = imaplib.IMAP4_SSL(settings.host, settings.port)
@@ -163,19 +204,32 @@ def collect_matching_messages(settings: MailCollectorSettings) -> list[Collected
             return []
         uids = data[0].split()
         selected_uids = list(reversed(uids[-settings.top :]))
+        if diagnostics:
+            diagnostics.mailbox_total = len(uids)
+            diagnostics.inspected_messages = len(selected_uids)
 
         collected: list[CollectedMail] = []
         for uid_bytes in selected_uids:
             uid = uid_bytes.decode("ascii", errors="ignore")
             status, fetched = client.uid("fetch", uid_bytes, "(RFC822)")
             if status != "OK":
+                if diagnostics:
+                    diagnostics.fetch_failures += 1
                 continue
             raw = _raw_message_from_fetch(fetched)
             if not raw:
+                if diagnostics:
+                    diagnostics.empty_fetches += 1
                 continue
+            if diagnostics:
+                diagnostics.fetched_messages += 1
             message = BytesParser(policy=policy.default).parsebytes(raw)
+            if diagnostics:
+                record_message_diagnostics(message, settings, diagnostics)
             item = parse_message(uid, message, settings)
             if item:
+                if diagnostics:
+                    diagnostics.matched_messages += 1
                 collected.append(item)
         return collected
     finally:
@@ -183,6 +237,38 @@ def collect_matching_messages(settings: MailCollectorSettings) -> list[Collected
             client.logout()
         except Exception:
             pass
+
+
+def record_message_diagnostics(
+    message: EmailMessage | Message,
+    settings: MailCollectorSettings,
+    diagnostics: MailDiagnostics,
+) -> None:
+    diagnostics.parsed_messages += 1
+    _, from_email = _single_address(message.get("From", ""))
+    to_addresses = _addresses_for_header(message, "To")
+    cc_addresses = _addresses_for_header(message, "Cc")
+    recipients = {email for _, email in [*to_addresses, *cc_addresses]}
+
+    sender_match = from_email in set(settings.target_senders)
+    recipient_match = bool(recipients.intersection(settings.target_recipients))
+
+    if sender_match:
+        diagnostics.target_sender_matches += 1
+    if recipient_match:
+        diagnostics.target_recipient_matches += 1
+    if sender_match and recipient_match:
+        diagnostics.both_target_sender_and_recipient += 1
+    if from_email.endswith("@openai.com"):
+        diagnostics.from_openai_domain += 1
+    if any(email.endswith("@openai.com") for email in recipients):
+        diagnostics.to_cc_openai_domain += 1
+    if any(email.endswith("@nasmedia.co.kr") for email in recipients):
+        diagnostics.to_cc_nasmedia_domain += 1
+    if "openai@nasmedia.co.kr" in recipients:
+        diagnostics.to_cc_openai_nasmedia_exact += 1
+    if not recipients:
+        diagnostics.missing_to_cc_headers += 1
 
 
 def parse_message(
@@ -570,14 +656,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--post-sheet", action="store_true", help="Post matching rows to Google Sheets webhook.")
     parser.add_argument("--require-sheet", action="store_true", help="Fail if sheet posting is requested but not configured.")
+    parser.add_argument("--diagnostics", action="store_true", help="Print safe header-only match counters.")
+    parser.add_argument("--verbose-matches", action="store_true", help="Print matched message subjects. Avoid in shared logs.")
     parser.add_argument("--dry-run", action="store_true", help="Print matched subjects without side effects.")
     args = parser.parse_args(argv)
 
     settings = MailCollectorSettings.from_env(top_override=args.top)
-    messages = collect_matching_messages(settings)
+    diagnostics = MailDiagnostics() if args.diagnostics else None
+    messages = collect_matching_messages(settings, diagnostics=diagnostics)
     print(f"[ok] matched OpenAI mail messages: {len(messages)}")
-    for item in messages[:10]:
-        print(f"- {item.received_at} | {item.from_email} | {item.subject}")
+    if diagnostics:
+        print(f"[diag] mail scan counters: {json.dumps(diagnostics.to_safe_dict(), ensure_ascii=False)}")
+    if args.verbose_matches:
+        for item in messages[:10]:
+            print(f"- {item.received_at} | {item.from_email} | {item.subject}")
 
     if args.dry_run:
         return 0

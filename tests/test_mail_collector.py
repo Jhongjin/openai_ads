@@ -6,9 +6,11 @@ import unittest
 from rag_chatbot.mail_collector import (
     DEFAULT_TARGET_RECIPIENTS,
     DEFAULT_TARGET_SENDERS,
+    MailDiagnostics,
     MailCollectorSettings,
     _imap_utf7_encode,
     parse_message,
+    record_message_diagnostics,
     render_mail_markdown,
 )
 
@@ -74,6 +76,22 @@ class MailCollectorTests(unittest.TestCase):
         self.assertIn("openai_nasmedia_thread", item.tags)
         self.assertEqual(item.uid, "102")
 
+    def test_matches_openai_recipient_in_to_header(self) -> None:
+        item = parse_message(
+            "102-1",
+            message(
+                sender="임선정 <sunjung@nasmedia.co.kr>",
+                to="openai <openai@nasmedia.co.kr>",
+                cc="harrisonk@openai.com",
+            ),
+            settings(),
+        )
+
+        self.assertIsNotNone(item)
+        assert item is not None
+        self.assertIn("openai_nasmedia_thread", item.tags)
+        self.assertEqual(item.to, "openai <openai@nasmedia.co.kr>")
+
     def test_rejects_unrelated_mail(self) -> None:
         item = parse_message(
             "103",
@@ -99,6 +117,28 @@ class MailCollectorTests(unittest.TestCase):
 
         self.assertTrue(encoded.startswith("RAG_&"))
         self.assertTrue(encoded.endswith("-"))
+
+    def test_safe_header_diagnostics_count_matches_without_body_or_subject(self) -> None:
+        diagnostics = MailDiagnostics()
+        record_message_diagnostics(
+            message(
+                sender="윤승환 <ysh0227@nasmedia.co.kr>",
+                to="openai@nasmedia.co.kr",
+                cc="harrisonk@openai.com",
+                subject="민감한 제목",
+                body="민감한 본문",
+            ),
+            settings(),
+            diagnostics,
+        )
+
+        safe = diagnostics.to_safe_dict()
+        self.assertEqual(safe["parsed_messages"], 1)
+        self.assertEqual(safe["target_recipient_matches"], 1)
+        self.assertEqual(safe["to_cc_openai_nasmedia_exact"], 1)
+        self.assertEqual(safe["to_cc_openai_domain"], 1)
+        self.assertNotIn("민감한 제목", str(safe))
+        self.assertNotIn("민감한 본문", str(safe))
 
 
 if __name__ == "__main__":

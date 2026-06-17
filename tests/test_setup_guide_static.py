@@ -24,6 +24,8 @@ class SetupGuideStaticTests(unittest.TestCase):
 
         self.assertIn('data-tab="setupGuide"', html)
         self.assertIn("캠페인 세팅 가이드", html)
+        self.assertIn('.tab[data-tab="setupGuide"] > span:last-child', html)
+        self.assertIn("white-space: nowrap", html)
         self.assertIn("ChatGPT광고_캠페인세팅가이드_케이티나스미디어_", html)
         self.assertIn("print-guide", html)
 
