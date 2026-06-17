@@ -131,9 +131,9 @@ def _looks_like_viewer_link(url: str) -> bool:
 def _filename_low_res_hint(url: str) -> str | None:
     lowered = url.lower()
     if re.search(r"(?:^|[-_])(?:16|32|48|64|128)x(?:16|32|48|64|128)(?:[-_.]|$)", lowered):
-        return "파일명상 저해상도 의심"
+        return "파일명상 작은 이미지로 보임"
     if re.search(r"(?:favicon[-_])(?:16|32|48|64|128)(?:[-_.]|$)", lowered):
-        return "파일명상 저해상도 의심"
+        return "파일명상 작은 이미지로 보임"
     return None
 
 
@@ -201,8 +201,8 @@ def _inspect_image(
             normalized_url=normalized_url,
             verdict="fail",
             format=_content_type_format(content_type),
-            reason="이미지 파일을 열 수 없음 — 링크 또는 파일 형식 확인 필요",
-            action="공개 접근 가능한 PNG/ICO/WebP 직접 이미지 URL로 교체",
+            reason="이미지 파일을 읽을 수 없음 — 파일 형식 또는 링크 확인 필요",
+            action="공개된 PNG/ICO/WebP 직접 이미지 주소를 광고주에게 요청하세요",
             http_status=http_status,
         )
 
@@ -213,11 +213,11 @@ def _inspect_image(
         warnings.append(hint)
 
     if width < 256 or height < 256:
-        failures.append(f"{width}×{height} — 256 미달")
+        failures.append(f"이미지가 너무 작음 ({width}×{height}, 256×256 이상 필요)")
     if width != height:
-        warnings.append("비정사각형 — 원형 크롭 시 왜곡 가능")
+        warnings.append("가로세로 비율이 안 맞음 (정사각형 필요)")
     if transparent:
-        warnings.append("투명 배경 — 흰 배경 권장")
+        warnings.append("배경이 투명함 — 흰색 배경 이미지 권장")
 
     background = "투명" if transparent else "불투명"
     size = f"{width}x{height}"
@@ -234,7 +234,7 @@ def _inspect_image(
             format=image_format,
             background=background,
             reason=reason,
-            action="256×256 이상 정사각형, 흰 배경 직접 이미지로 교체",
+            action="256×256 이상, 정사각형, 흰 배경 이미지로 바꿔서 제출하세요",
             http_status=http_status,
             preview_url=normalized_url,
         )
@@ -250,7 +250,7 @@ def _inspect_image(
             format=image_format,
             background=background,
             reason=", ".join(warnings),
-            action="정사각형 흰 배경 이미지로 보정 후 OpenAI 광고팀 검수 권장",
+            action="256×256 이상, 정사각형, 흰 배경 이미지로 바꿔서 제출하세요",
             http_status=http_status,
             preview_url=normalized_url,
         )
@@ -264,7 +264,7 @@ def _inspect_image(
         height=height,
         format=image_format,
         background=background,
-        reason="직접 이미지 링크 + 256×256 이상 + 정사각형 + 불투명 배경",
+        reason="바로 열리는 이미지 주소이며, 256×256 이상·정사각형·불투명 배경 조건을 충족함",
         action="OpenAI 광고팀 최종 검수로 등록 가능 여부 확인",
         http_status=http_status,
         preview_url=normalized_url,
@@ -285,8 +285,8 @@ def _http_error_result(
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="warn",
-            reason="방화벽 차단 — 개발팀 확인",
-            action="방화벽/안티봇 정책에서 공개 이미지 접근 허용 확인",
+            reason="방화벽 차단 — 개발팀 확인 필요",
+            action="방화벽/안티봇 정책에서 공개 이미지 접근 허용 여부를 확인해 주세요",
             http_status=status_code,
         )
 
@@ -295,8 +295,8 @@ def _http_error_result(
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="fail",
-            reason="파비콘 없음/경로 오류 — URL 교체 필요",
-            action="공개 접근 가능한 직접 이미지 URL로 교체",
+            reason="이미지 주소가 잘못됨 (페이지를 찾을 수 없음)",
+            action="공개된 PNG/ICO/WebP 직접 이미지 주소를 광고주에게 요청하세요",
             http_status=status_code,
         )
 
@@ -305,8 +305,8 @@ def _http_error_result(
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="warn",
-            reason="서버 오류 — 재확인 필요",
-            action="잠시 후 재시도하거나 광고주 개발팀 확인",
+            reason="이미지 서버가 응답 오류를 냄 — 잠시 후 재확인 필요",
+            action="잠시 후 다시 점검하고, 반복되면 광고주 개발팀에 확인을 요청하세요",
             http_status=status_code,
         )
 
@@ -314,8 +314,8 @@ def _http_error_result(
         input_url=raw_url,
         normalized_url=normalized_url,
         verdict="warn",
-        reason=f"확인 불가(HTTP {status_code}) — 개발팀 확인 필요",
-        action="응답 코드와 이미지 URL 확인 필요",
+        reason=f"이미지 주소를 확인할 수 없음(HTTP {status_code}) — 개발팀 확인 필요",
+        action="응답 코드와 이미지 주소를 개발팀에서 확인해 주세요",
         http_status=status_code,
     )
 
@@ -326,7 +326,7 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             verdict="wait",
             reason="광고주 회신 대기",
-            action="파비콘 직접 이미지 URL 수령 후 재검사",
+            action="로고 이미지 주소를 받은 뒤 다시 검사하세요",
         )
 
     try:
@@ -336,7 +336,7 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             verdict="fail",
             reason=f"{exc} — 링크 확인 필요",
-            action="https://example.com/favicon.png 형식의 직접 이미지 URL 입력",
+            action="https://example.com/favicon.png 형식의 직접 이미지 주소를 입력하세요",
         )
 
     if _looks_like_viewer_link(normalized_url):
@@ -344,8 +344,8 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="fail",
-            reason="공유 뷰어 링크 — 직접 이미지 URL로 교체 필요",
-            action="공개 접근 가능한 PNG/ICO/WebP 직접 이미지 URL 제공 요청",
+            reason="구글 드라이브 등 공유 링크 — 누구나 바로 열리는 이미지 주소가 필요함",
+            action="공개된 PNG/ICO/WebP 직접 이미지 주소를 광고주에게 요청하세요",
         )
 
     try:
@@ -355,16 +355,16 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="warn",
-            reason="접근 불가 — 재시도/개발팀 확인",
-            action="잠시 후 재시도하거나 광고주 개발팀에 접근성 확인 요청",
+            reason="이미지 주소에 접속할 수 없음 — 재시도/개발팀 확인",
+            action="잠시 후 다시 점검하고, 반복되면 광고주 개발팀에 확인을 요청하세요",
         )
     except httpx.RequestError:
         return _result(
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="warn",
-            reason="접근 불가 — 재시도/개발팀 확인",
-            action="URL/DNS/방화벽 상태 확인 필요",
+            reason="이미지 주소에 접속할 수 없음 — 재시도/개발팀 확인",
+            action="URL, DNS, 방화벽 상태를 개발팀에서 확인해 주세요",
         )
 
     content_type = response.headers.get("content-type", "")
@@ -384,8 +384,8 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="fail",
-            reason="공유 뷰어 링크 — 직접 이미지 URL로 교체 필요",
-            action="이미지 파일 자체가 열리는 공개 직접 URL 제공 요청",
+            reason="구글 드라이브 등 공유 링크 — 누구나 바로 열리는 이미지 주소가 필요함",
+            action="공개된 PNG/ICO/WebP 직접 이미지 주소를 광고주에게 요청하세요",
             http_status=response.status_code,
         )
     if not media_type.startswith("image/"):
@@ -393,8 +393,8 @@ async def check_favicon_url(raw_url: str, client: httpx.AsyncClient) -> FaviconC
             input_url=raw_url,
             normalized_url=normalized_url,
             verdict="fail",
-            reason="이미지가 아닌 응답 — 링크 확인 필요",
-            action="Content-Type이 image/*인 직접 이미지 URL로 교체",
+            reason="이미지 파일이 아님 — 이미지 주소를 다시 확인해 주세요",
+            action="공개된 PNG/ICO/WebP 직접 이미지 주소를 광고주에게 요청하세요",
             http_status=response.status_code,
         )
 

@@ -44,7 +44,7 @@ class FaviconCheckerTests(unittest.IsolatedAsyncioTestCase):
             result = await check_favicon_url("https://example.com/favicon-32x32.png", client)
 
         self.assertEqual(result.verdict, "fail")
-        self.assertIn("256 미달", result.reason)
+        self.assertIn("이미지가 너무 작음", result.reason)
 
     async def test_transparent_png_warns(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:

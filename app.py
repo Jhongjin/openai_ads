@@ -37,6 +37,8 @@ class CheckResultResponse(BaseModel):
     action: str
     http_status: int | None
     robots_txt: str
+    firewall_hint: bool = False
+    firewall_badge: str | None = None
 
 
 class FaviconCheckRequest(BaseModel):

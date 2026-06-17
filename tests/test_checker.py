@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import unittest
 
-from checker import NormalizedUrl, evaluate_robots_txt, normalize_url
+import httpx
+
+from checker import NormalizedUrl, check_url, evaluate_robots_txt, normalize_url
 
 
 def normalized(url: str) -> NormalizedUrl:
@@ -38,7 +40,7 @@ class CheckerDecisionTests(unittest.TestCase):
             "User-agent: *\nAllow: /\nDisallow: /itg/ln/\n",
         )
         self.assertEqual(result.verdict, "warn")
-        self.assertIn("/itg/ln/page", result.reason)
+        self.assertIn("차단 목록", result.reason)
 
     def test_wildcard_landing_path_disallow_warns(self) -> None:
         result = evaluate_robots_txt(
@@ -57,6 +59,24 @@ class CheckerDecisionTests(unittest.TestCase):
     def test_invalid_url_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
             normalize_url("bad url")
+
+
+class CheckerFirewallHintTests(unittest.IsolatedAsyncioTestCase):
+    async def test_cloudflare_header_adds_hint_without_blocking(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                headers={"server": "cloudflare", "cf-ray": "abc123-ICN"},
+                text="User-agent: *\nAllow: /\n",
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            result = await check_url("https://kr.jellycat.com/", client)
+
+        self.assertEqual(result.verdict, "allow")
+        self.assertTrue(result.firewall_hint)
+        self.assertEqual(result.firewall_badge, "방화벽 뒤 — 추가 확인 권장")
+        self.assertIn("실제 광고 로봇이 막힐 수 있음", result.reason)
 
 
 if __name__ == "__main__":
