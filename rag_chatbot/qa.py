@@ -67,8 +67,8 @@ def _official_template_answer(
         )
     if any(term in lowered for term in ("글자", "자수", "문구")):
         return (
-            "글자수 제한은 경로별로 다릅니다. OpenAI 직접은 제목 최대 50자(16~24자 권장), "
-            "설명 최대 100자(32~48자 권장)입니다. 크리테오 경유는 제목 30자, 설명 60자이며 국문 띄어쓰기를 포함합니다."
+            "공식 자료 기준, OpenAI 직접 광고 문구는 제목 최대 50자(16~24자 권장), "
+            "설명문 최대 100자(32~48자 권장)입니다. 크리테오 경유 한글 자수는 내부운영 기준을 별도로 확인하세요."
         )
     if any(term in lowered for term in ("모범", "best practice", "베스트", "잘 만들", "작성 팁")):
         return (
@@ -120,8 +120,34 @@ def _pending_route_source_payload() -> list[dict[str, Any]]:
     ]
 
 
+def _official_text_limits_source_payload() -> list[dict[str, Any]]:
+    return [
+        {
+            "collection": "official",
+            "score": 1.0,
+            "source_tier": "official",
+            "title": "Create Ads for ChatGPT",
+            "source_url": "https://help.openai.com/en/articles/20001212-create-ads-for-chatgpt",
+            "source_updated_at": "2026-06-17",
+            "source_updated_at_is_fallback": True,
+            "lang": "en",
+        }
+    ]
+
+
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
+
+
+def _is_general_text_limit_query(question: str) -> bool:
+    lowered = question.lower()
+    if not _contains_any(lowered, ("글자", "자수", "문구", "제목", "설명")):
+        return False
+    if _contains_any(lowered, ("최소 집행", "최소 예산", "금액")):
+        return False
+    if _contains_any(lowered, ("한글", "국문", "크리테오", "criteo")):
+        return False
+    return True
 
 
 def _kr_ops_confirmed_answer(question: str) -> str | None:
@@ -258,9 +284,8 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
     if _contains_any(lowered, ("벤치마크", "레퍼런스", "공개 사례", "평균 성과", "표준 벤치마크")):
         return "글로벌·한국 모두 초기 단계라 현재 공개 사례나 표준 벤치마크는 없습니다. 업데이트 시 추가 안내 예정입니다."
 
-    if _contains_any(
-        lowered,
-        ("자수", "글자", "문자", "제목", "설명"),
+    if _contains_any(lowered, ("자수", "글자", "문자", "제목", "설명")) and (
+        "한글" in lowered or "국문" in lowered or is_criteo
     ):
         if is_both_route:
             return (
@@ -305,6 +330,15 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
 
     if is_no_data_query(normalized):
         return {"answer": no_data_answer(), "sources": []}
+
+    if _is_general_text_limit_query(normalized):
+        return {
+            "answer": (
+                "공식 자료 기준, OpenAI 직접 광고 문구는 제목 최대 50자(16~24자 권장), "
+                "설명문 최대 100자(32~48자 권장)입니다. 크리테오 경유 한글 자수는 내부운영 기준을 별도로 확인하세요."
+            ),
+            "sources": _official_text_limits_source_payload(),
+        }
 
     confirmed_answer = _kr_ops_confirmed_answer(normalized)
     if confirmed_answer:

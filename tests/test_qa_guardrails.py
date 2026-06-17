@@ -94,9 +94,10 @@ class QaGuardrailTests(unittest.TestCase):
     def test_general_text_limits_have_no_pending_caveat(self) -> None:
         result = answer_question("글자수 제한 있어?")
 
-        self.assertIn("OpenAI 직접은 제목 최대 50자", result["answer"])
-        self.assertIn("크리테오 경유는 제목 30자, 설명 60자", result["answer"])
+        self.assertIn("공식 자료 기준", result["answer"])
+        self.assertIn("제목 최대 50자", result["answer"])
         self.assertNotIn("확인 대기", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "official")
 
     def test_out_of_scope_rate_returns_no_data(self) -> None:
         result = answer_question("내일 환율 환산 원화 단가 알려줘")
