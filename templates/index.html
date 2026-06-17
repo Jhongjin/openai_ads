@@ -31,6 +31,7 @@
         --chat-color: #e60012;
         --crawler-color: #155eef;
         --favicon-color: #0f8b5f;
+        --checklist-color: #4d5358;
         --shadow-card: 0 10px 28px rgb(21 23 26 / 8%);
         --shadow-soft: 0 4px 14px rgb(21 23 26 / 6%);
         --font-sans: "Pretendard Variable", Pretendard, -apple-system,
@@ -286,6 +287,85 @@
         line-height: 1.5;
       }
 
+      .checklist-toolbar {
+        margin-bottom: 16px;
+      }
+
+      .checklist-grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .checklist-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .checklist-card-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        background: #f8fafc;
+        padding: 14px 16px;
+      }
+
+      .checklist-card h2 {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.35;
+      }
+
+      .checklist-items {
+        display: grid;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .checklist-item {
+        display: grid;
+        gap: 8px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 16px;
+      }
+
+      .checklist-item:last-child {
+        border-bottom: 0;
+      }
+
+      .checklist-item-title {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .checklist-item-body {
+        margin: 0;
+        color: #344054;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .tier-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .copy-status {
+        color: var(--green-ink);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
       .summary {
         display: none;
         margin: 20px 0 12px;
@@ -468,8 +548,8 @@
 
       .tabs {
         display: grid;
-        width: min(760px, 100%);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: min(980px, 100%);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
         border: 0;
         background: transparent;
@@ -502,6 +582,10 @@
         --tab-color: var(--favicon-color);
       }
 
+      .tab[data-tab="checklist"] {
+        --tab-color: var(--checklist-color);
+      }
+
       .tab-icon {
         display: inline-flex;
         width: 30px;
@@ -532,14 +616,16 @@
       .input-band,
       .table-wrap,
       .chat-empty,
-      .message {
+      .message,
+      .checklist-card {
         box-shadow: var(--shadow-card);
       }
 
       .input-band,
       .table-wrap,
       .chat-empty,
-      .message {
+      .message,
+      .checklist-card {
         border-color: #d4dae6;
       }
 
@@ -1067,6 +1153,40 @@
         padding: 10px 12px;
       }
 
+      .checklist-toolbar .section-note {
+        border-left-color: var(--checklist-color);
+        background: #f7f8fa;
+      }
+
+      .checklist-card {
+        border-color: #cfd6df;
+        border-radius: var(--radius-lg);
+        box-shadow: none;
+      }
+
+      .checklist-card-header {
+        border-bottom-color: #e3e7ee;
+        background: #fbfcfe;
+      }
+
+      .checklist-card h2 {
+        color: #0f1115;
+        font-weight: 750;
+      }
+
+      .checklist-item {
+        border-bottom-color: #e6eaf0;
+      }
+
+      .checklist-item:hover {
+        background: #fbfcfe;
+      }
+
+      .tier-list .source-chip {
+        min-height: 26px;
+        padding: 5px 8px;
+      }
+
       .notice {
         border-top-color: #cfd6df;
         background: rgb(255 255 255 / 96%);
@@ -1096,7 +1216,7 @@
           display: grid;
           width: calc(100vw - 28px) !important;
           max-width: calc(100vw - 28px);
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           overflow: hidden;
         }
 
@@ -1109,6 +1229,11 @@
           padding: 6px 4px;
           font-size: 11px;
           line-height: 1.15;
+        }
+
+        .checklist-card-header,
+        .checklist-item {
+          padding: 12px;
         }
 
         .tab-icon {
@@ -1150,6 +1275,10 @@
         <button class="tab" data-tab="favicon" type="button">
           <span class="tab-icon">ICO</span>
           <span>파비콘 검사</span>
+        </button>
+        <button class="tab" data-tab="checklist" type="button">
+          <span class="tab-icon">REQ</span>
+          <span>광고주 준비물</span>
         </button>
       </nav>
 
@@ -1243,6 +1372,187 @@
           </table>
         </section>
       </section>
+
+      <section class="panel" id="checklist-panel">
+        <div class="input-band checklist-toolbar">
+          <label>광고주 준비물 체크리스트</label>
+          <p class="section-note">
+            광고주에게 받아야 할 소재와 광고주 개발팀에 요청할 기술 확인 사항을 한 번에 정리했습니다.
+          </p>
+          <div class="controls">
+            <button class="primary" id="checklist-copy" type="button">전체 복사</button>
+            <button class="secondary" id="checklist-download" type="button">CSV 내보내기</button>
+            <span class="copy-status" id="checklist-copy-status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="checklist-grid" id="checklist-content">
+          <article class="checklist-card" data-section="광고 소재">
+            <div class="checklist-card-header">
+              <h2>광고 소재 — 광고주에게서 받아야 할 것</h2>
+              <div class="tier-list">
+                <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
+              </div>
+            </div>
+            <ul class="checklist-items">
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>광고주명(브랜드명)</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">광고 단위 상단에 노출될 브랜드명을 광고주에게 확인받습니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>파비콘/로고</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">공개 직접 이미지 링크로 받아야 합니다. 256×256 이상, 정사각형, 흰 배경, 원형 크롭 가능 형태를 권장합니다. 규격 미달은 캠페인 거부 사유가 아니라 로고 이미지 교체 요청 사항입니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>광고 제목</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>크리테오</span></span>
+                </div>
+                <p class="checklist-item-body">OpenAI 직접 집행은 최대 50자이며 16~24자를 권장합니다. 크리테오 경유는 최대 30자로 안내합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>광고 설명문</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>크리테오</span></span>
+                </div>
+                <p class="checklist-item-body">OpenAI 직접 집행은 최대 100자이며 32~48자를 권장합니다. 크리테오 경유는 최대 60자이며 국문 띄어쓰기를 포함합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>이미지 소재</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">PNG 또는 JPG, 정사각형(1:1), 최대 1200×1200, 공개 직접 접근 가능 링크로 받아야 합니다. 광고 메시지를 뒷받침하는 단순하고 관련성 높은 이미지를 권장합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>랜딩 URL</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">유효하고 접근 가능한 URL이어야 하며, 광고 내용과 관련성이 높은 페이지를 권장합니다. 홈 대신 제품·컬렉션·콘텐츠 페이지가 좋습니다. UTM 등 추적 파라미터는 대상 URL에 직접 추가할 수 있습니다.</p>
+              </li>
+            </ul>
+          </article>
+
+          <article class="checklist-card" data-section="랜딩 페이지 기술 요건">
+            <div class="checklist-card-header">
+              <h2>랜딩 페이지 기술 요건 — 광고주 개발팀이 확인할 것</h2>
+              <div class="tier-list">
+                <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
+              </div>
+            </div>
+            <ul class="checklist-items">
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>OpenAI 광고 로봇 허용</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">robots.txt에서 OAI-AdsBot은 반드시 허용해야 합니다. OAI-SearchBot도 허용을 권장합니다. 예: User-agent: OAI-AdsBot / Allow: /</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>웹 방화벽/봇 완화 예외 처리</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">Cloudflare·Akamai 등 웹 방화벽이나 봇 완화 설정에서 OpenAI 크롤러 user-agent를 허용 목록에 추가합니다. 단, OAI-AdsBot은 현재 Cloudflare에서 공식 검증·허용 목록 등록이 완료된 상태입니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>CAPTCHA·JS 챌린지 예외 처리</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">CAPTCHA, JS 챌린지, 사람 확인 로직이 있으면 OpenAI 크롤러가 랜딩 페이지를 확인할 수 있도록 예외 처리합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>속도 제한 확인</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">대량 업로드나 반복 검수 시 429(Too Many Requests) 등 속도 제한이 발생하지 않도록 서버 정책을 확인합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>사전 자가점검 안내</span>
+                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                </div>
+                <p class="checklist-item-body">이 사이트의 [랜딩 URL 검사] 탭에서 robots.txt 기준 1차 자가점검이 가능합니다. 최종 확정은 광고주 개발팀의 실제 OpenAI 광고 로봇 접근 테스트가 필요합니다.</p>
+              </li>
+            </ul>
+          </article>
+
+          <article class="checklist-card" data-section="집행 조건">
+            <div class="checklist-card-header">
+              <h2>집행 조건 — 영업팀이 광고주에게 안내할 것</h2>
+              <div class="tier-list">
+                <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>확정 운영 회신</span></span>
+              </div>
+            </div>
+            <ul class="checklist-items">
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>최소 집행금액</span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                </div>
+                <p class="checklist-item-body">OpenAI 직접(CBT)은 400만원 Net 기준입니다. 크리테오 경유는 캠페인별 월 기준 2,500만원입니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>입찰/과금 방식</span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                </div>
+                <p class="checklist-item-body">OpenAI 직접 집행은 CPC와 CPM 모두 가능합니다. 크리테오 경유는 CPM만 가능합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>초기 노출</span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                </div>
+                <p class="checklist-item-body">한국 런칭 초기에는 전체 광고 자격 유저의 10%에게 노출 후 점진 확대됩니다. 크리테오 경유 캠페인도 동일 적용되며 예외는 없습니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>인보이스(OpenAI)</span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                </div>
+                <p class="checklist-item-body">나스미디어가 광고 계정 전체를 통합해 단일 인보이스를 발행하고, 인보이스 내 광고주별 집행금액을 개별 표기합니다.</p>
+              </li>
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>인보이스(크리테오)</span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                </div>
+                <p class="checklist-item-body">기존 크리테오 광고 상품 정산과 동일 방식 예정입니다. 단, 추후 변경될 수 있습니다.</p>
+              </li>
+            </ul>
+          </article>
+
+          <article class="checklist-card" data-section="확인 대기">
+            <div class="checklist-card-header">
+              <h2>확인 대기 — 아직 미확정, 광고주에 단정 금지</h2>
+              <div class="tier-list">
+                <span class="source-chip pending"><span class="source-badge pending">확인대기</span><span class="source-divider">|</span><span>미확정</span></span>
+              </div>
+            </div>
+            <ul class="checklist-items">
+              <li class="checklist-item">
+                <div class="checklist-item-title">
+                  <span>미확정 항목</span>
+                  <span class="source-chip pending"><span class="source-badge pending">확인대기</span></span>
+                </div>
+                <p class="checklist-item-body">VAT 별도 여부, 트래커(픽셀) 제출의 집행 의무 여부, 크리테오 수수료 정책은 현재 OpenAI/크리테오 확인 대기 중입니다. 확정 후 정확히 안내드리겠습니다.</p>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
     </main>
 
     <div class="notice">
@@ -1261,6 +1571,15 @@
       <span id="favicon-notice">
         ※ 본 점검은 파비콘 규격 1차 셀프 체크입니다. 최종 등록 가능 여부는 OpenAI 광고팀 검수로 확정됩니다. 직접 이미지 주소가 아니거나 규격 미달 시 광고주에 교체 요청하거나 colleen@openai.com 으로 공유하세요. (요건: 공개 직접 링크 · 256×256 이상 · 원형 크롭 가능 · 흰 배경)
       </span>
+      <span id="checklist-notice">
+        ※ 베타 기준으로 정책·수치가 변동될 수 있습니다. 최종 확정은
+        <a
+          href="https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
+          target="_blank"
+          rel="noreferrer"
+        >OpenAI 공식 가이드</a>
+        및 담당자 확인이 필요합니다.
+      </span>
     </div>
 
     <script>
@@ -1269,11 +1588,13 @@
         chat: document.querySelector("#chat-panel"),
         crawler: document.querySelector("#crawler-panel"),
         favicon: document.querySelector("#favicon-panel"),
+        checklist: document.querySelector("#checklist-panel"),
       };
       const notices = {
         chat: document.querySelector("#chat-notice"),
         crawler: document.querySelector("#crawler-notice"),
         favicon: document.querySelector("#favicon-notice"),
+        checklist: document.querySelector("#checklist-notice"),
       };
 
       tabs.forEach((tab) => {
@@ -1308,6 +1629,10 @@
       const chatInput = document.querySelector("#chat-question");
       const chatSendButton = document.querySelector("#chat-send");
       const chatHistory = document.querySelector("#chat-history");
+      const checklistCopyButton = document.querySelector("#checklist-copy");
+      const checklistDownloadButton = document.querySelector("#checklist-download");
+      const checklistCopyStatus = document.querySelector("#checklist-copy-status");
+      const checklistContent = document.querySelector("#checklist-content");
 
       const crawlerVerdictLabel = {
         allow: "✅ 접근 가능",
@@ -1571,6 +1896,76 @@
         downloadCsv("openai_ads_favicon_check.csv", header, rows);
       }
 
+      function collectChecklistRows() {
+        return Array.from(checklistContent.querySelectorAll(".checklist-item")).map((item) => {
+          const section = item.closest(".checklist-card")?.dataset.section || "";
+          const title = item.querySelector(".checklist-item-title > span:first-child")?.textContent.trim() || "";
+          const tiers = Array.from(item.querySelectorAll(".source-badge"))
+            .map((badge) => badge.textContent.trim())
+            .filter(Boolean)
+            .join(" / ");
+          const body = item.querySelector(".checklist-item-body")?.textContent.trim() || "";
+          return { section, title, tiers, body };
+        });
+      }
+
+      function checklistText() {
+        const rows = collectChecklistRows();
+        const grouped = rows.reduce((acc, row) => {
+          acc[row.section] = acc[row.section] || [];
+          acc[row.section].push(row);
+          return acc;
+        }, {});
+
+        const lines = ["OpenAI 광고 광고주 준비물 체크리스트", ""];
+        Object.entries(grouped).forEach(([section, items]) => {
+          lines.push(`[${section}]`);
+          items.forEach((item) => {
+            lines.push(`- ${item.title} (${item.tiers}): ${item.body}`);
+          });
+          lines.push("");
+        });
+        lines.push("※ 베타 기준으로 정책·수치가 변동될 수 있습니다. 최종 확정은 OpenAI 공식 가이드 및 담당자 확인이 필요합니다.");
+        return lines.join("\n").trim();
+      }
+
+      async function copyChecklist() {
+        const text = checklistText();
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.append(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            textarea.remove();
+          }
+          checklistCopyStatus.textContent = "복사 완료";
+        } catch (error) {
+          checklistCopyStatus.textContent = "복사 실패";
+        } finally {
+          window.setTimeout(() => {
+            checklistCopyStatus.textContent = "";
+          }, 2200);
+        }
+      }
+
+      function downloadChecklistCsv() {
+        const header = ["섹션", "항목", "출처 등급", "내용"];
+        const rows = collectChecklistRows().map((item) => [
+          item.section,
+          item.title,
+          item.tiers,
+          item.body,
+        ]);
+        downloadCsv("openai_ads_advertiser_checklist.csv", header, rows);
+      }
+
       async function runChat() {
         const question = chatInput.value.trim();
         if (!question) {
@@ -1708,6 +2103,8 @@
       downloadButton.addEventListener("click", downloadCrawlerCsv);
       faviconCheckButton.addEventListener("click", runFaviconCheck);
       faviconDownloadButton.addEventListener("click", downloadFaviconCsv);
+      checklistCopyButton.addEventListener("click", copyChecklist);
+      checklistDownloadButton.addEventListener("click", downloadChecklistCsv);
     </script>
   </body>
 </html>
