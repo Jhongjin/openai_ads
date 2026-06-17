@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from rag_chatbot.config import project_root
 
@@ -67,6 +67,11 @@ class IngestResponse(BaseModel):
     counts: dict[str, int]
 
 
+class IntakeResponse(BaseModel):
+    receipt_number: str
+    submitted_at_kst: str
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -88,6 +93,11 @@ def checker_page() -> FileResponse:
 
 @app.get("/rag", include_in_schema=False)
 def rag_page() -> FileResponse:
+    return _index_file()
+
+
+@app.get("/intake", include_in_schema=False)
+def intake_page() -> FileResponse:
     return _index_file()
 
 
@@ -124,6 +134,26 @@ async def check_favicon(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return [FaviconCheckResultResponse(**result.to_dict()) for result in results]
+
+
+@app.post("/intake", response_model=IntakeResponse)
+async def intake(request: Request) -> IntakeResponse:
+    try:
+        from intake import IntakeSubmission, forward_intake_to_sheet
+
+        payload = await request.json()
+        submission = IntakeSubmission.model_validate(payload)
+        client_key = request.client.host if request.client else "unknown"
+        result = await forward_intake_to_sheet(submission, client_key=client_key)
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return IntakeResponse(**result)
 
 
 @app.post("/admin/reindex", response_model=IngestResponse, include_in_schema=False)

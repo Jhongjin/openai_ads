@@ -2,7 +2,7 @@
 
 나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부와 파비콘 규격을 1차 셀프 체크할 수 있는 경량 PoC입니다.
 
-첫 화면(`/`)은 RAG 챗봇입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 준비물`을 사용할 수 있습니다.
+첫 화면(`/`)은 RAG 챗봇입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 준비물`, `집행 의뢰 접수`를 사용할 수 있습니다.
 
 ## RAG 챗봇
 
@@ -75,6 +75,28 @@ Invoke-RestMethod -Method Post `
 - `CSV 내보내기`로 섹션/항목/출처 등급/내용 표를 내려받을 수 있습니다.
 - 하단에는 기존과 동일하게 베타 기준 변동 가능성과 공식 가이드 확인 안내가 표시됩니다.
 
+## 집행 의뢰 접수 폼
+
+`집행 의뢰 접수` 탭 또는 `/intake`는 광고 계정 생성과 캠페인 세팅에 필요한 정보를 구글 시트로 접수합니다.
+
+- 광고주/계정 정보, 캠페인 개요, 준비상태, 담당자 정보를 입력합니다.
+- 타겟 국가, 청구 통화, 시간대는 계정 생성 후 변경이 어렵다는 경고를 화면에 표시합니다.
+- 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정됩니다.
+- 예산 기준은 경고만 표시하고 제출을 막지 않습니다.
+- 카드 정보는 수집하지 않고 준비 여부만 체크합니다.
+- 제출 성공 시 `KT-OAI-YYYYMMDD-NNN` 형식의 접수번호와 KST 타임스탬프를 반환합니다.
+
+서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body에 `SHEETS_SHARED_SECRET` 값을 함께 넣습니다. Apps Script 웹앱은 이 공유 토큰을 검증하도록 구성해야 합니다.
+
+API 직접 호출:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8000/intake `
+  -ContentType "application/json" `
+  -Body '{"advertiserName":"테스트","legalName":"테스트 주식회사","websiteUrl":"https://example.com","executionRoute":"openai_cbt","campaignName":"테스트 캠페인","campaignObjective":"views","budgetType":"total","budgetAmount":4000000,"startDate":"2026-06-18","endDate":"2026-06-30","contactName":"홍길동","contactPhone":"010-0000-0000","contactEmail":"client@example.com","salesOwner":"나스 담당자","formStartedAt":1781712000000}'
+```
+
 ## 구조
 
 - `official`: OpenAI 공식 Help Center, 정책, 공지 URL
@@ -85,6 +107,7 @@ Invoke-RestMethod -Method Post `
 - 크롤러 체크 API: `POST /check`
 - 파비콘 체크 API: `POST /check-favicon`
 - RAG 챗 API: `POST /chat`
+- 집행 의뢰 접수 API: `POST /intake`
 
 공식 가이드 허브: <https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads>
 
@@ -208,6 +231,8 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `RAG_CONFIG_PATH`
 - `EMBEDDING_BATCH_SIZE`
 - `INGEST_TOKEN` (선택, 배포 후 보호된 `/admin/reindex`를 호출할 때 사용)
+- `GOOGLE_SHEETS_WEBHOOK_URL` (집행 의뢰 접수용 Apps Script 웹앱 URL)
+- `SHEETS_SHARED_SECRET` (Apps Script와 동일한 공유 토큰)
 
 배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. 민감 환경변수를 로컬로 내려받을 수 없는 경우에는 `INGEST_TOKEN`을 설정한 뒤 배포된 `POST /admin/reindex`를 호출해 Vercel 런타임에서 재인덱싱할 수 있습니다.
 
