@@ -4181,9 +4181,10 @@ Allow: /</pre>
 
       chatSendButton.addEventListener("click", runChat);
       chatInput.addEventListener("keydown", (event) => {
-        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-          runChat();
-        }
+        if (event.key !== "Enter") return;
+        if (event.ctrlKey || event.metaKey) return;
+        event.preventDefault();
+        runChat();
       });
       checkButton.addEventListener("click", runCrawlerCheck);
       downloadButton.addEventListener("click", downloadCrawlerCsv);
