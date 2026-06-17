@@ -402,6 +402,7 @@ def post_rows_to_sheet(messages: Iterable[CollectedMail], settings: MailCollecto
         settings.webhook_url,
         json={"secret": settings.webhook_secret, "data": {"rows": rows}},
         timeout=30,
+        follow_redirects=True,
     )
     response.raise_for_status()
     try:
