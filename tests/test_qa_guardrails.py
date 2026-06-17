@@ -84,6 +84,41 @@ class QaGuardrailTests(unittest.TestCase):
         self.assertIn("크리테오 경유는 CPM만 가능", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
 
+    def test_account_spend_cap_is_not_minimum_spend(self) -> None:
+        result = answer_question("Account Spend Cap이 뭐야? 월 cap이야?")
+
+        self.assertIn("계정 단위 lifetime spend cap", result["answer"])
+        self.assertIn("OpenAI 팀이 설정", result["answer"])
+        self.assertIn("월 단위 cap도 아닙니다", result["answer"])
+        self.assertIn("전 계정 한도를 상향 예정", result["answer"])
+        self.assertIn("최소 집행 약정과는 별개", result["answer"])
+        self.assertNotIn("400만원", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_budget_minimum_values_are_soft_uncertain_guidance(self) -> None:
+        result = answer_question("일예산 최소 KRW 25,000이 확정이야? 총예산 최소값도 알려줘")
+
+        self.assertIn("일 최소 KRW 25,000", result["answer"])
+        self.assertIn("총예산 최소 KRW 1,000", result["answer"])
+        self.assertIn("미확정", result["answer"])
+        self.assertIn("훨씬 높게 설정", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_crawler_429_answers_rate_limit_without_inventing_full_list(self) -> None:
+        result = answer_question("크롤러 에러코드 429는 무슨 뜻이야?")
+
+        self.assertIn("Too Many Requests", result["answer"])
+        self.assertIn("rate limit", result["answer"])
+        self.assertIn("작은 배치", result["answer"])
+        self.assertIn("전체 크롤러 에러코드 목록은 현재 OpenAI 확인 중", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "official")
+
+    def test_crawler_error_code_full_list_stays_pending(self) -> None:
+        result = answer_question("크롤러 에러코드 전체 목록 알려줘")
+
+        self.assertIn("현재 OpenAI 확인 대기 중", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "pending")
+
     def test_korean_text_limits_show_both_routes(self) -> None:
         result = answer_question("한글 소재 최대 자수 알려줘")
 

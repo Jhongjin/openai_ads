@@ -65,6 +65,7 @@ collections:
           OAI-AdsBot is used to validate the safety of web pages submitted as ads on ChatGPT. When an ad is submitted, OpenAI may visit the landing page to ensure it complies with policies.
           OpenAI may also use landing page content to determine when the ad is most relevant to show to users. OAI-AdsBot only visits pages submitted as ads, and data collected by OAI-AdsBot is not used to train generative AI foundation models.
           OAI-SearchBot is used to surface websites in search results in ChatGPT search features. To help ensure a site appears in search results, OpenAI recommends allowing OAI-SearchBot in robots.txt and allowing requests from published IP ranges.
+          429 Too Many Requests는 요청이 너무 많거나 속도 제한(rate limit)에 걸렸다는 의미다. 대량 업로드나 반복 검수 중 429가 발생하면 작은 배치로 나누어 분산 제출하고 시간을 두고 재시도한다.
       - title: "OpenAI Ad Policies"
         source_url: "https://openai.com/policies/ad-policies/"
         content: |
@@ -96,7 +97,9 @@ collections:
           수수료/마크업: OpenAI CBT와 크리테오 경유 모두 마크업 진행이 필요하다. 크리테오는 호스팅사(카페24, 메이크샵 등) 연동 운영 시 호스팅 fee 5%가 발생한다.
           VAT: 한국 사업자등록번호(BRN) 또는 세금ID 제공 시 0%, 미제공 시 10%로 적용된다.
           전환 추적(트래커): 노출/클릭 캠페인에서는 필수는 아니지만 강력 권장한다. 향후 전환 최적화 캠페인은 전환 추적 설정이 필요하다.
-          예산 한도(Cap) 변경: 변경 가능하나 OpenAI 측 별도 요청이 필요하고 시간이 소요된다. 운영 중 확대 필요 시 사전 요청을 권장한다.
+          Account Spend Cap: 계정 단위 lifetime spend cap이며 OpenAI 팀이 설정한다. 대행사나 광고주가 직접 설정할 수 없고 월 단위 cap도 아니다. 런칭 시 전 계정 한도를 상향 예정이며 이후 캠페인 단위 예산 제어(campaign-level budget control) 도입 예정이다. 상세는 추후 OpenAI 공지 대상이다. 최소 집행 약정과는 별개 개념이므로 혼동하지 않는다. 이 값은 변동 가능성이 있다.
+          예산 최소값: 일 최소 KRW 25,000 / 총예산 최소 KRW 1,000은 Ads Manager 시스템 표기값이지만 OpenAI도 의도된 정책값인지 확정하지 못했다. 실무상 캠페인 예산은 이보다 훨씬 높게 설정하는 것을 권장한다. 표기값과 정책 확정 여부는 변동 가능성이 있다.
+          추가 광고주 신청 절차: 기존 27개사 외 추가 광고주는 tracker에 기입한 뒤 이메일로 통보하면 OpenAI가 추가 Ads Manager 계정을 provisioning한다.
           인보이스(OpenAI): 나스미디어가 대행 광고 계정 전체를 통합해 단일 인보이스를 발행하고, 인보이스 내 광고주별 집행금액을 개별 표기한다. 실제 집행분 기준 익월 첫 영업일 7일 이내 발행된다.
           인보이스(크리테오): 기존 크리테오 광고 상품 정산과 동일 방식 예정이다. 단, 추후 변경될 수 있다. 미집행 계정 페널티는 없고 실제 집행분만 청구한다.
           랜딩 페이지: 자사몰과 외부몰(네이버 브랜드스토어·스마트스토어, 쿠팡, 올리브영 등) 제품 페이지 모두 허용한다. 단, OpenAI 크롤러 접근이 가능해야 한다. 트래커 advertiser URL은 정책 심사용으로 공식 홈페이지를 권장한다.
@@ -113,7 +116,12 @@ collections:
     tier_label: "확인 대기 (미확정)"
     paths:
       - "data/pending"
-    documents: []
+    documents:
+      - title: "크롤러 에러코드 확인 대기"
+        source_url: "internal://pending/crawler-error-codes"
+        updated_at: "2026-06-17"
+        content: |
+          크롤러 에러코드 전체 목록은 OpenAI 확인 대기 중이다. 429 Too Many Requests는 OpenAI 크롤러 공식 문서 기준 rate limit 의미로 안내할 수 있으나, 429 외 전체 에러코드 목록을 임의로 나열하지 않는다.
 
 ignored_local_patterns:
   - "*criteo*"

@@ -550,6 +550,35 @@
         background: var(--brand);
       }
 
+      .slide-card.dense {
+        padding: clamp(18px, 3vw, 32px);
+      }
+
+      .slide-card.dense .slide-section-title {
+        margin-bottom: 12px;
+      }
+
+      .slide-card.dense .slide-grid {
+        gap: 8px;
+      }
+
+      .slide-card.dense .slide-item {
+        padding: 10px 12px;
+      }
+
+      .slide-card.dense .slide-item strong {
+        margin-bottom: 4px;
+      }
+
+      .slide-update {
+        position: absolute;
+        top: 18px;
+        right: 24px;
+        color: #697077;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
       .slide-kicker {
         margin: 0 0 12px;
         color: var(--brand);
@@ -614,6 +643,26 @@
         line-height: 1.5;
       }
 
+      .slide-mini-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .slide-pill {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #d9dde5;
+        border-radius: 999px;
+        background: #fff;
+        padding: 3px 8px;
+        color: #4d5358;
+        font-size: 11px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
       .slide-list {
         display: grid;
         gap: 12px;
@@ -651,6 +700,64 @@
         color: #4d5358;
         font-size: 14px;
         line-height: 1.55;
+      }
+
+      .copy-guide {
+        margin-top: 12px;
+        overflow: hidden;
+        border: 1px solid #d9dde5;
+        border-radius: var(--radius-md, 6px);
+        background: #fff;
+      }
+
+      .copy-guide h3 {
+        margin: 0;
+        border-bottom: 1px solid #d9dde5;
+        background: #fff7f7;
+        padding: 10px 12px;
+        color: #111827;
+        font-size: 14px;
+        line-height: 1.3;
+      }
+
+      .copy-guide-table {
+        display: grid;
+        grid-template-columns: 0.72fr 1fr 1fr;
+      }
+
+      .copy-guide-table > div {
+        border-right: 1px solid #eef1f5;
+        border-bottom: 1px solid #eef1f5;
+        padding: 8px 10px;
+        color: #374151;
+        font-size: 12px;
+        line-height: 1.38;
+      }
+
+      .copy-guide-table > div:nth-child(3n) {
+        border-right: 0;
+      }
+
+      .copy-guide-table .head {
+        background: #f8fafc;
+        color: #111827;
+        font-weight: 850;
+      }
+
+      .crawler-steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .crawler-code {
+        max-height: none;
+        margin: 10px 0 0;
+        border-radius: var(--radius-md, 6px);
+        background: #111827;
+        color: #f9fafb;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .slide-footer {
@@ -867,7 +974,7 @@
       .tabs {
         display: grid;
         width: min(980px, 100%);
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 8px;
         border: 0;
         background: transparent;
@@ -1569,7 +1676,7 @@
           display: grid;
           width: calc(100vw - 28px) !important;
           max-width: calc(100vw - 28px);
-          grid-template-columns: repeat(6, minmax(0, 1fr));
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           overflow: hidden;
         }
 
@@ -1615,7 +1722,8 @@
         }
 
         .slide-grid,
-        .slide-grid.three {
+        .slide-grid.three,
+        .crawler-steps {
           grid-template-columns: 1fr;
         }
 
@@ -1697,10 +1805,6 @@
         <button class="tab" data-tab="favicon" type="button">
           <span class="tab-icon">ICO</span>
           <span>파비콘 검사</span>
-        </button>
-        <button class="tab" data-tab="checklist" type="button">
-          <span class="tab-icon">REQ</span>
-          <span>광고주 준비물</span>
         </button>
         <button class="tab" data-tab="intake" type="button">
           <span class="tab-icon">IN</span>
@@ -2177,18 +2281,20 @@
 
           <div class="slide-deck" aria-label="ChatGPT 광고 집행 준비 안내 슬라이드">
             <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">OpenAI ChatGPT Ads 베타 기준</p>
                 <h2 class="slide-title">ChatGPT 광고 집행 준비 안내</h2>
                 <p class="slide-subtitle">광고주님께서 준비해주실 항목</p>
               </div>
               <div class="slide-footer">
-                <span>나스미디어 · 2026.06.17 · OpenAI ChatGPT Ads 베타 기준</span>
+                <span>케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr · OpenAI ChatGPT Ads 베타 기준</span>
                 <span class="slide-page-number">1/5</span>
               </div>
             </section>
 
-            <section class="slide-card">
+            <section class="slide-card dense">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">01 · 광고 소재</p>
                 <h2 class="slide-section-title">광고 소재 준비물</h2>
@@ -2199,24 +2305,55 @@
                   </div>
                   <div class="slide-item">
                     <strong>로고/파비콘</strong>
-                    <span>공개 직접 이미지 링크, 256×256 이상, 정사각형, 흰 배경</span>
+                    <span>공개 직접 이미지 링크, 256×256 이상, 정사각형, 흰 배경, 원형 크롭 가능</span>
                   </div>
                   <div class="slide-item">
                     <strong>광고 제목</strong>
-                    <span>최대 50자(권장 16~24자)</span>
+                    <span>16~18자 권장</span>
+                    <div class="slide-mini-badges">
+                      <span class="slide-pill">권장 기준</span>
+                      <span class="slide-pill">정식 오픈 시 Ads Manager 재확인</span>
+                      <span class="slide-pill">공식 도움말 글자수 미명시</span>
+                    </div>
                   </div>
                   <div class="slide-item">
                     <strong>광고 설명</strong>
-                    <span>최대 100자(권장 32~48자)</span>
+                    <span>32~36자 권장</span>
+                    <div class="slide-mini-badges">
+                      <span class="slide-pill">권장 기준</span>
+                      <span class="slide-pill">공식 도움말 글자수 미명시</span>
+                    </div>
+                  </div>
+                  <div class="slide-item">
+                    <strong>크리테오 경유</strong>
+                    <span>제목 30자 / 설명 60자</span>
                   </div>
                   <div class="slide-item">
                     <strong>이미지</strong>
-                    <span>PNG/JPG, 정사각형(1:1), 1200×1200 이하, 공개 접근 가능</span>
+                    <span>PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것</span>
                   </div>
                   <div class="slide-item">
                     <strong>랜딩 URL</strong>
                     <span>유효·접근 가능, 관련성 높은 페이지(자사몰/외부몰 제품 페이지 가능)</span>
                   </div>
+                </div>
+                <div class="copy-guide">
+                  <h3>광고 카피 작성 가이드</h3>
+                  <div class="copy-guide-table">
+                    <div class="head">구분</div>
+                    <div class="head">좋은 예</div>
+                    <div class="head">아쉬운 예</div>
+                    <div>출발점</div>
+                    <div>사용자의 문제·상황에서 시작</div>
+                    <div>제품명·기능 정보만 나열</div>
+                    <div>문장 구조</div>
+                    <div>필요·상황 → 해결책</div>
+                    <div>브랜드·상품명 → 기능 나열</div>
+                    <div>예시</div>
+                    <div>건강한 저녁, 빠르게 준비하고 싶다면?</div>
+                    <div>○○ 밀키트 출시</div>
+                  </div>
+                  <p class="slide-callout">광고 소재·이미지·랜딩 페이지는 OpenAI 광고 정책을 준수해야 하며, 위반 시 승인이 거부될 수 있습니다.</p>
                 </div>
               </div>
               <div class="slide-footer">
@@ -2226,17 +2363,31 @@
             </section>
 
             <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">02 · 랜딩 페이지</p>
                 <h2 class="slide-section-title">랜딩 페이지 기술 준비</h2>
-                <ul class="slide-list">
-                  <li>OpenAI 광고 로봇(OAI-AdsBot) 접근 허용</li>
-                  <li>웹 방화벽(Cloudflare 등)에서 OpenAI 크롤러 차단 해제</li>
-                  <li>CAPTCHA/봇 차단이 랜딩 페이지를 막지 않도록 예외 처리</li>
-                </ul>
+                <div class="crawler-steps">
+                  <div class="slide-item">
+                    <strong>1. robots.txt 허용</strong>
+                    <span>OAI-AdsBot 필수 / OAI-SearchBot 권장 허용</span>
+                    <pre class="crawler-code">User-agent: OAI-SearchBot
+Allow: /
+User-agent: OAI-AdsBot
+Allow: /</pre>
+                  </div>
+                  <div class="slide-item">
+                    <strong>2. 방화벽 allowlist</strong>
+                    <span>Cloudflare·Akamai 등 웹 방화벽과 봇 차단에서 OpenAI 크롤러 차단 해제</span>
+                  </div>
+                  <div class="slide-item">
+                    <strong>3. 안티봇 예외 처리</strong>
+                    <span>CAPTCHA/안티봇 로직이 랜딩 페이지 접근을 막지 않도록 예외 처리</span>
+                  </div>
+                </div>
               </div>
               <div>
-                <p class="slide-callout">robots.txt 사전 점검은 나스미디어 측에서 지원해 드립니다.</p>
+                <p class="slide-callout">Cloudflare는 OAI-AdsBot 공식 허용이 완료되었습니다. 크롤러 접근 불가 시 광고 노출(delivery)이 제한될 수 있으며, robots.txt 점검은 케이티나스미디어가 지원합니다.</p>
                 <div class="slide-footer">
                   <span>최종 확인은 광고주 개발팀의 실제 접근 테스트가 필요합니다.</span>
                   <span class="slide-page-number">3/5</span>
@@ -2245,6 +2396,7 @@
             </section>
 
             <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">03 · 집행 조건</p>
                 <h2 class="slide-section-title">집행 조건 안내</h2>
@@ -2263,7 +2415,7 @@
                   </div>
                   <div class="slide-item">
                     <strong>인보이스</strong>
-                    <span>나스미디어 통합 단일 인보이스, 광고주별 집행금액 개별 표기</span>
+                    <span>케이티나스미디어 통합 단일 인보이스, 광고주별 집행금액 개별 표기</span>
                   </div>
                 </div>
               </div>
@@ -2277,6 +2429,7 @@
             </section>
 
             <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">04 · 다음 단계</p>
                 <h2 class="slide-section-title">준비 체크리스트 & 다음 단계</h2>
@@ -2293,7 +2446,7 @@
                 </div>
               </div>
               <div>
-                <p class="slide-callout">문의처: 나스미디어 영업 담당</p>
+                <p class="slide-callout">문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</p>
                 <div class="slide-footer">
                   <span>OpenAI ChatGPT Ads 베타 기준으로 정책·수치가 변동될 수 있습니다.</span>
                   <span class="slide-page-number">5/5</span>
@@ -2339,6 +2492,8 @@
     </div>
 
     <script>
+      const LAST_UPDATED = "2026-06-17";
+      const SLIDES_PDF_FILENAME = `ChatGPT광고_집행준비안내_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const tabs = document.querySelectorAll(".tab");
       const panels = {
         chat: document.querySelector("#chat-panel"),
@@ -3039,7 +3194,17 @@
       intakeForm.elements.startDate.addEventListener("change", () => {
         intakeForm.elements.endDate.min = intakeForm.elements.startDate.value || today;
       });
-      slidesPrintButton.addEventListener("click", () => window.print());
+      document.querySelectorAll(".slide-update-date").forEach((item) => {
+        item.textContent = LAST_UPDATED;
+      });
+      slidesPrintButton.addEventListener("click", () => {
+        const previousTitle = document.title;
+        document.title = SLIDES_PDF_FILENAME;
+        window.print();
+        window.setTimeout(() => {
+          document.title = previousTitle;
+        }, 1000);
+      });
       syncObjectiveForRoute();
     </script>
   </body>

@@ -135,6 +135,25 @@ def _official_text_limits_source_payload() -> list[dict[str, Any]]:
     ]
 
 
+def _official_crawler_source_payload() -> list[dict[str, Any]]:
+    return [
+        {
+            "collection": "official",
+            "score": 1.0,
+            "source_tier": "official",
+            "title": "Overview of OpenAI Crawlers",
+            "source_url": "https://developers.openai.com/api/docs/bots",
+            "source_updated_at": "2026-06-17",
+            "source_updated_at_is_fallback": True,
+            "lang": "en",
+        }
+    ]
+
+
+def _crawler_429_source_payload() -> list[dict[str, Any]]:
+    return _official_crawler_source_payload() + _pending_route_source_payload()
+
+
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
@@ -150,14 +169,58 @@ def _is_general_text_limit_query(question: str) -> bool:
     return True
 
 
+def _is_crawler_429_query(question: str) -> bool:
+    lowered = question.lower()
+    return _contains_any(
+        lowered,
+        (
+            "429",
+            "too many requests",
+            "rate limit",
+            "레이트 리밋",
+            "속도 제한",
+        ),
+    ) and _contains_any(lowered, ("크롤러", "crawler", "adsbot", "oai-adsbot", "에러", "오류", "코드"))
+
+
+def _is_crawler_error_code_list_query(question: str) -> bool:
+    lowered = question.lower()
+    return _contains_any(
+        lowered,
+        ("에러코드", "에러 코드", "오류코드", "오류 코드", "상태코드", "error code", "http code"),
+    ) and _contains_any(lowered, ("전체", "목록", "리스트", "종류", "전부", "모두"))
+
+
 def _kr_ops_confirmed_answer(question: str) -> str | None:
     lowered = question.lower()
     is_criteo = is_criteo_query(question)
     is_direct = any(term in lowered for term in ("openai 직접", "openai", "cbt", "직접"))
     is_both_route = is_criteo and is_direct
 
+    if _contains_any(lowered, ("account spend cap", "spend cap", "계정 spend cap", "계정 cap", "계정 캡", "계정 한도")):
+        return (
+            "Account Spend Cap은 계정 단위 lifetime spend cap입니다. OpenAI 팀이 설정하며 대행사나 광고주가 직접 설정할 수 없고, "
+            "월 단위 cap도 아닙니다. 런칭 시 전 계정 한도를 상향 예정이며 이후 캠페인 단위 예산 제어(campaign-level budget control) 도입 예정입니다. "
+            "상세는 추후 OpenAI 공지 대상이며, 최소 집행 약정과는 별개 개념입니다. 이 내용은 변동 가능성이 있습니다."
+        )
+
+    if _contains_any(lowered, ("추가 광고주", "광고주 추가", "계정 provisioning", "프로비저닝", "기존 27개사", "27개사", "tracker")):
+        return (
+            "기존 27개사 외 추가 광고주는 tracker에 기입한 뒤 이메일로 통보하면 OpenAI가 추가 Ads Manager 계정을 provisioning합니다."
+        )
+
     if "슬라이드" in lowered and _contains_any(lowered, ("최소 집행", "최소 예산", "금액")):
         return '광고주 전달용 슬라이드에는 "최소 집행 약정 400만원 / 상세 조건은 영업 담당 안내" 톤으로 표기합니다. 크리테오 1,000만원 조건은 슬라이드에 직접 박지 않고 내부 영업 안내로 처리합니다.'
+
+    if _contains_any(
+        lowered,
+        ("일 최소", "일예산 최소", "총예산 최소", "예산 최소값", "시스템 표기값", "krw 25,000", "25000", "25,000", "krw 1,000"),
+    ):
+        return (
+            "Ads Manager에 보이는 예산 최소값은 일 최소 KRW 25,000 / 총예산 최소 KRW 1,000 표기값입니다. "
+            "다만 OpenAI도 이 값이 의도된 정책값인지 아직 확정하지 못해 미확정으로 봐야 합니다. "
+            "실무상 캠페인 예산은 이보다 훨씬 높게 설정하는 것을 권장하며, 표기값과 정책 확정 여부는 변동 가능성이 있습니다."
+        )
 
     if _contains_any(lowered, ("최소 집행", "최소 예산", "minimum spend")):
         if is_both_route:
@@ -243,10 +306,10 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
             "미집행 계정 페널티는 없고 실제 집행분만 청구됩니다."
         )
 
-    if _contains_any(lowered, ("예산 한도", "cap", "캡", "예산 변경", "한도 변경")):
+    if _contains_any(lowered, ("예산 한도", "캠페인 예산 제어", "campaign-level budget", "한도 변경")):
         return (
-            "예산 한도(Cap)는 변경 가능하지만 OpenAI 측 별도 요청이 필요하고 시간이 소요됩니다. "
-            "운영 중 확대 가능성이 있으면 사전 요청을 권장합니다."
+            "Account Spend Cap은 계정 단위 lifetime spend cap이며 OpenAI 팀이 설정합니다. 대행사·광고주가 직접 설정하는 월 단위 cap이 아닙니다. "
+            "런칭 시 전 계정 한도를 상향 예정이고, 이후 캠페인 단위 예산 제어 도입 예정입니다. 상세는 추후 OpenAI 공지 대상이며 변동 가능성이 있습니다."
         )
 
     if _contains_any(lowered, ("랜딩", "외부몰", "자사몰", "스마트스토어", "브랜드스토어", "쿠팡", "올리브영")):
@@ -315,6 +378,22 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
     normalized = question.strip()
     if not normalized:
         return {"answer": "질문을 입력해 주세요.", "sources": []}
+
+    if _is_crawler_429_query(normalized):
+        return {
+            "answer": (
+                "크롤러 응답 429는 Too Many Requests, 즉 rate limit에 걸렸다는 의미입니다. "
+                "대량 업로드나 반복 검수 중 429가 발생하면 URL을 작은 배치로 나누어 분산 제출하고 시간을 두고 재시도하는 것을 권장합니다. "
+                "다만 429 외 전체 크롤러 에러코드 목록은 현재 OpenAI 확인 중입니다."
+            ),
+            "sources": _crawler_429_source_payload(),
+        }
+
+    if _is_crawler_error_code_list_query(normalized):
+        return {
+            "answer": "크롤러 에러코드 전체 목록은 현재 OpenAI 확인 대기 중입니다. 확정 후 정확히 안내드리겠습니다.",
+            "sources": _pending_route_source_payload(),
+        }
 
     if is_pending_query(normalized):
         return {
