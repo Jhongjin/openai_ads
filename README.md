@@ -2,9 +2,9 @@
 
 나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부와 파비콘 규격을 1차 셀프 체크할 수 있는 경량 PoC입니다.
 
-첫 화면(`/`)은 RAG 챗봇입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `집행 의뢰 접수`, `광고주 안내 자료`, `캠페인 세팅 가이드`를 사용할 수 있습니다.
+첫 화면(`/`)은 `광고 Q&A`입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `집행 의뢰 접수`, `광고주 안내 자료`, `캠페인 세팅 가이드`를 사용할 수 있습니다.
 
-## RAG 챗봇
+## 광고 Q&A
 
 - `POST /chat`으로 질문을 보내면 공식·국내운영·확인대기 근거를 검색합니다.
 - 답변 UI에는 공식=파랑, 내부운영=회색, 확인대기=주황 배지를 표시합니다.
@@ -239,7 +239,7 @@ python -m pip install streamlit
 streamlit run ui.py
 ```
 
-Vercel은 루트 `app.py`의 FastAPI `app`을 zero-config 엔트리포인트로 감지합니다. `/check`는 robots.txt 셀프 체크, `/check-favicon`은 파비콘 규격 체크, `/chat`은 RAG Q&A입니다.
+Vercel은 루트 `app.py`의 FastAPI `app`을 zero-config 엔트리포인트로 감지합니다. `/check`는 robots.txt 셀프 체크, `/check-favicon`은 파비콘 규격 체크, `/chat`은 광고 Q&A입니다.
 
 검증:
 
@@ -248,7 +248,7 @@ python -m unittest discover -s tests
 python -B -m py_compile app.py checker.py favicon_checker.py ingest.py ui.py
 ```
 
-RAG API 직접 호출:
+광고 Q&A API 직접 호출:
 
 ```powershell
 Invoke-RestMethod -Method Post `
@@ -306,6 +306,36 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `OPENAI_EMBEDDING_MODEL`, `OPENAI_EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE` (기본값 사용 가능)
 
 GitHub-hosted runner에서 OpenAI Help Center 원문 요청이 403으로 막히는 경우가 있어, 워크플로는 `HELP_CENTER_CRAWL_MODE=reader`와 `ENABLE_READER_FALLBACK=true`로 공식 URL reader fallback을 사용합니다. 저장되는 `source_url`은 원래 OpenAI 공식 URL을 유지하고, fallback 수집 문서는 갱신일을 파싱하지 못하면 `source_updated_at_is_fallback=true`로 표시됩니다. reader 요청은 `READER_FALLBACK_DELAY_SECONDS=1.2`와 429 백오프로 천천히 실행합니다. `REQUIRE_HELP_CENTER_MIN_ARTICLES=30` 보호 조건이 있어 KO/EN Help Center article을 충분히 수집하지 못하면 크론 실행은 실패로 종료됩니다.
+
+## OpenAI 담당자 메일 수집
+
+`.github/workflows/collect-openai-mail.yml`은 KST 09:15, 21:15에 Daum IMAP을 읽기 전용으로 열어 OpenAI 광고 담당자 관련 메일만 수집하고, 같은 실행에서 임시 `kr_ops` 문서로 만든 뒤 `python ingest.py --collection kr_ops`를 실행합니다. 생성 파일 `data/kr_ops/openai_email_confirmations.md`는 메일 원문 보호를 위해 Git에 커밋하지 않습니다.
+
+수집 조건은 2단계입니다.
+
+- Daum 자동분류에서 프로젝트 전용 메일함으로 1차 분류합니다.
+- 코드에서 `to/cc`에 `openai@nasmedia.co.kr`가 있거나, 발신자가 `michaelcho@openai.com`, `harrisonk@openai.com`, `ads-korea@openai.com`, `nigel@openai.com`인 메일만 2차 통과시킵니다.
+
+GitHub repository secrets에 아래 값을 등록합니다.
+
+- `MAIL_COLLECTOR_USER`: Daum ID
+- `MAIL_COLLECTOR_PASSWORD`: Daum 앱 비밀번호
+- `MAIL_COLLECTOR_FOLDER`: Daum 프로젝트 전용 메일함 이름
+- `MAIL_COLLECTOR_HOST`, `MAIL_COLLECTOR_PORT`, `MAIL_COLLECTOR_SECURE` (기본 `imap.daum.net`, `993`, `true`)
+- `MAIL_COLLECTOR_TOP` (기본 `50`)
+- `MAIL_COLLECTOR_SHEETS_WEBHOOK_URL`: 메일 누적용 Apps Script 웹앱 URL
+- `MAIL_COLLECTOR_SHEETS_SHARED_SECRET`: Apps Script와 공유하는 토큰. 별도 값이 없으면 기존 `SHEETS_SHARED_SECRET`을 재사용할 수 있습니다.
+- `OPENAI_API_KEY`, `SUPABASE_DB_URL`, `SUPABASE_SCHEMA`, `OPENAI_EMBEDDING_MODEL`, `OPENAI_EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE`
+
+로컬 점검:
+
+```powershell
+python -m rag_chatbot.mail_collector --dry-run
+python -m rag_chatbot.mail_collector --write-rag-doc data/kr_ops/openai_email_confirmations.md --post-sheet
+python ingest.py --collection kr_ops
+```
+
+메일 누적용 Apps Script 예시는 [apps_script/mail_collector_webhook.gs](apps_script/mail_collector_webhook.gs)에 있습니다. 별도 Google Sheet 웹앱으로 배포하거나 기존 Apps Script에 병합해 사용합니다. 이 예시는 `duplicate_hash` 기준으로 이미 적재된 메일을 다시 append하지 않습니다.
 
 ## 연동 필요 정보
 
