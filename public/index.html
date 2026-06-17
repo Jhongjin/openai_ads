@@ -3,18 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ChatGPT 광고 Q&A</title>
+    <title>OAI 광고 크롤러 셀프 체크</title>
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f6f7f9;
+        --bg: #f5f7fb;
         --panel: #ffffff;
         --ink: #15171a;
-        --muted: #667085;
-        --line: #d9dee7;
-        --accent: #0f6bff;
-        --accent-dark: #0953c5;
-        --pending: #9a6700;
+        --muted: #697386;
+        --line: #d9dee8;
+        --blue: #155eef;
+        --blue-dark: #0f46b7;
+        --green-bg: #e8f7ee;
+        --green-ink: #17663a;
+        --orange-bg: #fff3df;
+        --orange-ink: #915c00;
+        --red-bg: #fde9e8;
+        --red-ink: #b42318;
       }
 
       * {
@@ -23,6 +27,7 @@
 
       body {
         margin: 0;
+        min-height: 100vh;
         background: var(--bg);
         color: var(--ink);
         font-family:
@@ -32,118 +37,86 @@
       }
 
       main {
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        min-height: 100vh;
+        width: min(1180px, 100%);
+        margin: 0 auto;
+        padding: 28px 22px 96px;
       }
 
       header {
-        border-bottom: 1px solid var(--line);
-        background: var(--panel);
-        padding: 18px 24px;
+        margin-bottom: 22px;
       }
 
       h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      .subcopy {
         margin: 0;
-        font-size: 20px;
-        font-weight: 700;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.5;
       }
 
-      .shell {
-        width: min(980px, 100%);
-        margin: 0 auto;
-      }
-
-      .messages {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding: 24px;
-      }
-
-      .message {
+      .input-band {
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--panel);
         padding: 16px;
       }
 
-      .message.user {
-        border-color: #b8c7e6;
-      }
-
-      .role {
+      label {
+        display: block;
         margin-bottom: 8px;
-        color: var(--muted);
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .content {
-        margin: 0;
-        white-space: pre-wrap;
-        line-height: 1.6;
-        font-size: 15px;
-      }
-
-      details {
-        margin-top: 14px;
-      }
-
-      summary {
-        cursor: pointer;
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 700;
-      }
-
-      .source {
-        margin-top: 10px;
-        border-top: 1px solid var(--line);
-        padding-top: 10px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-      }
-
-      form {
-        border-top: 1px solid var(--line);
-        background: var(--panel);
-        padding: 16px 24px 22px;
-      }
-
-      .input-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px;
       }
 
       textarea {
-        min-height: 52px;
-        max-height: 180px;
+        display: block;
+        width: 100%;
+        min-height: 148px;
         resize: vertical;
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 13px 14px;
+        color: var(--ink);
         font: inherit;
-        line-height: 1.4;
+        line-height: 1.5;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
       }
 
       button {
-        min-width: 86px;
+        min-height: 42px;
         border: 0;
         border-radius: 8px;
-        background: var(--accent);
-        color: #fff;
+        padding: 0 16px;
         font: inherit;
         font-weight: 700;
         cursor: pointer;
       }
 
-      button:hover {
-        background: var(--accent-dark);
+      .primary {
+        background: var(--blue);
+        color: #fff;
+      }
+
+      .primary:hover {
+        background: var(--blue-dark);
+      }
+
+      .secondary {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
       }
 
       button:disabled {
@@ -151,24 +124,138 @@
         opacity: 0.65;
       }
 
-      .empty {
+      .hint {
         color: var(--muted);
+        font-size: 13px;
       }
 
-      @media (max-width: 640px) {
-        header,
-        .messages,
-        form {
-          padding-left: 14px;
-          padding-right: 14px;
+      .summary {
+        display: none;
+        margin: 20px 0 12px;
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .table-wrap {
+        display: none;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #475467;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .url-cell {
+        min-width: 230px;
+        overflow-wrap: anywhere;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-width: 74px;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .badge.allow {
+        background: var(--green-bg);
+        color: var(--green-ink);
+      }
+
+      .badge.warn {
+        background: var(--orange-bg);
+        color: var(--orange-ink);
+      }
+
+      .badge.block {
+        background: var(--red-bg);
+        color: var(--red-ink);
+      }
+
+      details {
+        margin-top: 8px;
+      }
+
+      summary {
+        cursor: pointer;
+        color: var(--blue);
+        font-weight: 700;
+      }
+
+      pre {
+        max-height: 260px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #0f172a;
+        color: #e5e7eb;
+        padding: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .notice {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        border-top: 1px solid var(--line);
+        background: #fff;
+        padding: 12px 18px;
+        color: #3b4453;
+        font-size: 13px;
+        line-height: 1.45;
+        box-shadow: 0 -6px 18px rgb(15 23 42 / 8%);
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 20px 14px 132px;
         }
 
-        .input-row {
-          grid-template-columns: 1fr;
+        h1 {
+          font-size: 22px;
+        }
+
+        .controls {
+          align-items: stretch;
+          flex-direction: column;
         }
 
         button {
-          height: 46px;
+          width: 100%;
         }
       }
     </style>
@@ -176,104 +263,189 @@
   <body>
     <main>
       <header>
-        <div class="shell">
-          <h1>ChatGPT 광고 Q&A</h1>
-        </div>
+        <h1>OAI 광고 크롤러 셀프 체크</h1>
+        <p class="subcopy">
+          광고주 랜딩 URL을 입력하면 robots.txt 기준으로 OAI-AdsBot / OAI-SearchBot 접근 가능 여부를 1차 확인합니다.
+        </p>
       </header>
 
-      <section class="shell messages" id="messages">
-        <div class="message">
-          <div class="role">assistant</div>
-          <p class="content empty">질문을 입력하면 근거와 신뢰등급을 함께 확인합니다.</p>
+      <section class="input-band">
+        <label for="urls">랜딩 URL</label>
+        <textarea
+          id="urls"
+          placeholder="https://example.com/landing&#10;https://example.co.kr/event/page"
+        ></textarea>
+        <div class="controls">
+          <button class="primary" id="check" type="button">점검하기</button>
+          <button class="secondary" id="download" type="button" disabled>CSV 내보내기</button>
+          <span class="hint">여러 개는 줄바꿈으로 입력하세요. URL당 robots.txt 요청 타임아웃은 10초입니다.</span>
         </div>
       </section>
 
-      <form id="chat-form">
-        <div class="shell input-row">
-          <textarea
-            id="question"
-            name="question"
-            placeholder="예: ChatGPT 광고 최소 집행금액 얼마야?"
-            required
-          ></textarea>
-          <button id="send" type="submit">전송</button>
-        </div>
-      </form>
+      <div class="summary" id="summary"></div>
+
+      <section class="table-wrap" id="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>입력 URL</th>
+              <th>판정</th>
+              <th>사유</th>
+              <th>권장 조치</th>
+            </tr>
+          </thead>
+          <tbody id="results"></tbody>
+        </table>
+      </section>
     </main>
 
+    <div class="notice">
+      ※ 본 점검은 robots.txt 기준 1차 셀프 체크입니다. robots.txt가 통과해도 Cloudflare·Akamai 등 방화벽이나 안티봇(403·429)에서 별도로 차단될 수 있습니다. 최종 확정은 광고주 개발팀의 실제 OAI-AdsBot 접근 테스트가 필요합니다. (참고: openai.com/adsbot.json, openai.com/searchbot.json)
+    </div>
+
     <script>
-      const form = document.querySelector("#chat-form");
-      const question = document.querySelector("#question");
-      const messages = document.querySelector("#messages");
-      const send = document.querySelector("#send");
-      const tierLabels = {
-        official: "✅공식",
-        kr_ops: "🟡국내운영",
-        pending: "⚠️확인대기",
+      const urlsInput = document.querySelector("#urls");
+      const checkButton = document.querySelector("#check");
+      const downloadButton = document.querySelector("#download");
+      const summary = document.querySelector("#summary");
+      const tableWrap = document.querySelector("#table-wrap");
+      const resultsBody = document.querySelector("#results");
+      let latestResults = [];
+
+      const verdictLabel = {
+        allow: "✅ 허용",
+        warn: "⚠️ 확인",
+        block: "🚫 차단",
       };
 
-      function addMessage(role, content, sources = []) {
-        const card = document.createElement("article");
-        card.className = `message ${role}`;
-
-        const roleEl = document.createElement("div");
-        roleEl.className = "role";
-        roleEl.textContent = role;
-
-        const contentEl = document.createElement("p");
-        contentEl.className = "content";
-        contentEl.textContent = content;
-
-        card.append(roleEl, contentEl);
-
-        if (sources.length > 0) {
-          const details = document.createElement("details");
-          const summary = document.createElement("summary");
-          summary.textContent = "근거";
-          details.append(summary);
-          sources.slice(0, 8).forEach((source) => {
-            const item = document.createElement("div");
-            item.className = "source";
-            const tier = tierLabels[source.source_tier] || source.source_tier || "";
-            item.textContent = `${tier} ${source.title || ""} · ${source.source_url || ""} · score ${
-              source.score ?? ""
-            }`;
-            details.append(item);
-          });
-          card.append(details);
-        }
-
-        messages.append(card);
-        card.scrollIntoView({ behavior: "smooth", block: "end" });
+      function splitUrls() {
+        return urlsInput.value
+          .split(/\r?\n/)
+          .map((value) => value.trim())
+          .filter(Boolean);
       }
 
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const text = question.value.trim();
-        if (!text) return;
+      function textCell(text, className = "") {
+        const td = document.createElement("td");
+        if (className) td.className = className;
+        td.textContent = text || "";
+        return td;
+      }
 
-        addMessage("user", text);
-        question.value = "";
-        send.disabled = true;
+      function renderSummary(results) {
+        const counts = { allow: 0, warn: 0, block: 0 };
+        results.forEach((item) => {
+          counts[item.verdict] = (counts[item.verdict] || 0) + 1;
+        });
+        summary.textContent = `✅ ${counts.allow} · ⚠️ ${counts.warn} · 🚫 ${counts.block}`;
+        summary.style.display = "block";
+      }
+
+      function renderResults(results) {
+        resultsBody.replaceChildren();
+        results.forEach((item) => {
+          const row = document.createElement("tr");
+
+          const urlTd = textCell(item.input_url, "url-cell");
+          const meta = document.createElement("div");
+          meta.className = "hint";
+          meta.textContent = item.robots_url || "";
+          urlTd.append(meta);
+
+          const verdictTd = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = `badge ${item.verdict}`;
+          badge.textContent = verdictLabel[item.verdict] || item.badge || item.verdict;
+          verdictTd.append(badge);
+
+          const reasonTd = textCell(item.reason);
+          const details = document.createElement("details");
+          const detailsSummary = document.createElement("summary");
+          detailsSummary.textContent = "robots.txt 원문 보기";
+          const pre = document.createElement("pre");
+          pre.textContent = item.robots_txt || "robots.txt 원문 없음";
+          details.append(detailsSummary, pre);
+          reasonTd.append(details);
+
+          row.append(urlTd, verdictTd, reasonTd, textCell(item.action));
+          resultsBody.append(row);
+        });
+        tableWrap.style.display = "block";
+      }
+
+      function csvEscape(value) {
+        return `"${String(value ?? "").replaceAll('"', '""')}"`;
+      }
+
+      function downloadCsv() {
+        if (!latestResults.length) return;
+        const header = ["입력 URL", "판정", "사유", "권장 조치", "robots.txt URL"];
+        const rows = latestResults.map((item) => [
+          item.input_url,
+          verdictLabel[item.verdict] || item.verdict,
+          item.reason,
+          item.action,
+          item.robots_url,
+        ]);
+        const csv = [header, ...rows]
+          .map((row) => row.map(csvEscape).join(","))
+          .join("\n");
+        const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "oai_adsbot_check.csv";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function runCheck() {
+        const urls = splitUrls();
+        if (!urls.length) {
+          urlsInput.focus();
+          return;
+        }
+
+        checkButton.disabled = true;
+        checkButton.textContent = "점검 중";
+        downloadButton.disabled = true;
 
         try {
-          const response = await fetch("/chat", {
+          const response = await fetch("/check", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: text }),
+            body: JSON.stringify({ urls }),
           });
           const payload = await response.json();
           if (!response.ok) {
             throw new Error(payload.detail || response.statusText);
           }
-          addMessage("assistant", payload.answer, payload.sources || []);
+          latestResults = payload;
+          renderSummary(latestResults);
+          renderResults(latestResults);
+          downloadButton.disabled = false;
         } catch (error) {
-          addMessage("assistant", `오류가 발생했습니다: ${error.message}`);
+          latestResults = [
+            {
+              input_url: "요청 오류",
+              verdict: "warn",
+              reason: `확인 불가 — ${error.message}`,
+              action: "잠시 후 재시도하거나 개발팀 확인 필요",
+              robots_txt: "",
+            },
+          ];
+          renderSummary(latestResults);
+          renderResults(latestResults);
         } finally {
-          send.disabled = false;
-          question.focus();
+          checkButton.disabled = false;
+          checkButton.textContent = "점검하기";
         }
-      });
+      }
+
+      checkButton.addEventListener("click", runCheck);
+      downloadButton.addEventListener("click", downloadCsv);
     </script>
   </body>
 </html>

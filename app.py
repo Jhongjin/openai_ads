@@ -21,6 +21,24 @@ class ChatResponse(BaseModel):
     sources: list[dict[str, Any]]
 
 
+class CheckRequest(BaseModel):
+    urls: list[str] = Field(..., min_length=1, max_length=100)
+
+
+class CheckResultResponse(BaseModel):
+    input_url: str
+    normalized_url: str
+    origin: str
+    path: str
+    robots_url: str
+    verdict: str
+    badge: str
+    reason: str
+    action: str
+    http_status: int | None
+    robots_txt: str
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -28,6 +46,11 @@ def health() -> dict[str, str]:
 
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
+    return FileResponse(project_root() / "public" / "index.html")
+
+
+@app.get("/checker", include_in_schema=False)
+def checker_page() -> FileResponse:
     return FileResponse(project_root() / "public" / "index.html")
 
 
@@ -40,3 +63,14 @@ def chat(request: ChatRequest) -> ChatResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return ChatResponse(**result)
+
+
+@app.post("/check", response_model=list[CheckResultResponse])
+async def check(request: CheckRequest) -> list[CheckResultResponse]:
+    try:
+        from checker import check_urls
+
+        results = await check_urls(request.urls)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return [CheckResultResponse(**result.to_dict()) for result in results]

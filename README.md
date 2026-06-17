@@ -1,6 +1,36 @@
-# 사내용 ChatGPT 광고 RAG 챗봇
+# 사내용 ChatGPT 광고 도구
 
-나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문에 대해 출처와 신뢰등급이 붙은 답변을 받을 수 있는 경량 PoC입니다.
+나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부를 1차 셀프 체크할 수 있는 경량 PoC입니다.
+
+## OAI 광고 크롤러 셀프 체크
+
+첫 화면(`/`)은 OAI-AdsBot / OAI-SearchBot robots.txt 셀프 체크 도구입니다.
+
+- 사용자가 URL을 한 줄에 하나씩 입력합니다.
+- 서버가 각 URL의 `{origin}/robots.txt`를 10초 타임아웃으로 가져옵니다.
+- `OAI-AdsBot`, `OAI-SearchBot`, `User-agent: *` 그룹을 보수적으로 분석합니다.
+- 결과는 `✅ 허용`, `⚠️ 확인`, `🚫 차단` 배지와 사유/권장 조치로 표시됩니다.
+- 각 행에서 `robots.txt 원문 보기`를 펼칠 수 있습니다.
+- CSV 내보내기를 지원합니다.
+
+API 직접 호출:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8000/check `
+  -ContentType "application/json" `
+  -Body '{"urls":["https://example.com/landing","https://example.co.kr/itg/ln/page"]}'
+```
+
+판정 원칙:
+
+- `robots.txt` 404: `✅ robots.txt 없음 = 전체 허용으로 간주`
+- Cloudflare/challenge 계열 403: `🚫 방화벽 차단`
+- 타임아웃/연결 실패/기타 4xx·5xx: `⚠️ 확인 불가`
+- OAI 봇 명시 그룹 `Disallow: /`: `🚫 OAI 봇 명시적 전체 차단`
+- `User-agent: *`의 `Disallow: /`: `🚫 전체 봇 차단`
+- 특정 봇만 있고 OAI 또는 `*` 그룹이 없으면: `⚠️ 개발팀 확인 권장`
+- 기본 판정이 `✅`여도 입력 URL path가 적용 그룹의 `Disallow`에 걸리면 `⚠️`로 낮춥니다.
 
 ## 구조
 
@@ -9,6 +39,8 @@
 - `pending`: OpenAI 확인 대기 항목
 - 벡터 저장소: Supabase Postgres + `pgvector`
 - DB schema: `openai_ads_rag`
+- 크롤러 체크 API: `POST /check`
+- RAG 챗 API: `POST /chat`
 
 크리테오 원문은 인덱싱하지 않습니다. 로컬 문서 파일명에 `criteo`, `Criteo`, `CRITEO`, `크리테오`가 포함되면 자동 제외됩니다.
 
@@ -77,9 +109,16 @@ Streamlit:
 streamlit run ui.py
 ```
 
-Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다.
+Vercel용 정적 UI는 `public/index.html`에 있고, API는 `api/index.py`를 통해 FastAPI 앱을 노출합니다. `/check`는 robots.txt 셀프 체크, `/chat`은 RAG Q&A입니다.
 
-API 직접 호출:
+검증:
+
+```powershell
+python -m unittest discover -s tests
+python -B -m py_compile app.py checker.py ingest.py ui.py api\index.py
+```
+
+RAG API 직접 호출:
 
 ```powershell
 Invoke-RestMethod -Method Post `
@@ -118,3 +157,5 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `RAG_CONFIG_PATH`
 
 배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. Vercel은 채팅 API와 정적 UI를 서빙하고, 재크롤링/재인덱싱은 로컬 또는 별도 배치에서 실행하는 구조입니다.
+
+크롤러 셀프 체크(`/check`)는 Supabase 인덱싱 없이도 동작합니다.

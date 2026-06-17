@@ -13,6 +13,14 @@
     {
       "source": "/health",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/check",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/checker",
+      "destination": "/api/index.py"
     }
   ]
 }
