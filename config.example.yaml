@@ -24,6 +24,7 @@ collections:
       - "https://help.openai.com/en/articles/20001207"
       - "https://help.openai.com/en/articles/20001209"
       - "https://help.openai.com/en/articles/20001212"
+      - "https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
       - "https://developers.openai.com/api/docs/bots"
       - "https://openai.com/policies/ad-policies"
       - "https://openai.com/index/testing-ads-in-chatgpt"
@@ -53,6 +54,11 @@ collections:
           Landing pages should link to the most relevant destination, create a seamless path to action, and may include UTM tracking parameters directly in the destination URL.
           Landing pages must use valid links and must not block OpenAI user agents OAI-AdsBot and OAI-SearchBot.
           Images should be simple, relevant, uncluttered, and aligned with the ad message.
+      - title: "ChatGPT Ads 공식 가이드 모음"
+        source_url: "https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
+        content: |
+          OpenAI 한국어 Help Center의 ChatGPT Ads 공식 가이드 모음이다. 베타 단계의 정책, 소재 요건, 계정 설정, 캠페인 생성, 측정, 문제 해결 등 최신 공식 안내는 이 컬렉션과 연결된 개별 문서를 우선 확인한다.
+          This Korean OpenAI Help Center collection is the official ChatGPT Ads guide hub. Reconfirm beta-stage policy, creative requirements, account setup, campaign creation, measurement, troubleshooting, and related official guidance from this collection and its linked articles.
       - title: "Overview of OpenAI Crawlers"
         source_url: "https://developers.openai.com/api/docs/bots"
         content: |

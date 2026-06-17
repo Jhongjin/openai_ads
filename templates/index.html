@@ -456,6 +456,16 @@
         display: block;
       }
 
+      .notice a {
+        color: var(--blue-dark);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .notice a:hover {
+        text-decoration: underline;
+      }
+
       .tabs {
         display: grid;
         width: min(760px, 100%);
@@ -1237,7 +1247,13 @@
 
     <div class="notice">
       <span class="active" id="chat-notice">
-        ※ 베타 기준으로 정책·수치가 변동될 수 있습니다. 최종 확정은 OpenAI 공식 페이지 및 담당자 확인이 필요합니다.
+        ※ 베타 기준으로 정책·수치가 변동될 수 있습니다. 최종 확정은
+        <a
+          href="https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
+          target="_blank"
+          rel="noreferrer"
+        >OpenAI 공식 가이드</a>
+        및 담당자 확인이 필요합니다.
       </span>
       <span id="crawler-notice">
         ※ 본 점검은 사이트의 크롤러 허용 설정(robots.txt) 기준 1차 셀프 체크입니다. 설정이 통과해도 Cloudflare·Akamai 등 방화벽이나 안티봇(403·429)에서 별도로 차단될 수 있습니다. 최종 확정은 광고주 개발팀의 실제 OpenAI 광고 로봇 접근 테스트가 필요합니다. (참고: openai.com/adsbot.json, openai.com/searchbot.json)

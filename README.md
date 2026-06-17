@@ -78,6 +78,8 @@ Invoke-RestMethod -Method Post `
 - 파비콘 체크 API: `POST /check-favicon`
 - RAG 챗 API: `POST /chat`
 
+공식 가이드 허브: <https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads>
+
 크리테오 원문은 인덱싱하지 않습니다. 로컬 문서 파일명에 `criteo`, `Criteo`, `CRITEO`, `크리테오`가 포함되면 자동 제외됩니다.
 
 ## 설치
@@ -171,11 +173,11 @@ Invoke-RestMethod -Method Post `
 - `pending`만 검색되면 확정 답변 대신 "현재 OpenAI 확인 대기 중입니다"로 답합니다.
 - 검색 근거가 없으면 "제공된 자료에서 확인할 수 없습니다."로 답합니다.
 - 크리테오 경유 세부 질문은 "크리테오 경유 세부사항은 크리테오 코리아에 확인이 필요합니다."로 라우팅합니다.
-- 페이지 하단에는 베타 기준 변동 가능성과 공식 페이지/담당자 확인 안내가 고정 표시됩니다.
+- 페이지 하단에는 베타 기준 변동 가능성과 OpenAI 공식 가이드/담당자 확인 안내가 고정 표시됩니다.
 
 ## 운영 팁
 
-- 공식 URL이 바뀌면 `config.yaml`만 수정한 뒤 `python ingest.py --collection official`을 실행합니다.
+- 공식 URL이 바뀌면 `config.yaml`만 수정한 뒤 `python ingest.py --collection official`을 실행합니다. 한국어 공식 가이드 허브는 <https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads> 입니다.
 - OpenAI 담당자 회신으로 확정된 항목은 `pending`에서 제거하고 `kr_ops` 문서로 옮긴 뒤 두 컬렉션을 재인덱싱합니다.
 - Supabase 안의 다른 프로젝트 테이블과 충돌하지 않도록 앱은 `openai_ads_rag.documents`만 읽고 씁니다.
 
