@@ -51,6 +51,19 @@ NO_DATA_QUERY_TERMS = (
     "원화",
     "환산",
 )
+CPM_PRICE_INTENT_TERMS = (
+    "정확",
+    "단가",
+    "가격",
+    "얼마",
+    "비용",
+    "금액",
+    "요금",
+    "원",
+    "price",
+    "cost",
+    "rate",
+)
 
 
 def tier_label(source_tier: str) -> str:
@@ -83,7 +96,7 @@ def is_no_data_query(question: str) -> bool:
     lowered = question.lower()
     if any(term in lowered for term in NO_DATA_QUERY_TERMS):
         return True
-    return "cpm" in lowered and any(term in lowered for term in ("정확", "단가", "가격"))
+    return "cpm" in lowered and any(term in lowered for term in CPM_PRICE_INTENT_TERMS)
 
 
 def format_context(documents: list[RetrievedDocument]) -> str:

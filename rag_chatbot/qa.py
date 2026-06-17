@@ -67,9 +67,8 @@ def _official_template_answer(
         )
     if any(term in lowered for term in ("글자", "자수", "문구")):
         return (
-            "공식 자료 기준, 광고 제목은 16~24자 권장, 최대 50자입니다. "
-            "광고 설명문은 32~48자 권장, 최대 100자입니다. "
-            "한글 최대 자수 환산 기준은 현재 OpenAI 확인 대기 항목입니다."
+            "글자수 제한은 경로별로 다릅니다. OpenAI 직접은 제목 최대 50자(16~24자 권장), "
+            "설명 최대 100자(32~48자 권장)입니다. 크리테오 경유는 제목 30자, 설명 60자이며 국문 띄어쓰기를 포함합니다."
         )
     return None
 
@@ -175,7 +174,7 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
             "인보이스 내 광고주별 집행금액을 개별 표기합니다."
         )
 
-    if ("한글" in lowered or "국문" in lowered or is_criteo) and _contains_any(
+    if _contains_any(
         lowered,
         ("자수", "글자", "문자", "제목", "설명"),
     ):
@@ -213,6 +212,9 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
             "sources": _pending_route_source_payload(),
         }
 
+    if is_no_data_query(normalized):
+        return {"answer": no_data_answer(), "sources": []}
+
     confirmed_answer = _kr_ops_confirmed_answer(normalized)
     if confirmed_answer:
         return {
@@ -227,9 +229,6 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
                 "sources": _route_source_payload(),
             }
         return {"answer": criteo_route_answer(), "sources": _route_source_payload()}
-
-    if is_no_data_query(normalized):
-        return {"answer": no_data_answer(), "sources": []}
 
     from .retrieval import retrieve
 

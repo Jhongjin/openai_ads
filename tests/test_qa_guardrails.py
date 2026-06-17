@@ -45,12 +45,32 @@ class QaGuardrailTests(unittest.TestCase):
         self.assertIn("크리테오 경유는 CPM만 가능", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
 
+    def test_cpm_price_question_returns_no_data(self) -> None:
+        result = answer_question("정확한 CPM 단가 얼마인가요?")
+
+        self.assertEqual(result["answer"], "제공된 자료에서 확인할 수 없습니다.")
+        self.assertEqual(result["sources"], [])
+
+    def test_cpm_or_cpc_question_returns_billing_mode(self) -> None:
+        result = answer_question("CPM이야 CPC야?")
+
+        self.assertIn("OpenAI CBT는 CPC·CPM 모두 가능", result["answer"])
+        self.assertIn("크리테오 경유는 CPM만 가능", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
     def test_korean_text_limits_show_both_routes(self) -> None:
         result = answer_question("한글 소재 최대 자수 알려줘")
 
         self.assertIn("OpenAI 직접은 제목 최대 50자", result["answer"])
         self.assertIn("크리테오 경유는 제목 30자, 설명 60자", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_general_text_limits_have_no_pending_caveat(self) -> None:
+        result = answer_question("글자수 제한 있어?")
+
+        self.assertIn("OpenAI 직접은 제목 최대 50자", result["answer"])
+        self.assertIn("크리테오 경유는 제목 30자, 설명 60자", result["answer"])
+        self.assertNotIn("확인 대기", result["answer"])
 
     def test_out_of_scope_rate_returns_no_data(self) -> None:
         result = answer_question("내일 환율 환산 원화 단가 알려줘")

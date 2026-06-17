@@ -21,6 +21,13 @@
         --red-ink: #b42318;
         --gray-bg: #eef2f6;
         --gray-ink: #475467;
+        --brand: #e60012;
+        --brand-dark: #b9000e;
+        --chat-color: #e60012;
+        --crawler-color: #155eef;
+        --favicon-color: #0f8b5f;
+        --shadow-card: 0 10px 28px rgb(21 23 26 / 8%);
+        --shadow-soft: 0 4px 14px rgb(21 23 26 / 6%);
       }
 
       * {
@@ -442,6 +449,229 @@
         display: block;
       }
 
+      .tabs {
+        display: grid;
+        width: min(760px, 100%);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+      }
+
+      .tab {
+        --tab-color: var(--brand);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #475467;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .tab[data-tab="chat"] {
+        --tab-color: var(--chat-color);
+      }
+
+      .tab[data-tab="crawler"] {
+        --tab-color: var(--crawler-color);
+      }
+
+      .tab[data-tab="favicon"] {
+        --tab-color: var(--favicon-color);
+      }
+
+      .tab-icon {
+        display: inline-flex;
+        width: 30px;
+        height: 24px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--tab-color) 12%, #fff);
+        color: var(--tab-color);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .tab.active {
+        border-color: var(--tab-color);
+        background: var(--tab-color);
+        color: #fff;
+        box-shadow: 0 10px 24px color-mix(in srgb, var(--tab-color) 25%, transparent);
+      }
+
+      .tab.active .tab-icon {
+        background: rgb(255 255 255 / 20%);
+        color: #fff;
+      }
+
+      .sales-note,
+      .input-band,
+      .table-wrap,
+      .chat-empty,
+      .message {
+        box-shadow: var(--shadow-card);
+      }
+
+      .input-band,
+      .table-wrap,
+      .chat-empty,
+      .message {
+        border-color: #d4dae6;
+      }
+
+      .chat-layout {
+        gap: 18px;
+      }
+
+      .chat-history {
+        gap: 16px;
+      }
+
+      .chat-empty {
+        min-height: 150px;
+        display: grid;
+        place-items: center;
+        border-style: dashed;
+        background: #fbfcff;
+        text-align: center;
+      }
+
+      .message {
+        gap: 0;
+        overflow: hidden;
+        padding: 0;
+      }
+
+      .message-question {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line);
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 15px;
+      }
+
+      .message-question::before {
+        content: "Q";
+        display: inline-flex;
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .message-answer {
+        padding: 16px;
+        color: #1f2937;
+        font-size: 15px;
+      }
+
+      .source-list {
+        border-top: 1px solid var(--line);
+        background: #fbfcff;
+        padding: 12px 16px;
+      }
+
+      .source-chip {
+        gap: 8px;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 700;
+      }
+
+      .source-chip.official {
+        border-color: #9db7ff;
+        background: #eff5ff;
+        color: #123b8f;
+      }
+
+      .source-chip.kr_ops {
+        border-color: #c9d2df;
+        background: #f3f6fa;
+        color: #344054;
+      }
+
+      .source-chip.pending {
+        border-color: #ffd79a;
+        background: #fff7ed;
+        color: #7a4a00;
+      }
+
+      .source-chip.no-source {
+        border-color: #d0d5dd;
+        background: #f7f9fc;
+        color: #667085;
+      }
+
+      .source-badge {
+        padding: 3px 7px;
+        font-size: 11px;
+      }
+
+      .source-badge.official {
+        background: #155eef;
+        color: #fff;
+      }
+
+      .source-badge.kr_ops {
+        background: #667085;
+        color: #fff;
+      }
+
+      .source-badge.pending {
+        background: #b54708;
+        color: #fff;
+      }
+
+      .source-divider {
+        color: #98a2b3;
+        font-weight: 700;
+      }
+
+      .chat-input {
+        position: sticky;
+        z-index: 5;
+        bottom: 58px;
+        border-color: #b9c7df;
+        box-shadow: 0 14px 34px rgb(21 23 26 / 14%);
+      }
+
+      .chat-input textarea {
+        min-height: 112px;
+      }
+
+      .primary {
+        background: var(--brand);
+        box-shadow: 0 8px 18px rgb(230 0 18 / 18%);
+      }
+
+      .primary:hover {
+        background: var(--brand-dark);
+      }
+
+      th {
+        background: #f4f7fb;
+      }
+
+      .notice {
+        border-top-color: #cbd5e1;
+        box-shadow: 0 -10px 24px rgb(15 23 42 / 10%);
+      }
+
       @media (max-width: 720px) {
         main {
           padding: 20px 14px 148px;
@@ -479,9 +709,18 @@
       </header>
 
       <nav class="tabs" aria-label="검사 선택">
-        <button class="tab active" data-tab="chat" type="button">RAG 챗봇</button>
-        <button class="tab" data-tab="crawler" type="button">랜딩 URL 검사</button>
-        <button class="tab" data-tab="favicon" type="button">파비콘 검사</button>
+        <button class="tab active" data-tab="chat" type="button">
+          <span class="tab-icon">AI</span>
+          <span>RAG 챗봇</span>
+        </button>
+        <button class="tab" data-tab="crawler" type="button">
+          <span class="tab-icon">URL</span>
+          <span>랜딩 URL 검사</span>
+        </button>
+        <button class="tab" data-tab="favicon" type="button">
+          <span class="tab-icon">ICO</span>
+          <span>파비콘 검사</span>
+        </button>
       </nav>
 
       <section class="panel active" id="chat-panel">
@@ -492,7 +731,7 @@
             </div>
           </div>
 
-          <div class="input-band">
+          <div class="input-band chat-input">
             <label for="chat-question">질문</label>
             <textarea
               id="chat-question"
@@ -685,7 +924,8 @@
           href.startsWith("http://") || href.startsWith("https://")
             ? document.createElement("a")
             : document.createElement("span");
-        wrapper.className = "source-chip";
+        const tier = source.source_tier || "kr_ops";
+        wrapper.className = `source-chip ${tier}`;
         if (wrapper.tagName === "A") {
           wrapper.href = href;
           wrapper.target = "_blank";
@@ -693,13 +933,16 @@
         }
 
         const badge = document.createElement("span");
-        const tier = source.source_tier || "kr_ops";
         badge.className = `source-badge ${tier}`;
         badge.textContent = sourceTierLabel[tier] || tier;
 
+        const divider = document.createElement("span");
+        divider.className = "source-divider";
+        divider.textContent = "|";
+
         const title = document.createElement("span");
         title.textContent = source.title || href || "출처";
-        wrapper.append(badge, title);
+        wrapper.append(badge, divider, title);
         return wrapper;
       }
 
@@ -722,7 +965,7 @@
           sources.forEach((source) => sourceList.append(sourceElement(source)));
         } else {
           const empty = document.createElement("span");
-          empty.className = "source-chip";
+          empty.className = "source-chip no-source";
           empty.textContent = "근거 없음";
           sourceList.append(empty);
         }
