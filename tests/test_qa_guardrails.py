@@ -6,8 +6,22 @@ from rag_chatbot.qa import answer_question
 
 
 class QaGuardrailTests(unittest.TestCase):
-    def test_pending_minimum_spend_uses_fixed_answer(self) -> None:
+    def test_confirmed_minimum_spend_uses_kr_ops(self) -> None:
         result = answer_question("한국 최소 집행금액 얼마야?")
+
+        self.assertIn("OpenAI 직접(CBT)은 400만원 Net 기준", result["answer"])
+        self.assertIn("크리테오 경유는 캠페인별 월 기준 2,500만원", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_criteo_confirmed_invoice_answers_with_caveat(self) -> None:
+        result = answer_question("크리테오 인보이스는 어떻게 돼?")
+
+        self.assertIn("기존 크리테오 광고 상품 정산과 동일 방식 예정", result["answer"])
+        self.assertIn("단, 추후 변경될 수 있습니다", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_vat_stays_pending(self) -> None:
+        result = answer_question("VAT 별도 여부 알려줘")
 
         self.assertEqual(
             result["answer"],
@@ -15,13 +29,27 @@ class QaGuardrailTests(unittest.TestCase):
         )
         self.assertEqual(result["sources"][0]["source_tier"], "pending")
 
-    def test_criteo_routes_to_korea_confirmation(self) -> None:
-        result = answer_question("크리테오 인보이스는 어떻게 돼?")
+    def test_criteo_fee_stays_pending(self) -> None:
+        result = answer_question("크리테오 수수료는 집행금액에 포함돼?")
 
         self.assertEqual(
             result["answer"],
-            "크리테오 경유 세부사항은 크리테오 코리아에 확인이 필요합니다.",
+            "현재 OpenAI 확인 대기 중입니다. 확정 후 정확히 안내드리겠습니다.",
         )
+        self.assertEqual(result["sources"][0]["source_tier"], "pending")
+
+    def test_confirmed_billing_modes(self) -> None:
+        result = answer_question("OpenAI 직접과 크리테오 입찰 과금 방식 알려줘")
+
+        self.assertIn("OpenAI CBT는 CPC·CPM 모두 가능", result["answer"])
+        self.assertIn("크리테오 경유는 CPM만 가능", result["answer"])
+        self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_korean_text_limits_show_both_routes(self) -> None:
+        result = answer_question("한글 소재 최대 자수 알려줘")
+
+        self.assertIn("OpenAI 직접은 제목 최대 50자", result["answer"])
+        self.assertIn("크리테오 경유는 제목 30자, 설명 60자", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
 
     def test_out_of_scope_rate_returns_no_data(self) -> None:
