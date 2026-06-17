@@ -26,7 +26,18 @@ def can_fetch(url: str, user_agent: str) -> bool:
         parser = RobotFileParser()
         parser.set_url(robots_url)
         try:
-            parser.read()
+            response = httpx.get(
+                robots_url,
+                headers={"User-Agent": user_agent},
+                follow_redirects=True,
+                timeout=10,
+            )
+            if response.status_code == 404:
+                parser.parse([])
+            elif response.status_code >= 400:
+                return False
+            else:
+                parser.parse(response.text.splitlines())
         except Exception:
             return False
         _ROBOTS_CACHE[robots_url] = parser

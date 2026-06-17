@@ -76,6 +76,11 @@ def ensure_database(settings: RuntimeSettings | None = None) -> None:
                     title text not null,
                     content text not null,
                     chunk_index integer not null,
+                    lang text,
+                    article_id text,
+                    content_hash text,
+                    source_updated_at date,
+                    source_updated_at_is_fallback boolean not null default false,
                     crawled_at timestamptz,
                     metadata jsonb not null default '{{}}'::jsonb,
                     embedding vector({}) not null,
@@ -87,6 +92,32 @@ def ensure_database(settings: RuntimeSettings | None = None) -> None:
                 )
                 """
             ).format(sql.Identifier(schema), sql.SQL(str(dimensions)))
+        )
+        conn.execute(
+            sql.SQL(
+                "alter table {}.documents add column if not exists lang text"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "alter table {}.documents add column if not exists article_id text"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "alter table {}.documents add column if not exists content_hash text"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "alter table {}.documents add column if not exists source_updated_at date"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "alter table {}.documents add column if not exists source_updated_at_is_fallback "
+                "boolean not null default false"
+            ).format(sql.Identifier(schema))
         )
         conn.execute(
             sql.SQL(
@@ -106,6 +137,18 @@ def ensure_database(settings: RuntimeSettings | None = None) -> None:
                 "on {}.documents using hnsw (embedding vector_cosine_ops)"
             ).format(sql.Identifier(schema))
         )
+        conn.execute(
+            sql.SQL(
+                "create index if not exists documents_source_identity_idx "
+                "on {}.documents ((metadata->>'source_identity'))"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "create index if not exists documents_article_lang_idx "
+                "on {}.documents (article_id, lang)"
+            ).format(sql.Identifier(schema))
+        )
 
 
 def reset_collection(collection_name: str, settings: RuntimeSettings | None = None) -> None:
@@ -118,6 +161,78 @@ def reset_collection(collection_name: str, settings: RuntimeSettings | None = No
             ),
             (collection_name,),
         )
+
+
+def source_hash_exists(
+    *,
+    collection_name: str,
+    source_identity: str,
+    content_hash: str,
+    settings: RuntimeSettings | None = None,
+) -> bool:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    with db_connection(settings, row_factory=dict_row) as conn:
+        cursor = conn.execute(
+            sql.SQL(
+                """
+                select 1
+                from {}.documents
+                where collection = %s
+                  and metadata->>'source_identity' = %s
+                  and metadata->>'content_hash' = %s
+                limit 1
+                """
+            ).format(sql.Identifier(schema)),
+            (collection_name, source_identity, content_hash),
+        )
+        return cursor.fetchone() is not None
+
+
+def delete_source_documents(
+    *,
+    collection_name: str,
+    source_identity: str,
+    source_url: str,
+    settings: RuntimeSettings | None = None,
+) -> None:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    with db_connection(settings) as conn:
+        conn.execute(
+            sql.SQL(
+                """
+                delete from {}.documents
+                where collection = %s
+                  and (
+                    metadata->>'source_identity' = %s
+                    or source_url = %s
+                  )
+                """
+            ).format(sql.Identifier(schema)),
+            (collection_name, source_identity, source_url),
+        )
+
+
+def delete_legacy_documents(
+    *,
+    collection_name: str,
+    settings: RuntimeSettings | None = None,
+) -> int:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    with db_connection(settings) as conn:
+        cursor = conn.execute(
+            sql.SQL(
+                """
+                delete from {}.documents
+                where collection = %s
+                  and not (metadata ? 'source_identity')
+                """
+            ).format(sql.Identifier(schema)),
+            (collection_name,),
+        )
+        return int(cursor.rowcount or 0)
 
 
 def insert_documents(
@@ -138,6 +253,10 @@ def insert_documents(
         crawled_at = metadata.get("crawled_at")
         if crawled_at == "":
             crawled_at = None
+        source_updated_at = metadata.get("source_updated_at") or None
+        source_updated_at_is_fallback = bool(
+            metadata.get("source_updated_at_is_fallback") or False
+        )
         rows.append(
             (
                 uuid.uuid4(),
@@ -147,6 +266,11 @@ def insert_documents(
                 str(metadata.get("title") or "Untitled"),
                 chunk.page_content,
                 int(metadata.get("chunk_index") or 0),
+                metadata.get("lang") or None,
+                metadata.get("article_id") or None,
+                metadata.get("content_hash") or None,
+                source_updated_at,
+                source_updated_at_is_fallback,
                 crawled_at,
                 Jsonb(metadata),
                 vector_literal(embedding),
@@ -168,11 +292,16 @@ def insert_documents(
                     title,
                     content,
                     chunk_index,
+                    lang,
+                    article_id,
+                    content_hash,
+                    source_updated_at,
+                    source_updated_at_is_fallback,
                     crawled_at,
                     metadata,
                     embedding
                 )
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
                 """
             ).format(sql.Identifier(schema)),
             rows,

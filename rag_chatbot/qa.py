@@ -70,6 +70,13 @@ def _official_template_answer(
             "글자수 제한은 경로별로 다릅니다. OpenAI 직접은 제목 최대 50자(16~24자 권장), "
             "설명 최대 100자(32~48자 권장)입니다. 크리테오 경유는 제목 30자, 설명 60자이며 국문 띄어쓰기를 포함합니다."
         )
+    if any(term in lowered for term in ("모범", "best practice", "베스트", "잘 만들", "작성 팁")):
+        return (
+            "공식 자료 기준, ChatGPT 광고는 대화 맥락과 자연스럽게 맞아야 합니다. "
+            "제목과 설명은 명확하고 구체적이며 유용하고 정확하게 작성하고, "
+            "랜딩 페이지는 광고 내용과 가장 관련성 높은 목적지로 연결하세요. "
+            "이미지는 광고 메시지를 뒷받침하는 단순하고 관련성 높은 소재를 권장합니다."
+        )
     return None
 
 
@@ -81,6 +88,8 @@ def _route_source_payload() -> list[dict[str, Any]]:
             "source_tier": "kr_ops",
             "title": "사내 라우팅 규칙",
             "source_url": "internal://routing/criteo",
+            "source_updated_at": "2026-06-17",
+            "source_updated_at_is_fallback": False,
         }
     ]
 
@@ -93,6 +102,8 @@ def _kr_ops_confirmed_source_payload() -> list[dict[str, Any]]:
             "source_tier": "kr_ops",
             "title": "OpenAI·크리테오 확정 운영 회신",
             "source_url": "internal://kr_ops/openai-criteo-confirmed-2026-06",
+            "source_updated_at": "2026-06-17",
+            "source_updated_at_is_fallback": False,
         }
     ]
 
@@ -252,7 +263,7 @@ def answer_question(question: str, *, config_path: str | None = None) -> dict[st
 
     settings = load_settings()
     if not settings.openai_api_key:
-        return {"answer": no_data_answer(), "sources": _source_payload(documents)}
+        return {"answer": no_data_answer(), "sources": []}
     require_openai_key(settings)
     context = format_context(documents)
     user_prompt = f"""질문:

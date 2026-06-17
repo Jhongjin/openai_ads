@@ -127,6 +127,8 @@ SUPABASE_DB_URL=postgresql://postgres.yotbhhtwvvshwxxcxazl:[YOUR-PASSWORD]@[YOUR
 
 최초 1회는 `supabase/migrations/001_openai_ads_rag.sql`을 Supabase SQL Editor에서 실행하거나, DB 사용자에게 schema/extension 생성 권한이 있다면 `python ingest.py`가 자동으로 schema와 table을 생성합니다.
 
+먼저 `SUPABASE_DB_URL`이 실제 pooled Postgres URL인지 확인해야 합니다. placeholder 호스트나 잘못된 비밀번호 상태에서는 인덱싱이 config fallback으로만 동작해 새 크롤링 결과가 RAG 검색에 반영되지 않습니다.
+
 전체 재인덱싱:
 
 ```powershell
@@ -139,6 +141,8 @@ python ingest.py
 python ingest.py --collection official
 python ingest.py --collection kr_ops --collection pending
 ```
+
+`official` 컬렉션은 `config.example.yaml`의 한/영 ChatGPT Ads Help Center 컬렉션 시작점에서 하위 컬렉션과 article 링크를 매번 재탐색합니다. article별 `content_hash`가 같으면 임베딩을 건너뛰고, 변경된 문서만 기존 chunk를 교체합니다. 실행 로그에는 KO/EN article 수, 변경 문서 수, 실패 URL 수가 표시됩니다.
 
 공식 문서는 `robots.txt`를 확인한 뒤 크롤링합니다. 크롤링 실패 URL은 경고로 출력됩니다. `config.yaml`의 `collections.*.documents`에 있는 공식·내부운영·확인대기 근거 노트도 함께 인덱싱되므로, 공식 사이트가 일시적으로 403을 반환해도 PoC 답변 근거가 비지 않도록 구성했습니다.
 
@@ -210,6 +214,15 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 크롤러 셀프 체크(`/check`)는 Supabase 인덱싱 없이도 동작합니다.
 
 파비콘 셀프 체크(`/check-favicon`)도 Supabase 인덱싱 없이 동작합니다.
+
+## 자동 재인덱싱
+
+`.github/workflows/reindex-openai-help.yml`은 KST 09:00, 21:00에 `python ingest.py --collection official`을 실행합니다. GitHub repository secrets에 아래 값을 등록해야 동작합니다.
+
+- `OPENAI_API_KEY`
+- `SUPABASE_DB_URL`
+- `SUPABASE_SCHEMA` (기본 `openai_ads_rag`)
+- `OPENAI_EMBEDDING_MODEL`, `OPENAI_EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE` (기본값 사용 가능)
 
 ## 연동 필요 정보
 

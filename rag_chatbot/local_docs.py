@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from fnmatch import fnmatch
 from pathlib import Path
+import re
 from typing import Iterable
 
 from langchain_core.documents import Document
@@ -87,16 +88,32 @@ def load_inline_documents(
             continue
         title = str(entry.get("title") or f"{source_tier} inline document {index}")
         source_url = str(entry.get("source_url") or f"internal://{source_tier}/{index}")
+        updated_at = str(entry.get("updated_at") or "").strip()
+        metadata = {
+            "source_tier": source_tier,
+            "source_url": source_url,
+            "title": title,
+            "crawled_at": crawled_at,
+            "inline_config": True,
+            "source_identity": f"inline:{source_tier}:{source_url}",
+        }
+        if updated_at:
+            metadata["source_updated_at"] = updated_at
+            metadata["source_updated_at_is_fallback"] = False
+        elif source_tier == "official":
+            metadata["source_updated_at"] = crawled_at[:10]
+            metadata["source_updated_at_is_fallback"] = True
+        if source_tier == "official" and "help.openai.com" in source_url:
+            if "/ko-kr/" in source_url:
+                metadata["lang"] = "ko"
+            elif "/en/" in source_url:
+                metadata["lang"] = "en"
+            if match := re.search(r"/articles/(\d+)", source_url):
+                metadata["article_id"] = match.group(1)
         documents.append(
             Document(
                 page_content=content,
-                metadata={
-                    "source_tier": source_tier,
-                    "source_url": source_url,
-                    "title": title,
-                    "crawled_at": crawled_at,
-                    "inline_config": True,
-                },
+                metadata=metadata,
             )
         )
     return documents

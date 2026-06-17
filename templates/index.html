@@ -183,6 +183,7 @@
         font-size: 12px;
         line-height: 1.25;
         text-decoration: none;
+        white-space: nowrap;
       }
 
       .source-chip:hover {
@@ -990,11 +991,28 @@
         border-color: #d8dee8;
         background: #fff;
         font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .source-badge {
         border-radius: var(--radius-sm);
         font-size: 10px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      .source-title,
+      .source-updated {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .source-updated {
+        color: #697077;
+        font-weight: 700;
       }
 
       .input-band {
@@ -1391,51 +1409,51 @@
             <div class="checklist-card-header">
               <h2>광고 소재 — 광고주에게서 받아야 할 것</h2>
               <div class="tier-list">
-                <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
+                <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
               </div>
             </div>
             <ul class="checklist-items">
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>광고주명(브랜드명)</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">광고 단위 상단에 노출될 브랜드명을 광고주에게 확인받습니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>파비콘/로고</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">공개 직접 이미지 링크로 받아야 합니다. 256×256 이상, 정사각형, 흰 배경, 원형 크롭 가능 형태를 권장합니다. 규격 미달은 캠페인 거부 사유가 아니라 로고 이미지 교체 요청 사항입니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>광고 제목</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>크리테오</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span><span class="source-divider">|</span><span>크리테오</span></span>
                 </div>
                 <p class="checklist-item-body">OpenAI 직접 집행은 최대 50자이며 16~24자를 권장합니다. 크리테오 경유는 최대 30자로 안내합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>광고 설명문</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>크리테오</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span><span class="source-divider">|</span><span>OpenAI 직접</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span><span class="source-divider">|</span><span>크리테오</span></span>
                 </div>
                 <p class="checklist-item-body">OpenAI 직접 집행은 최대 100자이며 32~48자를 권장합니다. 크리테오 경유는 최대 60자이며 국문 띄어쓰기를 포함합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>이미지 소재</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">PNG 또는 JPG, 정사각형(1:1), 최대 1200×1200, 공개 직접 접근 가능 링크로 받아야 합니다. 광고 메시지를 뒷받침하는 단순하고 관련성 높은 이미지를 권장합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>랜딩 URL</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">유효하고 접근 가능한 URL이어야 하며, 광고 내용과 관련성이 높은 페이지를 권장합니다. 홈 대신 제품·컬렉션·콘텐츠 페이지가 좋습니다. UTM 등 추적 파라미터는 대상 URL에 직접 추가할 수 있습니다.</p>
               </li>
@@ -1446,42 +1464,42 @@
             <div class="checklist-card-header">
               <h2>랜딩 페이지 기술 요건 — 광고주 개발팀이 확인할 것</h2>
               <div class="tier-list">
-                <span class="source-chip official"><span class="source-badge official">공식</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
+                <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span><span class="source-divider">|</span><span>OpenAI 공식</span></span>
               </div>
             </div>
             <ul class="checklist-items">
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>OpenAI 광고 로봇 허용</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">robots.txt에서 OAI-AdsBot은 반드시 허용해야 합니다. OAI-SearchBot도 허용을 권장합니다. 예: User-agent: OAI-AdsBot / Allow: /</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>웹 방화벽/봇 완화 예외 처리</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">Cloudflare·Akamai 등 웹 방화벽이나 봇 완화 설정에서 OpenAI 크롤러 user-agent를 허용 목록에 추가합니다. 단, OAI-AdsBot은 현재 Cloudflare에서 공식 검증·허용 목록 등록이 완료된 상태입니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>CAPTCHA·JS 챌린지 예외 처리</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">CAPTCHA, JS 챌린지, 사람 확인 로직이 있으면 OpenAI 크롤러가 랜딩 페이지를 확인할 수 있도록 예외 처리합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>속도 제한 확인</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">대량 업로드나 반복 검수 시 429(Too Many Requests) 등 속도 제한이 발생하지 않도록 서버 정책을 확인합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>사전 자가점검 안내</span>
-                  <span class="source-chip official"><span class="source-badge official">공식</span></span>
+                  <span class="source-chip official"><span class="source-badge official">OpenAI 공식 문서</span></span>
                 </div>
                 <p class="checklist-item-body">이 사이트의 [랜딩 URL 검사] 탭에서 robots.txt 기준 1차 자가점검이 가능합니다. 최종 확정은 광고주 개발팀의 실제 OpenAI 광고 로봇 접근 테스트가 필요합니다.</p>
               </li>
@@ -1492,42 +1510,42 @@
             <div class="checklist-card-header">
               <h2>집행 조건 — 영업팀이 광고주에게 안내할 것</h2>
               <div class="tier-list">
-                <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span><span class="source-divider">|</span><span>확정 운영 회신</span></span>
+                <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span><span class="source-divider">|</span><span>확정 운영 회신</span></span>
               </div>
             </div>
             <ul class="checklist-items">
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>최소 집행금액</span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span></span>
                 </div>
                 <p class="checklist-item-body">OpenAI 직접(CBT)은 400만원 Net 기준입니다. 크리테오 경유는 캠페인별 월 기준 2,500만원입니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>입찰/과금 방식</span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span></span>
                 </div>
                 <p class="checklist-item-body">OpenAI 직접 집행은 CPC와 CPM 모두 가능합니다. 크리테오 경유는 CPM만 가능합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>초기 노출</span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span></span>
                 </div>
                 <p class="checklist-item-body">한국 런칭 초기에는 전체 광고 자격 유저의 10%에게 노출 후 점진 확대됩니다. 크리테오 경유 캠페인도 동일 적용되며 예외는 없습니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>인보이스(OpenAI)</span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span></span>
                 </div>
                 <p class="checklist-item-body">나스미디어가 광고 계정 전체를 통합해 단일 인보이스를 발행하고, 인보이스 내 광고주별 집행금액을 개별 표기합니다.</p>
               </li>
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>인보이스(크리테오)</span>
-                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">내부운영</span></span>
+                  <span class="source-chip kr_ops"><span class="source-badge kr_ops">나스미디어 내부 자료</span></span>
                 </div>
                 <p class="checklist-item-body">기존 크리테오 광고 상품 정산과 동일 방식 예정입니다. 단, 추후 변경될 수 있습니다.</p>
               </li>
@@ -1538,14 +1556,14 @@
             <div class="checklist-card-header">
               <h2>확인 대기 — 아직 미확정, 광고주에 단정 금지</h2>
               <div class="tier-list">
-                <span class="source-chip pending"><span class="source-badge pending">확인대기</span><span class="source-divider">|</span><span>미확정</span></span>
+                <span class="source-chip pending"><span class="source-badge pending">확인 대기 (미확정)</span><span class="source-divider">|</span><span>미확정</span></span>
               </div>
             </div>
             <ul class="checklist-items">
               <li class="checklist-item">
                 <div class="checklist-item-title">
                   <span>미확정 항목</span>
-                  <span class="source-chip pending"><span class="source-badge pending">확인대기</span></span>
+                  <span class="source-chip pending"><span class="source-badge pending">확인 대기 (미확정)</span></span>
                 </div>
                 <p class="checklist-item-body">VAT 별도 여부, 트래커(픽셀) 제출의 집행 의무 여부, 크리테오 수수료 정책은 현재 OpenAI/크리테오 확인 대기 중입니다. 확정 후 정확히 안내드리겠습니다.</p>
               </li>
@@ -1648,9 +1666,9 @@
       };
 
       const sourceTierLabel = {
-        official: "공식",
-        kr_ops: "내부운영",
-        pending: "확인대기",
+        official: "OpenAI 공식 문서",
+        kr_ops: "나스미디어 내부 자료",
+        pending: "확인 대기 (미확정)",
       };
 
       function splitCrawlerUrls() {
@@ -1679,6 +1697,37 @@
         if (empty) empty.remove();
       }
 
+      function sourceHost(url) {
+        try {
+          return new URL(url).hostname.replace(/^www\./, "");
+        } catch {
+          return "";
+        }
+      }
+
+      function sourceDetail(source) {
+        const tier = source.source_tier || "kr_ops";
+        const href = source.source_url || "";
+        if (tier === "official") {
+          const lang = source.lang ? source.lang.toUpperCase() : "";
+          const title = source.title || "";
+          const host = sourceHost(href);
+          return [lang, title, host].filter(Boolean).join(" · ") || href || "출처";
+        }
+        if (tier === "kr_ops") {
+          return source.title || "확정 운영 회신";
+        }
+        if (tier === "pending") {
+          return source.title || "미확정 항목";
+        }
+        return source.title || sourceHost(href) || href || "출처";
+      }
+
+      function sourceUpdatedText(source) {
+        if (!source.source_updated_at) return "";
+        return `업데이트 ${source.source_updated_at}${source.source_updated_at_is_fallback ? " (수집일 기준)" : ""}`;
+      }
+
       function sourceElement(source) {
         const href = source.source_url || "";
         const wrapper =
@@ -1702,8 +1751,20 @@
         divider.textContent = "|";
 
         const title = document.createElement("span");
-        title.textContent = source.title || href || "출처";
+        title.className = "source-title";
+        title.textContent = sourceDetail(source);
         wrapper.append(badge, divider, title);
+
+        const updatedText = sourceUpdatedText(source);
+        if (updatedText) {
+          const updatedDivider = document.createElement("span");
+          updatedDivider.className = "source-divider";
+          updatedDivider.textContent = "|";
+          const updated = document.createElement("span");
+          updated.className = "source-updated";
+          updated.textContent = updatedText;
+          wrapper.append(updatedDivider, updated);
+        }
         return wrapper;
       }
 
@@ -1720,18 +1781,14 @@
         answerEl.className = "message-answer";
         answerEl.textContent = answer || "응답이 비어 있습니다.";
 
-        const sourceList = document.createElement("div");
-        sourceList.className = "source-list";
         if (sources.length) {
+          const sourceList = document.createElement("div");
+          sourceList.className = "source-list";
           sources.forEach((source) => sourceList.append(sourceElement(source)));
+          article.append(questionEl, answerEl, sourceList);
         } else {
-          const empty = document.createElement("span");
-          empty.className = "source-chip no-source";
-          empty.textContent = "근거 없음";
-          sourceList.append(empty);
+          article.append(questionEl, answerEl);
         }
-
-        article.append(questionEl, answerEl, sourceList);
         chatHistory.append(article);
         article.scrollIntoView({ block: "end", behavior: "smooth" });
       }

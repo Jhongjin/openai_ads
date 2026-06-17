@@ -19,12 +19,11 @@ crawler:
 
 collections:
   official:
-    tier_label: "✅공식"
+    tier_label: "OpenAI 공식 문서"
+    help_center_collections:
+      ko: "https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
+      en: "https://help.openai.com/en/collections/20001223-chatgpt-ads"
     urls:
-      - "https://help.openai.com/en/articles/20001207"
-      - "https://help.openai.com/en/articles/20001209"
-      - "https://help.openai.com/en/articles/20001212"
-      - "https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads"
       - "https://developers.openai.com/api/docs/bots"
       - "https://openai.com/policies/ad-policies"
       - "https://openai.com/index/testing-ads-in-chatgpt"
@@ -76,12 +75,13 @@ collections:
         content: |
           OpenAI announced testing ads in ChatGPT as a beta experience. Because the product is in beta, policy, eligibility, and operational details may change and should be reconfirmed on official pages or with OpenAI contacts.
   kr_ops:
-    tier_label: "🟡국내운영"
+    tier_label: "나스미디어 내부 자료"
     paths:
       - "data/kr_ops"
     documents:
       - title: "국내 운영 메모"
         source_url: "internal://kr_ops/operating-notes"
+        updated_at: "2026-06-17"
         content: |
           나스미디어 영업 운영 메모: 광고주에게 안내할 때 공식 문서와 국내 운영 가이드가 충돌하면 공식 최대값과 국내 권장값을 함께 제시한다.
           크리테오 원문은 인덱싱하지 않는다. 확정된 크리테오 경유 값은 내부운영 출처로 답하되, 세부 수수료 등 미확정 항목은 크리테오 코리아 확인이 필요하다.
@@ -89,6 +89,7 @@ collections:
           광고주 준비물은 랜딩 URL, 파비콘 또는 로고 직접 이미지 URL, 제목/본문 문구, 이미지 소재 URL, 추적 파라미터 필요 여부이다.
       - title: "OpenAI·크리테오 확정 운영 회신"
         source_url: "internal://kr_ops/openai-criteo-confirmed-2026-06"
+        updated_at: "2026-06-17"
         content: |
           한국 최소 집행금액: OpenAI 직접(CBT)은 400만원 Net 기준이다. 크리테오 경유는 캠페인별 월 기준 월 2,500만원이다.
           초기 10% 노출 제한: 한국 런칭 초기 전체 광고 자격 유저의 10%에게 노출 후 점진 확대한다. 크리테오 경유 캠페인도 동일 적용하며 예외는 없다.
@@ -99,7 +100,7 @@ collections:
           한글 소재 최대 자수: OpenAI 직접은 제목 50자 max, 16~24자 권장이고 설명 100자 max, 32~48자 권장이다. 크리테오 경유는 제목 30자, 설명 60자이며 국문 띄어쓰기를 포함한다. 경로 미지정 질문에는 두 경로를 모두 안내한다.
           크리테오 경유 확정 값인 월 2,500만원, CPM만 가능, 기존 크리테오 광고 상품 정산과 동일 방식 예정은 직접 답한다. 다만 세부 수수료 등은 크리테오 코리아 확인이 필요하다.
   pending:
-    tier_label: "⚠️확인대기"
+    tier_label: "확인 대기 (미확정)"
     paths:
       - "data/pending"
     documents:

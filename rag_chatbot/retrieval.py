@@ -101,8 +101,22 @@ def _lexical_score(query_tokens: set[str], document: Document) -> float:
     return len(overlap) / max(4, len(query_tokens))
 
 
+def _preferred_lang(query: str) -> str:
+    return "ko" if re.search(r"[가-힣]", query) else "en"
+
+
+def _language_rank(item: RetrievedDocument, preferred_lang: str) -> int:
+    if item.source_tier != "official":
+        return 0
+    lang = str(item.document.metadata.get("lang") or "")
+    if not lang:
+        return 1
+    return 0 if lang == preferred_lang else 1
+
+
 def _fallback_retrieve(query: str, config: dict, *, limit: int) -> list[RetrievedDocument]:
     query_tokens = _tokens(query)
+    preferred_lang = _preferred_lang(query)
     results: list[RetrievedDocument] = []
     for collection_name in COLLECTION_ORDER:
         for document in _fallback_documents(config, collection_name):
@@ -121,6 +135,7 @@ def _fallback_retrieve(query: str, config: dict, *, limit: int) -> list[Retrieve
         key=lambda item: (
             -item.score,
             SOURCE_TIER_PRIORITY.get(item.source_tier, 99),
+            _language_rank(item, preferred_lang),
             item.title,
         ),
     )[:limit]
@@ -136,6 +151,7 @@ def retrieve(
     retrieval = config.get("retrieval") or {}
     top_k = int(retrieval.get("top_k_per_collection", 4))
     min_score = float(retrieval.get("min_relevance_score", 0.25))
+    preferred_lang = _preferred_lang(query)
 
     if not settings.openai_api_key or not settings.supabase_db_url:
         return _fallback_retrieve(query, config, limit=top_k * len(COLLECTION_ORDER))
@@ -187,6 +203,7 @@ def retrieve(
         results,
         key=lambda item: (
             SOURCE_TIER_PRIORITY.get(item.source_tier, 99),
+            _language_rank(item, preferred_lang),
             -item.score,
             item.title,
         ),

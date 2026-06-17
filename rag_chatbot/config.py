@@ -12,9 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 COLLECTION_ORDER = ("official", "kr_ops", "pending")
 SOURCE_TIER_LABELS = {
-    "official": "✅공식",
-    "kr_ops": "🟡국내운영",
-    "pending": "⚠️확인대기",
+    "official": "OpenAI 공식 문서",
+    "kr_ops": "나스미디어 내부 자료",
+    "pending": "확인 대기 (미확정)",
 }
 SOURCE_TIER_PRIORITY = {
     "official": 0,

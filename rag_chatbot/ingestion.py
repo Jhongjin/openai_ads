@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from typing import Iterable
+from urllib.parse import urlparse
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,8 +16,16 @@ from .config import (
     require_supabase_db_url,
 )
 from .crawler import crawl_urls
-from .db import ensure_database, insert_documents, reset_collection
+from .db import (
+    delete_legacy_documents,
+    delete_source_documents,
+    ensure_database,
+    insert_documents,
+    reset_collection,
+    source_hash_exists,
+)
 from .embeddings import embed_texts
+from .help_center import content_hash, crawl_help_center_collections
 from .local_docs import load_inline_documents, load_local_documents
 
 
@@ -45,6 +55,20 @@ def _batched(items: list[Document], batch_size: int) -> Iterable[list[Document]]
 def _index_chunks(chunks: list[Document], *, collection_name: str) -> None:
     settings = load_settings()
     reset_collection(collection_name, settings)
+    _insert_chunk_batches(chunks, collection_name=collection_name, settings=settings)
+
+
+def _index_chunks_without_reset(chunks: list[Document], *, collection_name: str) -> None:
+    settings = load_settings()
+    _insert_chunk_batches(chunks, collection_name=collection_name, settings=settings)
+
+
+def _insert_chunk_batches(
+    chunks: list[Document],
+    *,
+    collection_name: str,
+    settings,
+) -> None:
     if not chunks:
         return
 
@@ -59,18 +83,90 @@ def _index_chunks(chunks: list[Document], *, collection_name: str) -> None:
         )
 
 
-def _official_documents(config: dict) -> tuple[list[Document], list[str]]:
+def _identity_from_url(source_url: str) -> str:
+    parsed = urlparse(source_url)
+    normalized = parsed._replace(fragment="").geturl()
+    return f"url:{normalized}"
+
+
+def _ensure_incremental_metadata(document: Document) -> Document:
+    metadata = document.metadata
+    title = str(metadata.get("title") or "Untitled")
+    source_url = str(metadata.get("source_url") or "")
+    if not metadata.get("source_updated_at"):
+        crawled_at = str(metadata.get("crawled_at") or "")
+        if len(crawled_at) >= 10:
+            metadata["source_updated_at"] = crawled_at[:10]
+        else:
+            metadata["source_updated_at"] = datetime.now(timezone.utc).date().isoformat()
+        metadata["source_updated_at_is_fallback"] = True
+    if not metadata.get("content_hash"):
+        metadata["content_hash"] = content_hash(title, document.page_content)
+    if not metadata.get("source_identity"):
+        article_id = str(metadata.get("article_id") or "").strip()
+        lang = str(metadata.get("lang") or "").strip()
+        metadata["source_identity"] = (
+            f"help:{article_id}:{lang}" if article_id and lang else _identity_from_url(source_url)
+        )
+    return document
+
+
+def _official_documents(config: dict) -> tuple[list[Document], list[str], dict[str, int]]:
     collection = _collection_config(config, "official")
     crawler = config.get("crawler") or {}
+    stats: dict[str, int] = {
+        "official_documents": 0,
+        "official_changed_documents": 0,
+        "official_unchanged_documents": 0,
+        "official_legacy_deleted": 0,
+        "help_center_ko_articles": 0,
+        "help_center_en_articles": 0,
+        "help_center_failed": 0,
+    }
+
+    documents: list[Document] = []
+    errors: list[str] = []
+
+    help_center_collections = collection.get("help_center_collections") or {}
+    if help_center_collections:
+        help_documents, help_errors, help_stats = crawl_help_center_collections(
+            help_center_collections,
+            user_agent=str(crawler.get("user_agent", "nasmedia-rag-poc/0.1")),
+            timeout_seconds=int(crawler.get("request_timeout_seconds", 30)),
+            respect_robots_txt=bool(crawler.get("respect_robots_txt", True)),
+        )
+        documents.extend(help_documents)
+        errors.extend(help_errors)
+        stats.update(help_stats)
+
     urls = collection.get("urls") or []
-    documents, errors = crawl_urls(
+    url_documents, url_errors = crawl_urls(
         urls,
         user_agent=str(crawler.get("user_agent", "nasmedia-rag-poc/0.1")),
         timeout_seconds=int(crawler.get("request_timeout_seconds", 30)),
         respect_robots_txt=bool(crawler.get("respect_robots_txt", True)),
     )
-    documents.extend(load_inline_documents(collection.get("documents") or [], source_tier="official"))
-    return documents, errors
+    documents.extend(url_documents)
+    errors.extend(url_errors)
+
+    seen_urls = {str(item.metadata.get("source_url") or "") for item in documents}
+    has_help_center_documents = any(
+        str(item.metadata.get("article_id") or "") for item in documents
+    )
+    inline_documents = [
+        item
+        for item in load_inline_documents(collection.get("documents") or [], source_tier="official")
+        if str(item.metadata.get("source_url") or "") not in seen_urls
+        and not (
+            has_help_center_documents
+            and urlparse(str(item.metadata.get("source_url") or "")).netloc == "help.openai.com"
+        )
+    ]
+    documents.extend(inline_documents)
+
+    prepared = [_ensure_incremental_metadata(document) for document in documents]
+    stats["official_documents"] = len(prepared)
+    return prepared, errors, stats
 
 
 def _local_documents(config: dict, collection_name: str) -> list[Document]:
@@ -84,6 +180,34 @@ def _local_documents(config: dict, collection_name: str) -> list[Document]:
         load_inline_documents(collection.get("documents") or [], source_tier=collection_name)
     )
     return documents
+
+
+def _changed_official_documents(documents: list[Document]) -> tuple[list[Document], int]:
+    settings = load_settings()
+    changed: list[Document] = []
+    unchanged = 0
+    for document in documents:
+        metadata = document.metadata
+        source_identity = str(metadata.get("source_identity") or "")
+        hash_value = str(metadata.get("content_hash") or "")
+        source_url = str(metadata.get("source_url") or "")
+        if source_identity and hash_value and source_hash_exists(
+            collection_name="official",
+            source_identity=source_identity,
+            content_hash=hash_value,
+            settings=settings,
+        ):
+            unchanged += 1
+            continue
+        if source_identity:
+            delete_source_documents(
+                collection_name="official",
+                source_identity=source_identity,
+                source_url=source_url,
+                settings=settings,
+            )
+        changed.append(document)
+    return changed, unchanged
 
 
 def ingest_collections(
@@ -104,15 +228,29 @@ def ingest_collections(
             raise ValueError(f"Unknown collection: {collection_name}")
 
         if collection_name == "official":
-            documents, errors = _official_documents(config)
+            documents, errors, official_stats = _official_documents(config)
             for error in errors:
                 print(f"[warn] {error}")
+            official_stats["official_legacy_deleted"] = delete_legacy_documents(
+                collection_name="official",
+                settings=settings,
+            )
+            documents, unchanged = _changed_official_documents(documents)
+            official_stats["official_changed_documents"] = len(documents)
+            official_stats["official_unchanged_documents"] = unchanged
         else:
             documents = _local_documents(config, collection_name)
+            official_stats = {}
 
         chunks = _chunk_documents(documents, config)
-        _index_chunks(chunks, collection_name=collection_name)
+        if collection_name == "official":
+            _index_chunks_without_reset(chunks, collection_name=collection_name)
+        else:
+            _index_chunks(chunks, collection_name=collection_name)
         counts[collection_name] = len(chunks)
+        counts[f"{collection_name}_chunks"] = len(chunks)
+        for key, value in official_stats.items():
+            counts[key] = int(value)
         print(f"[ok] {collection_name}: {len(documents)} docs, {len(chunks)} chunks")
 
     return counts
