@@ -154,9 +154,10 @@ FastAPI:
 uvicorn app:app --reload --port 8000
 ```
 
-Streamlit:
+Streamlit 선택 UI:
 
 ```powershell
+python -m pip install streamlit
 streamlit run ui.py
 ```
 
