@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from rag_chatbot.config import project_root
@@ -64,14 +65,16 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/", include_in_schema=False)
-def index() -> FileResponse:
-    return FileResponse(project_root() / "public" / "index.html")
+if os.getenv("VERCEL") != "1":
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        return FileResponse(project_root() / "public" / "index.html")
 
 
 @app.get("/checker", include_in_schema=False)
-def checker_page() -> FileResponse:
-    return FileResponse(project_root() / "public" / "index.html")
+def checker_page() -> RedirectResponse:
+    return RedirectResponse("/", status_code=307)
 
 
 @app.post("/chat", response_model=ChatResponse)
