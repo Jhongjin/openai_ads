@@ -19,6 +19,7 @@
 - Info blue: `#0f62fe`
 - Radius: `4px`, `6px`, `8px`
 - Shadow: 기본적으로 쓰지 않고, sticky 입력부와 하단 notice에만 약하게 사용
+- Font: `"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif`
 
 ## 컴포넌트 규칙
 
@@ -28,6 +29,7 @@
 - 표: 헤더는 옅은 회색, 행은 hairline으로 나누고 hover에서만 아주 약하게 들어 올린다.
 - 입력: `textarea`는 회색 surface 위에 두고 focus 시 검정 테두리와 얇은 파란 focus ring을 사용한다.
 - 버튼: 기본 primary는 검정, hover와 주요 액션 강조는 브랜드 레드.
+- 타이포그래피: 모든 UI 텍스트는 Pretendard Variable 계열을 우선 사용한다. 표의 URL도 별도 mono 대신 같은 산스 계열로 맞춰 비개발자용 운영툴 톤을 유지한다.
 
 ## 금지
 
