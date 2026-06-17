@@ -560,27 +560,44 @@ def crawl_help_center_collections(
         "help_center_en_articles": 0,
         "help_center_failed": 0,
     }
+    crawl_mode = os.getenv("HELP_CENTER_CRAWL_MODE", "auto").lower()
 
     for configured_lang, start_url in starts.items():
         lang = "ko" if configured_lang.lower().startswith("ko") else "en"
-        data_documents, data_errors = _crawl_help_center_loader_data(
-            start_url,
-            lang=lang,
-            user_agent=user_agent,
-            timeout_seconds=timeout_seconds,
-            respect_robots_txt=respect_robots_txt,
-        )
-        if data_documents:
-            documents.extend(data_documents)
-            if lang == "ko":
-                stats["help_center_ko_articles"] += len(data_documents)
-            elif lang == "en":
-                stats["help_center_en_articles"] += len(data_documents)
+        if crawl_mode != "reader":
+            data_documents, data_errors = _crawl_help_center_loader_data(
+                start_url,
+                lang=lang,
+                user_agent=user_agent,
+                timeout_seconds=timeout_seconds,
+                respect_robots_txt=respect_robots_txt,
+            )
+            min_loader_articles = (
+                int(os.getenv("HELP_CENTER_MIN_LOADER_ARTICLES_PER_LANG", "10") or 0)
+                if reader_fallback_enabled() and crawl_mode == "auto"
+                else 1
+            )
+            if data_documents and (
+                len(data_documents) >= min_loader_articles or crawl_mode == "loader"
+            ):
+                documents.extend(data_documents)
+                if lang == "ko":
+                    stats["help_center_ko_articles"] += len(data_documents)
+                elif lang == "en":
+                    stats["help_center_en_articles"] += len(data_documents)
+                errors.extend(data_errors)
+                stats["help_center_failed"] += len(data_errors)
+                continue
+            if data_documents:
+                errors.append(
+                    f"{start_url} -> loader data returned only "
+                    f"{len(data_documents)} article(s); trying reader fallback"
+                )
             errors.extend(data_errors)
-            stats["help_center_failed"] += len(data_errors)
-            continue
+            if crawl_mode == "loader":
+                continue
 
-        if reader_fallback_enabled():
+        if reader_fallback_enabled() and crawl_mode != "loader":
             reader_documents, reader_errors = _crawl_help_center_reader(
                 start_url,
                 lang=lang,
@@ -601,6 +618,8 @@ def crawl_help_center_collections(
                 errors.extend(reader_errors)
                 continue
             errors.extend(reader_errors)
+            if crawl_mode == "reader":
+                continue
 
         visited_collections: set[str] = set()
         article_urls: set[str] = set()

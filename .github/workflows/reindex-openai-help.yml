@@ -18,6 +18,7 @@ jobs:
       SUPABASE_SCHEMA: ${{ secrets.SUPABASE_SCHEMA || 'openai_ads_rag' }}
       RAG_CONFIG_PATH: config.example.yaml
       EMBEDDING_BATCH_SIZE: ${{ secrets.EMBEDDING_BATCH_SIZE || '96' }}
+      HELP_CENTER_CRAWL_MODE: "reader"
       ENABLE_READER_FALLBACK: "true"
       READER_FALLBACK_DELAY_SECONDS: "1.2"
       REQUIRE_HELP_CENTER_MIN_ARTICLES: "30"
