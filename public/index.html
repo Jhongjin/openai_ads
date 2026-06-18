@@ -1964,6 +1964,51 @@
         color: #4d5358;
       }
 
+      .header-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
+      .header-copy {
+        min-width: 0;
+      }
+
+      .admin-shortcut {
+        display: inline-flex;
+        flex: 0 0 auto;
+        min-height: 40px;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #cfd6df;
+        border-radius: var(--radius-md);
+        background: #fff;
+        padding: 8px 12px;
+        color: #262b30;
+        font-size: 13px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .admin-shortcut:hover {
+        border-color: #aeb8c6;
+        background: var(--surface-1);
+      }
+
+      .admin-shortcut-icon {
+        display: inline-flex;
+        min-width: 34px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--brand);
+        border-radius: var(--radius-sm);
+        color: var(--brand);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
       .sales-note {
         border-color: #c6d4f5;
         border-left: 4px solid var(--blue);
@@ -2472,6 +2517,16 @@
           font-size: 22px;
         }
 
+        .header-row {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .admin-shortcut {
+          width: 100%;
+          justify-content: center;
+        }
+
         header,
         .subcopy,
         .sales-note {
@@ -2891,8 +2946,16 @@
 
     <main>
       <header>
-        <h1>OpenAI 광고 사내 도구</h1>
-        <p class="subcopy">광고 질문 답변과 랜딩 URL·파비콘 사전 점검을 한 곳에서 처리합니다.</p>
+        <div class="header-row">
+          <div class="header-copy">
+            <h1>OpenAI 광고 사내 도구</h1>
+            <p class="subcopy">광고 질문 답변과 랜딩 URL·파비콘 사전 점검을 한 곳에서 처리합니다.</p>
+          </div>
+          <a class="admin-shortcut" href="/admin" aria-label="관리자 페이지로 이동">
+            <span class="admin-shortcut-icon">ADM</span>
+            <span>관리자</span>
+          </a>
+        </div>
         <p class="sales-note">
           OpenAI 광고 관련 질문에 사내·공식 자료를 근거로 답합니다. 확인 대기 항목은 '확인 중'으로 안내되며, 임의로 추측하지 않습니다.
         </p>
