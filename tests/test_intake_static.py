@@ -141,8 +141,10 @@ class IntakeFormStaticTests(unittest.TestCase):
             "openReviewModal(payload())",
             "submitReviewedPayload",
             "구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.",
-            "openai@nasmedia.co.kr 알림 발송",
-            "메일 발송 확인 필요",
+            "메일 발송 요청 완료",
+            "body.mail_recipient",
+            "body.mail_cc",
+            "메일 발송 실패",
             "body.mail_sent === false",
         ]
         for phrase in required:

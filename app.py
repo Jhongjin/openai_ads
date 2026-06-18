@@ -84,6 +84,8 @@ class IntakeResponse(BaseModel):
     submitted_at_kst: str
     mail_sent: bool | None = None
     mail_error: str | None = None
+    mail_recipient: str | None = None
+    mail_cc: str | None = None
 
 
 class WorkbookInspectResponse(BaseModel):

@@ -93,6 +93,8 @@ function doPost(e) {
         submittedAtKst,
         mailSent: mailResult.sent,
         mailError: mailResult.error || "",
+        mailRecipient: mailResult.recipient || "",
+        mailCc: mailResult.cc || "",
         counts: {
           campaigns: campaigns.length,
           adgroups: adgroups.length,
@@ -164,7 +166,16 @@ function nowKst_() {
 }
 
 function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads) {
-  const recipient = "openai@nasmedia.co.kr";
+  const properties = PropertiesService.getScriptProperties();
+  const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const configuredCc = (properties.getProperty("NOTIFY_CC") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const ccList = uniqueEmails_([
+    ops.sales_owner_email,
+    ...configuredCc,
+  ]).filter((email) => email.toLowerCase() !== recipient.toLowerCase());
   const subject = `[OpenAI Ads 접수] ${receiptNumber} · ${ops.advertiser_name || "광고주명 없음"}`;
   const body = [
     `접수번호: ${receiptNumber}`,
@@ -182,21 +193,57 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
   ].join("\n");
 
   try {
-    MailApp.sendEmail(recipient, subject, body);
-    return { sent: true, error: "" };
+    const options = {
+      name: "OpenAI Ads 접수 알림",
+      replyTo: ops.sales_owner_email || recipient,
+    };
+    if (ccList.length) {
+      options.cc = ccList.join(",");
+    }
+    MailApp.sendEmail(recipient, subject, body, options);
+    return { sent: true, error: "", recipient, cc: ccList.join(",") };
   } catch (error) {
     const message = String(error && error.message ? error.message : error);
     Logger.log(`MailApp.sendEmail failed: ${message}`);
-    return { sent: false, error: message };
+    return { sent: false, error: message, recipient, cc: ccList.join(",") };
   }
 }
 
+function uniqueEmails_(emails) {
+  const seen = {};
+  return emails
+    .map((email) => String(email || "").trim())
+    .filter((email) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    .filter((email) => {
+      const key = email.toLowerCase();
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+}
+
 function sendMailAuthTest() {
+  const properties = PropertiesService.getScriptProperties();
+  const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const configuredCc = (properties.getProperty("NOTIFY_CC") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const ccList = uniqueEmails_(configuredCc)
+    .filter((email) => email.toLowerCase() !== recipient.toLowerCase());
+  const options = {
+    name: "OpenAI Ads 접수 알림",
+  };
+  if (ccList.length) {
+    options.cc = ccList.join(",");
+  }
   MailApp.sendEmail(
-    "openai@nasmedia.co.kr",
+    recipient,
     "[OpenAI Ads] Apps Script 메일 권한 테스트",
-    "이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다."
+    `이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다.\n\nTo: ${recipient}\nCC: ${ccList.join(",") || "-"}\n발송시각: ${nowKst_()} KST`,
+    options
   );
+  Logger.log(`Mail auth test sent to ${recipient}${ccList.length ? ` cc ${ccList.join(",")}` : ""}`);
 }
 
 function jsonResponse_(body) {

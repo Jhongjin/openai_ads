@@ -853,6 +853,10 @@
         color: var(--red-ink);
       }
 
+      .form-status.warning {
+        color: #9a5a00;
+      }
+
       .slide-panel-shell {
         display: grid;
         gap: 16px;
@@ -5902,9 +5906,21 @@ oaiq("measure", "order_created", {
             }
             throw new Error(message);
           }
+          const mailTargets = [
+            payload.mail_recipient ? `To ${payload.mail_recipient}` : "",
+            payload.mail_cc ? `CC ${payload.mail_cc}` : "",
+          ].filter(Boolean).join(" / ");
+          let mailNote = "";
+          let statusType = "success";
+          if (payload.mail_sent === true) {
+            mailNote = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}`;
+          } else if (payload.mail_sent === false) {
+            statusType = "warning";
+            mailNote = ` · 메일 발송 실패${payload.mail_error ? `: ${payload.mail_error}` : ""}`;
+          }
           setIntakeStatus(
-            `접수 완료: ${payload.receipt_number} · ${payload.submitted_at_kst} KST`,
-            "success",
+            `접수 완료: ${payload.receipt_number} · ${payload.submitted_at_kst} KST${mailNote}`,
+            statusType,
           );
           intakeForm.reset();
           resetIntakeHierarchyToOne();
