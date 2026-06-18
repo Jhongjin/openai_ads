@@ -258,6 +258,47 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(summary["sheets"]["adgroups"]["rows"], 1)
         self.assertEqual(summary["sheets"]["ads"]["rows"], 2)
 
+    def test_inspect_workbook_warns_when_only_template_samples_exist(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["oaitestcmp1234567", 5000, "Lifetime", "2026-02-09", "2026-03-31", "Views", '["US", "CA"]'],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["oaitestcmp1234567", "oaitestadg9876543", 3, '["test1", "test2"]'],
+            ],
+            "ads": [
+                ["adgroup_name", "title", "copy", "link", "image_link"],
+                [
+                    "oaitestadg9876543",
+                    "My website",
+                    "Check out the latest on my website",
+                    "https://www.example.com/?utm_source=chat",
+                    "https://www.example.com/logo.png",
+                ],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["sheets"]["campaigns"]["rows"], 0)
+        self.assertEqual(summary["sheets"]["campaigns"]["sample_rows"], 1)
+        self.assertTrue(any("oaitest" in warning for warning in summary["warnings"]))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -979,9 +979,15 @@
         }
         const lines = Object.entries(body.sheets).map(([name, item]) => {
           const missing = item.missing_columns?.length ? ` / 누락: ${item.missing_columns.join(", ")}` : "";
-          return `${name}: 데이터 행 ${item.rows}개${missing}`;
+          const skipped = [];
+          if (item.sample_rows) skipped.push(`샘플 제외 ${item.sample_rows}개`);
+          if (item.guide_rows) skipped.push(`가이드 제외 ${item.guide_rows}개`);
+          const skippedText = skipped.length ? ` (${skipped.join(", ")})` : "";
+          return `${name}: 실제 데이터 행 ${item.rows}개${skippedText}${missing}`;
         });
-        bulkResult.textContent = `${body.ok ? "검수 통과" : "확인 필요"}\n${lines.join("\n")}${body.errors.length ? "\n" + body.errors.join("\n") : ""}`;
+        const errors = body.errors?.length ? "\n" + body.errors.join("\n") : "";
+        const warnings = body.warnings?.length ? "\n" + body.warnings.join("\n") : "";
+        bulkResult.textContent = `${body.ok ? "검수 통과" : "확인 필요"}\n${lines.join("\n")}${errors}${warnings}`;
       }
 
       async function uploadImage(input) {

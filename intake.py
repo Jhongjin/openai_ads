@@ -464,7 +464,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
     from openpyxl import load_workbook
 
     errors: list[str] = []
-    summary: dict[str, Any] = {"sheets": {}, "errors": errors}
+    warnings: list[str] = []
+    summary: dict[str, Any] = {"sheets": {}, "errors": errors, "warnings": warnings}
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
     for sheet_name, required_columns in WORKBOOK_COLUMNS.items():
         if sheet_name not in workbook.sheetnames:
@@ -476,21 +477,36 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         if missing:
             errors.append(f"{sheet_name} 시트에 필수 컬럼이 없습니다: {', '.join(missing)}")
         rows = 0
+        sample_rows = 0
+        guide_rows = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
             first = str(row[0] or "").strip()
             if not any(cell not in (None, "") for cell in row):
                 continue
             if first in {"Required"} or first.startswith("How we will") or first.startswith("The "):
+                guide_rows += 1
                 continue
             if first.startswith("oaitest"):
+                sample_rows += 1
                 continue
             rows += 1
+        if sample_rows and rows == 0:
+            warnings.append(
+                f"{sheet_name} 시트에 공식 템플릿 샘플(oaitest...) 행만 있습니다. "
+                "샘플값을 실제 campaign/adgroup 이름으로 바꿔야 업로드 데이터로 인식됩니다."
+            )
+        if rows == 0:
+            warnings.append(f"{sheet_name} 시트에서 실제 데이터 행을 찾지 못했습니다.")
         summary["sheets"][sheet_name] = {
             "columns": header,
             "rows": rows,
+            "sample_rows": sample_rows,
+            "guide_rows": guide_rows,
             "missing_columns": missing,
         }
-    summary["ok"] = not errors
+    summary["ok"] = not errors and all(
+        item.get("rows", 0) > 0 for item in summary["sheets"].values()
+    )
     return summary
 
 
