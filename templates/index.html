@@ -5910,10 +5910,13 @@ oaiq("measure", "order_created", {
             payload.mail_recipient ? `To ${payload.mail_recipient}` : "",
             payload.mail_cc ? `CC ${payload.mail_cc}` : "",
           ].filter(Boolean).join(" / ");
+          const quotaNote = Number.isInteger(payload.mail_quota_remaining)
+            ? ` · 남은 메일 쿼터 ${payload.mail_quota_remaining}`
+            : "";
           let mailNote = "";
           let statusType = "success";
           if (payload.mail_sent === true) {
-            mailNote = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}`;
+            mailNote = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}${quotaNote}`;
           } else if (payload.mail_sent === false) {
             statusType = "warning";
             mailNote = ` · 메일 발송 실패${payload.mail_error ? `: ${payload.mail_error}` : ""}`;

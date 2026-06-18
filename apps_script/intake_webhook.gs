@@ -95,6 +95,7 @@ function doPost(e) {
         mailError: mailResult.error || "",
         mailRecipient: mailResult.recipient || "",
         mailCc: mailResult.cc || "",
+        mailQuotaRemaining: mailResult.quotaRemaining,
         counts: {
           campaigns: campaigns.length,
           adgroups: adgroups.length,
@@ -193,6 +194,7 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
   ].join("\n");
 
   try {
+    const quotaRemaining = MailApp.getRemainingDailyQuota();
     const options = {
       name: "OpenAI Ads 접수 알림",
       replyTo: ops.sales_owner_email || recipient,
@@ -201,11 +203,11 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
       options.cc = ccList.join(",");
     }
     MailApp.sendEmail(recipient, subject, body, options);
-    return { sent: true, error: "", recipient, cc: ccList.join(",") };
+    return { sent: true, error: "", recipient, cc: ccList.join(","), quotaRemaining };
   } catch (error) {
     const message = String(error && error.message ? error.message : error);
     Logger.log(`MailApp.sendEmail failed: ${message}`);
-    return { sent: false, error: message, recipient, cc: ccList.join(",") };
+    return { sent: false, error: message, recipient, cc: ccList.join(","), quotaRemaining: null };
   }
 }
 
@@ -237,13 +239,24 @@ function sendMailAuthTest() {
   if (ccList.length) {
     options.cc = ccList.join(",");
   }
+  const quotaRemaining = MailApp.getRemainingDailyQuota();
   MailApp.sendEmail(
     recipient,
     "[OpenAI Ads] Apps Script 메일 권한 테스트",
-    `이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다.\n\nTo: ${recipient}\nCC: ${ccList.join(",") || "-"}\n발송시각: ${nowKst_()} KST`,
+    `이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다.\n\nTo: ${recipient}\nCC: ${ccList.join(",") || "-"}\n남은 MailApp 쿼터: ${quotaRemaining}\n발송시각: ${nowKst_()} KST`,
     options
   );
-  Logger.log(`Mail auth test sent to ${recipient}${ccList.length ? ` cc ${ccList.join(",")}` : ""}`);
+  Logger.log(`Mail auth test sent to ${recipient}${ccList.length ? ` cc ${ccList.join(",")}` : ""}; quota ${quotaRemaining}`);
+}
+
+function debugMailConfig() {
+  const properties = PropertiesService.getScriptProperties();
+  const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const cc = properties.getProperty("NOTIFY_CC") || "";
+  const quotaRemaining = MailApp.getRemainingDailyQuota();
+  Logger.log(`NOTIFY_TO=${recipient}`);
+  Logger.log(`NOTIFY_CC=${cc || "-"}`);
+  Logger.log(`MailApp remaining daily quota=${quotaRemaining}`);
 }
 
 function jsonResponse_(body) {

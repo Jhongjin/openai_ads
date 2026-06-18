@@ -86,6 +86,7 @@ class IntakeResponse(BaseModel):
     mail_error: str | None = None
     mail_recipient: str | None = None
     mail_cc: str | None = None
+    mail_quota_remaining: int | None = None
 
 
 class WorkbookInspectResponse(BaseModel):

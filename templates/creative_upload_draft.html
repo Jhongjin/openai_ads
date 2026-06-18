@@ -1459,10 +1459,13 @@
           body.mail_recipient ? `To ${body.mail_recipient}` : "",
           body.mail_cc ? `CC ${body.mail_cc}` : "",
         ].filter(Boolean).join(" / ");
+        const quotaNote = Number.isInteger(body.mail_quota_remaining)
+          ? ` · 남은 메일 쿼터 ${body.mail_quota_remaining}`
+          : "";
         let mailNotice = "";
         let statusType = "success";
         if (body.mail_sent === true) {
-          mailNotice = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}`;
+          mailNotice = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}${quotaNote}`;
         } else if (body.mail_sent === false) {
           statusType = "warning";
           mailNotice = ` · 메일 발송 실패${body.mail_error ? `: ${body.mail_error}` : ""}`;
