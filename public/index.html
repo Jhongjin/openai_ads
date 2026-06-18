@@ -625,6 +625,29 @@
         gap: 12px;
       }
 
+      .campaign-list,
+      .adgroup-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .campaign-card,
+      .adgroup-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .campaign-card {
+        padding: 16px;
+        box-shadow: 0 4px 14px rgb(21 23 26 / 4%);
+      }
+
+      .adgroup-card {
+        padding: 14px;
+        background: #fbfcfe;
+      }
+
       .ad-card {
         border: 1px solid #d9dee7;
         border-radius: 8px;
@@ -632,16 +655,43 @@
         padding: 14px;
       }
 
+      .campaign-card-header,
+      .adgroup-card-header,
       .ad-card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
         margin-bottom: 12px;
       }
 
+      .campaign-card-header strong,
+      .adgroup-card-header strong,
       .ad-card-header strong {
         color: #0f1115;
         font-size: 14px;
+      }
+
+      .nested-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 16px 0 10px;
+        border-top: 1px solid #e6ebf2;
+        padding-top: 14px;
+      }
+
+      .nested-section-title h3 {
+        margin: 0;
+        color: #0f1115;
+        font-size: 15px;
+      }
+
+      .nested-section-title p {
+        margin: 2px 0 0;
+        color: #697077;
+        font-size: 12px;
       }
 
       .radio-row,
@@ -3194,131 +3244,149 @@
           </section>
 
           <section class="form-card">
-            <div class="form-card-header">
-              <h2>① 캠페인 정보</h2>
-              <p>campaigns 탭에 공식 워크북 컬럼명으로 기록됩니다.</p>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label class="required" for="campaign-name">캠페인명</label>
-                <input id="campaign-name" name="campaign_name" required />
-                <span class="field-help">campaign_name · 특수문자 불가</span>
-              </div>
-              <div class="field">
-                <label class="required" for="budget-max">예산 금액</label>
-                <input id="budget-max" name="budget_max" type="number" min="1" step="1" placeholder="4000000" required />
-                <span class="field-help">budget_max · 이 캠페인 최대 지출액(계정 통화 KRW 기준)</span>
-              </div>
-              <div class="field">
-                <span class="radio-group-label">예산 유형</span>
-                <div class="radio-row">
-                  <label class="option-chip"><input type="radio" name="budget_type" value="lifetime" checked /> 총예산(lifetime)</label>
-                  <label class="option-chip"><input type="radio" name="budget_type" value="daily" /> 일예산(daily)</label>
-                </div>
-                <span class="field-help">일예산은 베타 중입니다.</span>
-              </div>
-              <div class="field">
-                <span class="radio-group-label required">캠페인 목표</span>
-                <div class="radio-row">
-                  <label class="option-chip"><input type="radio" name="objective" value="views" checked /> Views = CPM</label>
-                  <label class="option-chip"><input id="objective-clicks" type="radio" name="objective" value="clicks" /> Clicks = CPC</label>
-                </div>
-                <span class="field-help" id="objective-help">광고그룹 입찰 방식을 결정합니다. Clicks는 베타 중이며, 크리테오 경유 선택 시 CPM으로 고정됩니다.</span>
-              </div>
-              <div class="field">
-                <label for="launch-date">시작일</label>
-                <input id="launch-date" name="launch_date" type="date" />
-                <span class="field-help">launch_date · YYYY-MM-DD</span>
-              </div>
-              <div class="field">
-                <label for="end-date">종료일</label>
-                <input id="end-date" name="end_date" type="date" />
-                <span class="field-help">예산 소진이 먼저면 그때 종료됩니다. 종료일은 시작일 이후여야 합니다.</span>
-              </div>
-              <div class="field">
-                <label for="target-countries">국가</label>
-                <select id="target-countries" name="target_countries">
-                  <option selected value="KR">대한민국(KR)</option>
-                  <option value="US">미국(US)</option>
-                  <option value="JP">일본(JP)</option>
-                </select>
-                <span class="field-help">target_countries · 2자리 코드 배열로 저장됩니다. 예: ["KR"]</span>
-              </div>
-              <p class="budget-note full">
-                예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000(시스템 표기값, 실무상 더 높게 권장). 기준 미달 제출은 막지 않고 영업담당자가 별도 확인합니다.
-              </p>
-            </div>
-          </section>
-
-          <section class="form-card">
-            <div class="form-card-header">
-              <h2>② 광고그룹 정보</h2>
-              <p>adgroups 탭에 기록됩니다. 캠페인명은 위 캠페인 정보와 자동 연결됩니다.</p>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="campaign-name-mirror">campaign_name</label>
-                <input id="campaign-name-mirror" readonly />
-                <span class="field-help">위 캠페인명과 자동 연결됩니다.</span>
-              </div>
-              <div class="field">
-                <label class="required" for="adgroup-name">광고그룹명</label>
-                <input id="adgroup-name" name="adgroup_name" required />
-                <span class="field-help">adgroup_name · 특수문자 불가</span>
-              </div>
-              <div class="field">
-                <label for="max-bid">최대 입찰가</label>
-                <input id="max-bid" name="max_bid" type="number" min="1" step="1" placeholder="선택 입력" />
-                <span class="field-help">현재는 Clicks 캠페인의 최대 CPC에만 적용 가능합니다. KRW 기준입니다.</span>
-              </div>
-              <div class="field">
-                <label for="keywords">키워드</label>
-                <input id="keywords" name="keywords" placeholder="키워드1, 키워드2" />
-                <span class="field-help">쉼표 구분 입력 후 JSON 배열로 저장됩니다. 상한은 없습니다.</span>
-              </div>
-            </div>
-          </section>
-
-          <section class="form-card">
             <div class="form-card-header action-header">
               <div>
-                <h2>③ 소재 정보</h2>
-                <p>ads 탭에 소재 수만큼 행이 추가됩니다. 소재 추가 버튼으로 여러 개를 접수할 수 있습니다.</p>
+                <h2>캠페인 · 광고그룹 · 소재 정보</h2>
+                <p>한 광고주 접수 안에 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.</p>
               </div>
-              <button class="secondary" id="add-ad" type="button">소재 추가</button>
+              <button class="secondary" id="add-campaign" type="button">캠페인 추가</button>
             </div>
-            <div class="ad-list" id="ad-list">
-              <article class="ad-card" data-ad-item>
-                <div class="ad-card-header">
-                  <strong>소재 1</strong>
-                  <button class="ghost danger remove-ad" type="button" hidden>삭제</button>
+            <p class="budget-note">
+              예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000(시스템 표기값, 실무상 더 높게 권장). 기준 미달 제출은 막지 않고 영업담당자가 별도 확인합니다.
+            </p>
+            <div class="campaign-list" id="campaign-list">
+              <article class="campaign-card" data-campaign-item>
+                <div class="campaign-card-header">
+                  <strong>캠페인 1</strong>
+                  <button class="ghost danger remove-campaign" type="button" hidden>캠페인 삭제</button>
                 </div>
                 <div class="form-grid">
                   <div class="field">
-                    <label>adgroup_name</label>
-                    <input class="adgroup-name-mirror" readonly />
-                    <span class="field-help">위 광고그룹명과 자동 연결됩니다.</span>
+                    <label class="required">캠페인명</label>
+                    <input class="campaign-name" required />
+                    <span class="field-help">campaign_name · 특수문자 불가</span>
                   </div>
                   <div class="field">
-                    <label class="required" for="ad-title-1">광고 제목</label>
-                    <input id="ad-title-1" class="ad-title" name="title" maxlength="24" required />
-                    <span class="char-counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
+                    <label class="required">예산 금액</label>
+                    <input class="budget-max" type="number" min="1" step="1" placeholder="4000000" required />
+                    <span class="field-help">budget_max · 이 캠페인 최대 지출액(계정 통화 KRW 기준)</span>
                   </div>
-                  <div class="field full">
-                    <label class="required" for="ad-copy-1">광고 설명</label>
-                    <input id="ad-copy-1" class="ad-copy" name="copy" maxlength="48" required />
-                    <span class="char-counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
+                  <div class="field">
+                    <span class="radio-group-label">예산 유형</span>
+                    <div class="radio-row">
+                      <label class="option-chip"><input class="budget-type" type="radio" value="lifetime" checked /> 총예산(lifetime)</label>
+                      <label class="option-chip"><input class="budget-type" type="radio" value="daily" /> 일예산(daily)</label>
+                    </div>
+                    <span class="field-help">일예산은 베타 중입니다.</span>
                   </div>
-                  <div class="field full">
-                    <label class="required" for="ad-link-1">랜딩 URL</label>
-                    <input id="ad-link-1" class="ad-link" name="link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
-                    <span class="field-help">UTM 등 추적 파라미터 포함 가능</span>
+                  <div class="field">
+                    <span class="radio-group-label required">캠페인 목표</span>
+                    <div class="radio-row">
+                      <label class="option-chip"><input class="campaign-objective" type="radio" value="views" checked /> Views = CPM</label>
+                      <label class="option-chip"><input class="campaign-objective objective-clicks" type="radio" value="clicks" /> Clicks = CPC</label>
+                    </div>
+                    <span class="field-help">광고그룹 입찰 방식을 결정합니다. Clicks는 베타 중이며, 크리테오 경유 선택 시 CPM으로 고정됩니다.</span>
                   </div>
-                  <div class="field full">
-                    <label class="required" for="ad-image-link-1">이미지 URL</label>
-                    <input id="ad-image-link-1" class="ad-image-link" name="image_link" type="url" placeholder="https://example.com/image.jpg" required />
-                    <span class="field-help">정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
+                  <div class="field">
+                    <label>시작일</label>
+                    <input class="launch-date" type="date" />
+                    <span class="field-help">launch_date · YYYY-MM-DD</span>
                   </div>
+                  <div class="field">
+                    <label>종료일</label>
+                    <input class="end-date" type="date" />
+                    <span class="field-help">예산 소진이 먼저면 그때 종료됩니다. 종료일은 시작일 이후여야 합니다.</span>
+                  </div>
+                  <div class="field">
+                    <label>국가</label>
+                    <select class="target-countries">
+                      <option selected value="KR">대한민국(KR)</option>
+                      <option value="US">미국(US)</option>
+                      <option value="JP">일본(JP)</option>
+                    </select>
+                    <span class="field-help">target_countries · 2자리 코드 배열로 저장됩니다. 예: ["KR"]</span>
+                  </div>
+                </div>
+
+                <div class="nested-section-title">
+                  <div>
+                    <h3>광고그룹 정보</h3>
+                    <p>adgroups 탭에 광고그룹 수만큼 행이 추가됩니다.</p>
+                  </div>
+                  <button class="secondary add-adgroup" type="button">광고그룹 추가</button>
+                </div>
+                <div class="adgroup-list">
+                  <article class="adgroup-card" data-adgroup-item>
+                    <div class="adgroup-card-header">
+                      <strong>광고그룹 1</strong>
+                      <button class="ghost danger remove-adgroup" type="button" hidden>광고그룹 삭제</button>
+                    </div>
+                    <div class="form-grid">
+                      <div class="field">
+                        <label>campaign_name</label>
+                        <input class="campaign-name-mirror" readonly />
+                        <span class="field-help">상위 캠페인명과 자동 연결됩니다.</span>
+                      </div>
+                      <div class="field">
+                        <label class="required">광고그룹명</label>
+                        <input class="adgroup-name" required />
+                        <span class="field-help">adgroup_name · 특수문자 불가. 소재 연결을 위해 접수 내 중복 불가</span>
+                      </div>
+                      <div class="field">
+                        <label>최대 입찰가</label>
+                        <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
+                        <span class="field-help">Clicks 캠페인은 최대 CPC, Views 캠페인은 CPM 입찰가 기준입니다. KRW 기준입니다.</span>
+                      </div>
+                      <div class="field">
+                        <label>키워드</label>
+                        <input class="keywords" placeholder="키워드1, 키워드2" />
+                        <span class="field-help">쉼표 구분 입력 후 JSON 배열로 저장됩니다. 상한은 없습니다.</span>
+                      </div>
+                    </div>
+
+                    <div class="nested-section-title">
+                      <div>
+                        <h3>소재 정보</h3>
+                        <p>ads 탭에 소재 수만큼 행이 추가됩니다.</p>
+                      </div>
+                      <button class="secondary add-ad" type="button">소재 추가</button>
+                    </div>
+                    <div class="ad-list">
+                      <article class="ad-card" data-ad-item>
+                        <div class="ad-card-header">
+                          <strong>소재 1</strong>
+                          <button class="ghost danger remove-ad" type="button" hidden>삭제</button>
+                        </div>
+                        <div class="form-grid">
+                          <div class="field">
+                            <label>adgroup_name</label>
+                            <input class="adgroup-name-mirror" readonly />
+                            <span class="field-help">상위 광고그룹명과 자동 연결됩니다.</span>
+                          </div>
+                          <div class="field">
+                            <label class="required">광고 제목</label>
+                            <input class="ad-title" maxlength="24" required />
+                            <span class="char-counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
+                          </div>
+                          <div class="field full">
+                            <label class="required">광고 설명</label>
+                            <input class="ad-copy" maxlength="48" required />
+                            <span class="char-counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
+                          </div>
+                          <div class="field full">
+                            <label class="required">랜딩 URL</label>
+                            <input class="ad-link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
+                            <span class="field-help">UTM 등 추적 파라미터 포함 가능</span>
+                          </div>
+                          <div class="field full">
+                            <label class="required">이미지 URL</label>
+                            <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
+                            <span class="field-help">정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
+                          </div>
+                        </div>
+                      </article>
+                    </div>
+                  </article>
                 </div>
               </article>
             </div>
@@ -4190,12 +4258,8 @@ oaiq("measure", "order_created", {
       const intakeSubmitButton = document.querySelector("#intake-submit");
       const intakeStatus = document.querySelector("#intake-status");
       const formStartedAt = document.querySelector("#form-started-at");
-      const objectiveClicks = document.querySelector("#objective-clicks");
-      const addAdButton = document.querySelector("#add-ad");
-      const adList = document.querySelector("#ad-list");
-      const campaignNameInput = document.querySelector("#campaign-name");
-      const campaignNameMirror = document.querySelector("#campaign-name-mirror");
-      const adgroupNameInput = document.querySelector("#adgroup-name");
+      const campaignList = document.querySelector("#campaign-list");
+      const addCampaignButton = document.querySelector("#add-campaign");
       const slidesPrintButton = document.querySelector("#slides-print");
       const setupGuidePrintButton = document.querySelector("#setup-guide-print");
       const pixelGuidePrintButton = document.querySelector("#pixel-guide-print");
@@ -4753,12 +4817,32 @@ oaiq("measure", "order_created", {
         return /^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ _-]+$/u.test(String(value || "").trim());
       }
 
+      function campaignItems() {
+        return [...campaignList.querySelectorAll("[data-campaign-item]")];
+      }
+
+      function adgroupItems(campaignItem) {
+        return [...campaignItem.querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")];
+      }
+
+      function adItems(adgroupItem) {
+        return [...adgroupItem.querySelectorAll(":scope > .ad-list > [data-ad-item]")];
+      }
+
+      function checkedValue(container, selector) {
+        return container.querySelector(`${selector}:checked`)?.value || "";
+      }
+
       function syncNameMirrors() {
-        const campaignName = campaignNameInput.value.trim();
-        const adgroupName = adgroupNameInput.value.trim();
-        campaignNameMirror.value = campaignName;
-        adList.querySelectorAll(".adgroup-name-mirror").forEach((input) => {
-          input.value = adgroupName;
+        campaignItems().forEach((campaignItem) => {
+          const campaignName = campaignItem.querySelector(".campaign-name").value.trim();
+          adgroupItems(campaignItem).forEach((adgroupItem) => {
+            const adgroupName = adgroupItem.querySelector(".adgroup-name").value.trim();
+            adgroupItem.querySelector(".campaign-name-mirror").value = campaignName;
+            adItems(adgroupItem).forEach((adItem) => {
+              adItem.querySelector(".adgroup-name-mirror").value = adgroupName;
+            });
+          });
         });
       }
 
@@ -4777,106 +4861,217 @@ oaiq("measure", "order_created", {
         copyCounter.textContent = `${copyInput.value.length} / ${limits.copy}자 · ${limits.copyHelp}`;
       }
 
-      function updateAdListState() {
-        const items = [...adList.querySelectorAll("[data-ad-item]")];
-        items.forEach((item, index) => {
-          const number = index + 1;
-          item.querySelector(".ad-card-header strong").textContent = `소재 ${number}`;
-          item.querySelector(".remove-ad").hidden = items.length === 1;
+      function resetInputs(container) {
+        container.querySelectorAll("input, textarea").forEach((input) => {
+          if (input.type === "radio") {
+            input.checked = input.value === "views" || input.value === "lifetime";
+          } else if (input.type === "checkbox") {
+            input.checked = false;
+          } else if (!input.readOnly) {
+            input.value = "";
+          }
+        });
+        container.querySelectorAll("select").forEach((select) => {
+          select.selectedIndex = 0;
+        });
+      }
 
-          const titleInput = item.querySelector(".ad-title");
-          const copyInput = item.querySelector(".ad-copy");
-          const linkInput = item.querySelector(".ad-link");
-          const imageInput = item.querySelector(".ad-image-link");
-          titleInput.id = `ad-title-${number}`;
-          copyInput.id = `ad-copy-${number}`;
-          linkInput.id = `ad-link-${number}`;
-          imageInput.id = `ad-image-link-${number}`;
-          item.querySelector('label[for^="ad-title"]').setAttribute("for", titleInput.id);
-          item.querySelector('label[for^="ad-copy"]').setAttribute("for", copyInput.id);
-          item.querySelector('label[for^="ad-link"]').setAttribute("for", linkInput.id);
-          item.querySelector('label[for^="ad-image-link"]').setAttribute("for", imageInput.id);
-          updateAdCounters(item);
+      function trimToSingleAdgroup(campaignItem) {
+        const groups = adgroupItems(campaignItem);
+        groups.slice(1).forEach((group) => group.remove());
+        const firstGroup = adgroupItems(campaignItem)[0];
+        if (firstGroup) trimToSingleAd(firstGroup);
+      }
+
+      function trimToSingleAd(adgroupItem) {
+        const items = adItems(adgroupItem);
+        items.slice(1).forEach((item) => item.remove());
+      }
+
+      function updateIntakeStructureState() {
+        const campaigns = campaignItems();
+        const route = selectedValue("executionRoute");
+        campaigns.forEach((campaignItem, campaignIndex) => {
+          const campaignNumber = campaignIndex + 1;
+          campaignItem.querySelector(".campaign-card-header strong").textContent = `캠페인 ${campaignNumber}`;
+          campaignItem.querySelector(".remove-campaign").hidden = campaigns.length === 1;
+
+          campaignItem.querySelectorAll(".budget-type").forEach((input) => {
+            input.name = `budget_type_${campaignNumber}`;
+          });
+          campaignItem.querySelectorAll(".campaign-objective").forEach((input) => {
+            input.name = `objective_${campaignNumber}`;
+          });
+          const clickObjective = campaignItem.querySelector(".objective-clicks");
+          if (route === "criteo") {
+            campaignItem.querySelector('.campaign-objective[value="views"]').checked = true;
+            clickObjective.disabled = true;
+            clickObjective.closest(".option-chip").style.opacity = "0.55";
+          } else {
+            clickObjective.disabled = false;
+            clickObjective.closest(".option-chip").style.opacity = "1";
+          }
+
+          adgroupItems(campaignItem).forEach((adgroupItem, adgroupIndex) => {
+            const adgroupNumber = adgroupIndex + 1;
+            adgroupItem.querySelector(".adgroup-card-header strong").textContent = `광고그룹 ${campaignNumber}-${adgroupNumber}`;
+            adgroupItem.querySelector(".remove-adgroup").hidden = adgroupItems(campaignItem).length === 1;
+            adItems(adgroupItem).forEach((adItem, adIndex) => {
+              const adNumber = adIndex + 1;
+              const unique = `${campaignNumber}-${adgroupNumber}-${adNumber}`;
+              adItem.querySelector(".ad-card-header strong").textContent = `소재 ${campaignNumber}-${adgroupNumber}-${adNumber}`;
+              adItem.querySelector(".remove-ad").hidden = adItems(adgroupItem).length === 1;
+
+              const titleInput = adItem.querySelector(".ad-title");
+              const copyInput = adItem.querySelector(".ad-copy");
+              const linkInput = adItem.querySelector(".ad-link");
+              const imageInput = adItem.querySelector(".ad-image-link");
+              titleInput.id = `ad-title-${unique}`;
+              copyInput.id = `ad-copy-${unique}`;
+              linkInput.id = `ad-link-${unique}`;
+              imageInput.id = `ad-image-link-${unique}`;
+              adItem.querySelector(".ad-title").previousElementSibling.setAttribute("for", titleInput.id);
+              adItem.querySelector(".ad-copy").previousElementSibling.setAttribute("for", copyInput.id);
+              adItem.querySelector(".ad-link").previousElementSibling.setAttribute("for", linkInput.id);
+              adItem.querySelector(".ad-image-link").previousElementSibling.setAttribute("for", imageInput.id);
+              updateAdCounters(adItem);
+            });
+          });
         });
         syncNameMirrors();
       }
 
-      function addAdItem() {
-        const template = adList.querySelector("[data-ad-item]");
+      function addCampaignItem() {
+        const template = campaignList.querySelector("[data-campaign-item]");
         const item = template.cloneNode(true);
-        item.querySelectorAll("input").forEach((input) => {
-          if (!input.readOnly) input.value = "";
-        });
-        adList.append(item);
-        updateAdListState();
+        trimToSingleAdgroup(item);
+        resetInputs(item);
+        campaignList.append(item);
+        updateIntakeStructureState();
+        item.querySelector(".campaign-name").focus();
+      }
+
+      function addAdgroupItem(campaignItem) {
+        const list = campaignItem.querySelector(".adgroup-list");
+        const template = list.querySelector("[data-adgroup-item]");
+        const item = template.cloneNode(true);
+        trimToSingleAd(item);
+        resetInputs(item);
+        list.append(item);
+        updateIntakeStructureState();
+        item.querySelector(".adgroup-name").focus();
+      }
+
+      function addAdItem(adgroupItem) {
+        const list = adgroupItem.querySelector(".ad-list");
+        const template = list.querySelector("[data-ad-item]");
+        const item = template.cloneNode(true);
+        resetInputs(item);
+        list.append(item);
+        updateIntakeStructureState();
         item.querySelector(".ad-title").focus();
       }
 
-      function resetAdsToOne() {
-        const items = [...adList.querySelectorAll("[data-ad-item]")];
-        items.slice(1).forEach((item) => item.remove());
-        items[0].querySelectorAll("input").forEach((input) => {
-          if (!input.readOnly) input.value = "";
-        });
-        updateAdListState();
+      function resetIntakeHierarchyToOne() {
+        campaignItems().slice(1).forEach((item) => item.remove());
+        const firstCampaign = campaignItems()[0];
+        trimToSingleAdgroup(firstCampaign);
+        resetInputs(firstCampaign);
+        updateIntakeStructureState();
       }
 
       function syncObjectiveForRoute() {
-        const route = selectedValue("executionRoute");
-        if (route === "criteo") {
-          intakeForm.querySelector('input[name="objective"][value="views"]').checked = true;
-          objectiveClicks.disabled = true;
-          objectiveClicks.closest(".option-chip").style.opacity = "0.55";
-        } else {
-          objectiveClicks.disabled = false;
-          objectiveClicks.closest(".option-chip").style.opacity = "1";
-        }
-        updateAdListState();
+        updateIntakeStructureState();
       }
 
       function validateIntakeForm() {
         syncNameMirrors();
         if (!intakeForm.reportValidity()) return false;
 
-        if (!isSafeWorkbookName(intakeForm.elements.campaign_name.value)) {
-          setIntakeStatus("캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
-          intakeForm.elements.campaign_name.focus();
-          return false;
-        }
-        if (!isSafeWorkbookName(intakeForm.elements.adgroup_name.value)) {
-          setIntakeStatus("광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
-          intakeForm.elements.adgroup_name.focus();
-          return false;
-        }
+        const campaignNames = new Set();
+        const adgroupNames = new Set();
+        for (const campaignItem of campaignItems()) {
+          const campaignNameInput = campaignItem.querySelector(".campaign-name");
+          const campaignName = campaignNameInput.value.trim();
+          if (!isSafeWorkbookName(campaignName)) {
+            setIntakeStatus("캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
+            campaignNameInput.focus();
+            return false;
+          }
+          if (campaignNames.has(campaignName)) {
+            setIntakeStatus(`캠페인명 "${campaignName}"이 중복되었습니다. 캠페인명은 접수 내에서 고유해야 합니다.`, "error");
+            campaignNameInput.focus();
+            return false;
+          }
+          campaignNames.add(campaignName);
 
-        const launchDate = intakeForm.elements.launch_date.value;
-        const endDate = intakeForm.elements.end_date.value;
-        if (launchDate && endDate && endDate < launchDate) {
-          setIntakeStatus("종료일은 시작일 이후여야 합니다.", "error");
-          intakeForm.elements.end_date.focus();
-          return false;
-        }
-        if (
-          selectedValue("executionRoute") === "criteo" &&
-          selectedValue("objective") !== "views"
-        ) {
-          setIntakeStatus("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.", "error");
-          return false;
+          const launchDate = campaignItem.querySelector(".launch-date").value;
+          const endDate = campaignItem.querySelector(".end-date").value;
+          if (launchDate && endDate && endDate < launchDate) {
+            setIntakeStatus(`"${campaignName}" 캠페인의 종료일은 시작일 이후여야 합니다.`, "error");
+            campaignItem.querySelector(".end-date").focus();
+            return false;
+          }
+          if (
+            selectedValue("executionRoute") === "criteo" &&
+            checkedValue(campaignItem, ".campaign-objective") !== "views"
+          ) {
+            setIntakeStatus("크리테오 경유는 모든 캠페인이 CPM(Views) 목표로 고정됩니다.", "error");
+            return false;
+          }
+
+          for (const adgroupItem of adgroupItems(campaignItem)) {
+            const adgroupNameInput = adgroupItem.querySelector(".adgroup-name");
+            const adgroupName = adgroupNameInput.value.trim();
+            if (!isSafeWorkbookName(adgroupName)) {
+              setIntakeStatus("광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
+              adgroupNameInput.focus();
+              return false;
+            }
+            if (adgroupNames.has(adgroupName)) {
+              setIntakeStatus(`광고그룹명 "${adgroupName}"이 중복되었습니다. ads 탭 연결을 위해 광고그룹명은 접수 내에서 고유해야 합니다.`, "error");
+              adgroupNameInput.focus();
+              return false;
+            }
+            adgroupNames.add(adgroupName);
+          }
         }
         return true;
       }
 
-      function intakePayload() {
-        const data = new FormData(intakeForm);
-        const campaignName = data.get("campaign_name")?.trim();
-        const adgroupName = data.get("adgroup_name")?.trim();
-        const ads = [...adList.querySelectorAll("[data-ad-item]")].map((item) => ({
+      function campaignPayload(campaignItem) {
+        return {
+          campaign_name: campaignItem.querySelector(".campaign-name").value.trim(),
+          budget_max: Number(campaignItem.querySelector(".budget-max").value),
+          budget_type: checkedValue(campaignItem, ".budget-type") || "lifetime",
+          launch_date: campaignItem.querySelector(".launch-date").value || null,
+          end_date: campaignItem.querySelector(".end-date").value || null,
+          objective: checkedValue(campaignItem, ".campaign-objective"),
+          target_countries: [campaignItem.querySelector(".target-countries").value || "KR"],
+        };
+      }
+
+      function adgroupPayload(adgroupItem) {
+        return {
+          adgroup_name: adgroupItem.querySelector(".adgroup-name").value.trim(),
+          max_bid: optionalNumber(adgroupItem.querySelector(".max-bid").value),
+          keywords: splitKeywords(adgroupItem.querySelector(".keywords").value),
+        };
+      }
+
+      function adsPayload(adgroupItem) {
+        const adgroupName = adgroupItem.querySelector(".adgroup-name").value.trim();
+        return adItems(adgroupItem).map((item) => ({
           adgroup_name: adgroupName,
           title: item.querySelector(".ad-title").value.trim(),
           copy: item.querySelector(".ad-copy").value.trim(),
           link: item.querySelector(".ad-link").value.trim(),
           image_link: item.querySelector(".ad-image-link").value.trim(),
         }));
+      }
+
+      function intakePayload() {
+        const data = new FormData(intakeForm);
         return {
           opsMeta: {
             executionRoute: selectedValue("executionRoute"),
@@ -4897,22 +5092,13 @@ oaiq("measure", "order_created", {
             honeypot: data.get("honeypot") || "",
             formStartedAt: Number(data.get("formStartedAt")),
           },
-          campaign: {
-            campaign_name: campaignName,
-            budget_max: Number(data.get("budget_max")),
-            budget_type: selectedValue("budget_type") || "lifetime",
-            launch_date: data.get("launch_date") || null,
-            end_date: data.get("end_date") || null,
-            objective: selectedValue("objective"),
-            target_countries: [data.get("target_countries") || "KR"],
-          },
-          adgroup: {
-            campaign_name: campaignName,
-            adgroup_name: adgroupName,
-            max_bid: optionalNumber(data.get("max_bid")),
-            keywords: splitKeywords(data.get("keywords")),
-          },
-          ads,
+          campaigns: campaignItems().map((campaignItem) => ({
+            campaign: campaignPayload(campaignItem),
+            adgroups: adgroupItems(campaignItem).map((adgroupItem) => ({
+              adgroup: adgroupPayload(adgroupItem),
+              ads: adsPayload(adgroupItem),
+            })),
+          })),
         };
       }
 
@@ -4939,7 +5125,7 @@ oaiq("measure", "order_created", {
             "success",
           );
           intakeForm.reset();
-          resetAdsToOne();
+          resetIntakeHierarchyToOne();
           formStartedAt.value = String(Date.now());
           syncObjectiveForRoute();
         } catch (error) {
@@ -5134,24 +5320,46 @@ oaiq("measure", "order_created", {
       intakeForm.querySelectorAll('input[name="executionRoute"]').forEach((input) => {
         input.addEventListener("change", syncObjectiveForRoute);
       });
-      addAdButton.addEventListener("click", addAdItem);
-      adList.addEventListener("click", (event) => {
-        const button = event.target.closest(".remove-ad");
-        if (!button) return;
-        button.closest("[data-ad-item]").remove();
-        updateAdListState();
+      addCampaignButton.addEventListener("click", addCampaignItem);
+      campaignList.addEventListener("click", (event) => {
+        const addAdgroupButton = event.target.closest(".add-adgroup");
+        if (addAdgroupButton) {
+          addAdgroupItem(addAdgroupButton.closest("[data-campaign-item]"));
+          return;
+        }
+        const addAdButton = event.target.closest(".add-ad");
+        if (addAdButton) {
+          addAdItem(addAdButton.closest("[data-adgroup-item]"));
+          return;
+        }
+        const removeCampaignButton = event.target.closest(".remove-campaign");
+        if (removeCampaignButton) {
+          removeCampaignButton.closest("[data-campaign-item]").remove();
+          updateIntakeStructureState();
+          return;
+        }
+        const removeAdgroupButton = event.target.closest(".remove-adgroup");
+        if (removeAdgroupButton) {
+          removeAdgroupButton.closest("[data-adgroup-item]").remove();
+          updateIntakeStructureState();
+          return;
+        }
+        const removeAdButton = event.target.closest(".remove-ad");
+        if (removeAdButton) {
+          removeAdButton.closest("[data-ad-item]").remove();
+          updateIntakeStructureState();
+        }
       });
-      adList.addEventListener("input", (event) => {
+      campaignList.addEventListener("input", (event) => {
         const item = event.target.closest("[data-ad-item]");
         if (item) updateAdCounters(item);
+        if (event.target.matches(".campaign-name, .adgroup-name")) syncNameMirrors();
       });
-      campaignNameInput.addEventListener("input", syncNameMirrors);
-      adgroupNameInput.addEventListener("input", syncNameMirrors);
       entryNoticeClose.addEventListener("click", closeEntryNotice);
       document.addEventListener("keydown", trapEntryNoticeFocus);
       formStartedAt.value = String(Date.now());
       syncObjectiveForRoute();
-      updateAdListState();
+      updateIntakeStructureState();
       document.querySelectorAll(".slide-update-date").forEach((item) => {
         item.textContent = LAST_UPDATED;
       });

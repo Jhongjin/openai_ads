@@ -1,34 +1,47 @@
-const SHEET_HEADERS = {
+const SHEET_COLUMNS = {
   campaigns: [
-    "campaign_name",
-    "budget_max",
-    "budget_type",
-    "launch_date",
-    "end_date",
-    "objective",
-    "target_countries",
+    { key: "receipt_number", header: "접수번호" },
+    { key: "campaign_name", header: "campaign_name" },
+    { key: "budget_max", header: "budget_max" },
+    { key: "budget_type", header: "budget_type" },
+    { key: "launch_date", header: "launch_date" },
+    { key: "end_date", header: "end_date" },
+    { key: "objective", header: "objective" },
+    { key: "target_countries", header: "target_countries" },
   ],
-  adgroups: ["campaign_name", "adgroup_name", "max_bid", "keywords"],
-  ads: ["adgroup_name", "title", "copy", "link", "image_link"],
+  adgroups: [
+    { key: "receipt_number", header: "접수번호" },
+    { key: "campaign_name", header: "campaign_name" },
+    { key: "adgroup_name", header: "adgroup_name" },
+    { key: "max_bid", header: "max_bid" },
+    { key: "keywords", header: "keywords" },
+  ],
+  ads: [
+    { key: "receipt_number", header: "접수번호" },
+    { key: "adgroup_name", header: "adgroup_name" },
+    { key: "title", header: "title" },
+    { key: "copy", header: "copy" },
+    { key: "link", header: "link" },
+    { key: "image_link", header: "image_link" },
+  ],
   ops_meta: [
-    "receipt_number",
-    "submitted_at_kst",
-    "campaign_name",
-    "route",
-    "advertiser_name",
-    "legal_name",
-    "brn",
-    "homepage",
-    "invoice_email",
-    "contact_name",
-    "contact_phone",
-    "contact_email",
-    "sales_owner",
-    "ready_ads_manager",
-    "ready_payment",
-    "ready_crawler",
-    "ready_favicon",
-    "note",
+    { key: "receipt_number", header: "접수번호" },
+    { key: "submitted_at_kst", header: "제출시각(KST)" },
+    { key: "route", header: "집행경로" },
+    { key: "advertiser_name", header: "광고주명" },
+    { key: "legal_name", header: "법인정식명칭" },
+    { key: "brn", header: "BRN" },
+    { key: "homepage", header: "광고주공식홈페이지" },
+    { key: "invoice_email", header: "인보이스이메일" },
+    { key: "contact_name", header: "광고주담당자명" },
+    { key: "contact_phone", header: "광고주연락처" },
+    { key: "contact_email", header: "광고주이메일" },
+    { key: "sales_owner", header: "케이티나스미디어영업담당자" },
+    { key: "ready_ads_manager", header: "AdsManager생성" },
+    { key: "ready_payment", header: "결제수단등록" },
+    { key: "ready_crawler", header: "크롤러점검완료" },
+    { key: "ready_favicon", header: "파비콘준비" },
+    { key: "note", header: "비고" },
   ],
 };
 
@@ -41,28 +54,37 @@ function doPost(e) {
     }
 
     const data = payload.data || {};
-    const campaign = data.campaign || {};
-    const adgroups = normalizeRows_(data.adgroups).map((row) =>
-      Object.assign({ campaign_name: campaign.campaign_name || "" }, row),
-    );
+    const campaigns = normalizeRows_(data.campaigns || data.campaign);
+    const adgroups = normalizeRows_(data.adgroups);
     const ads = normalizeRows_(data.ads);
     const ops = data.ops || {};
+
+    if (!campaigns.length) {
+      return jsonResponse_({ ok: false, error: "campaigns is required" });
+    }
 
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
     try {
       const receiptNumber = nextReceiptNumber_();
       const submittedAtKst = nowKst_();
+      const withReceipt = (row) => Object.assign({ receipt_number: receiptNumber }, row);
+      const primaryCampaignName = String(campaigns[0].campaign_name || "");
+
       const opsMeta = Object.assign({}, ops, {
         receipt_number: receiptNumber,
         submitted_at_kst: submittedAtKst,
-        campaign_name: campaign.campaign_name || "",
       });
 
-      appendRows_("campaigns", [campaign]);
-      appendRows_("adgroups", adgroups);
-      appendRows_("ads", ads);
+      appendRows_("campaigns", campaigns.map(withReceipt));
+      appendRows_(
+        "adgroups",
+        adgroups.map((row) => withReceipt(Object.assign({ campaign_name: primaryCampaignName }, row))),
+      );
+      appendRows_("ads", ads.map(withReceipt));
       appendRows_("ops_meta", [opsMeta]);
+
+      notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads);
 
       return jsonResponse_({ ok: true, receiptNumber, submittedAtKst });
     } finally {
@@ -75,23 +97,25 @@ function doPost(e) {
 
 function appendRows_(sheetName, rows) {
   if (!rows.length) return;
-  const sheet = ensureSheet_(sheetName, SHEET_HEADERS[sheetName]);
+  const columns = SHEET_COLUMNS[sheetName];
+  const sheet = ensureSheet_(sheetName, columns);
   const values = rows.map((row) =>
-    SHEET_HEADERS[sheetName].map((header) => {
-      const value = row[header];
+    columns.map((column) => {
+      const value = row[column.key];
       if (Array.isArray(value) || (value && typeof value === "object")) {
         return JSON.stringify(value);
       }
       return value == null ? "" : value;
     }),
   );
-  sheet.getRange(sheet.getLastRow() + 1, 1, values.length, SHEET_HEADERS[sheetName].length).setValues(values);
+  sheet.getRange(sheet.getLastRow() + 1, 1, values.length, columns.length).setValues(values);
 }
 
-function ensureSheet_(sheetName, headers) {
+function ensureSheet_(sheetName, columns) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
-  const currentHeaders = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const headers = columns.map((column) => column.header);
+  const currentHeaders = sheet.getRange(1, 1, 1, Math.max(headers.length, sheet.getLastColumn() || headers.length)).getValues()[0];
   const needsHeader = currentHeaders.every((cell) => !cell);
   if (needsHeader) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -116,6 +140,30 @@ function nextReceiptNumber_() {
 
 function nowKst_() {
   return Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+}
+
+function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads) {
+  const recipient = "openai@nasmedia.co.kr";
+  const subject = `[OpenAI Ads 접수] ${receiptNumber} · ${ops.advertiser_name || "광고주명 없음"}`;
+  const body = [
+    `접수번호: ${receiptNumber}`,
+    `제출시각(KST): ${submittedAtKst}`,
+    `광고주명: ${ops.advertiser_name || ""}`,
+    `법인명: ${ops.legal_name || ""}`,
+    `집행경로: ${ops.route || ""}`,
+    `캠페인 수: ${campaigns.length}`,
+    `광고그룹 수: ${adgroups.length}`,
+    `소재 수: ${ads.length}`,
+    "",
+    "캠페인 목록:",
+    ...campaigns.map((campaign) => `- ${campaign.campaign_name || ""} / ${campaign.objective || ""} / ${campaign.budget_max || ""}`),
+  ].join("\n");
+
+  try {
+    MailApp.sendEmail(recipient, subject, body);
+  } catch (error) {
+    console.log(`MailApp.sendEmail failed: ${error}`);
+  }
 }
 
 function jsonResponse_(body) {

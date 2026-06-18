@@ -73,7 +73,9 @@ Invoke-RestMethod -Method Post `
 `집행 의뢰 접수` 탭 또는 `/intake`는 광고 계정 생성과 캠페인 세팅에 필요한 정보를 구글 시트로 접수합니다.
 
 - OpenAI 공식 워크북 구조에 맞춰 `campaigns`, `adgroups`, `ads` 3개 탭에 업로드용 컬럼을 기록하고, 운영팀 추가 항목은 `ops_meta` 탭에 분리 기록합니다.
-- 캠페인 1개, 광고그룹 1개, 소재 N개 구조입니다. 소재를 2개 넣으면 `ads` 탭에 2행이 추가됩니다.
+- 한 광고주 접수 안에서 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.
+- 시트에는 접수번호를 공통 키로 넣고, `campaigns`에는 캠페인 수만큼, `adgroups`에는 광고그룹 수만큼, `ads`에는 소재 수만큼 행이 추가됩니다.
+- 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 접수 폼은 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다.
 - 청구 통화는 `KRW`, 시간대는 `Asia/Seoul`로 고정 표시합니다.
 - 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정되고, 소재 글자수 상한은 제목 30자 / 설명 60자로 전환됩니다.
 - OpenAI 직접 CBT는 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
@@ -98,12 +100,34 @@ Apps Script로 전달되는 최종 body:
         "objective": "views",
         "target_countries": ["KR"]
       },
+      "campaigns": [
+        {
+          "campaign_name": "summer_sale",
+          "budget_max": "5000000",
+          "budget_type": "lifetime",
+          "launch_date": "2026-07-01",
+          "end_date": "2026-07-31",
+          "objective": "views",
+          "target_countries": ["KR"]
+        },
+        {
+          "campaign_name": "summer_clicks",
+          "budget_max": "3000000",
+          "budget_type": "daily",
+          "launch_date": "2026-07-01",
+          "end_date": "2026-07-31",
+          "objective": "clicks",
+          "target_countries": ["KR"]
+        }
+      ],
       "adgroups": [
-        { "adgroup_name": "ag_main", "max_bid": "", "keywords": ["키워드1", "키워드2"] }
+        { "campaign_name": "summer_sale", "adgroup_name": "ag_main", "max_bid": "", "keywords": ["키워드1", "키워드2"] },
+        { "campaign_name": "summer_clicks", "adgroup_name": "ag_clicks", "max_bid": "4100", "keywords": ["키워드3"] }
       ],
       "ads": [
         { "adgroup_name": "ag_main", "title": "여름 특가", "copy": "지금 준비하세요", "link": "https://example.com", "image_link": "https://example.com/img.png" },
-        { "adgroup_name": "ag_main", "title": "두 번째 소재", "copy": "또 다른 메시지", "link": "https://example.com/2", "image_link": "https://example.com/img2.png" }
+        { "adgroup_name": "ag_main", "title": "두 번째 소재", "copy": "또 다른 메시지", "link": "https://example.com/2", "image_link": "https://example.com/img2.png" },
+        { "adgroup_name": "ag_clicks", "title": "클릭 캠페인", "copy": "클릭을 유도합니다", "link": "https://example.com/click", "image_link": "https://example.com/click.png" }
       ],
       "ops": {
         "route": "OpenAI 직접 CBT",

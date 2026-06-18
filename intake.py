@@ -166,6 +166,13 @@ class AdGroupInfo(BaseModel):
     def _valid_adgroup_name(cls, value: str) -> str:
         return _valid_safe_name(value, "광고그룹명")
 
+    @field_validator("max_bid", mode="before")
+    @classmethod
+    def _blank_max_bid(cls, value: Any) -> Any:
+        if value == "":
+            return None
+        return value
+
     @field_validator("max_bid")
     @classmethod
     def _valid_max_bid(cls, value: float | None) -> float | None:
@@ -207,27 +214,70 @@ class AdInfo(BaseModel):
         return _valid_http_url(value, "이미지 URL")
 
 
-class IntakeSubmission(BaseModel):
-    ops_meta: OpsMeta = Field(..., alias="opsMeta")
-    campaign: CampaignInfo
+class AdGroupSubmission(BaseModel):
     adgroup: AdGroupInfo
     ads: list[AdInfo] = Field(..., min_length=1)
 
+
+class CampaignSubmission(BaseModel):
+    campaign: CampaignInfo
+    adgroups: list[AdGroupSubmission] = Field(..., min_length=1)
+
+
+class IntakeSubmission(BaseModel):
+    ops_meta: OpsMeta = Field(..., alias="opsMeta")
+    campaigns: list[CampaignSubmission] = Field(..., min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_payload(cls, values: Any) -> Any:
+        if not isinstance(values, dict) or values.get("campaigns"):
+            return values
+        campaign = values.get("campaign")
+        adgroup = values.get("adgroup")
+        ads = values.get("ads")
+        if campaign and adgroup and ads:
+            values = dict(values)
+            values["campaigns"] = [{
+                "campaign": campaign,
+                "adgroups": [{
+                    "adgroup": adgroup,
+                    "ads": ads,
+                }],
+            }]
+        return values
+
     @model_validator(mode="after")
     def _valid_submission(self) -> "IntakeSubmission":
-        if self.campaign.end_date and self.campaign.launch_date:
-            if self.campaign.end_date < self.campaign.launch_date:
-                raise ValueError("종료일은 시작일 이후여야 합니다.")
-        if self.ops_meta.execution_route == "criteo" and self.campaign.objective != "views":
-            raise ValueError("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.")
-
         title_max = 30 if self.ops_meta.execution_route == "criteo" else 24
         copy_max = 60 if self.ops_meta.execution_route == "criteo" else 48
-        for index, ad in enumerate(self.ads, start=1):
-            if len(ad.title) > title_max:
-                raise ValueError(f"소재 {index}의 광고 제목은 최대 {title_max}자입니다.")
-            if len(ad.ad_copy) > copy_max:
-                raise ValueError(f"소재 {index}의 광고 설명은 최대 {copy_max}자입니다.")
+        campaign_names: set[str] = set()
+        adgroup_names: set[str] = set()
+
+        for campaign_index, campaign_item in enumerate(self.campaigns, start=1):
+            campaign = campaign_item.campaign
+            if campaign.campaign_name in campaign_names:
+                raise ValueError(f"캠페인명 '{campaign.campaign_name}'이 중복되었습니다.")
+            campaign_names.add(campaign.campaign_name)
+
+            if campaign.end_date and campaign.launch_date:
+                if campaign.end_date < campaign.launch_date:
+                    raise ValueError(f"캠페인 {campaign_index}의 종료일은 시작일 이후여야 합니다.")
+            if self.ops_meta.execution_route == "criteo" and campaign.objective != "views":
+                raise ValueError("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.")
+
+            for group_index, group_item in enumerate(campaign_item.adgroups, start=1):
+                adgroup_name = group_item.adgroup.adgroup_name
+                if adgroup_name in adgroup_names:
+                    raise ValueError(f"광고그룹명 '{adgroup_name}'이 중복되었습니다.")
+                adgroup_names.add(adgroup_name)
+
+                for ad_index, ad in enumerate(group_item.ads, start=1):
+                    label = f"캠페인 {campaign_index} / 광고그룹 {group_index} / 소재 {ad_index}"
+                    if len(ad.title) > title_max:
+                        raise ValueError(f"{label}의 광고 제목은 최대 {title_max}자입니다.")
+                    if len(ad.ad_copy) > copy_max:
+                        raise ValueError(f"{label}의 광고 설명은 최대 {copy_max}자입니다.")
         return self
 
 
@@ -259,32 +309,41 @@ def build_sheet_payload(
     *,
     shared_secret: str,
 ) -> dict[str, Any]:
-    adgroup_name = submission.adgroup.adgroup_name
+    campaigns: list[dict[str, Any]] = []
+    adgroups: list[dict[str, Any]] = []
+    ads: list[dict[str, Any]] = []
 
-    campaign = {
-        "campaign_name": submission.campaign.campaign_name,
-        "budget_max": _number_for_sheet(submission.campaign.budget_max),
-        "budget_type": submission.campaign.budget_type,
-        "launch_date": _date_for_sheet(submission.campaign.launch_date),
-        "end_date": _date_for_sheet(submission.campaign.end_date),
-        "objective": submission.campaign.objective,
-        "target_countries": submission.campaign.target_countries,
-    }
-    adgroups = [{
-        "adgroup_name": adgroup_name,
-        "max_bid": _number_for_sheet(submission.adgroup.max_bid),
-        "keywords": submission.adgroup.keywords,
-    }]
-    ads = [
-        {
-            "adgroup_name": adgroup_name,
-            "title": ad.title,
-            "copy": ad.ad_copy,
-            "link": ad.link,
-            "image_link": ad.image_link,
-        }
-        for ad in submission.ads
-    ]
+    for campaign_item in submission.campaigns:
+        campaign_name = campaign_item.campaign.campaign_name
+        campaigns.append({
+            "campaign_name": campaign_name,
+            "budget_max": _number_for_sheet(campaign_item.campaign.budget_max),
+            "budget_type": campaign_item.campaign.budget_type,
+            "launch_date": _date_for_sheet(campaign_item.campaign.launch_date),
+            "end_date": _date_for_sheet(campaign_item.campaign.end_date),
+            "objective": campaign_item.campaign.objective,
+            "target_countries": campaign_item.campaign.target_countries,
+        })
+        for group_item in campaign_item.adgroups:
+            adgroup_name = group_item.adgroup.adgroup_name
+            adgroups.append({
+                "campaign_name": campaign_name,
+                "adgroup_name": adgroup_name,
+                "max_bid": _number_for_sheet(group_item.adgroup.max_bid),
+                "keywords": group_item.adgroup.keywords,
+            })
+            ads.extend(
+                {
+                    "adgroup_name": adgroup_name,
+                    "title": ad.title,
+                    "copy": ad.ad_copy,
+                    "link": ad.link,
+                    "image_link": ad.image_link,
+                }
+                for ad in group_item.ads
+            )
+
+    primary_campaign = campaigns[0]
     ops = {
         "route": _route_label(submission.ops_meta.execution_route),
         "advertiser_name": submission.ops_meta.advertiser_name,
@@ -305,7 +364,8 @@ def build_sheet_payload(
     return {
         "secret": shared_secret,
         "data": {
-            "campaign": campaign,
+            "campaign": primary_campaign,
+            "campaigns": campaigns,
             "adgroups": adgroups,
             "ads": ads,
             "ops": ops,
