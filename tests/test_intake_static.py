@@ -87,6 +87,13 @@ class IntakeFormStaticTests(unittest.TestCase):
         self.assertNotIn('querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")', html)
         self.assertNotIn('querySelectorAll(":scope > .ad-list > [data-ad-item]")', html)
 
+    def test_intake_tab_is_temporarily_disabled(self) -> None:
+        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-tab="intake"', html)
+        self.assertIn("집행 의뢰 접수는 방향성 변경으로 일시 중단되었습니다.", html)
+        self.assertIn('aria-disabled="true"', html)
+
 
 if __name__ == "__main__":
     unittest.main()

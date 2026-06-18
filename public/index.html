@@ -1733,6 +1733,22 @@
         color: #fff;
       }
 
+      .tab:disabled,
+      .tab[aria-disabled="true"] {
+        cursor: not-allowed;
+        border-color: #d8dee9;
+        background: #f2f4f8;
+        color: #98a2b3;
+        opacity: 0.72;
+        box-shadow: none;
+      }
+
+      .tab:disabled .tab-icon,
+      .tab[aria-disabled="true"] .tab-icon {
+        background: #e4e7ec;
+        color: #98a2b3;
+      }
+
       .sales-note,
       .input-band,
       .table-wrap,
@@ -2976,7 +2992,14 @@
             <span class="tab-icon">ICO</span>
             <span>파비콘 검사</span>
           </button>
-          <button class="tab" data-tab="intake" type="button">
+          <button
+            class="tab"
+            data-tab="intake"
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="집행 의뢰 접수는 방향성 변경으로 일시 중단되었습니다."
+          >
             <span class="tab-icon">IN</span>
             <span>집행 의뢰 접수</span>
           </button>
