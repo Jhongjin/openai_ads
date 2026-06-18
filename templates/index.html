@@ -3526,7 +3526,7 @@
                       <div class="field">
                         <label>최대 입찰가</label>
                         <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
-                        <span class="field-help">Clicks 캠페인은 최대 CPC, Views 캠페인은 CPM 입찰가 기준입니다. KRW 기준입니다.</span>
+                        <span class="field-help max-bid-help">Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. Views(CPM) 캠페인은 비워야 합니다.</span>
                       </div>
                       <div class="field">
                         <label>키워드</label>
@@ -5595,6 +5595,19 @@ oaiq("measure", "order_created", {
             const adgroupNumber = adgroupIndex + 1;
             adgroupItem.querySelector(".adgroup-card-header strong").textContent = `광고그룹 ${campaignNumber}-${adgroupNumber}`;
             adgroupItem.querySelector(".remove-adgroup").hidden = adgroupItems(campaignItem).length === 1;
+            const maxBidInput = adgroupItem.querySelector(".max-bid");
+            const maxBidHelp = adgroupItem.querySelector(".max-bid-help");
+            const objective = checkedValue(campaignItem, ".campaign-objective") || "views";
+            if (objective === "views") {
+              maxBidInput.value = "";
+              maxBidInput.disabled = true;
+              maxBidInput.placeholder = "Views(CPM)는 빈칸";
+              if (maxBidHelp) maxBidHelp.textContent = "Views(CPM) 캠페인은 max_bid를 비워야 합니다. OpenAI 업로더에서 입력값이 있으면 오류 처리됩니다.";
+            } else {
+              maxBidInput.disabled = false;
+              maxBidInput.placeholder = "선택 입력";
+              if (maxBidHelp) maxBidHelp.textContent = "Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. KRW 기준입니다.";
+            }
             adItems(adgroupItem).forEach((adItem, adIndex) => {
               const adNumber = adIndex + 1;
               const unique = `${campaignNumber}-${adgroupNumber}-${adNumber}`;
@@ -5672,6 +5685,7 @@ oaiq("measure", "order_created", {
       function handleIntakeHierarchyInput(event) {
         const item = event.target.closest("[data-ad-item]");
         if (item) updateAdCounters(item);
+        if (event.target.matches(".campaign-objective")) updateIntakeStructureState();
         if (event.target.matches(".campaign-name, .adgroup-name")) syncNameMirrors();
       }
 
@@ -5712,6 +5726,11 @@ oaiq("measure", "order_created", {
           for (const adgroupItem of adgroupItems(campaignItem)) {
             const adgroupNameInput = adgroupItem.querySelector(".adgroup-name");
             const adgroupName = adgroupNameInput.value.trim();
+            const maxBidInput = adgroupItem.querySelector(".max-bid");
+            if (checkedValue(campaignItem, ".campaign-objective") === "views" && maxBidInput.value.trim()) {
+              focusIntakeField(maxBidInput, "Views(CPM) 캠페인은 최대 입찰가(max_bid)를 비워야 합니다. Clicks(CPC) 캠페인에서만 입력할 수 있습니다.");
+              return false;
+            }
             if (!isSafeWorkbookName(adgroupName)) {
               focusIntakeField(adgroupNameInput, "광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.");
               return false;

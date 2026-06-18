@@ -563,6 +563,7 @@
                       <div class="field">
                         <label>최대 입찰가</label>
                         <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
+                        <span class="help max-bid-help">Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. Views(CPM) 캠페인은 비워야 합니다.</span>
                       </div>
                       <div class="field">
                         <label>키워드</label>
@@ -759,6 +760,19 @@
             adgroup.querySelector(".remove-adgroup").hidden = adgroupItems(campaign).length === 1;
             const adgroupName = adgroup.querySelector(".adgroup-name").value.trim();
             adgroup.querySelector(".campaign-name-mirror").value = campaignName;
+            const maxBidInput = adgroup.querySelector(".max-bid");
+            const maxBidHelp = adgroup.querySelector(".max-bid-help");
+            const objective = checkedValue(campaign, ".campaign-objective") || "views";
+            if (objective === "views") {
+              maxBidInput.value = "";
+              maxBidInput.disabled = true;
+              maxBidInput.placeholder = "Views(CPM)는 빈칸";
+              if (maxBidHelp) maxBidHelp.textContent = "Views(CPM) 캠페인은 max_bid를 비워야 합니다. OpenAI 업로더에서 입력값이 있으면 오류 처리됩니다.";
+            } else {
+              maxBidInput.disabled = false;
+              maxBidInput.placeholder = "선택 입력";
+              if (maxBidHelp) maxBidHelp.textContent = "Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. KRW 기준입니다.";
+            }
             adItems(adgroup).forEach((ad, adIndex) => {
               const adNumber = adIndex + 1;
               ad.querySelector(".ad-header h3").textContent = `소재 ${campaignNumber}-${adgroupNumber}-${adNumber}`;
@@ -1018,7 +1032,7 @@
       form.addEventListener("submit", submitSheet);
       form.addEventListener("input", syncState);
       form.addEventListener("change", (event) => {
-        if (event.target.name === "executionRoute") syncState();
+        if (event.target.name === "executionRoute" || event.target.matches(".campaign-objective")) syncState();
         if (event.target.matches(".ad-image-file")) uploadImage(event.target);
       });
       campaignList.addEventListener("click", (event) => {

@@ -114,7 +114,7 @@ class IntakeValidationTests(unittest.TestCase):
                     {
                         "adgroup": {
                             "adgroup_name": "ag_cpm",
-                            "max_bid": 91000,
+                            "max_bid": None,
                             "keywords": ["노출"],
                         },
                         "ads": [
@@ -175,6 +175,14 @@ class IntakeValidationTests(unittest.TestCase):
         )
         self.assertEqual(len(sheet_payload["data"]["ads"]), 2)
 
+    def test_rejects_max_bid_for_views_campaign(self) -> None:
+        payload = valid_payload()
+        payload["campaign"]["objective"] = "views"
+        payload["adgroup"]["max_bid"] = 91000
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
     def test_rejects_special_characters_in_names(self) -> None:
         payload = valid_payload()
         payload["campaign"]["campaign_name"] = "캠페인#1"
@@ -217,6 +225,7 @@ class IntakeValidationTests(unittest.TestCase):
         payload = valid_payload()
         payload["opsMeta"]["executionRoute"] = "criteo"
         payload["campaign"]["objective"] = "views"
+        payload["adgroup"]["max_bid"] = None
         payload["ads"][0]["title"] = "가" * 30
         payload["ads"][0]["copy"] = "나" * 60
         IntakeSubmission.model_validate(payload)
@@ -298,6 +307,40 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(summary["sheets"]["campaigns"]["rows"], 0)
         self.assertEqual(summary["sheets"]["campaigns"]["sample_rows"], 1)
         self.assertTrue(any("oaitest" in warning for warning in summary["warnings"]))
+
+    def test_inspect_workbook_rejects_views_max_bid_and_unknown_adgroup(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["nasmedia2188", 5000, "lifetime", "2026-06-30", "2026-07-06", "views", '["KR"]'],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["nasmedia2188", "nasmedia2188_ag1", 3, ""],
+            ],
+            "ads": [
+                ["adgroup_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188", "내사이트야", "내사이트라고", "https://example.com", "https://example.com/logo.png"],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertTrue(any("Views(CPM)" in error and "max_bid" in error for error in summary["errors"]))
+        self.assertTrue(any("존재하지 않는 adgroup_name" in error for error in summary["errors"]))
 
 
 if __name__ == "__main__":

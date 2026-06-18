@@ -305,6 +305,11 @@ class IntakeSubmission(BaseModel):
                 raise ValueError("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.")
 
             for group_index, group_item in enumerate(campaign_item.adgroups, start=1):
+                if campaign.objective == "views" and group_item.adgroup.max_bid is not None:
+                    raise ValueError(
+                        f"캠페인 {campaign_index} / 광고그룹 {group_index}: "
+                        "Views(CPM) 캠페인은 max_bid를 비워야 합니다. max_bid는 Clicks(CPC) 캠페인에서만 입력하세요."
+                    )
                 adgroup_name = group_item.adgroup.adgroup_name
                 if adgroup_name in adgroup_names:
                     raise ValueError(f"광고그룹명 '{adgroup_name}'이 중복되었습니다.")
@@ -430,6 +435,70 @@ def _sheet_value(value: Any) -> Any:
     return "" if value is None else value
 
 
+def _cell_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (datetime, date)):
+        return value.date().isoformat() if isinstance(value, datetime) else value.isoformat()
+    return str(value).strip()
+
+
+def _is_template_guide_row(first_cell: str) -> bool:
+    return (
+        first_cell in {"Required"}
+        or first_cell.startswith("How we will")
+        or first_cell.startswith("The ")
+    )
+
+
+def _is_template_sample_value(value: Any) -> bool:
+    return _cell_text(value).lower().startswith("oaitest")
+
+
+def _is_http_url(value: str) -> bool:
+    return value.lower().startswith(("http://", "https://"))
+
+
+def _json_array(value: Any, *, label: str, row_number: int, errors: list[str]) -> list[Any] | None:
+    text = _cell_text(value)
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        errors.append(f"{label} 행 {row_number}: JSON 배열 형식이 아닙니다.")
+        return None
+    if not isinstance(parsed, list):
+        errors.append(f"{label} 행 {row_number}: JSON 배열이어야 합니다.")
+        return None
+    return parsed
+
+
+def _normalise_choice(value: Any) -> str:
+    return _cell_text(value).lower()
+
+
+def _normalise_objective(value: Any) -> str:
+    # The template marks objective optional, but Ads Manager treats a blank
+    # objective like the default Views flow for max_bid validation.
+    return _normalise_choice(value) or "views"
+
+
+def _to_positive_number(value: Any, *, label: str, row_number: int, errors: list[str]) -> float | None:
+    text = _cell_text(value)
+    if not text:
+        return None
+    try:
+        number = float(text.replace(",", ""))
+    except ValueError:
+        errors.append(f"{label} 행 {row_number}: 숫자로 입력해야 합니다.")
+        return None
+    if number <= 0:
+        errors.append(f"{label} 행 {row_number}: 0보다 큰 숫자를 입력해야 합니다.")
+        return None
+    return number
+
+
 def create_workbook_bytes(submission: IntakeSubmission) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
@@ -467,6 +536,7 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
     warnings: list[str] = []
     summary: dict[str, Any] = {"sheets": {}, "errors": errors, "warnings": warnings}
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+    parsed_rows: dict[str, list[dict[str, Any]]] = {sheet: [] for sheet in WORKBOOK_COLUMNS}
     for sheet_name, required_columns in WORKBOOK_COLUMNS.items():
         if sheet_name not in workbook.sheetnames:
             errors.append(f"{sheet_name} 시트가 없습니다.")
@@ -479,17 +549,23 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         rows = 0
         sample_rows = 0
         guide_rows = 0
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            first = str(row[0] or "").strip()
+        for row_number, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            first = _cell_text(row[0])
             if not any(cell not in (None, "") for cell in row):
                 continue
-            if first in {"Required"} or first.startswith("How we will") or first.startswith("The "):
+            if _is_template_guide_row(first):
                 guide_rows += 1
                 continue
-            if first.startswith("oaitest"):
+            if _is_template_sample_value(first):
                 sample_rows += 1
                 continue
             rows += 1
+            row_map = {
+                column: row[header.index(column)] if column in header and header.index(column) < len(row) else None
+                for column in required_columns
+            }
+            row_map["_row_number"] = row_number
+            parsed_rows[sheet_name].append(row_map)
         if sample_rows and rows == 0:
             warnings.append(
                 f"{sheet_name} 시트에 공식 템플릿 샘플(oaitest...) 행만 있습니다. "
@@ -504,6 +580,107 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             "guide_rows": guide_rows,
             "missing_columns": missing,
         }
+
+    campaign_objectives: dict[str, str] = {}
+    for row in parsed_rows["campaigns"]:
+        row_number = int(row["_row_number"])
+        campaign_name = _cell_text(row.get("campaign_name"))
+        budget_max = _cell_text(row.get("budget_max"))
+        objective = _normalise_objective(row.get("objective"))
+        budget_type = _normalise_choice(row.get("budget_type"))
+        target_countries = _cell_text(row.get("target_countries"))
+
+        if not campaign_name:
+            errors.append(f"campaigns 행 {row_number}: campaign_name은 필수입니다.")
+        elif _is_template_sample_value(campaign_name):
+            errors.append(f"campaigns 행 {row_number}: 공식 샘플 campaign_name(oaitest...)을 실제 캠페인명으로 바꿔 주세요.")
+        elif not _SAFE_NAME_RE.fullmatch(campaign_name):
+            errors.append(f"campaigns 행 {row_number}: campaign_name에는 특수문자를 사용할 수 없습니다.")
+        elif campaign_name in campaign_objectives:
+            errors.append(f"campaigns 행 {row_number}: campaign_name '{campaign_name}'이 중복되었습니다.")
+        else:
+            campaign_objectives[campaign_name] = objective
+
+        if not budget_max:
+            errors.append(f"campaigns 행 {row_number}: budget_max는 필수입니다.")
+        else:
+            _to_positive_number(budget_max, label="campaigns budget_max", row_number=row_number, errors=errors)
+        if budget_type and budget_type not in {"lifetime", "daily"}:
+            errors.append(f"campaigns 행 {row_number}: budget_type은 lifetime 또는 daily여야 합니다.")
+        if objective not in {"views", "clicks"}:
+            errors.append(f"campaigns 행 {row_number}: objective는 views 또는 clicks여야 합니다.")
+        if target_countries:
+            countries = _json_array(target_countries, label="campaigns target_countries", row_number=row_number, errors=errors)
+            if countries is not None:
+                invalid = [str(country) for country in countries if not re.fullmatch(r"[A-Z]{2}", str(country).strip().upper())]
+                if invalid:
+                    errors.append(f"campaigns 행 {row_number}: target_countries는 2자리 국가 코드 배열이어야 합니다.")
+        else:
+            warnings.append(f"campaigns 행 {row_number}: target_countries가 비어 있어 Ads Manager에서 ALL_COUNTRIES로 보일 수 있습니다. 한국 타겟이면 [\"KR\"]을 입력하세요.")
+
+    adgroup_campaigns: dict[str, str] = {}
+    for row in parsed_rows["adgroups"]:
+        row_number = int(row["_row_number"])
+        campaign_name = _cell_text(row.get("campaign_name"))
+        adgroup_name = _cell_text(row.get("adgroup_name"))
+        max_bid = _cell_text(row.get("max_bid"))
+        keywords = _cell_text(row.get("keywords"))
+        campaign_objective = campaign_objectives.get(campaign_name)
+
+        if not campaign_name:
+            errors.append(f"adgroups 행 {row_number}: campaign_name은 필수입니다.")
+        elif campaign_name not in campaign_objectives:
+            errors.append(f"adgroups 행 {row_number}: 존재하지 않는 campaign_name '{campaign_name}'을 참조합니다.")
+        if not adgroup_name:
+            errors.append(f"adgroups 행 {row_number}: adgroup_name은 필수입니다.")
+        elif _is_template_sample_value(adgroup_name):
+            errors.append(f"adgroups 행 {row_number}: 공식 샘플 adgroup_name(oaitest...)을 실제 광고그룹명으로 바꿔 주세요.")
+        elif not _SAFE_NAME_RE.fullmatch(adgroup_name):
+            errors.append(f"adgroups 행 {row_number}: adgroup_name에는 특수문자를 사용할 수 없습니다.")
+        elif adgroup_name in adgroup_campaigns:
+            errors.append(f"adgroups 행 {row_number}: adgroup_name '{adgroup_name}'이 중복되었습니다.")
+        else:
+            adgroup_campaigns[adgroup_name] = campaign_name
+
+        if max_bid:
+            if campaign_objective == "views":
+                errors.append(f"adgroups 행 {row_number}: Views(CPM) 캠페인의 광고그룹은 max_bid를 비워야 합니다. max_bid는 Clicks(CPC) 캠페인에서만 입력하세요.")
+            elif campaign_objective == "clicks":
+                _to_positive_number(max_bid, label="adgroups max_bid", row_number=row_number, errors=errors)
+            else:
+                warnings.append(f"adgroups 행 {row_number}: campaign objective를 확인할 수 없어 max_bid 적용 여부를 판단할 수 없습니다.")
+        if keywords:
+            _json_array(keywords, label="adgroups keywords", row_number=row_number, errors=errors)
+
+    for row in parsed_rows["ads"]:
+        row_number = int(row["_row_number"])
+        adgroup_name = _cell_text(row.get("adgroup_name"))
+        title = _cell_text(row.get("title"))
+        copy = _cell_text(row.get("copy"))
+        link = _cell_text(row.get("link"))
+        image_link = _cell_text(row.get("image_link"))
+
+        if not adgroup_name:
+            errors.append(f"ads 행 {row_number}: adgroup_name은 필수입니다.")
+        elif adgroup_name not in adgroup_campaigns:
+            errors.append(f"ads 행 {row_number}: 존재하지 않는 adgroup_name '{adgroup_name}'을 참조합니다.")
+        if not title:
+            errors.append(f"ads 행 {row_number}: title은 필수입니다.")
+        elif len(title) > 24:
+            errors.append(f"ads 행 {row_number}: title은 최대 24자입니다.")
+        if not copy:
+            errors.append(f"ads 행 {row_number}: copy는 필수입니다.")
+        elif len(copy) > 48:
+            errors.append(f"ads 행 {row_number}: copy는 최대 48자입니다.")
+        if not link:
+            errors.append(f"ads 행 {row_number}: link는 필수입니다.")
+        elif not _is_http_url(link):
+            errors.append(f"ads 행 {row_number}: link는 http:// 또는 https://로 시작해야 합니다.")
+        if not image_link:
+            errors.append(f"ads 행 {row_number}: image_link는 필수입니다.")
+        elif not _is_http_url(image_link):
+            errors.append(f"ads 행 {row_number}: image_link는 http:// 또는 https://로 시작해야 합니다.")
+
     summary["ok"] = not errors and all(
         item.get("rows", 0) > 0 for item in summary["sheets"].values()
     )
