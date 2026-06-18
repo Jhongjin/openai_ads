@@ -45,6 +45,7 @@ class PixelGuideStaticTests(unittest.TestCase):
             "캠페인에 연결",
             "STEP 4 · GTM 가이드",
             "GTM 삽입 방법",
+            "gtm-code-grid",
             "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다",
             "adso@nasmedia.co.kr",
             "https://developers.openai.com/ads/measurement-pixel",
@@ -52,6 +53,10 @@ class PixelGuideStaticTests(unittest.TestCase):
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+        self.assertEqual(
+            html.count("나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다"),
+            1,
+        )
 
     def test_pixel_guide_contains_required_install_and_event_code(self) -> None:
         html = pixel_guide_html()

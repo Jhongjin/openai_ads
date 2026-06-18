@@ -1455,6 +1455,51 @@
         text-decoration: underline;
       }
 
+      .gtm-slide > div {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .gtm-slide .slide-section-title {
+        margin-bottom: 10px;
+      }
+
+      .gtm-slide .guide-two-column {
+        grid-template-columns: minmax(310px, 0.78fr) minmax(0, 1.22fr);
+        gap: 16px;
+      }
+
+      .gtm-slide .guide-field-row {
+        grid-template-columns: 108px 1fr;
+      }
+
+      .gtm-slide .guide-note {
+        margin-top: 8px;
+      }
+
+      .gtm-slide .pixel-screen-frame.wide {
+        height: clamp(132px, 15vw, 180px);
+      }
+
+      .gtm-code-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+
+      .gtm-code-grid .guide-caption {
+        margin: 0 0 4px;
+      }
+
+      .gtm-code-grid .pixel-code.compact {
+        margin-top: 0;
+        font-size: 10.3px;
+        line-height: 1.28;
+      }
+
       .guide-channel-note {
         margin: 10px 0 0;
         color: #4d5358;
@@ -2668,6 +2713,7 @@
         .guide-overview-grid,
         .guide-two-column,
         .pixel-event-grid,
+        .gtm-code-grid,
         .guide-preview-layout {
           grid-template-columns: 1fr;
         }
@@ -2904,6 +2950,37 @@
         .pixel-screen-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           gap: 3mm;
+        }
+
+        .gtm-slide > div {
+          gap: 2.5mm;
+        }
+
+        .gtm-slide .guide-two-column {
+          grid-template-columns: minmax(68mm, 0.78fr) minmax(0, 1.22fr) !important;
+          gap: 5mm;
+        }
+
+        .gtm-slide .guide-field-row {
+          grid-template-columns: 24mm 1fr !important;
+        }
+
+        .gtm-slide .guide-note {
+          margin-top: 2mm;
+        }
+
+        .gtm-slide .pixel-screen-frame.wide {
+          height: 39mm;
+        }
+
+        .gtm-code-grid {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+          gap: 4mm;
+        }
+
+        .gtm-code-grid .pixel-code.compact {
+          font-size: 6.7pt;
+          line-height: 1.18;
         }
 
         .pixel-screen-stack {
@@ -4367,7 +4444,7 @@ oaiq("measure", "order_created", {
               </div>
             </section>
 
-            <section class="slide-card dense guide-card">
+            <section class="slide-card dense guide-card gtm-slide">
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 4 · GTM 가이드</p>
@@ -4381,9 +4458,6 @@ oaiq("measure", "order_created", {
                       <div class="guide-field-row"><strong>주의 사항</strong><span>GTM 스크립트는 수정 없이 그대로 삽입해야 하며, 여러 번 삽입 시 데이터 중복이 발생할 수 있습니다.</span></div>
                     </div>
                     <p class="guide-note">사이트 전체에 GTM을 설치해야 모든 페이지에서 OpenAI Pixel 태그가 정상적으로 동작합니다.</p>
-                    <p class="guide-channel-note">
-                      나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr
-                    </p>
                   </div>
                   <figure>
                     <div class="guide-image-frame pixel-screen-frame wide">
@@ -4398,7 +4472,7 @@ oaiq("measure", "order_created", {
                     <figcaption class="guide-caption">GTM 컨테이너 ID는 Google Tag Manager 작업공간에서 확인할 수 있습니다.</figcaption>
                   </figure>
                 </div>
-                <div class="pixel-screen-grid">
+                <div class="gtm-code-grid">
                   <div>
                     <p class="guide-caption">&lt;head&gt;에 삽입</p>
                     <pre class="crawler-code pixel-code compact">&lt;!-- Google Tag Manager --&gt;
