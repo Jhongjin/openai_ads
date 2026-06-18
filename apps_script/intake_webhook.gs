@@ -133,6 +133,16 @@ function ensureSheet_(sheetName, columns) {
   return sheet;
 }
 
+function syncHeadersNow() {
+  Object.keys(SHEET_COLUMNS).forEach((sheetName) => {
+    ensureSheet_(sheetName, SHEET_COLUMNS[sheetName]);
+  });
+}
+
+function syncOpsMetaHeaderNow() {
+  ensureSheet_("ops_meta", SHEET_COLUMNS.ops_meta);
+}
+
 function normalizeRows_(rows) {
   if (!rows) return [];
   return Array.isArray(rows) ? rows : [rows];
