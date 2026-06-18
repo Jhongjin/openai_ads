@@ -17,19 +17,8 @@ def valid_payload() -> dict:
     end = tomorrow + timedelta(days=14)
     return {
         "opsMeta": {
-            "executionRoute": "openai_cbt",
             "advertiserName": "테스트 광고주",
-            "legalName": "테스트 주식회사",
-            "brn": "123-45-67890",
-            "advertiserHomepageUrl": "https://example.com",
-            "invoiceEmail": "invoice@example.com",
-            "adsManagerReady": True,
-            "paymentReady": True,
-            "crawlerReady": True,
-            "faviconReady": True,
-            "contactName": "홍길동",
-            "contactPhone": "010-0000-0000",
-            "contactEmail": "client@example.com",
+            "adsManagerAccount": "테스트 브랜드",
             "salesOwner": "케이티나스 담당자",
             "salesOwnerEmail": "owner@nasmedia.co.kr",
             "ownerHeadquarters": "미디어본부",
@@ -90,9 +79,16 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(len(payload["data"]["ads"]), 2)
         self.assertEqual(payload["data"]["adgroups"][0]["keywords"], ["밀키트", "저녁"])
         self.assertEqual(payload["data"]["adgroups"][0]["max_bid"], "1200")
-        self.assertEqual(payload["data"]["ops"]["route"], "OpenAI 직접 CBT")
-        self.assertEqual(payload["data"]["ops"]["brn"], "123-45-67890")
-        self.assertEqual(payload["data"]["ops"]["homepage"], "https://example.com")
+        self.assertEqual(payload["data"]["ops"]["advertiser_name"], "테스트 광고주")
+        self.assertEqual(payload["data"]["ops"]["brand_name"], "테스트 브랜드")
+        self.assertEqual(payload["data"]["ops"]["sales_owner_email"], "owner@nasmedia.co.kr")
+        self.assertNotIn("route", payload["data"]["ops"])
+        self.assertNotIn("legal_name", payload["data"]["ops"])
+        self.assertNotIn("brn", payload["data"]["ops"])
+        self.assertNotIn("homepage", payload["data"]["ops"])
+        self.assertNotIn("invoice_email", payload["data"]["ops"])
+        self.assertNotIn("submitter_name", payload["data"]["ops"])
+        self.assertNotIn("submitter_email", payload["data"]["ops"])
         self.assertNotIn("honeypot", payload["data"]["ops"])
         self.assertNotIn("receiptNumber", payload)
 
@@ -252,17 +248,13 @@ class IntakeValidationTests(unittest.TestCase):
         payload = valid_payload()
         payload["opsMeta"] = {
             "uploadMode": "bulk_sheet",
-            "executionRoute": "openai_cbt",
             "advertiserName": "테스트 광고주",
             "adsManagerAccount": "Test Ads Account",
-            "submitterName": "홍길동",
-            "submitterEmail": "client@example.com",
             "salesOwner": "케이티나스 담당자",
             "salesOwnerEmail": "owner@nasmedia.co.kr",
             "ownerHeadquarters": "미디어본부",
             "ownerOffice": "미디어채널실",
             "ownerTeam": "미디어채널1팀",
-            "imagePolicy": "direct_url_or_uploaded",
             "notes": "",
             "honeypot": "",
             "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
@@ -272,27 +264,20 @@ class IntakeValidationTests(unittest.TestCase):
         sheet_payload = build_sheet_payload(submission, shared_secret="secret")
 
         self.assertEqual(sheet_payload["data"]["ops"]["upload_mode"], "bulk_sheet")
-        self.assertEqual(sheet_payload["data"]["ops"]["ads_manager_account"], "Test Ads Account")
         self.assertEqual(sheet_payload["data"]["ops"]["brand_name"], "Test Ads Account")
-        self.assertEqual(sheet_payload["data"]["ops"]["submitter_email"], "client@example.com")
         self.assertEqual(sheet_payload["data"]["ops"]["sales_owner_email"], "owner@nasmedia.co.kr")
         self.assertEqual(sheet_payload["data"]["ops"]["owner_office"], "미디어채널실")
 
     def test_brand_is_optional_for_creative_upload_meta(self) -> None:
         payload = valid_payload()
         payload["opsMeta"].pop("adsManagerAccount", None)
-        payload["opsMeta"].pop("submitterName", None)
-        payload["opsMeta"].pop("submitterEmail", None)
-        payload["opsMeta"].pop("contactName", None)
-        payload["opsMeta"].pop("contactEmail", None)
 
         submission = IntakeSubmission.model_validate(payload)
         sheet_payload = build_sheet_payload(submission, shared_secret="secret")
 
-        self.assertEqual(sheet_payload["data"]["ops"]["ads_manager_account"], "")
         self.assertEqual(sheet_payload["data"]["ops"]["brand_name"], "")
-        self.assertEqual(sheet_payload["data"]["ops"]["submitter_name"], "케이티나스 담당자")
-        self.assertEqual(sheet_payload["data"]["ops"]["submitter_email"], "owner@nasmedia.co.kr")
+        self.assertNotIn("submitter_name", sheet_payload["data"]["ops"])
+        self.assertNotIn("submitter_email", sheet_payload["data"]["ops"])
 
     def test_can_create_and_inspect_ads_manager_workbook(self) -> None:
         submission = IntakeSubmission.model_validate(valid_payload())

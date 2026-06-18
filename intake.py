@@ -76,10 +76,6 @@ def _date_for_sheet(value: date | None) -> str:
     return value.isoformat() if value else ""
 
 
-def _route_label(route: str) -> str:
-    return "크리테오 경유" if route == "criteo" else "OpenAI 직접 CBT"
-
-
 class OpsMeta(BaseModel):
     upload_mode: Literal["bulk_sheet", "campaigns", "adgroups", "ads"] = Field(
         default="bulk_sheet",
@@ -89,25 +85,12 @@ class OpsMeta(BaseModel):
     advertiser_name: str = Field(..., alias="advertiserName")
     ads_manager_account: str = Field(default="", alias="adsManagerAccount")
 
-    submitter_name: str = Field(default="", alias="submitterName")
-    submitter_email: str = Field(default="", alias="submitterEmail")
     sales_owner: str = Field(..., alias="salesOwner")
     sales_owner_email: str = Field(..., alias="salesOwnerEmail")
     owner_headquarters: str = Field(..., alias="ownerHeadquarters")
     owner_office: str = Field(..., alias="ownerOffice")
     owner_team: str = Field(..., alias="ownerTeam")
-    image_policy: str = Field(default="direct_url_or_uploaded", alias="imagePolicy")
     notes: str = ""
-
-    # Legacy booking fields are accepted for compatibility, but the new draft
-    # page treats advertiser onboarding and billing as a separate workflow.
-    legal_name: str = Field(default="", alias="legalName")
-    brn: str = Field(default="", alias="brn")
-    advertiser_homepage_url: str = Field(default="", alias="advertiserHomepageUrl")
-    invoice_email: str = Field(default="", alias="invoiceEmail")
-    contact_name: str = Field(default="", alias="contactName")
-    contact_phone: str = Field(default="", alias="contactPhone")
-    contact_email: str = Field(default="", alias="contactEmail")
     ads_manager_ready: bool = Field(default=False, alias="adsManagerReady")
     payment_ready: bool = Field(default=False, alias="paymentReady")
     crawler_ready: bool = Field(default=False, alias="crawlerReady")
@@ -115,18 +98,6 @@ class OpsMeta(BaseModel):
 
     honeypot: str = ""
     form_started_at: int | None = Field(default=None, alias="formStartedAt")
-
-    @model_validator(mode="before")
-    @classmethod
-    def _coerce_legacy_contact_fields(cls, values: Any) -> Any:
-        if not isinstance(values, dict):
-            return values
-        values = dict(values)
-        if not values.get("submitterName") and values.get("contactName"):
-            values["submitterName"] = values.get("contactName")
-        if not values.get("submitterEmail") and values.get("contactEmail"):
-            values["submitterEmail"] = values.get("contactEmail")
-        return values
 
     @field_validator(
         "advertiser_name",
@@ -144,29 +115,12 @@ class OpsMeta(BaseModel):
         "notes",
         "honeypot",
         "ads_manager_account",
-        "submitter_name",
-        "submitter_email",
-        "image_policy",
-        "legal_name",
-        "brn",
-        "advertiser_homepage_url",
-        "invoice_email",
-        "contact_name",
-        "contact_phone",
-        "contact_email",
     )
     @classmethod
     def _optional_text(cls, value: str) -> str:
         return _clean_text(value)
 
-    @field_validator("advertiser_homepage_url")
-    @classmethod
-    def _valid_homepage(cls, value: str) -> str:
-        if not _clean_text(value):
-            return ""
-        return _valid_http_url(value, "advertiser 공식 홈페이지 URL")
-
-    @field_validator("submitter_email", "sales_owner_email", "invoice_email", "contact_email")
+    @field_validator("sales_owner_email")
     @classmethod
     def _valid_email(cls, value: str) -> str:
         text = _clean_text(value)
@@ -409,23 +363,14 @@ def build_sheet_payload(
     primary_campaign = campaigns[0]
     ops = {
         "upload_mode": submission.ops_meta.upload_mode,
-        "route": _route_label(submission.ops_meta.execution_route),
         "advertiser_name": submission.ops_meta.advertiser_name,
-        "ads_manager_account": submission.ops_meta.ads_manager_account,
         "brand_name": submission.ops_meta.ads_manager_account,
-        "submitter_name": submission.ops_meta.submitter_name or submission.ops_meta.sales_owner,
-        "submitter_email": submission.ops_meta.submitter_email or submission.ops_meta.sales_owner_email,
         "sales_owner": submission.ops_meta.sales_owner,
         "sales_owner_email": submission.ops_meta.sales_owner_email,
         "owner_headquarters": submission.ops_meta.owner_headquarters,
         "owner_office": submission.ops_meta.owner_office,
         "owner_team": submission.ops_meta.owner_team,
-        "image_policy": submission.ops_meta.image_policy,
         "note": submission.ops_meta.notes,
-        "legal_name": submission.ops_meta.legal_name,
-        "brn": submission.ops_meta.brn,
-        "homepage": submission.ops_meta.advertiser_homepage_url,
-        "invoice_email": submission.ops_meta.invoice_email,
     }
     return {
         "secret": shared_secret,

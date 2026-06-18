@@ -28,13 +28,13 @@ const SHEET_COLUMNS = {
     { key: "receipt_number", header: "접수번호" },
     { key: "submitted_at_kst", header: "제출시각(KST)" },
     { key: "upload_mode", header: "업로드유형" },
-    { key: "route", header: "업로드채널" },
     { key: "advertiser_name", header: "광고주명" },
-    { key: "ads_manager_account", header: "AdsManager계정명" },
-    { key: "submitter_name", header: "제출자명" },
-    { key: "submitter_email", header: "제출자이메일" },
+    { key: "brand_name", header: "브랜드명" },
     { key: "sales_owner", header: "케이티나스미디어담당자" },
-    { key: "image_policy", header: "이미지처리방식" },
+    { key: "sales_owner_email", header: "담당자이메일" },
+    { key: "owner_headquarters", header: "본부" },
+    { key: "owner_office", header: "실" },
+    { key: "owner_team", header: "팀" },
     { key: "note", header: "비고" },
   ],
 };
@@ -117,11 +117,10 @@ function ensureSheet_(sheetName, columns) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
   const headers = columns.map((column) => column.header);
-  const currentHeaders = sheet.getRange(1, 1, 1, Math.max(headers.length, sheet.getLastColumn() || headers.length)).getValues()[0];
-  const needsHeader = currentHeaders.every((cell) => !cell);
-  if (needsHeader) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.setFrozenRows(1);
+  if (sheetName === "ops_meta" && sheet.getMaxColumns() > headers.length) {
+    sheet.deleteColumns(headers.length + 1, sheet.getMaxColumns() - headers.length);
   }
   return sheet;
 }
@@ -151,9 +150,10 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
     `접수번호: ${receiptNumber}`,
     `제출시각(KST): ${submittedAtKst}`,
     `광고주명: ${ops.advertiser_name || ""}`,
-    `Ads Manager 계정명: ${ops.ads_manager_account || ""}`,
+    `브랜드명: ${ops.brand_name || ""}`,
     `업로드유형: ${ops.upload_mode || ""}`,
-    `업로드채널: ${ops.route || ""}`,
+    `담당자: ${ops.sales_owner || ""} / ${ops.sales_owner_email || ""}`,
+    `소속: ${ops.owner_headquarters || ""} / ${ops.owner_office || ""} / ${ops.owner_team || ""}`,
     `캠페인 수: ${campaigns.length}`,
     `광고그룹 수: ${adgroups.length}`,
     `소재 수: ${ads.length}`,

@@ -1187,7 +1187,6 @@
         return {
           opsMeta: {
             uploadMode: selected("uploadMode"),
-            executionRoute: "openai_cbt",
             advertiserName: data.get("advertiserName")?.trim(),
             adsManagerAccount: data.get("adsManagerAccount")?.trim(),
             salesOwner: data.get("salesOwner")?.trim(),
@@ -1195,7 +1194,6 @@
             ownerHeadquarters: data.get("ownerHeadquarters")?.trim(),
             ownerOffice: data.get("ownerOffice")?.trim(),
             ownerTeam: data.get("ownerTeam")?.trim(),
-            imagePolicy: "direct_url",
             notes: data.get("notes")?.trim(),
             honeypot: data.get("honeypot") || "",
             formStartedAt: Number(data.get("formStartedAt")),
