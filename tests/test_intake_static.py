@@ -7,8 +7,12 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def index_html() -> str:
+    return (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+
+
 def intake_panel_html() -> str:
-    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    html = index_html()
     start = html.index('<section class="panel" id="intake-panel">')
     end = html.index('<section class="panel" id="slides-panel">', start)
     return html[start:end]
@@ -26,14 +30,26 @@ class IntakeFormStaticTests(unittest.TestCase):
             "budget_max",
             "target_countries",
             "image_link",
-            "이미지 파일 첨부",
             "소재 추가",
-            "업로드용 .xlsx 생성",
+            "Ads Manager용 .xlsx 다운로드",
+            "구글 시트 저장 후 알림 보내기",
+            "담당자 이메일",
+            "본부",
+            "실",
+            "팀",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
 
-    def test_old_flat_intake_fields_are_removed(self) -> None:
+        removed = [
+            "이미지 파일 첨부",
+            "업로드용 .xlsx 생성",
+            "이미지 처리 방식",
+        ]
+        for phrase in removed:
+            self.assertNotIn(phrase, html)
+
+    def test_old_flat_and_onboarding_fields_are_removed(self) -> None:
         html = intake_panel_html()
 
         removed = [
@@ -42,14 +58,27 @@ class IntakeFormStaticTests(unittest.TestCase):
             'name="campaignObjective"',
             'name="startDate"',
             'name="targetCountry"',
+            'name="executionRoute"',
+            'name="legalName"',
+            'name="brn"',
+            'name="advertiserHomepageUrl"',
+            'name="invoiceEmail"',
+            'name="contactName"',
+            'name="contactPhone"',
+            'name="contactEmail"',
+            'name="submitterName"',
+            'name="submitterEmail"',
             "업로드 유형",
             "uploadMode",
+            "OpenAI 직접 업로드",
+            "크리테오 경유",
+            "케이티나스미디어 담당자",
         ]
         for phrase in removed:
             self.assertNotIn(phrase, html)
 
     def test_intake_form_has_campaign_color_and_collapse_controls(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        html = index_html()
         panel = intake_panel_html()
 
         required = [
@@ -67,40 +96,65 @@ class IntakeFormStaticTests(unittest.TestCase):
         self.assertIn("광고그룹 추가", panel)
         self.assertIn("소재 추가", panel)
 
-    def test_campaign_clone_isolates_radios_before_append(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    def test_campaign_clone_isolates_radios_without_resetting_existing_items(self) -> None:
+        html = index_html()
+        self.assertIn("let campaignInstanceId", html)
         self.assertIn("function isolateCampaignRadioNames", html)
 
-        start = html.index("function addCampaignItem()")
-        end = html.index("function addAdgroupItem(", start)
-        add_campaign = html[start:end]
-
+        add_start = html.index("function addCampaignItem()")
+        add_end = html.index("function addAdgroupItem(", add_start)
+        add_campaign = html[add_start:add_end]
+        self.assertIn("isolateCampaignRadioNames(item, campaignInstanceId)", add_campaign)
         self.assertLess(add_campaign.index("isolateCampaignRadioNames"), add_campaign.index("campaignList.append(item)"))
-        self.assertIn('campaignList.addEventListener("change", handleIntakeHierarchyInput)', html)
+
+        update_start = html.index("function updateIntakeStructureState()")
+        update_end = html.index("function addCampaignItem()", update_start)
+        update_block = html[update_start:update_end]
+        self.assertNotIn("isolateCampaignRadioNames", update_block)
 
     def test_intake_payload_selectors_follow_collapsible_nesting(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        html = index_html()
 
         self.assertIn('querySelectorAll(":scope .adgroup-list > [data-adgroup-item]")', html)
         self.assertIn('querySelectorAll(":scope .ad-list > [data-ad-item]")', html)
         self.assertNotIn('querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")', html)
         self.assertNotIn('querySelectorAll(":scope > .ad-list > [data-ad-item]")', html)
 
-    def test_intake_tab_is_temporarily_disabled(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    def test_intake_tab_is_active(self) -> None:
+        html = index_html()
 
         self.assertIn('data-tab="intake"', html)
-        self.assertIn("소재 업로드 도구는 개편 중입니다.", html)
-        self.assertIn('aria-disabled="true"', html)
+        self.assertIn("소재 업로드", html)
+        self.assertNotIn("소재 업로드 도구는 개편 중입니다.", html)
+        self.assertNotIn('aria-disabled="true"', html)
+
+    def test_intake_reviews_before_sheet_submit(self) -> None:
+        html = index_html()
+
+        required = [
+            "intake-review-modal",
+            "pendingIntakePayload",
+            "openIntakeReviewModal(intakePayload())",
+            "submitReviewedIntake",
+            "저장하고 알림 보내기",
+            "구글 시트에 저장할 내용을 확인해 주세요",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
+
+        submit_start = html.index("async function submitIntake")
+        submit_end = html.index("async function downloadIntakeWorkbook", submit_start)
+        submit_block = html[submit_start:submit_end]
+        self.assertNotIn('fetch("/intake"', submit_block)
 
     def test_creative_upload_draft_page_exists_off_main_tab(self) -> None:
         html = (ROOT / "templates" / "creative_upload_draft.html").read_text(encoding="utf-8")
 
         required = [
-            "OpenAI 광고 소재 업로드 시트 생성",
-            "DRAFT · 메인 탭 비활성 상태로 작업 중",
+            "OpenAI Ads Manager 업로드 워크북 작성",
+            "내부 운영용 · 벌크 업로드 준비",
             "워크북 파일 불러오기",
-            "Ads Manager 업로드용 XLSX 다운로드",
+            "Ads Manager용 .xlsx 다운로드",
             "/intake/workbook",
             "/intake/inspect-workbook",
             "populateFromWorkbook",
@@ -127,6 +181,7 @@ class IntakeFormStaticTests(unittest.TestCase):
             "케이티나스미디어 담당자",
             "업로드 유형",
             "uploadMode",
+            "DRAFT · 메인 탭 비활성 상태로 작업 중",
         ]
         for phrase in removed:
             self.assertNotIn(phrase, html)
@@ -136,11 +191,11 @@ class IntakeFormStaticTests(unittest.TestCase):
 
         required = [
             "제출 전 확인",
-            "확인 후 제출",
+            "저장하고 알림 보내기",
             "pendingSubmissionPayload",
             "openReviewModal(payload())",
             "submitReviewedPayload",
-            "구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.",
+            "구글 시트에 저장하고 담당자 알림 메일을 발송하고 있습니다.",
             "메일 발송 요청 완료",
             "body.mail_sender",
             "body.mail_recipient",

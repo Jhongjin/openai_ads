@@ -107,8 +107,8 @@ class ImageUploadResponse(BaseModel):
 
 class NoticeConfigRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=120)
-    updated_at: str = Field(..., min_length=8, max_length=20)
-    bullets: list[str] = Field(..., min_length=1, max_length=20)
+    body_html: str | None = Field(default=None, max_length=8000)
+    bullets: list[str] = Field(default_factory=list, max_length=20)
     source_label: str = Field(..., min_length=1, max_length=200)
     source_url: str = Field(..., min_length=1, max_length=300)
     enabled: bool = True
@@ -124,7 +124,7 @@ PAGE_LABELS = {
     "chat": "광고 Q&A",
     "crawler": "랜딩 URL 검사",
     "favicon": "파비콘 검사",
-    "intake": "집행 의뢰 접수",
+    "intake": "소재 업로드",
     "slides": "광고주 안내 자료",
     "setupGuide": "캠페인 세팅 가이드",
     "pixelGuide": "픽셀 설치 가이드",

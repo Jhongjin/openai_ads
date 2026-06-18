@@ -257,8 +257,8 @@ class IntakeSubmission(BaseModel):
 
     @model_validator(mode="after")
     def _valid_submission(self) -> "IntakeSubmission":
-        title_max = 30 if self.ops_meta.execution_route == "criteo" else 24
-        copy_max = 60 if self.ops_meta.execution_route == "criteo" else 48
+        title_max = 24
+        copy_max = 48
         campaign_names: set[str] = set()
         adgroup_names: set[str] = set()
 
@@ -271,9 +271,6 @@ class IntakeSubmission(BaseModel):
             if campaign.end_date and campaign.launch_date:
                 if campaign.end_date < campaign.launch_date:
                     raise ValueError(f"캠페인 {campaign_index}의 종료일은 시작일 이후여야 합니다.")
-            if self.ops_meta.execution_route == "criteo" and campaign.objective != "views":
-                raise ValueError("크리테오 경유는 CPM(Views) 목표만 선택할 수 있습니다.")
-
             for group_index, group_item in enumerate(campaign_item.adgroups, start=1):
                 if campaign.objective == "views" and group_item.adgroup.max_bid is not None:
                     raise ValueError(

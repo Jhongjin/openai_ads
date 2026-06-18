@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenAI 광고 소재 업로드 초안</title>
+    <title>OpenAI 광고 소재 접수</title>
     <style>
       @font-face {
         font-family: "Pretendard Variable";
@@ -621,14 +621,14 @@
     <main class="page">
       <header class="hero">
         <div>
-          <p class="eyebrow">DRAFT · 메인 탭 비활성 상태로 작업 중</p>
-          <h1>OpenAI 광고 소재 업로드 시트 생성</h1>
+          <p class="eyebrow">내부 운영용 · 벌크 업로드 준비</p>
+          <h1>OpenAI Ads Manager 업로드 워크북 작성</h1>
           <p class="note">
             광고주 등록/정산 정보는 별도 트래커에서 관리하고, 이 페이지는 Ads Manager 벌크 업로드에 필요한
             캠페인·광고그룹·광고 소재 정보를 수집합니다.
           </p>
         </div>
-        <span class="draft-badge">초안 페이지 · 직접 URL 접근</span>
+        <span class="draft-badge">운영용 입력 페이지</span>
       </header>
 
       <section class="card">
@@ -860,11 +860,11 @@
         <input id="form-started-at" type="hidden" name="formStartedAt" />
 
         <div class="footer-actions">
-          <button class="primary" id="download-workbook" type="button">Ads Manager 업로드용 XLSX 다운로드</button>
-          <button id="submit-sheet" type="submit">구글 시트 기록 및 알림 발송</button>
+          <button class="primary" id="download-workbook" type="button">Ads Manager용 .xlsx 다운로드</button>
+          <button id="submit-sheet" type="submit">구글 시트 저장 후 알림 보내기</button>
           <div class="action-copy">
             <strong>XLSX 다운로드</strong>는 현재 입력값으로 OpenAI Ads Manager 벌크 업로드용 워크북을 생성합니다.
-            <strong>구글 시트 기록</strong>은 내부 시트에 저장하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
+            <strong>구글 시트 저장</strong>은 내부 시트에 저장하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
           </div>
           <span class="status" id="form-status" aria-live="polite"></span>
         </div>
@@ -876,17 +876,17 @@
         <header>
           <div>
             <p class="eyebrow">제출 전 확인</p>
-            <h2 id="review-title">구글 시트 기록 내용을 확인해 주세요</h2>
-            <p class="note">확인 후 제출을 누를 때만 구글 시트로 전송되고 openai@nasmedia.co.kr 담당자에게 알림 메일이 발송됩니다.</p>
+            <h2 id="review-title">구글 시트에 저장할 내용을 확인해 주세요</h2>
+            <p class="note">아래 내용을 저장하면 내부 구글 시트에 기록되고 openai@nasmedia.co.kr 담당자에게 알림 메일이 발송됩니다.</p>
           </div>
-          <span class="draft-badge">초안 페이지</span>
+          <span class="draft-badge">담당자 검토</span>
         </header>
         <div class="review-body" id="review-body"></div>
         <footer>
           <span class="help">캠페인명·광고그룹명·랜딩/이미지 URL 형식을 한 번 더 확인해 주세요. 제출 후 담당자에게 알림이 발송됩니다.</span>
           <div class="toolbar">
             <button type="button" id="review-cancel">수정하기</button>
-            <button type="button" class="primary" id="review-confirm">확인 후 제출</button>
+            <button type="button" class="primary" id="review-confirm">저장하고 알림 보내기</button>
           </div>
         </footer>
       </section>
@@ -1444,7 +1444,7 @@
         if (!pendingSubmissionPayload) return;
         reviewConfirm.disabled = true;
         closeReviewModal();
-        setStatus("구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.");
+        setStatus("구글 시트에 저장하고 담당자 알림 메일을 발송하고 있습니다.");
         const response = await fetch("/intake", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1493,7 +1493,7 @@
       async function downloadWorkbook() {
         setStatus("");
         if (!validateForm()) return;
-        setStatus("Ads Manager 업로드용 XLSX를 생성하고 있습니다.");
+        setStatus("Ads Manager용 .xlsx를 생성하고 있습니다.");
         const response = await fetch("/intake/workbook", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1574,7 +1574,7 @@
         const errors = (body.errors || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
         const warnings = (body.warnings || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
         const summary = imported
-          ? "불러오기 완료 — 아래 입력값을 확인한 뒤 XLSX 다운로드 또는 구글 시트 기록을 진행하세요."
+          ? "불러오기 완료 — 아래 입력값을 확인한 뒤 XLSX 다운로드 또는 구글 시트 저장을 진행하세요."
           : body.ok
             ? "검수 통과 — 워크북 값을 아래 입력폼으로 불러올 수 있습니다."
             : "확인 필요 — 아래 오류를 먼저 수정해 주세요.";

@@ -135,7 +135,8 @@
       }
 
       input,
-      textarea {
+      textarea,
+      .notice-editor {
         width: 100%;
         min-height: 44px;
         border: 1px solid #cfd6df;
@@ -147,17 +148,85 @@
         font-weight: 650;
       }
 
-      textarea {
+      textarea,
+      .notice-editor {
         min-height: 190px;
         line-height: 1.55;
         resize: vertical;
       }
 
       input:focus,
-      textarea:focus {
+      textarea:focus,
+      .notice-editor:focus {
         border-color: var(--kt-red);
         box-shadow: 0 0 0 3px rgb(237 28 36 / 12%);
         outline: none;
+      }
+
+      .field-label {
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .readonly-value {
+        min-height: 44px;
+        border: 1px dashed #cfd6df;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 11px 12px;
+        color: #344054;
+        font-weight: 850;
+      }
+
+      .editor-shell {
+        margin-bottom: 14px;
+        border: 1px solid #cfd6df;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 8px;
+      }
+
+      .editor-toolbar button {
+        min-height: 34px;
+        border: 1px solid #d8dee9;
+        border-radius: 7px;
+        background: #fff;
+        padding: 0 10px;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .notice-editor {
+        min-height: 210px;
+        border: 0;
+        border-radius: 0;
+        padding: 14px 16px;
+        overflow: auto;
+      }
+
+      .notice-editor ul,
+      .notice-editor ol {
+        margin: 8px 0;
+        padding-left: 22px;
+      }
+
+      .notice-editor p {
+        margin: 0 0 10px;
+      }
+
+      .notice-editor a {
+        color: #155eef;
       }
 
       .check-label {
@@ -227,6 +296,36 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 16px;
+      }
+
+      .chart-shell {
+        margin: 14px 0 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .chart-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .chart-head span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .visit-chart {
+        display: block;
+        width: 100%;
+        height: 190px;
+        overflow: visible;
       }
 
       .metric {
@@ -342,20 +441,32 @@
         <div class="card section">
           <h2>메인 공지 팝업 수정</h2>
           <p class="help">
-            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 항목은 줄바꿈 기준으로 저장됩니다.
+            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 굵게, 목록, 링크 정도의 간단한 HTML 서식을 사용할 수 있습니다.
           </p>
           <label>
             제목
             <input id="notice-title" type="text" />
           </label>
-          <label>
-            최종 업데이트
-            <input id="notice-updated" type="text" placeholder="YYYY-MM-DD" />
-          </label>
-          <label>
-            본문 항목
-            <textarea id="notice-bullets" placeholder="글자수 — 제목 24자 / 설명 48자..."></textarea>
-          </label>
+          <div style="margin-bottom: 14px;">
+            <div class="field-label">업데이트일</div>
+            <div class="readonly-value" id="notice-updated">저장 시 자동 반영</div>
+          </div>
+          <div class="field-label">공지 내용</div>
+          <div class="editor-shell">
+            <div class="editor-toolbar" aria-label="공지 서식 도구">
+              <button type="button" data-command="bold">굵게</button>
+              <button type="button" data-command="insertUnorderedList">목록</button>
+              <button type="button" data-command="createLink">링크</button>
+              <button type="button" data-command="removeFormat">서식 지우기</button>
+            </div>
+            <div
+              class="notice-editor"
+              id="notice-editor"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
+            ></div>
+          </div>
           <label>
             OpenAI 가이드 링크 문구
             <input id="notice-source-label" type="text" />
@@ -398,6 +509,13 @@
             <button class="secondary" id="refresh-analytics" type="button">새로고침</button>
             <span class="badge" id="storage-badge">저장소 확인 중</span>
           </div>
+          <div class="chart-shell">
+            <div class="chart-head">
+              <strong>전체 방문 추이</strong>
+              <span id="chart-caption">최근 방문 데이터를 불러오는 중</span>
+            </div>
+            <svg class="visit-chart" id="visit-chart" viewBox="0 0 640 190" role="img" aria-label="전체 방문 추이"></svg>
+          </div>
           <div style="margin-top: 14px; overflow-x: auto;">
             <table>
               <thead>
@@ -432,7 +550,7 @@
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
-        bullets: document.querySelector("#notice-bullets"),
+        editor: document.querySelector("#notice-editor"),
         sourceLabel: document.querySelector("#notice-source-label"),
         sourceUrl: document.querySelector("#notice-source-url"),
         enabled: document.querySelector("#notice-enabled"),
@@ -459,10 +577,31 @@
         element.className = `status ${type}`.trim();
       }
 
+      function bulletsToHtml(bullets = []) {
+        if (!bullets.length) return "";
+        const escape = (value) =>
+          String(value).replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[char]);
+        return `<ul>${bullets.map((line) => `<li>${escape(line)}</li>`).join("")}</ul>`;
+      }
+
+      function editorTextLines() {
+        return fields.editor.innerText
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 20);
+      }
+
       function fillNoticeForm(notice) {
         fields.title.value = notice.title || "";
-        fields.updatedAt.value = notice.updated_at || "";
-        fields.bullets.value = (notice.bullets || []).join("\n");
+        fields.updatedAt.textContent = notice.updated_at || "저장 시 자동 반영";
+        fields.editor.innerHTML = notice.body_html || bulletsToHtml(notice.bullets || []);
         fields.sourceLabel.value = notice.source_label || "";
         fields.sourceUrl.value = notice.source_url || "";
         fields.enabled.checked = notice.enabled !== false;
@@ -472,8 +611,8 @@
       function readNoticeForm() {
         return {
           title: fields.title.value.trim(),
-          updated_at: fields.updatedAt.value.trim(),
-          bullets: fields.bullets.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
+          body_html: fields.editor.innerHTML.trim(),
+          bullets: editorTextLines(),
           source_label: fields.sourceLabel.value.trim(),
           source_url: fields.sourceUrl.value.trim(),
           enabled: fields.enabled.checked,
@@ -506,6 +645,7 @@
         document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
         document.querySelector("#metric-pages").textContent = items.length.toLocaleString("ko-KR");
         storageBadge.textContent = `저장소: ${data.storage || "확인 중"}`;
+        renderVisitChart(data.series || []);
 
         const body = document.querySelector("#analytics-body");
         body.innerHTML = "";
@@ -523,6 +663,83 @@
             <td>${lastSeen}</td>
           `;
           body.appendChild(tr);
+        });
+      }
+
+      function renderVisitChart(series) {
+        const svg = document.querySelector("#visit-chart");
+        const caption = document.querySelector("#chart-caption");
+        svg.innerHTML = "";
+        if (!series.length) {
+          caption.textContent = "표시할 방문 데이터가 없습니다";
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", "320");
+          text.setAttribute("y", "96");
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("fill", "#667085");
+          text.setAttribute("font-size", "14");
+          text.textContent = "아직 방문 데이터가 없습니다";
+          svg.appendChild(text);
+          return;
+        }
+
+        const points = series.slice(-14).map((item) => ({
+          date: item.visit_date,
+          count: Number(item.total_count || 0),
+        }));
+        const max = Math.max(1, ...points.map((item) => item.count));
+        const chart = { width: 640, height: 190, top: 14, right: 12, bottom: 34, left: 38 };
+        const plotWidth = chart.width - chart.left - chart.right;
+        const plotHeight = chart.height - chart.top - chart.bottom;
+        const barGap = 8;
+        const barWidth = Math.max(10, (plotWidth - barGap * (points.length - 1)) / points.length);
+        caption.textContent = `최근 ${points.length}일 기준`;
+
+        [0, 0.5, 1].forEach((ratio) => {
+          const y = chart.top + plotHeight - plotHeight * ratio;
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", String(chart.left));
+          line.setAttribute("x2", String(chart.width - chart.right));
+          line.setAttribute("y1", String(y));
+          line.setAttribute("y2", String(y));
+          line.setAttribute("stroke", "#e5e7eb");
+          svg.appendChild(line);
+        });
+
+        points.forEach((item, index) => {
+          const height = Math.max(2, (item.count / max) * plotHeight);
+          const x = chart.left + index * (barWidth + barGap);
+          const y = chart.top + plotHeight - height;
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", String(x));
+          rect.setAttribute("y", String(y));
+          rect.setAttribute("width", String(barWidth));
+          rect.setAttribute("height", String(height));
+          rect.setAttribute("rx", "5");
+          rect.setAttribute("fill", "#ed1c24");
+          rect.setAttribute("opacity", "0.9");
+          svg.appendChild(rect);
+
+          const value = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          value.setAttribute("x", String(x + barWidth / 2));
+          value.setAttribute("y", String(Math.max(12, y - 6)));
+          value.setAttribute("text-anchor", "middle");
+          value.setAttribute("fill", "#344054");
+          value.setAttribute("font-size", "11");
+          value.setAttribute("font-weight", "800");
+          value.textContent = item.count.toLocaleString("ko-KR");
+          svg.appendChild(value);
+
+          if (index === 0 || index === points.length - 1 || points.length <= 7 || index % 3 === 0) {
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("x", String(x + barWidth / 2));
+            label.setAttribute("y", String(chart.height - 10));
+            label.setAttribute("text-anchor", "middle");
+            label.setAttribute("fill", "#667085");
+            label.setAttribute("font-size", "10");
+            label.textContent = String(item.date || "").slice(5);
+            svg.appendChild(label);
+          }
         });
       }
 
@@ -560,6 +777,19 @@
       });
       document.querySelector("#refresh-analytics").addEventListener("click", () => {
         loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));
+      });
+      document.querySelectorAll(".editor-toolbar button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const command = button.dataset.command;
+          fields.editor.focus();
+          if (command === "createLink") {
+            const url = window.prompt("링크 URL을 입력해 주세요. http:// 또는 https://로 시작해야 합니다.");
+            if (!url || !/^https?:\/\//i.test(url)) return;
+            document.execCommand(command, false, url);
+            return;
+          }
+          document.execCommand(command, false, null);
+        });
       });
 
       const savedPassword = window.sessionStorage.getItem("openaiAdsAdminPassword");

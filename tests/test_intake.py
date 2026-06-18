@@ -218,13 +218,12 @@ class IntakeValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
-    def test_criteo_forces_views_objective(self) -> None:
+    def test_legacy_criteo_route_no_longer_changes_objective(self) -> None:
         payload = valid_payload()
         payload["opsMeta"]["executionRoute"] = "criteo"
         payload["campaign"]["objective"] = "clicks"
 
-        with self.assertRaises(ValidationError):
-            IntakeSubmission.model_validate(payload)
+        IntakeSubmission.model_validate(payload)
 
     def test_openai_title_and_copy_limits_are_official_workbook_limits(self) -> None:
         payload = valid_payload()
@@ -239,16 +238,16 @@ class IntakeValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
-    def test_criteo_uses_30_60_limits(self) -> None:
+    def test_legacy_criteo_route_uses_workbook_limits(self) -> None:
         payload = valid_payload()
         payload["opsMeta"]["executionRoute"] = "criteo"
         payload["campaign"]["objective"] = "views"
         payload["adgroup"]["max_bid"] = None
-        payload["ads"][0]["title"] = "가" * 30
-        payload["ads"][0]["copy"] = "나" * 60
+        payload["ads"][0]["title"] = "가" * 24
+        payload["ads"][0]["copy"] = "나" * 48
         IntakeSubmission.model_validate(payload)
 
-        payload["ads"][0]["title"] = "가" * 31
+        payload["ads"][0]["title"] = "가" * 25
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
