@@ -183,9 +183,19 @@ class IntakeValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
-    def test_rejects_special_characters_in_names(self) -> None:
+    def test_allows_space_hyphen_and_underscore_in_names(self) -> None:
         payload = valid_payload()
-        payload["campaign"]["campaign_name"] = "campaign-1"
+        payload["campaign"]["campaign_name"] = "campaign 1-test_main"
+        payload["adgroup"]["campaign_name"] = "campaign 1-test_main"
+        payload["adgroup"]["adgroup_name"] = "adgroup 1-test_main"
+        for ad in payload["ads"]:
+            ad["adgroup_name"] = "adgroup 1-test_main"
+
+        IntakeSubmission.model_validate(payload)
+
+    def test_rejects_dot_and_other_special_characters_in_names(self) -> None:
+        payload = valid_payload()
+        payload["campaign"]["campaign_name"] = "campaign.1"
 
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
@@ -342,7 +352,7 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertTrue(any("Views(CPM)" in error and "max_bid" in error for error in summary["errors"]))
         self.assertTrue(any("존재하지 않는 adgroup_name" in error for error in summary["errors"]))
 
-    def test_inspect_workbook_rejects_kr_target_country_and_page_image_url(self) -> None:
+    def test_inspect_workbook_rejects_kr_target_country_but_accepts_http_image_url_shape(self) -> None:
         from io import BytesIO
 
         from openpyxl import Workbook
@@ -374,7 +384,41 @@ class IntakeValidationTests(unittest.TestCase):
 
         self.assertFalse(summary["ok"])
         self.assertTrue(any("target_countries에 KR" in error for error in summary["errors"]))
-        self.assertTrue(any("PNG/JPG 직접 이미지 URL" in error for error in summary["errors"]))
+        self.assertFalse(any("image_link" in error for error in summary["errors"]))
+
+    def test_inspect_workbook_rejects_malformed_landing_and_image_urls(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["nasmedia2188", 5000, "lifetime", "2026-06-30", "2026-07-06", "views", ""],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["nasmedia2188", "nasmedia2188_ag1", "", ""],
+            ],
+            "ads": [
+                ["adgroup_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188_ag1", "내사이트야", "내사이트라고", "openads.admate.ai.kr/", "https://co.kr.."],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertTrue(any("link는 http:// 또는 https://" in error for error in summary["errors"]))
+        self.assertTrue(any("image_link는 http:// 또는 https://" in error for error in summary["errors"]))
 
 
 if __name__ == "__main__":

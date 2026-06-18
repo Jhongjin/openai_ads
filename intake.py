@@ -8,6 +8,7 @@ import re
 import threading
 import time
 from typing import Any, Literal
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -16,8 +17,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 KST = ZoneInfo("Asia/Seoul")
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_SAFE_NAME_RE = re.compile(r"^[0-9A-Za-z_]+$")
-_DIRECT_IMAGE_URL_RE = re.compile(r"\.(?:png|jpe?g)(?:[?#].*)?$", re.IGNORECASE)
+_SAFE_NAME_RE = re.compile(r"^(?=.*[0-9A-Za-z])[0-9A-Za-z _-]+$")
 _RECEIPT_LOCK = threading.Lock()
 _RECEIPT_COUNTERS: dict[str, int] = {}
 _RATE_LIMIT_SECONDS = 10
@@ -37,19 +37,21 @@ def _require_text(value: str) -> str:
 
 def _valid_http_url(value: str, label: str = "URL") -> str:
     text = _require_text(value)
-    lowered = text.lower()
-    if not lowered.startswith(("http://", "https://")):
+    if any(character.isspace() for character in text):
+        raise ValueError(f"{label}은 공백 없이 입력해야 합니다.")
+    parsed = urlparse(text)
+    if parsed.scheme not in {"http", "https"}:
         raise ValueError(f"{label}은 http:// 또는 https://로 시작해야 합니다.")
-    return text
-
-
-def _valid_direct_image_url(value: str, label: str = "이미지 URL") -> str:
-    text = _valid_http_url(value, label)
-    if not _DIRECT_IMAGE_URL_RE.search(text):
-        raise ValueError(
-            f"{label}은 실제 PNG/JPG 직접 이미지 URL이어야 합니다. "
-            "홈페이지/랜딩 페이지 URL이나 뷰어 링크는 OpenAI 업로더에서 text/html 오류가 날 수 있습니다."
-        )
+    hostname = parsed.hostname or ""
+    if (
+        not parsed.netloc
+        or not hostname
+        or hostname.startswith(".")
+        or hostname.endswith(".")
+        or ".." in hostname
+        or not re.fullmatch(r"[A-Za-z0-9.-]+", hostname)
+    ):
+        raise ValueError(f"{label}의 도메인 형식을 확인해 주세요.")
     return text
 
 
@@ -57,8 +59,8 @@ def _valid_safe_name(value: str, label: str) -> str:
     text = _require_text(value)
     if not _SAFE_NAME_RE.fullmatch(text):
         raise ValueError(
-            f"{label}에는 영문, 숫자, 언더스코어(_)만 사용할 수 있습니다. "
-            "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+            f"{label}에는 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용할 수 있습니다. "
+            "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
         )
     return text
 
@@ -261,7 +263,7 @@ class AdInfo(BaseModel):
     @field_validator("image_link")
     @classmethod
     def _valid_image_link(cls, value: str) -> str:
-        return _valid_direct_image_url(value, "이미지 URL")
+        return _valid_http_url(value, "image_link")
 
 
 class AdGroupSubmission(BaseModel):
@@ -470,11 +472,11 @@ def _is_template_sample_value(value: Any) -> bool:
 
 
 def _is_http_url(value: str) -> bool:
-    return value.lower().startswith(("http://", "https://"))
-
-
-def _is_direct_image_url(value: str) -> bool:
-    return bool(_DIRECT_IMAGE_URL_RE.search(value))
+    try:
+        _valid_http_url(value)
+    except ValueError:
+        return False
+    return True
 
 
 def _json_array(value: Any, *, label: str, row_number: int, errors: list[str]) -> list[Any] | None:
@@ -614,8 +616,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"campaigns 행 {row_number}: 공식 샘플 campaign_name(oaitest...)을 실제 캠페인명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(campaign_name):
             errors.append(
-                f"campaigns 행 {row_number}: campaign_name은 영문, 숫자, 언더스코어(_)만 사용하세요. "
-                "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+                f"campaigns 행 {row_number}: campaign_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
             )
         elif campaign_name in campaign_objectives:
             errors.append(f"campaigns 행 {row_number}: campaign_name '{campaign_name}'이 중복되었습니다.")
@@ -667,8 +669,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"adgroups 행 {row_number}: 공식 샘플 adgroup_name(oaitest...)을 실제 광고그룹명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(adgroup_name):
             errors.append(
-                f"adgroups 행 {row_number}: adgroup_name은 영문, 숫자, 언더스코어(_)만 사용하세요. "
-                "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+                f"adgroups 행 {row_number}: adgroup_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
             )
         elif adgroup_name in adgroup_campaigns:
             errors.append(f"adgroups 행 {row_number}: adgroup_name '{adgroup_name}'이 중복되었습니다.")
@@ -712,12 +714,7 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         if not image_link:
             errors.append(f"ads 행 {row_number}: image_link는 필수입니다.")
         elif not _is_http_url(image_link):
-            errors.append(f"ads 행 {row_number}: image_link는 http:// 또는 https://로 시작해야 합니다.")
-        elif not _is_direct_image_url(image_link):
-            errors.append(
-                f"ads 행 {row_number}: image_link는 실제 PNG/JPG 직접 이미지 URL이어야 합니다. "
-                "홈페이지/랜딩 페이지 URL을 넣으면 OpenAI 업로더에서 image/*가 아닌 text/html 응답으로 실패합니다."
-            )
+            errors.append(f"ads 행 {row_number}: image_link는 http:// 또는 https://로 시작하는 정상 URL 형식이어야 합니다.")
 
     summary["ok"] = not errors and all(
         item.get("rows", 0) > 0 for item in summary["sheets"].values()
