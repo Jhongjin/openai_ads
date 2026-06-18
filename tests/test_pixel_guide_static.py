@@ -34,7 +34,7 @@ class PixelGuideStaticTests(unittest.TestCase):
     def test_pixel_guide_has_pages_and_platform_steps(self) -> None:
         html = pixel_guide_html()
 
-        self.assertEqual(html.count('class="slide-card'), 7)
+        self.assertEqual(html.count('class="slide-card'), 8)
         required = [
             "OpenAI Ads Measurement Pixel",
             "웹 페이지뷰·전환·이벤트 측정 설정",
@@ -43,6 +43,10 @@ class PixelGuideStaticTests(unittest.TestCase):
             "설정 코드와 Pixel ID",
             "전환 이벤트 탭",
             "캠페인에 연결",
+            "STEP 4 · GTM 가이드",
+            "GTM 삽입 방법",
+            "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다",
+            "adso@nasmedia.co.kr",
             "https://developers.openai.com/ads/measurement-pixel",
             "https://developers.openai.com/ads/supported-events",
         ]
@@ -79,6 +83,9 @@ class PixelGuideStaticTests(unittest.TestCase):
             "서버 Conversions API를 직접 호출하지 말고",
             "브라우저 콘솔 debug 로그",
             "이벤트 스트림에서 수신 여부 확인",
+            "GTM 컨테이너 ID",
+            "GTM-XXXXXXX",
+            "여러 번 삽입 시 데이터 중복",
         ]
         for phrase in required:
             self.assertIn(phrase, html)

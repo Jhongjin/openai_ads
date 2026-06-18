@@ -4067,7 +4067,7 @@ Allow: /</pre>
               </div>
               <div class="slide-footer">
                 <span>케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr</span>
-                <span class="slide-page-number">1/7</span>
+                <span class="slide-page-number">1/8</span>
               </div>
             </section>
 
@@ -4111,7 +4111,7 @@ Allow: /</pre>
               </div>
               <div class="slide-footer">
                 <span>광고 계정에서 발급된 Pixel ID를 설치 코드의 PIXEL_ID 자리에 넣어야 합니다.</span>
-                <span class="slide-page-number">2/7</span>
+                <span class="slide-page-number">2/8</span>
               </div>
             </section>
 
@@ -4160,7 +4160,7 @@ Allow: /</pre>
               </div>
               <div class="slide-footer">
                 <span>공통 픽셀 스크립트는 페이지당 한 번만 설치하고, 전환 이벤트 호출은 필요한 위치에 추가합니다.</span>
-                <span class="slide-page-number">3/7</span>
+                <span class="slide-page-number">3/8</span>
               </div>
             </section>
 
@@ -4203,7 +4203,7 @@ Allow: /</pre>
               </div>
               <div class="slide-footer">
                 <span>개인정보 매칭값을 추가할 경우 원문 이메일·전화번호를 보내지 말고 공식 문서의 해시 규칙을 따라야 합니다.</span>
-                <span class="slide-page-number">4/7</span>
+                <span class="slide-page-number">4/8</span>
               </div>
             </section>
 
@@ -4273,7 +4273,7 @@ oaiq("measure", "contents_viewed", {
               </div>
               <div class="slide-footer">
                 <span>페이지 로드 자체는 page_viewed, 특정 상품·콘텐츠 조회는 contents_viewed로 구분합니다.</span>
-                <span class="slide-page-number">5/7</span>
+                <span class="slide-page-number">5/8</span>
               </div>
             </section>
 
@@ -4323,7 +4323,7 @@ oaiq("measure", "order_created", {
               </div>
               <div class="slide-footer">
                 <span>amount와 quantity는 숫자 정수로 넣고, amount를 넣을 때는 currency도 함께 넣습니다.</span>
-                <span class="slide-page-number">6/7</span>
+                <span class="slide-page-number">6/8</span>
               </div>
             </section>
 
@@ -4363,7 +4363,66 @@ oaiq("measure", "order_created", {
               </div>
               <div class="slide-footer">
                 <span>베타 기준으로 화면과 기능명이 바뀔 수 있습니다. 최종 검수는 Ads Manager와 공식 문서를 재확인해 주세요.</span>
-                <span class="slide-page-number">7/7</span>
+                <span class="slide-page-number">7/8</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 4 · GTM 가이드</p>
+                <h2 class="slide-section-title">GTM 삽입 방법</h2>
+                <div class="guide-two-column">
+                  <div>
+                    <div class="guide-field-table">
+                      <div class="guide-field-row"><strong>목적</strong><span>웹사이트에 Google Tag Manager(GTM)를 삽입하여 OpenAI 픽셀 및 이벤트 태그를 관리할 수 있도록 설정합니다.</span></div>
+                      <div class="guide-field-row"><strong>삽입 위치</strong><span>모든 페이지의 &lt;head&gt;와 &lt;body&gt; 최상단</span></div>
+                      <div class="guide-field-row"><strong>필요 정보</strong><span>GTM 컨테이너 ID (예: GTM-XXXXXXX)</span></div>
+                      <div class="guide-field-row"><strong>주의 사항</strong><span>GTM 스크립트는 수정 없이 그대로 삽입해야 하며, 여러 번 삽입 시 데이터 중복이 발생할 수 있습니다.</span></div>
+                    </div>
+                    <p class="guide-note">사이트 전체에 GTM을 설치해야 모든 페이지에서 OpenAI Pixel 태그가 정상적으로 동작합니다.</p>
+                    <p class="guide-channel-note">
+                      나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr
+                    </p>
+                  </div>
+                  <figure>
+                    <div class="guide-image-frame pixel-screen-frame wide">
+                      <img data-guide-image data-src="/images/guide/pixel_step7_gtm_workspace.png" alt="Google Tag Manager 작업공간 화면" />
+                      <div class="guide-placeholder">
+                        <div>
+                          <strong>캡처 이미지 삽입 위치</strong>
+                          <span>/public/images/guide/pixel_step7_gtm_workspace.png</span>
+                        </div>
+                      </div>
+                    </div>
+                    <figcaption class="guide-caption">GTM 컨테이너 ID는 Google Tag Manager 작업공간에서 확인할 수 있습니다.</figcaption>
+                  </figure>
+                </div>
+                <div class="pixel-screen-grid">
+                  <div>
+                    <p class="guide-caption">&lt;head&gt;에 삽입</p>
+                    <pre class="crawler-code pixel-code compact">&lt;!-- Google Tag Manager --&gt;
+&lt;script&gt;(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({
+'gtm.start': new Date().getTime(), event:'gtm.js'
+});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');&lt;/script&gt;
+&lt;!-- End Google Tag Manager --&gt;</pre>
+                  </div>
+                  <div>
+                    <p class="guide-caption">&lt;body&gt; 최상단에 삽입</p>
+                    <pre class="crawler-code pixel-code compact">&lt;!-- Google Tag Manager (noscript) --&gt;
+&lt;noscript&gt;&lt;iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"
+height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&lt;/noscript&gt;
+&lt;!-- End Google Tag Manager (noscript) --&gt;</pre>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr</span>
+                <span class="slide-page-number">8/8</span>
               </div>
             </section>
           </div>
@@ -4406,7 +4465,7 @@ oaiq("measure", "order_created", {
         ※ 캠페인 세팅 가이드는 Ads Manager 직접 입력 화면 기준입니다. 접수 폼 글자수와 크리테오 경유 기준은 별도 채널 기준으로 구분해 주세요.
       </span>
       <span id="pixel-guide-notice">
-        ※ 픽셀 설치 가이드는 OpenAI Ads Measurement Pixel의 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID·이벤트명·설치 위치는 광고주 사이트 구조와 Ads Manager 발급값에 맞춰 최종 확인해 주세요.
+        ※ 픽셀 설치 가이드는 OpenAI Ads Measurement Pixel의 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID·이벤트명·설치 위치는 광고주 사이트 구조와 Ads Manager 발급값에 맞춰 최종 확인해 주세요. 나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr
       </span>
     </div>
 
