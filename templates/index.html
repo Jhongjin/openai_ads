@@ -5907,6 +5907,7 @@ oaiq("measure", "order_created", {
             throw new Error(message);
           }
           const mailTargets = [
+            payload.mail_sender ? `From ${payload.mail_sender}` : "",
             payload.mail_recipient ? `To ${payload.mail_recipient}` : "",
             payload.mail_cc ? `CC ${payload.mail_cc}` : "",
           ].filter(Boolean).join(" / ");

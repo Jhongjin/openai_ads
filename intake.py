@@ -770,6 +770,7 @@ async def forward_intake_to_sheet(
         if isinstance(response_payload.get("mailSent"), bool)
         else None,
         "mail_error": str(response_payload.get("mailError") or ""),
+        "mail_sender": str(response_payload.get("mailSender") or ""),
         "mail_recipient": str(response_payload.get("mailRecipient") or ""),
         "mail_cc": str(response_payload.get("mailCc") or ""),
         "mail_quota_remaining": response_payload.get("mailQuotaRemaining")

@@ -93,6 +93,7 @@ function doPost(e) {
         submittedAtKst,
         mailSent: mailResult.sent,
         mailError: mailResult.error || "",
+        mailSender: mailResult.sender || "",
         mailRecipient: mailResult.recipient || "",
         mailCc: mailResult.cc || "",
         mailQuotaRemaining: mailResult.quotaRemaining,
@@ -169,6 +170,7 @@ function nowKst_() {
 function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads) {
   const properties = PropertiesService.getScriptProperties();
   const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const sender = getMailSender_();
   const configuredCc = (properties.getProperty("NOTIFY_CC") || "")
     .split(",")
     .map((item) => item.trim())
@@ -188,6 +190,7 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
     `캠페인 수: ${campaigns.length}`,
     `광고그룹 수: ${adgroups.length}`,
     `소재 수: ${ads.length}`,
+    `발송 실행 계정: ${sender || "확인 불가"}`,
     "",
     "캠페인 목록:",
     ...campaigns.map((campaign) => `- ${campaign.campaign_name || ""} / ${campaign.objective || ""} / ${campaign.budget_max || ""}`),
@@ -203,11 +206,24 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
       options.cc = ccList.join(",");
     }
     MailApp.sendEmail(recipient, subject, body, options);
-    return { sent: true, error: "", recipient, cc: ccList.join(","), quotaRemaining };
+    return { sent: true, error: "", sender, recipient, cc: ccList.join(","), quotaRemaining };
   } catch (error) {
     const message = String(error && error.message ? error.message : error);
     Logger.log(`MailApp.sendEmail failed: ${message}`);
-    return { sent: false, error: message, recipient, cc: ccList.join(","), quotaRemaining: null };
+    return { sent: false, error: message, sender, recipient, cc: ccList.join(","), quotaRemaining: null };
+  }
+}
+
+function getMailSender_() {
+  try {
+    const effectiveUser = Session.getEffectiveUser().getEmail();
+    const activeUser = Session.getActiveUser().getEmail();
+    if (effectiveUser && activeUser && effectiveUser !== activeUser) {
+      return `${effectiveUser} (active: ${activeUser})`;
+    }
+    return effectiveUser || activeUser || "";
+  } catch (error) {
+    return "";
   }
 }
 
@@ -227,6 +243,7 @@ function uniqueEmails_(emails) {
 function sendMailAuthTest() {
   const properties = PropertiesService.getScriptProperties();
   const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const sender = getMailSender_();
   const configuredCc = (properties.getProperty("NOTIFY_CC") || "")
     .split(",")
     .map((item) => item.trim())
@@ -243,17 +260,19 @@ function sendMailAuthTest() {
   MailApp.sendEmail(
     recipient,
     "[OpenAI Ads] Apps Script 메일 권한 테스트",
-    `이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다.\n\nTo: ${recipient}\nCC: ${ccList.join(",") || "-"}\n남은 MailApp 쿼터: ${quotaRemaining}\n발송시각: ${nowKst_()} KST`,
+    `이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다.\n\n발송 실행 계정: ${sender || "확인 불가"}\nTo: ${recipient}\nCC: ${ccList.join(",") || "-"}\n남은 MailApp 쿼터: ${quotaRemaining}\n발송시각: ${nowKst_()} KST`,
     options
   );
-  Logger.log(`Mail auth test sent to ${recipient}${ccList.length ? ` cc ${ccList.join(",")}` : ""}; quota ${quotaRemaining}`);
+  Logger.log(`Mail auth test sender ${sender || "-"} sent to ${recipient}${ccList.length ? ` cc ${ccList.join(",")}` : ""}; quota ${quotaRemaining}`);
 }
 
 function debugMailConfig() {
   const properties = PropertiesService.getScriptProperties();
   const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
   const cc = properties.getProperty("NOTIFY_CC") || "";
+  const sender = getMailSender_();
   const quotaRemaining = MailApp.getRemainingDailyQuota();
+  Logger.log(`Mail sender/effective user=${sender || "-"}`);
   Logger.log(`NOTIFY_TO=${recipient}`);
   Logger.log(`NOTIFY_CC=${cc || "-"}`);
   Logger.log(`MailApp remaining daily quota=${quotaRemaining}`);

@@ -1456,6 +1456,7 @@
           return;
         }
         const mailTargets = [
+          body.mail_sender ? `From ${body.mail_sender}` : "",
           body.mail_recipient ? `To ${body.mail_recipient}` : "",
           body.mail_cc ? `CC ${body.mail_cc}` : "",
         ].filter(Boolean).join(" / ");
