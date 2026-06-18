@@ -107,6 +107,39 @@ class IntakeFormStaticTests(unittest.TestCase):
         for phrase in required:
             self.assertIn(phrase, html)
 
+    def test_creative_upload_draft_reviews_before_sheet_submit(self) -> None:
+        html = (ROOT / "templates" / "creative_upload_draft.html").read_text(encoding="utf-8")
+
+        required = [
+            "제출 전 확인",
+            "확인 후 제출",
+            "pendingSubmissionPayload",
+            "openReviewModal(payload())",
+            "submitReviewedPayload",
+            "구글 시트에 기록하고 있습니다.",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
+
+        submit_start = html.index("async function submitSheet")
+        submit_end = html.index("async function inspectWorkbook", submit_start)
+        submit_block = html[submit_start:submit_end]
+        self.assertNotIn('fetch("/intake"', submit_block)
+
+    def test_creative_upload_draft_has_structure_overview(self) -> None:
+        html = (ROOT / "templates" / "creative_upload_draft.html").read_text(encoding="utf-8")
+
+        required = [
+            'id="structure-overview"',
+            "function updateStructureOverview",
+            "structure-chip",
+            "data-jump-campaign",
+            "광고그룹 ${adgroupCount}개",
+            "소재 ${adCount}개",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
+
 
 if __name__ == "__main__":
     unittest.main()

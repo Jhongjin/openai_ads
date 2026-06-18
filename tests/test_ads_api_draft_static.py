@@ -33,6 +33,8 @@ class AdsApiDraftStaticTests(unittest.TestCase):
             "CPC",
             "CPM",
             "완전 실시간 SLA 미확인",
+            "time_granularity",
+            "hourly/daily/monthly/none",
             "API 키는 Vercel/GitHub Secrets 또는 서버 환경변수에만 저장",
             "https://developers.openai.com/ads/api-overview",
             "https://developers.openai.com/ads/api-reference/insights",

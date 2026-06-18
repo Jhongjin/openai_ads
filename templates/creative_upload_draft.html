@@ -40,7 +40,9 @@
         background: #f4f6f9;
         color: var(--ink);
         font-family: var(--font-sans);
+        font-feature-settings: "kern";
         line-height: 1.55;
+        text-rendering: optimizeLegibility;
       }
 
       button,
@@ -206,7 +208,8 @@
 
       .help {
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .warning {
@@ -298,6 +301,48 @@
         gap: 18px;
       }
 
+      .structure-overview {
+        display: grid;
+        gap: 12px;
+        margin: 16px 0 18px;
+        border: 1px solid #dbe2ee;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 16px;
+      }
+
+      .structure-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .structure-kpi,
+      .structure-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #d8e0ec;
+        border-radius: 999px;
+        background: #fff;
+        padding: 7px 10px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .structure-chip {
+        border-color: color-mix(in srgb, var(--chip-tone, var(--brand)) 36%, #d8e0ec);
+        color: var(--chip-tone, var(--brand));
+        cursor: pointer;
+      }
+
+      .structure-chip:hover {
+        background: #fff7f7;
+      }
+
       .campaign {
         --tone: var(--brand);
         --tone-bg: #fff4f4;
@@ -315,6 +360,13 @@
         align-items: center;
         gap: 12px;
         margin-bottom: 16px;
+      }
+
+      .campaign-header strong,
+      .adgroup-header strong,
+      .ad-header strong {
+        font-weight: 850;
+        letter-spacing: 0;
       }
 
       .campaign-pill {
@@ -340,6 +392,11 @@
         gap: 16px;
       }
 
+      .adgroup-list,
+      .ad-list {
+        margin-left: 12px;
+      }
+
       .adgroup,
       .ad {
         box-shadow: none;
@@ -348,6 +405,7 @@
 
       .ad {
         border-left: 4px solid var(--brand);
+        background: #fff;
       }
 
       .counter {
@@ -377,6 +435,112 @@
         left: -9999px;
       }
 
+      .review-overlay[hidden] {
+        display: none;
+      }
+
+      .review-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(15 23 42 / 58%);
+        padding: 24px;
+      }
+
+      .review-modal {
+        width: min(980px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 28px 80px rgb(15 23 42 / 24%);
+      }
+
+      .review-modal header,
+      .review-modal footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+        padding: 22px 24px;
+      }
+
+      .review-modal header {
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .review-modal footer {
+        border-top: 1px solid #e5e7eb;
+        background: #f8fafc;
+      }
+
+      .review-body {
+        display: grid;
+        gap: 14px;
+        padding: 20px 24px 24px;
+      }
+
+      .review-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .review-stat,
+      .review-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+      }
+
+      .review-stat b {
+        display: block;
+        color: #111827;
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      .review-stat span,
+      .review-section p {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .review-section {
+        display: grid;
+        gap: 10px;
+      }
+
+      .review-section h3 {
+        margin: 0;
+      }
+
+      .review-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .review-table th,
+      .review-table td {
+        border-top: 1px solid #edf1f7;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .review-table th {
+        color: #475569;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
       @media (max-width: 860px) {
         .page {
           width: min(100% - 24px, 760px);
@@ -384,8 +548,14 @@
         }
 
         .hero,
-        .grid {
+        .grid,
+        .review-grid {
           grid-template-columns: 1fr;
+        }
+
+        .adgroup-list,
+        .ad-list {
+          margin-left: 0;
         }
       }
     </style>
@@ -489,6 +659,7 @@
           <p class="warning">
             예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000은 시스템 표기값이며 실무상 더 높게 설정을 권장합니다.
           </p>
+          <div class="structure-overview" id="structure-overview" aria-live="polite"></div>
           <div class="campaign-list" id="campaign-list">
             <article class="campaign" data-campaign>
               <div class="campaign-header">
@@ -642,13 +813,41 @@
       </form>
     </main>
 
+    <div class="review-overlay" id="review-overlay" role="dialog" aria-modal="true" aria-labelledby="review-title" hidden>
+      <section class="review-modal" tabindex="-1">
+        <header>
+          <div>
+            <p class="eyebrow">제출 전 확인</p>
+            <h2 id="review-title">구글 시트 기록 내용을 확인해 주세요</h2>
+            <p class="note">확인 후 제출을 누를 때만 구글 시트로 전송됩니다.</p>
+          </div>
+          <span class="draft-badge">초안 페이지</span>
+        </header>
+        <div class="review-body" id="review-body"></div>
+        <footer>
+          <span class="help">캠페인명·광고그룹명·이미지 URL을 한 번 더 확인해 주세요.</span>
+          <div class="toolbar">
+            <button type="button" id="review-cancel">수정하기</button>
+            <button type="button" class="primary" id="review-confirm">확인 후 제출</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+
     <script>
       const form = document.querySelector("#creative-form");
       const campaignList = document.querySelector("#campaign-list");
+      const structureOverview = document.querySelector("#structure-overview");
       const statusEl = document.querySelector("#form-status");
       const bulkInput = document.querySelector("#bulk-workbook");
       const bulkResult = document.querySelector("#bulk-result");
       const startedAt = document.querySelector("#form-started-at");
+      const reviewOverlay = document.querySelector("#review-overlay");
+      const reviewModal = reviewOverlay.querySelector(".review-modal");
+      const reviewBody = document.querySelector("#review-body");
+      const reviewCancel = document.querySelector("#review-cancel");
+      const reviewConfirm = document.querySelector("#review-confirm");
+      let pendingSubmissionPayload = null;
       const tones = [
         { color: "#ed1c24", bg: "#fff4f4" },
         { color: "#0f62fe", bg: "#f2f7ff" },
@@ -705,6 +904,27 @@
         return /\.(png|jpe?g)([?#].*)?$/i.test(String(value || "").trim());
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function objectiveLabel(value) {
+        return value === "clicks" ? "Clicks = CPC" : "Views = CPM";
+      }
+
+      function budgetTypeLabel(value) {
+        return value === "daily" ? "일예산(daily)" : "총예산(lifetime)";
+      }
+
+      function countryLabel(values) {
+        return values?.length ? values.join(", ") : "빈칸(NULL) · 플랫폼 기본";
+      }
+
       function limits() {
         return selected("executionRoute") === "criteo"
           ? { title: 30, copy: 60, titleHelp: "크리테오 기준", copyHelp: "크리테오 기준" }
@@ -759,7 +979,6 @@
           const tone = tones[campaignIndex % tones.length];
           campaign.style.setProperty("--tone", tone.color);
           campaign.style.setProperty("--tone-bg", tone.bg);
-          campaign.querySelector(".campaign-pill").textContent = `캠페인 ${campaignNumber}`;
           campaign.querySelector(".remove-campaign").hidden = campaignItems().length === 1;
           isolateRadios(campaign, campaignNumber);
           const campaignName = campaign.querySelector(".campaign-name").value.trim();
@@ -772,7 +991,6 @@
           }
           adgroupItems(campaign).forEach((adgroup, adgroupIndex) => {
             const adgroupNumber = adgroupIndex + 1;
-            adgroup.querySelector(".adgroup-header h3").textContent = `광고그룹 ${campaignNumber}-${adgroupNumber}`;
             adgroup.querySelector(".remove-adgroup").hidden = adgroupItems(campaign).length === 1;
             const adgroupName = adgroup.querySelector(".adgroup-name").value.trim();
             adgroup.querySelector(".campaign-name-mirror").value = campaignName;
@@ -791,13 +1009,44 @@
             }
             adItems(adgroup).forEach((ad, adIndex) => {
               const adNumber = adIndex + 1;
-              ad.querySelector(".ad-header h3").textContent = `소재 ${campaignNumber}-${adgroupNumber}-${adNumber}`;
               ad.querySelector(".remove-ad").hidden = adItems(adgroup).length === 1;
+              const adTitle = ad.querySelector(".ad-title").value.trim();
+              ad.querySelector(".ad-header h3").innerHTML = `<strong>소재 ${campaignNumber}-${adgroupNumber}-${adNumber}</strong>${adTitle ? ` · ${escapeHtml(adTitle)}` : ""}`;
               ad.querySelector(".adgroup-name-mirror").value = adgroupName;
               updateCounters(ad);
             });
+            const adCount = adItems(adgroup).length;
+            adgroup.querySelector(".adgroup-header h3").innerHTML = `<strong>광고그룹 ${campaignNumber}-${adgroupNumber}</strong>${adgroupName ? ` · ${escapeHtml(adgroupName)}` : ""} · 소재 ${adCount}개`;
           });
+          const adgroupCount = adgroupItems(campaign).length;
+          const adCount = adgroupItems(campaign).reduce((sum, adgroup) => sum + adItems(adgroup).length, 0);
+          const objective = objectiveLabel(checkedValue(campaign, ".campaign-objective") || "views");
+          campaign.querySelector(".campaign-pill").textContent = `캠페인 ${campaignNumber}${campaignName ? ` · ${campaignName}` : ""} · ${objective} · 광고그룹 ${adgroupCount}개 · 소재 ${adCount}개`;
         });
+        updateStructureOverview();
+      }
+
+      function updateStructureOverview() {
+        const campaigns = campaignItems();
+        const adgroupCount = campaigns.reduce((sum, campaign) => sum + adgroupItems(campaign).length, 0);
+        const adCount = campaigns.reduce((sum, campaign) => (
+          sum + adgroupItems(campaign).reduce((inner, adgroup) => inner + adItems(adgroup).length, 0)
+        ), 0);
+        const chips = campaigns.map((campaign, index) => {
+          const tone = tones[index % tones.length].color;
+          const name = campaign.querySelector(".campaign-name").value.trim() || `캠페인 ${index + 1}`;
+          const groups = adgroupItems(campaign).length;
+          const ads = adgroupItems(campaign).reduce((sum, adgroup) => sum + adItems(adgroup).length, 0);
+          return `<button type="button" class="structure-chip" style="--chip-tone:${tone}" data-jump-campaign="${index}">${escapeHtml(name)} · 그룹 ${groups} · 소재 ${ads}</button>`;
+        }).join("");
+        structureOverview.innerHTML = `
+          <div class="structure-summary">
+            <span class="structure-kpi">캠페인 ${campaigns.length}개</span>
+            <span class="structure-kpi">광고그룹 ${adgroupCount}개</span>
+            <span class="structure-kpi">소재 ${adCount}개</span>
+          </div>
+          <div class="structure-summary">${chips}</div>
+        `;
       }
 
       function trimToOneAdgroup(campaign) {
@@ -967,6 +1216,120 @@
         return detail || "요청을 처리하지 못했습니다.";
       }
 
+      function payloadCounts(currentPayload) {
+        const campaigns = currentPayload.campaigns || [];
+        const adgroups = campaigns.reduce((sum, campaign) => sum + campaign.adgroups.length, 0);
+        const ads = campaigns.reduce((sum, campaign) => (
+          sum + campaign.adgroups.reduce((inner, adgroup) => inner + adgroup.ads.length, 0)
+        ), 0);
+        return { campaigns: campaigns.length, adgroups, ads };
+      }
+
+      function renderReview(currentPayload) {
+        const counts = payloadCounts(currentPayload);
+        const route = currentPayload.opsMeta.executionRoute === "criteo" ? "크리테오 경유" : "OpenAI 직접 업로드";
+        const campaignRows = currentPayload.campaigns.map((item, index) => {
+          const adCount = item.adgroups.reduce((sum, adgroup) => sum + adgroup.ads.length, 0);
+          const campaign = item.campaign;
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(campaign.campaign_name)}</td>
+              <td>${objectiveLabel(campaign.objective)}</td>
+              <td>${budgetTypeLabel(campaign.budget_type)} · ${Number(campaign.budget_max).toLocaleString("ko-KR")}</td>
+              <td>${escapeHtml(countryLabel(campaign.target_countries))}</td>
+              <td>광고그룹 ${item.adgroups.length}개 · 소재 ${adCount}개</td>
+            </tr>
+          `;
+        }).join("");
+        const adgroupRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.map((group) => `
+            <tr>
+              <td>${escapeHtml(group.adgroup.campaign_name)}</td>
+              <td>${escapeHtml(group.adgroup.adgroup_name)}</td>
+              <td>${group.adgroup.max_bid ? Number(group.adgroup.max_bid).toLocaleString("ko-KR") : "빈칸"}</td>
+              <td>${group.ads.length}개</td>
+            </tr>
+          `)
+        )).join("");
+        const adRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.flatMap((group) => group.ads.map((ad) => `
+            <tr>
+              <td>${escapeHtml(ad.adgroup_name)}</td>
+              <td>${escapeHtml(ad.title)}</td>
+              <td>${escapeHtml(ad.copy)}</td>
+              <td>${escapeHtml(ad.link)}</td>
+              <td>${escapeHtml(ad.image_link)}</td>
+            </tr>
+          `))
+        )).join("");
+        reviewBody.innerHTML = `
+          <div class="review-grid">
+            <div class="review-stat"><b>${counts.campaigns}</b><span>캠페인</span></div>
+            <div class="review-stat"><b>${counts.adgroups}</b><span>광고그룹</span></div>
+            <div class="review-stat"><b>${counts.ads}</b><span>소재</span></div>
+            <div class="review-stat"><b>${escapeHtml(route)}</b><span>업로드 채널</span></div>
+          </div>
+          <section class="review-section">
+            <h3>기본 정보</h3>
+            <p>광고주 ${escapeHtml(currentPayload.opsMeta.advertiserName)} · Ads Manager ${escapeHtml(currentPayload.opsMeta.adsManagerAccount)} · 제출자 ${escapeHtml(currentPayload.opsMeta.submitterName)}</p>
+          </section>
+          <section class="review-section">
+            <h3>캠페인 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>#</th><th>캠페인명</th><th>목표</th><th>예산</th><th>국가</th><th>구조</th></tr></thead>
+              <tbody>${campaignRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>광고그룹 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>campaign_name</th><th>adgroup_name</th><th>max_bid</th><th>소재 수</th></tr></thead>
+              <tbody>${adgroupRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>소재 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>adgroup_name</th><th>title</th><th>copy</th><th>link</th><th>image_link</th></tr></thead>
+              <tbody>${adRows}</tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      function openReviewModal(currentPayload) {
+        pendingSubmissionPayload = currentPayload;
+        renderReview(currentPayload);
+        reviewConfirm.disabled = false;
+        reviewOverlay.hidden = false;
+        reviewModal.focus();
+      }
+
+      function closeReviewModal() {
+        reviewOverlay.hidden = true;
+      }
+
+      async function submitReviewedPayload() {
+        if (!pendingSubmissionPayload) return;
+        reviewConfirm.disabled = true;
+        closeReviewModal();
+        setStatus("구글 시트에 기록하고 있습니다.");
+        const response = await fetch("/intake", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pendingSubmissionPayload),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setStatus(`기록 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
+          return;
+        }
+        setStatus(`기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST`, "success");
+        pendingSubmissionPayload = null;
+        startedAt.value = String(Date.now());
+      }
+
       function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -1001,19 +1364,7 @@
         event.preventDefault();
         setStatus("");
         if (!validateForm()) return;
-        setStatus("구글 시트에 기록하고 있습니다.");
-        const response = await fetch("/intake", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload()),
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          setStatus(`기록 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
-          return;
-        }
-        setStatus(`기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST`, "success");
-        startedAt.value = String(Date.now());
+        openReviewModal(payload());
       }
 
       async function inspectWorkbook(file) {
@@ -1092,6 +1443,15 @@
           return syncState();
         }
       });
+      structureOverview.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-jump-campaign]");
+        if (!chip) return;
+        const index = Number(chip.dataset.jumpCampaign);
+        const target = campaignItems()[index];
+        target?.scrollIntoView({ block: "start", behavior: "smooth" });
+      });
+      reviewCancel.addEventListener("click", closeReviewModal);
+      reviewConfirm.addEventListener("click", submitReviewedPayload);
       bulkInput.addEventListener("change", () => inspectWorkbook(bulkInput.files?.[0]));
       syncState();
     </script>
