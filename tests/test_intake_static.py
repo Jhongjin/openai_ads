@@ -79,6 +79,14 @@ class IntakeFormStaticTests(unittest.TestCase):
         self.assertLess(add_campaign.index("isolateCampaignRadioNames"), add_campaign.index("campaignList.append(item)"))
         self.assertIn('campaignList.addEventListener("change", handleIntakeHierarchyInput)', html)
 
+    def test_intake_payload_selectors_follow_collapsible_nesting(self) -> None:
+        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('querySelectorAll(":scope .adgroup-list > [data-adgroup-item]")', html)
+        self.assertIn('querySelectorAll(":scope .ad-list > [data-ad-item]")', html)
+        self.assertNotIn('querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")', html)
+        self.assertNotIn('querySelectorAll(":scope > .ad-list > [data-ad-item]")', html)
+
 
 if __name__ == "__main__":
     unittest.main()

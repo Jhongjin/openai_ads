@@ -5416,11 +5416,11 @@ oaiq("measure", "order_created", {
       }
 
       function adgroupItems(campaignItem) {
-        return [...campaignItem.querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")];
+        return [...campaignItem.querySelectorAll(":scope .adgroup-list > [data-adgroup-item]")];
       }
 
       function adItems(adgroupItem) {
-        return [...adgroupItem.querySelectorAll(":scope > .ad-list > [data-ad-item]")];
+        return [...adgroupItem.querySelectorAll(":scope .ad-list > [data-ad-item]")];
       }
 
       function checkedValue(container, selector) {
