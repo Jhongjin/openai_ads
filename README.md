@@ -77,7 +77,10 @@ Invoke-RestMethod -Method Post `
 - 광고주가 작성한 공식 워크북 `.xlsx`를 업로드하면 `campaigns`, `adgroups`, `ads` 시트와 필수 컬럼을 먼저 검수할 수 있습니다.
 - 한 광고주 접수 안에서 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.
 - 공식 템플릿의 `oaitestcmp...`, `oaitestadg...` 행은 샘플 데이터입니다. Ads Manager 업로드와 이 도구의 검수에서는 실제 데이터로 보지 않으므로, 샘플값을 실제 `campaign_name`/`adgroup_name`으로 바꾸거나 샘플 행을 삭제한 뒤 새 행을 입력해야 합니다.
+- `campaign_name`과 `adgroup_name`은 벌크 업로드 오류 방지를 위해 영문, 숫자, 언더스코어(`_`)만 사용합니다. 공식 API 문서에는 세부 정규식이 공개되어 있지 않지만, 워크북에는 `no special characters`로 안내되므로 공백, 한글, 하이픈, 기타 특수문자는 피합니다.
+- 한국 집행도 현재 Ads Manager 벌크 업로드에서는 `target_countries`를 빈칸(NULL)으로 둡니다. `["KR"]`을 넣으면 업로드 오류가 확인되며, 빈칸은 업로더 미리보기에서 `ALL_COUNTRIES`로 표시될 수 있습니다.
 - `max_bid`는 `Clicks = CPC` 캠페인에서만 입력합니다. `Views = CPM` 캠페인의 광고그룹은 공식 업로더 기준으로 `max_bid`를 빈칸으로 두어야 하며, 값이 있으면 검수 오류로 표시됩니다.
+- `ads.image_link`는 실제 PNG/JPG 직접 이미지 URL이어야 합니다. 홈페이지나 랜딩 페이지 URL처럼 `text/html`을 반환하는 주소는 OpenAI 업로더에서 이미지 수집 오류가 납니다.
 - 구글 시트 기록을 사용할 경우 접수번호를 공통 키로 넣고, `campaigns`에는 캠페인 수만큼, `adgroups`에는 광고그룹 수만큼, `ads`에는 소재 수만큼 행이 추가됩니다.
 - 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 초안 페이지는 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다.
 - 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정되고, 소재 글자수 상한은 제목 30자 / 설명 60자로 전환됩니다.
@@ -110,7 +113,7 @@ Apps Script로 전달되는 최종 body:
         "launch_date": "2026-07-01",
         "end_date": "2026-07-31",
         "objective": "views",
-        "target_countries": ["KR"]
+        "target_countries": []
       },
       "campaigns": [
         {
@@ -120,7 +123,7 @@ Apps Script로 전달되는 최종 body:
           "launch_date": "2026-07-01",
           "end_date": "2026-07-31",
           "objective": "views",
-          "target_countries": ["KR"]
+          "target_countries": []
         },
         {
           "campaign_name": "summer_clicks",
@@ -129,7 +132,7 @@ Apps Script로 전달되는 최종 body:
           "launch_date": "2026-07-01",
           "end_date": "2026-07-31",
           "objective": "clicks",
-          "target_countries": ["KR"]
+          "target_countries": []
         }
       ],
       "adgroups": [

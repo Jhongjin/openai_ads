@@ -16,7 +16,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 KST = ZoneInfo("Asia/Seoul")
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_SAFE_NAME_RE = re.compile(r"^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ _-]+$")
+_SAFE_NAME_RE = re.compile(r"^[0-9A-Za-z_]+$")
+_DIRECT_IMAGE_URL_RE = re.compile(r"\.(?:png|jpe?g)(?:[?#].*)?$", re.IGNORECASE)
 _RECEIPT_LOCK = threading.Lock()
 _RECEIPT_COUNTERS: dict[str, int] = {}
 _RATE_LIMIT_SECONDS = 10
@@ -42,10 +43,23 @@ def _valid_http_url(value: str, label: str = "URL") -> str:
     return text
 
 
+def _valid_direct_image_url(value: str, label: str = "이미지 URL") -> str:
+    text = _valid_http_url(value, label)
+    if not _DIRECT_IMAGE_URL_RE.search(text):
+        raise ValueError(
+            f"{label}은 실제 PNG/JPG 직접 이미지 URL이어야 합니다. "
+            "홈페이지/랜딩 페이지 URL이나 뷰어 링크는 OpenAI 업로더에서 text/html 오류가 날 수 있습니다."
+        )
+    return text
+
+
 def _valid_safe_name(value: str, label: str) -> str:
     text = _require_text(value)
     if not _SAFE_NAME_RE.fullmatch(text):
-        raise ValueError(f"{label}에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.")
+        raise ValueError(
+            f"{label}에는 영문, 숫자, 언더스코어(_)만 사용할 수 있습니다. "
+            "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+        )
     return text
 
 
@@ -162,7 +176,7 @@ class CampaignInfo(BaseModel):
     launch_date: date | None = None
     end_date: date | None = None
     objective: Literal["views", "clicks"]
-    target_countries: list[str] = Field(default_factory=lambda: ["KR"])
+    target_countries: list[str] = Field(default_factory=list)
 
     @field_validator("campaign_name")
     @classmethod
@@ -180,8 +194,6 @@ class CampaignInfo(BaseModel):
     @classmethod
     def _valid_countries(cls, values: list[str]) -> list[str]:
         cleaned = [str(value or "").strip().upper() for value in values if str(value or "").strip()]
-        if not cleaned:
-            cleaned = ["KR"]
         invalid = [value for value in cleaned if not re.fullmatch(r"[A-Z]{2}", value)]
         if invalid:
             raise ValueError("국가는 2자리 ISO 코드로 저장해야 합니다.")
@@ -249,7 +261,7 @@ class AdInfo(BaseModel):
     @field_validator("image_link")
     @classmethod
     def _valid_image_link(cls, value: str) -> str:
-        return _valid_http_url(value, "이미지 URL")
+        return _valid_direct_image_url(value, "이미지 URL")
 
 
 class AdGroupSubmission(BaseModel):
@@ -430,6 +442,8 @@ WORKBOOK_COLUMNS = {
 
 
 def _sheet_value(value: Any) -> Any:
+    if isinstance(value, list) and not value:
+        return ""
     if isinstance(value, (list, dict)):
         return json.dumps(value, ensure_ascii=False)
     return "" if value is None else value
@@ -457,6 +471,10 @@ def _is_template_sample_value(value: Any) -> bool:
 
 def _is_http_url(value: str) -> bool:
     return value.lower().startswith(("http://", "https://"))
+
+
+def _is_direct_image_url(value: str) -> bool:
+    return bool(_DIRECT_IMAGE_URL_RE.search(value))
 
 
 def _json_array(value: Any, *, label: str, row_number: int, errors: list[str]) -> list[Any] | None:
@@ -595,7 +613,10 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         elif _is_template_sample_value(campaign_name):
             errors.append(f"campaigns 행 {row_number}: 공식 샘플 campaign_name(oaitest...)을 실제 캠페인명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(campaign_name):
-            errors.append(f"campaigns 행 {row_number}: campaign_name에는 특수문자를 사용할 수 없습니다.")
+            errors.append(
+                f"campaigns 행 {row_number}: campaign_name은 영문, 숫자, 언더스코어(_)만 사용하세요. "
+                "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+            )
         elif campaign_name in campaign_objectives:
             errors.append(f"campaigns 행 {row_number}: campaign_name '{campaign_name}'이 중복되었습니다.")
         else:
@@ -615,8 +636,17 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
                 invalid = [str(country) for country in countries if not re.fullmatch(r"[A-Z]{2}", str(country).strip().upper())]
                 if invalid:
                     errors.append(f"campaigns 행 {row_number}: target_countries는 2자리 국가 코드 배열이어야 합니다.")
+                normalized = {str(country).strip().upper() for country in countries}
+                if "KR" in normalized:
+                    errors.append(
+                        f"campaigns 행 {row_number}: 현재 OpenAI Ads Manager 벌크 업로드에서 "
+                        "target_countries에 KR을 넣으면 오류가 확인되었습니다. 한국 집행은 이 칸을 빈칸(NULL)으로 두세요."
+                    )
         else:
-            warnings.append(f"campaigns 행 {row_number}: target_countries가 비어 있어 Ads Manager에서 ALL_COUNTRIES로 보일 수 있습니다. 한국 타겟이면 [\"KR\"]을 입력하세요.")
+            warnings.append(
+                f"campaigns 행 {row_number}: target_countries는 빈칸입니다. "
+                "현재 한국 집행 벌크 업로드는 빈칸(NULL)으로 두면 Ads Manager에서 ALL_COUNTRIES로 표시되며 업로드됩니다."
+            )
 
     adgroup_campaigns: dict[str, str] = {}
     for row in parsed_rows["adgroups"]:
@@ -636,7 +666,10 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         elif _is_template_sample_value(adgroup_name):
             errors.append(f"adgroups 행 {row_number}: 공식 샘플 adgroup_name(oaitest...)을 실제 광고그룹명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(adgroup_name):
-            errors.append(f"adgroups 행 {row_number}: adgroup_name에는 특수문자를 사용할 수 없습니다.")
+            errors.append(
+                f"adgroups 행 {row_number}: adgroup_name은 영문, 숫자, 언더스코어(_)만 사용하세요. "
+                "공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 피해주세요."
+            )
         elif adgroup_name in adgroup_campaigns:
             errors.append(f"adgroups 행 {row_number}: adgroup_name '{adgroup_name}'이 중복되었습니다.")
         else:
@@ -680,6 +713,11 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"ads 행 {row_number}: image_link는 필수입니다.")
         elif not _is_http_url(image_link):
             errors.append(f"ads 행 {row_number}: image_link는 http:// 또는 https://로 시작해야 합니다.")
+        elif not _is_direct_image_url(image_link):
+            errors.append(
+                f"ads 행 {row_number}: image_link는 실제 PNG/JPG 직접 이미지 URL이어야 합니다. "
+                "홈페이지/랜딩 페이지 URL을 넣으면 OpenAI 업로더에서 image/*가 아닌 text/html 응답으로 실패합니다."
+            )
 
     summary["ok"] = not errors and all(
         item.get("rows", 0) > 0 for item in summary["sheets"].values()

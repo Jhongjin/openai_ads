@@ -3451,7 +3451,7 @@
                   <div class="field">
                     <label class="required">캠페인명</label>
                     <input class="campaign-name" required />
-                    <span class="field-help">campaign_name · 특수문자 불가</span>
+                    <span class="field-help">campaign_name · 영문/숫자/언더스코어(_) 권장. 공백·한글·하이픈 제외</span>
                   </div>
                   <div class="field">
                     <label class="required">예산 금액</label>
@@ -3487,11 +3487,12 @@
                   <div class="field">
                     <label>국가</label>
                     <select class="target-countries">
-                      <option selected value="KR">대한민국(KR)</option>
+                      <option selected value="">비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
+                      <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
                       <option value="US">미국(US)</option>
                       <option value="JP">일본(JP)</option>
                     </select>
-                    <span class="field-help">target_countries · 2자리 코드 배열로 저장됩니다. 예: ["KR"]</span>
+                    <span class="field-help">target_countries · 한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
                   </div>
                 </div>
 
@@ -3521,7 +3522,7 @@
                       <div class="field">
                         <label class="required">광고그룹명</label>
                         <input class="adgroup-name" required />
-                        <span class="field-help">adgroup_name · 특수문자 불가. 소재 연결을 위해 접수 내 중복 불가</span>
+                        <span class="field-help">adgroup_name · 영문/숫자/언더스코어(_) 권장. 소재 연결을 위해 접수 내 중복 불가</span>
                       </div>
                       <div class="field">
                         <label>최대 입찰가</label>
@@ -3576,7 +3577,7 @@
                           <div class="field full">
                             <label class="required">이미지 URL</label>
                             <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
-                            <span class="field-help">image_link · 정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
+                            <span class="field-help">image_link · 실제 PNG/JPG 직접 이미지 URL. 랜딩 페이지나 홈페이지 URL은 업로드 실패 가능</span>
                           </div>
                           <div class="field full">
                             <label>이미지 파일 첨부</label>
@@ -5479,7 +5480,16 @@ oaiq("measure", "order_created", {
       }
 
       function isSafeWorkbookName(value) {
-        return /^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ _-]+$/u.test(String(value || "").trim());
+        return /^[0-9A-Za-z_]+$/.test(String(value || "").trim());
+      }
+
+      function selectedTargetCountries(campaignItem) {
+        const value = campaignItem.querySelector(".target-countries")?.value.trim();
+        return value ? [value] : [];
+      }
+
+      function looksLikeDirectImageUrl(value) {
+        return /\.(png|jpe?g)([?#].*)?$/i.test(String(value || "").trim());
       }
 
       function campaignItems() {
@@ -5699,7 +5709,12 @@ oaiq("measure", "order_created", {
           const campaignNameInput = campaignItem.querySelector(".campaign-name");
           const campaignName = campaignNameInput.value.trim();
           if (!isSafeWorkbookName(campaignName)) {
-            focusIntakeField(campaignNameInput, "캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.");
+            focusIntakeField(campaignNameInput, "캠페인명은 영문, 숫자, 언더스코어(_)만 사용해 주세요. 공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 제외합니다.");
+            return false;
+          }
+          const targetCountry = campaignItem.querySelector(".target-countries")?.value.trim();
+          if (targetCountry === "KR") {
+            focusIntakeField(campaignItem.querySelector(".target-countries"), "현재 OpenAI Ads Manager 벌크 업로드에서 KR target_countries 오류가 확인되었습니다. 한국 집행은 국가를 빈칸으로 두세요.");
             return false;
           }
           if (campaignNames.has(campaignName)) {
@@ -5732,8 +5747,15 @@ oaiq("measure", "order_created", {
               return false;
             }
             if (!isSafeWorkbookName(adgroupName)) {
-              focusIntakeField(adgroupNameInput, "광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.");
+              focusIntakeField(adgroupNameInput, "광고그룹명은 영문, 숫자, 언더스코어(_)만 사용해 주세요. 공백, 한글, 하이픈, 기타 특수문자는 벌크 업로드 오류 방지를 위해 제외합니다.");
               return false;
+            }
+            for (const adItem of adItems(adgroupItem)) {
+              const imageInput = adItem.querySelector(".ad-image-link");
+              if (!looksLikeDirectImageUrl(imageInput.value)) {
+                focusIntakeField(imageInput, "이미지 URL은 실제 PNG/JPG 직접 이미지 주소여야 합니다. 홈페이지/랜딩 페이지 URL은 OpenAI 업로더에서 text/html 오류가 날 수 있습니다.");
+                return false;
+              }
             }
             if (adgroupNames.has(adgroupName)) {
               focusIntakeField(adgroupNameInput, `광고그룹명 "${adgroupName}"이 중복되었습니다. ads 탭 연결을 위해 광고그룹명은 접수 내에서 고유해야 합니다.`);
@@ -5753,7 +5775,7 @@ oaiq("measure", "order_created", {
           launch_date: campaignItem.querySelector(".launch-date").value || null,
           end_date: campaignItem.querySelector(".end-date").value || null,
           objective: checkedValue(campaignItem, ".campaign-objective"),
-          target_countries: [campaignItem.querySelector(".target-countries").value || "KR"],
+          target_countries: selectedTargetCountries(campaignItem),
         };
       }
 

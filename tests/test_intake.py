@@ -36,30 +36,30 @@ def valid_payload() -> dict:
             "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
         },
         "campaign": {
-            "campaign_name": "ChatGPT Ads 테스트",
+            "campaign_name": "ChatGPT_Ads_Test",
             "budget_max": 4000000,
             "budget_type": "lifetime",
             "launch_date": tomorrow.isoformat(),
             "end_date": end.isoformat(),
             "objective": "clicks",
-            "target_countries": ["KR"],
+            "target_countries": [],
         },
         "adgroup": {
-            "campaign_name": "ChatGPT Ads 테스트",
-            "adgroup_name": "테스트 그룹",
+            "campaign_name": "ChatGPT_Ads_Test",
+            "adgroup_name": "test_group",
             "max_bid": 1200,
             "keywords": ["밀키트", "저녁"],
         },
         "ads": [
             {
-                "adgroup_name": "테스트 그룹",
+                "adgroup_name": "test_group",
                 "title": "건강한 저녁 준비",
                 "copy": "빠르게 차리는 균형 잡힌 한 끼",
                 "link": "https://example.com/landing?utm_source=openai",
                 "image_link": "https://example.com/image1.jpg",
             },
             {
-                "adgroup_name": "테스트 그룹",
+                "adgroup_name": "test_group",
                 "title": "퇴근 후 간편 식사",
                 "copy": "오늘 저녁 고민을 줄여주는 밀키트",
                 "link": "https://example.com/landing-2",
@@ -79,9 +79,9 @@ class IntakeValidationTests(unittest.TestCase):
         )
 
         self.assertEqual(payload["secret"], "secret")
-        self.assertEqual(payload["data"]["campaign"]["campaign_name"], "ChatGPT Ads 테스트")
+        self.assertEqual(payload["data"]["campaign"]["campaign_name"], "ChatGPT_Ads_Test")
         self.assertEqual(payload["data"]["campaign"]["budget_max"], "4000000")
-        self.assertEqual(payload["data"]["campaign"]["target_countries"], ["KR"])
+        self.assertEqual(payload["data"]["campaign"]["target_countries"], [])
         self.assertEqual(len(payload["data"]["adgroups"]), 1)
         self.assertEqual(len(payload["data"]["ads"]), 2)
         self.assertEqual(payload["data"]["adgroups"][0]["keywords"], ["밀키트", "저녁"])
@@ -108,7 +108,7 @@ class IntakeValidationTests(unittest.TestCase):
                     "launch_date": tomorrow.isoformat(),
                     "end_date": end.isoformat(),
                     "objective": "views",
-                    "target_countries": ["KR"],
+                    "target_countries": [],
                 },
                 "adgroups": [
                     {
@@ -136,7 +136,7 @@ class IntakeValidationTests(unittest.TestCase):
                     "launch_date": tomorrow.isoformat(),
                     "end_date": end.isoformat(),
                     "objective": "clicks",
-                    "target_countries": ["KR"],
+                    "target_countries": [],
                 },
                 "adgroups": [
                     {
@@ -185,7 +185,7 @@ class IntakeValidationTests(unittest.TestCase):
 
     def test_rejects_special_characters_in_names(self) -> None:
         payload = valid_payload()
-        payload["campaign"]["campaign_name"] = "캠페인#1"
+        payload["campaign"]["campaign_name"] = "campaign-1"
 
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
@@ -341,6 +341,40 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertFalse(summary["ok"])
         self.assertTrue(any("Views(CPM)" in error and "max_bid" in error for error in summary["errors"]))
         self.assertTrue(any("존재하지 않는 adgroup_name" in error for error in summary["errors"]))
+
+    def test_inspect_workbook_rejects_kr_target_country_and_page_image_url(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["nasmedia2188", 5000, "lifetime", "2026-06-30", "2026-07-06", "views", '["KR"]'],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["nasmedia2188", "nasmedia2188_ag1", "", ""],
+            ],
+            "ads": [
+                ["adgroup_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188_ag1", "내사이트야", "내사이트라고", "https://example.com", "https://openads.admate.ai.kr/"],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertTrue(any("target_countries에 KR" in error for error in summary["errors"]))
+        self.assertTrue(any("PNG/JPG 직접 이미지 URL" in error for error in summary["errors"]))
 
 
 if __name__ == "__main__":
