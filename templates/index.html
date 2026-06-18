@@ -1481,12 +1481,35 @@
 
       .tabs {
         display: grid;
-        width: min(1120px, 100%);
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        width: min(1240px, 100%);
+        grid-template-columns: minmax(0, 4fr) minmax(0, 3fr);
         gap: 8px;
         border: 0;
         background: transparent;
         padding: 0;
+      }
+
+      .tab-group {
+        display: grid;
+        align-items: stretch;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .tab-group[data-group="tools"] {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .tab-group[data-group="docs"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .tab-group-label {
+        grid-column: 1 / -1;
+        color: #697077;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0;
       }
 
       .tab {
@@ -1794,12 +1817,22 @@
       }
 
       .tabs {
-        width: min(1120px, 100%);
+        width: min(1240px, 100%);
         margin-bottom: 16px;
         border: 1px solid var(--line);
         border-radius: var(--radius-lg);
         background: #fff;
         padding: 6px;
+      }
+
+      .tab-group {
+        border-radius: var(--radius-md);
+        background: #fbfcfe;
+        padding: 6px;
+      }
+
+      .tab-group-label {
+        padding: 0 2px 2px;
       }
 
       .tab {
@@ -1821,14 +1854,6 @@
 
       .tab > span:last-child {
         min-width: 0;
-        overflow-wrap: anywhere;
-      }
-
-      .tab[data-tab="setupGuide"] {
-        min-width: 188px;
-      }
-
-      .tab[data-tab="setupGuide"] > span:last-child {
         white-space: nowrap;
         overflow-wrap: normal;
       }
@@ -2300,8 +2325,20 @@
           display: grid;
           width: calc(100vw - 28px) !important;
           max-width: calc(100vw - 28px);
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          overflow: hidden;
+          grid-template-columns: 1fr;
+          overflow: visible;
+        }
+
+        .tab-group {
+          padding: 5px;
+        }
+
+        .tab-group[data-group="tools"] {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .tab-group[data-group="docs"] {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .tab {
@@ -2320,6 +2357,7 @@
           min-width: 0;
         }
 
+        .tab > span:last-child,
         .tab[data-tab="setupGuide"] > span:last-child {
           white-space: normal;
           overflow-wrap: anywhere;
@@ -2678,34 +2716,40 @@
       </header>
 
       <nav class="tabs" aria-label="검사 선택">
-        <button class="tab active" data-tab="chat" type="button">
-          <span class="tab-icon">AI</span>
-          <span>광고 Q&A</span>
-        </button>
-        <button class="tab" data-tab="crawler" type="button">
-          <span class="tab-icon">URL</span>
-          <span>랜딩 URL 검사</span>
-        </button>
-        <button class="tab" data-tab="favicon" type="button">
-          <span class="tab-icon">ICO</span>
-          <span>파비콘 검사</span>
-        </button>
-        <button class="tab" data-tab="intake" type="button">
-          <span class="tab-icon">IN</span>
-          <span>집행 의뢰 접수</span>
-        </button>
-        <button class="tab" data-tab="slides" type="button">
-          <span class="tab-icon">PDF</span>
-          <span>광고주 안내 자료</span>
-        </button>
-        <button class="tab" data-tab="setupGuide" type="button">
-          <span class="tab-icon">SET</span>
-          <span>캠페인 세팅 가이드</span>
-        </button>
-        <button class="tab" data-tab="pixelGuide" type="button">
-          <span class="tab-icon">PX</span>
-          <span>픽셀 설치 가이드</span>
-        </button>
+        <div class="tab-group" data-group="tools">
+          <span class="tab-group-label">업무 도구</span>
+          <button class="tab active" data-tab="chat" type="button">
+            <span class="tab-icon">AI</span>
+            <span>광고 Q&A</span>
+          </button>
+          <button class="tab" data-tab="crawler" type="button">
+            <span class="tab-icon">URL</span>
+            <span>랜딩 URL 검사</span>
+          </button>
+          <button class="tab" data-tab="favicon" type="button">
+            <span class="tab-icon">ICO</span>
+            <span>파비콘 검사</span>
+          </button>
+          <button class="tab" data-tab="intake" type="button">
+            <span class="tab-icon">IN</span>
+            <span>집행 의뢰 접수</span>
+          </button>
+        </div>
+        <div class="tab-group" data-group="docs">
+          <span class="tab-group-label">안내 자료</span>
+          <button class="tab" data-tab="slides" type="button">
+            <span class="tab-icon">PDF</span>
+            <span>광고주 안내 자료</span>
+          </button>
+          <button class="tab" data-tab="setupGuide" type="button">
+            <span class="tab-icon">SET</span>
+            <span>캠페인 세팅 가이드</span>
+          </button>
+          <button class="tab" data-tab="pixelGuide" type="button">
+            <span class="tab-icon">PX</span>
+            <span>픽셀 설치 가이드</span>
+          </button>
+        </div>
       </nav>
 
       <section class="panel active" id="chat-panel">
