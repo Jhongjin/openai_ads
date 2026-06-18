@@ -128,6 +128,7 @@ PAGE_LABELS = {
     "slides": "광고주 안내 자료",
     "setupGuide": "캠페인 세팅 가이드",
     "pixelGuide": "픽셀 설치 가이드",
+    "apiOps": "API 운영 검토",
 }
 
 
@@ -177,6 +178,11 @@ def creative_upload_draft_page() -> FileResponse:
 
 @app.get("/ads-api-draft", include_in_schema=False)
 def ads_api_draft_page() -> FileResponse:
+    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
+
+
+@app.get("/ads-api", include_in_schema=False)
+def ads_api_page() -> FileResponse:
     return FileResponse(project_root() / "templates" / "ads_api_draft.html")
 
 

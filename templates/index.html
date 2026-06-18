@@ -2036,7 +2036,7 @@
       .tabs {
         display: grid;
         width: min(1240px, 100%);
-        grid-template-columns: minmax(0, 4fr) minmax(0, 3fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         border: 0;
         background: transparent;
@@ -2055,7 +2055,7 @@
       }
 
       .tab-group[data-group="docs"] {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .tab-group-label {
@@ -2102,6 +2102,11 @@
 
       .tab[data-tab="setupGuide"] {
         --tab-color: #8f1d1d;
+      }
+
+      .tab[data-page-link="apiOps"] {
+        --tab-color: #0f766e;
+        text-decoration: none;
       }
 
       .tab-icon {
@@ -2961,7 +2966,7 @@
         }
 
         .tab-group[data-group="docs"] {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         .tab {
@@ -3478,6 +3483,10 @@
             <span class="tab-icon">PX</span>
             <span>픽셀 설치 가이드</span>
           </button>
+          <a class="tab" data-page-link="apiOps" href="/ads-api">
+            <span class="tab-icon">API</span>
+            <span>API 운영 검토</span>
+          </a>
         </div>
       </nav>
 
@@ -5016,6 +5025,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       }
 
       tabs.forEach((tab) => {
+        if (!tab.dataset.tab) return;
         tab.addEventListener("click", () => activateTab(tab.dataset.tab));
       });
 

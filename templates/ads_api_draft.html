@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenAI Ads API 운영 검토 초안</title>
+    <title>OpenAI Ads API 운영 검토</title>
     <style>
       @font-face {
         font-family: "Pretendard Variable";
@@ -135,6 +135,21 @@
         font-size: 13px;
         font-weight: 850;
         white-space: nowrap;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        padding: 9px 12px;
+        color: #1e293b;
+        font-size: 13px;
+        font-weight: 850;
+        text-decoration: none;
       }
 
       .updated {
@@ -370,15 +385,16 @@
       <section class="hero">
         <div>
           <p class="eyebrow">OpenAI Ads API</p>
-          <h1>OpenAI Ads API 운영 검토 초안</h1>
+          <h1>OpenAI Ads API 운영 검토</h1>
           <p class="note">
             운영 대시보드, 예산 소진 모니터링, 캠페인·광고 소재 자동화에서
-            무엇을 API로 처리할 수 있는지 정리한 검토용 별도 페이지입니다.
+            무엇을 API로 처리할 수 있는지 정리한 사내 운영 검토 페이지입니다.
           </p>
         </div>
         <div>
-          <span class="draft-badge">별도 초안 페이지 · 메인 메뉴 미노출</span>
+          <span class="draft-badge">공식 문서 기반 · 권한 확인 필요</span>
           <div class="updated">최종 업데이트: 2026-06-18</div>
+          <a class="back-link" href="/">메인 도구로 돌아가기</a>
         </div>
       </section>
 
@@ -609,5 +625,24 @@ aggregation_level=campaign
         달라질 수 있습니다.
       </p>
     </main>
+    <script>
+      (() => {
+        const payload = JSON.stringify({ page: "apiOps", label: "API 운영 검토" });
+        try {
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon("/api/analytics/visit", new Blob([payload], { type: "application/json" }));
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
+        fetch("/api/analytics/visit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      })();
+    </script>
   </body>
 </html>
