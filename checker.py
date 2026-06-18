@@ -29,6 +29,22 @@ Verdict = Literal["allow", "warn", "block"]
 
 
 @dataclass(frozen=True)
+class BotDetail:
+    label: str
+    status: Verdict
+    summary: str
+    detail: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "label": self.label,
+            "status": self.status,
+            "summary": self.summary,
+            "detail": self.detail,
+        }
+
+
+@dataclass(frozen=True)
 class RobotsRule:
     directive: Literal["allow", "disallow"]
     value: str
@@ -55,6 +71,7 @@ class CheckResult:
     robots_txt: str
     firewall_hint: bool = False
     firewall_badge: str | None = None
+    bot_details: tuple[BotDetail, ...] = ()
 
     def to_dict(self) -> dict:
         return {
@@ -71,6 +88,7 @@ class CheckResult:
             "robots_txt": self.robots_txt,
             "firewall_hint": self.firewall_hint,
             "firewall_badge": self.firewall_badge,
+            "bot_details": [detail.to_dict() for detail in self.bot_details],
         }
 
 
@@ -215,6 +233,142 @@ def _matching_disallow(groups: list[RobotsGroup], path: str) -> str | None:
     return None
 
 
+def _groups_for_bot(
+    groups: list[RobotsGroup],
+    bot: str,
+) -> tuple[list[RobotsGroup], str]:
+    bot_lower = bot.lower()
+    explicit_groups = [group for group in groups if bot_lower in group.agents]
+    if explicit_groups:
+        return explicit_groups, f"User-agent: {bot}"
+
+    star_groups = _star_groups(groups)
+    if star_groups:
+        return star_groups, "User-agent: *"
+
+    return [], ""
+
+
+def _bot_detail_for_robots(groups: list[RobotsGroup], bot: str, path: str) -> BotDetail:
+    bot_groups, source_label = _groups_for_bot(groups, bot)
+    if not bot_groups:
+        if groups:
+            return BotDetail(
+                label=bot,
+                status="warn",
+                summary="허용 여부 확인 필요",
+                detail=(
+                    f"{bot} 전용 설정도, 전체 로봇(User-agent: *) 설정도 없습니다. "
+                    "해석상 접근 가능할 수 있지만 광고주 개발팀에 명시 허용을 요청하는 것이 안전합니다."
+                ),
+            )
+        return BotDetail(
+            label=bot,
+            status="allow",
+            summary="차단 설정 없음",
+            detail="크롤러 허용 설정(robots.txt)에 별도 차단 규칙이 없어 접근 가능으로 봅니다.",
+        )
+
+    if _has_root_disallow(bot_groups):
+        return BotDetail(
+            label=bot,
+            status="block",
+            summary="사이트 전체 접근 불가",
+            detail=(
+                f"{source_label} 그룹에 Disallow: / 규칙이 있어 {bot}이 사이트 전체에 "
+                "접근할 수 없습니다."
+            ),
+        )
+
+    matched_disallow = _matching_disallow(bot_groups, path)
+    if matched_disallow:
+        display_path = path or "/"
+        return BotDetail(
+            label=bot,
+            status="block",
+            summary="광고 랜딩 경로 접근 불가",
+            detail=(
+                f"{source_label} 그룹의 Disallow: {matched_disallow} 규칙이 광고 랜딩 경로 "
+                f"{display_path}와 매칭됩니다. 사이트 전체가 아니라 이 랜딩 URL이 막힌 상태입니다."
+            ),
+        )
+
+    if _has_explicit_allow(bot_groups):
+        return BotDetail(
+            label=bot,
+            status="allow",
+            summary="접근 허용",
+            detail=f"{source_label} 그룹에서 차단 규칙 없이 허용 규칙이 확인됩니다.",
+        )
+
+    return BotDetail(
+        label=bot,
+        status="allow",
+        summary="전체 차단 없음",
+        detail=f"{source_label} 그룹에 사이트 전체 또는 해당 랜딩 경로를 막는 규칙이 없습니다.",
+    )
+
+
+def _robot_details_for_groups(
+    groups: list[RobotsGroup],
+    path: str,
+) -> tuple[BotDetail, ...]:
+    return tuple(_bot_detail_for_robots(groups, bot, path) for bot in TARGET_BOTS)
+
+
+def _http_bot_details(
+    *,
+    status: Verdict,
+    summary: str,
+    detail: str,
+    include_robots_detail: bool = True,
+) -> tuple[BotDetail, ...]:
+    details: list[BotDetail] = []
+    if include_robots_detail:
+        details.append(
+            BotDetail(
+                label="robots.txt 접근",
+                status=status,
+                summary=summary,
+                detail=detail,
+            )
+        )
+    details.extend(
+        _http_bot_detail(bot, status=status, summary=summary, detail=detail)
+        for bot in TARGET_BOTS
+    )
+    return tuple(details)
+
+
+def _http_bot_detail(
+    bot: str,
+    *,
+    status: Verdict,
+    summary: str,
+    detail: str,
+) -> BotDetail:
+    if status == "allow":
+        return BotDetail(
+            label=bot,
+            status=status,
+            summary=summary,
+            detail=f"{detail} {bot}도 robots.txt 기준으로는 접근 가능으로 봅니다.",
+        )
+    if status == "warn":
+        return BotDetail(
+            label=bot,
+            status=status,
+            summary="허용 여부 확인 불가",
+            detail=f"{detail} 따라서 {bot}의 실제 접근 허용 여부를 아직 판정할 수 없습니다.",
+        )
+    return BotDetail(
+        label=bot,
+        status=status,
+        summary=summary,
+        detail=f"{detail} {bot}도 사이트 설정 확인 전에 차단될 가능성이 큽니다.",
+    )
+
+
 def _standard_robotparser_allows(text: str, url: str) -> bool:
     parser = RobotFileParser()
     parser.parse(text.splitlines())
@@ -272,6 +426,7 @@ def _result(
     action: str,
     http_status: int | None,
     robots_txt: str,
+    bot_details: tuple[BotDetail, ...] = (),
 ) -> CheckResult:
     return CheckResult(
         input_url=normalized.input_url,
@@ -285,6 +440,7 @@ def _result(
         action=action,
         http_status=http_status,
         robots_txt=robots_txt[:MAX_ROBOTS_TEXT_CHARS],
+        bot_details=bot_details,
     )
 
 
@@ -298,6 +454,7 @@ def evaluate_robots_txt(
     oai_groups = _oai_groups(groups)
     star_groups = _star_groups(groups)
     applied_groups: list[RobotsGroup] = []
+    bot_details = _robot_details_for_groups(groups, normalized.path)
 
     if oai_groups:
         applied_groups = oai_groups
@@ -309,6 +466,7 @@ def evaluate_robots_txt(
                 action="사이트 설정에서 OpenAI 광고 로봇 접근을 허용해 주세요",
                 http_status=http_status,
                 robots_txt=robots_txt,
+                bot_details=bot_details,
             )
         base_reason = (
             "OpenAI 광고 로봇 접근이 허용된 것으로 보임"
@@ -325,6 +483,7 @@ def evaluate_robots_txt(
                 action="사이트 설정에서 OpenAI 광고 로봇 접근 예외를 허용해 주세요",
                 http_status=http_status,
                 robots_txt=robots_txt,
+                bot_details=bot_details,
             )
         base_reason = (
             "사이트 접근이 허용된 것으로 보임"
@@ -339,6 +498,7 @@ def evaluate_robots_txt(
             action="광고주 개발팀에 OpenAI 광고 로봇 허용 설정을 명시해 달라고 요청하세요",
             http_status=http_status,
             robots_txt=robots_txt,
+            bot_details=bot_details,
         )
     else:
         base_reason = "별도 차단 설정이 없어 접근 가능으로 보임"
@@ -353,9 +513,19 @@ def evaluate_robots_txt(
                 action="다른 랜딩 페이지를 쓰거나, 개발팀에 해당 페이지 차단 해제를 요청하세요",
                 http_status=http_status,
                 robots_txt=robots_txt,
+                bot_details=bot_details,
             )
 
     if not _standard_robotparser_allows(robots_txt, normalized.normalized_url):
+        parser_detail = BotDetail(
+            label="표준 robots 검사",
+            status="warn",
+            summary="랜딩 URL 접근 확인 필요",
+            detail=(
+                "표준 robots.txt 해석 기준으로 OpenAI 광고 로봇이 이 랜딩 URL을 가져오지 "
+                "못할 가능성이 있습니다. 위 봇별 세부 상태와 원문 규칙을 개발팀에서 함께 확인해 주세요."
+            ),
+        )
         return _result(
             normalized,
             verdict="warn",
@@ -363,6 +533,7 @@ def evaluate_robots_txt(
             action="사이트의 크롤러 허용 설정(robots.txt)을 개발팀에서 확인해 주세요",
             http_status=http_status,
             robots_txt=robots_txt,
+            bot_details=(*bot_details, parser_detail),
         )
 
     return _result(
@@ -372,6 +543,7 @@ def evaluate_robots_txt(
         action="광고주 개발팀에 실제 OpenAI 광고 로봇 접근 테스트로 최종 확인을 요청하세요",
         http_status=http_status,
         robots_txt=robots_txt,
+        bot_details=bot_details,
     )
 
 
@@ -388,6 +560,12 @@ def _http_error_result(
             action="방화벽/안티봇 차단 여부는 실제 OpenAI 광고 로봇 접근 테스트로 확인하세요",
             http_status=status_code,
             robots_txt=body or "사이트의 크롤러 허용 설정(robots.txt) 없음 (HTTP 404)",
+            bot_details=_http_bot_details(
+                status="allow",
+                summary="별도 차단 설정 없음",
+                detail="robots.txt 파일이 없어 일반적으로 전체 허용으로 간주합니다.",
+                include_robots_detail=False,
+            ),
         )
 
     body_lower = body.lower()
@@ -401,15 +579,38 @@ def _http_error_result(
             action="Cloudflare 등 방화벽에서 OpenAI 광고 로봇 접근을 허용해 주세요",
             http_status=status_code,
             robots_txt=body,
+            bot_details=_http_bot_details(
+                status="block",
+                summary="방화벽 차단",
+                detail=(
+                    "robots.txt 규칙을 보기 전에 Cloudflare 등 방화벽/챌린지 페이지가 먼저 "
+                    "응답했습니다."
+                ),
+            ),
         )
 
+    blocked_robots_detail = (
+        f"{normalized.robots_url} 요청이 HTTP {status_code}로 응답했습니다. "
+        "브라우저나 일반 봇이 크롤러 허용 설정 파일을 열 수 없는 상태일 수 있습니다."
+    )
     return _result(
         normalized,
         verdict="warn",
-        reason=f"사이트의 크롤러 허용 설정(robots.txt)을 확인할 수 없음(HTTP {status_code}) — 개발팀 확인 필요",
-        action="서버 응답 코드와 방화벽/안티봇 정책을 개발팀에서 확인해 주세요",
+        reason=(
+            f"사이트의 크롤러 허용 설정(robots.txt)을 열 수 없음(HTTP {status_code}) "
+            "— 서버 권한 또는 방화벽 확인 필요"
+        ),
+        action=(
+            "robots.txt가 공개적으로 열리도록 서버 권한과 방화벽/안티봇 정책을 "
+            "개발팀에서 확인해 주세요"
+        ),
         http_status=status_code,
         robots_txt=body,
+        bot_details=_http_bot_details(
+            status="warn",
+            summary=f"HTTP {status_code}로 확인 불가",
+            detail=blocked_robots_detail,
+        ),
     )
 
 
@@ -443,6 +644,14 @@ async def check_url(raw_url: str, client: httpx.AsyncClient) -> CheckResult:
             action="잠시 후 다시 점검하고, 반복되면 광고주 개발팀에 확인을 요청하세요",
             http_status=None,
             robots_txt="",
+            bot_details=_http_bot_details(
+                status="warn",
+                summary="응답 없음",
+                detail=(
+                    f"{normalized.robots_url} 요청이 10초 안에 응답하지 않았습니다. "
+                    "서버 지연, 네트워크 문제, 봇 차단 정책을 확인해야 합니다."
+                ),
+            ),
         )
     except httpx.RequestError:
         return _result(
@@ -452,6 +661,14 @@ async def check_url(raw_url: str, client: httpx.AsyncClient) -> CheckResult:
             action="잠시 후 다시 점검하고, 반복되면 광고주 개발팀에 확인을 요청하세요",
             http_status=None,
             robots_txt="",
+            bot_details=_http_bot_details(
+                status="warn",
+                summary="접속 실패",
+                detail=(
+                    f"{normalized.robots_url}에 연결하지 못했습니다. DNS, SSL 인증서, "
+                    "방화벽 또는 서버 접근 정책을 확인해야 합니다."
+                ),
+            ),
         )
 
     body = response.text[:MAX_ROBOTS_TEXT_CHARS]

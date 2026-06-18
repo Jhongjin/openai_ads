@@ -47,6 +47,7 @@ class CheckResultResponse(BaseModel):
     robots_txt: str
     firewall_hint: bool = False
     firewall_badge: str | None = None
+    bot_details: list[dict[str, str]] = Field(default_factory=list)
 
 
 class FaviconCheckRequest(BaseModel):
