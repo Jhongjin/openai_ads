@@ -2803,13 +2803,13 @@
         <div class="notice-modal-head">
           <h2 class="notice-modal-title" id="entry-notice-title">📢 OpenAI 광고 집행 의뢰 안내</h2>
           <span class="notice-modal-date">최종 업데이트: <span class="notice-update-date"></span></span>
-          <p class="notice-modal-source">
+          <p class="notice-modal-source" id="entry-notice-source">
             <a href="https://help.openai.com/en/collections/20001223-chatgpt-ads" target="_blank" rel="noreferrer">OpenAI Ads Guide</a>
             기준으로 하루 2회 최신 정보를 자동 확인·업데이트합니다.
           </p>
         </div>
         <div class="notice-modal-body" id="entry-notice-desc">
-          <ul class="notice-modal-list">
+          <ul class="notice-modal-list" id="entry-notice-list">
             <li><strong>글자수</strong> — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자</li>
             <li><strong>이미지</strong> — 1:1 정사각형, 640×640~1200×1200, PNG/JPG, 공개 직접접근 링크, 로고를 메인 비주얼로 쓰지 말 것</li>
             <li><strong>랜딩</strong> — OpenAI 크롤러(OAI-AdsBot) 접근 허용 필수, 차단 시 노출 제한 가능</li>
@@ -4195,7 +4195,12 @@ oaiq("measure", "order_created", {
       const entryNoticeDialog = entryNotice.querySelector(".notice-modal");
       const entryNoticeClose = document.querySelector("#entry-notice-close");
       const entryNoticeSkip = document.querySelector("#entry-notice-skip");
+      const entryNoticeTitle = document.querySelector("#entry-notice-title");
+      const entryNoticeDate = document.querySelector(".notice-update-date");
+      const entryNoticeSource = document.querySelector("#entry-notice-source");
+      const entryNoticeList = document.querySelector("#entry-notice-list");
       let entryNoticePreviousFocus = null;
+      let entryNoticeSignature = LAST_UPDATED;
       const tabs = document.querySelectorAll(".tab");
       const panels = {
         chat: document.querySelector("#chat-panel"),
@@ -4207,6 +4212,15 @@ oaiq("measure", "order_created", {
         setupGuide: document.querySelector("#setup-guide-panel"),
         pixelGuide: document.querySelector("#pixel-guide-panel"),
       };
+      const tabLabels = {
+        chat: "광고 Q&A",
+        crawler: "랜딩 URL 검사",
+        favicon: "파비콘 검사",
+        intake: "집행 의뢰 접수",
+        slides: "광고주 안내 자료",
+        setupGuide: "캠페인 세팅 가이드",
+        pixelGuide: "픽셀 설치 가이드",
+      };
       const notices = {
         chat: document.querySelector("#chat-notice"),
         crawler: document.querySelector("#crawler-notice"),
@@ -4217,18 +4231,53 @@ oaiq("measure", "order_created", {
         setupGuide: document.querySelector("#setup-guide-notice"),
         pixelGuide: document.querySelector("#pixel-guide-notice"),
       };
+      const defaultEntryNotice = {
+        title: "📢 OpenAI 광고 집행 의뢰 안내",
+        updated_at: LAST_UPDATED,
+        bullets: [
+          "글자수 — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자",
+          "이미지 — 1:1 정사각형, 640×640~1200×1200, PNG/JPG, 공개 직접접근 링크, 로고를 메인 비주얼로 쓰지 말 것",
+          "랜딩 — OpenAI 크롤러(OAI-AdsBot) 접근 허용 필수, 차단 시 노출 제한 가능",
+          "청구 — 청구 통화 KRW 고정 / 시간대 Asia/Seoul",
+          "문의 — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+        ],
+        source_label: "OpenAI Ads Guide 기준으로 하루 2회 최신 정보를 자동 확인·업데이트합니다.",
+        source_url: "https://help.openai.com/en/collections/20001223-chatgpt-ads",
+        enabled: true,
+      };
+
+      function trackPageVisit(pageKey) {
+        const page = pageKey || "chat";
+        const payload = JSON.stringify({ page, label: tabLabels[page] || page });
+        try {
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon("/api/analytics/visit", new Blob([payload], { type: "application/json" }));
+            return;
+          }
+        } catch {
+          /* fall through to fetch */
+        }
+        fetch("/api/analytics/visit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      }
+
+      function activateTab(target) {
+        tabs.forEach((item) => item.classList.toggle("active", item.dataset.tab === target));
+        Object.entries(panels).forEach(([key, panel]) => {
+          panel.classList.toggle("active", key === target);
+        });
+        Object.entries(notices).forEach(([key, notice]) => {
+          notice.classList.toggle("active", key === target);
+        });
+        trackPageVisit(target);
+      }
 
       tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-          const target = tab.dataset.tab;
-          tabs.forEach((item) => item.classList.toggle("active", item === tab));
-          Object.entries(panels).forEach(([key, panel]) => {
-            panel.classList.toggle("active", key === target);
-          });
-          Object.entries(notices).forEach(([key, notice]) => {
-            notice.classList.toggle("active", key === target);
-          });
-        });
+        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
       });
 
       const urlsInput = document.querySelector("#urls");
@@ -4304,6 +4353,59 @@ oaiq("measure", "order_created", {
         return window.location.pathname === "/" || window.location.pathname === "/index.html";
       }
 
+      function noticeDismissValue() {
+        return `${todayInKst()}|${entryNoticeSignature}`;
+      }
+
+      function appendNoticeLine(list, line) {
+        const li = document.createElement("li");
+        const separator = line.includes(" — ") ? " — " : line.includes(" - ") ? " - " : "";
+        if (separator) {
+          const [label, ...rest] = line.split(separator);
+          const strong = document.createElement("strong");
+          strong.textContent = label.trim();
+          li.appendChild(strong);
+          li.append(` ${separator} ${rest.join(separator).trim()}`);
+        } else {
+          li.textContent = line;
+        }
+        list.appendChild(li);
+      }
+
+      function renderEntryNotice(notice) {
+        const config = { ...defaultEntryNotice, ...(notice || {}) };
+        entryNotice.dataset.enabled = config.enabled === false ? "false" : "true";
+        entryNoticeTitle.textContent = config.title || defaultEntryNotice.title;
+        entryNoticeDate.textContent = config.updated_at || LAST_UPDATED;
+        entryNoticeSignature = `${config.updated_at || LAST_UPDATED}|${config.title || ""}|${(config.bullets || []).join("|")}`;
+
+        entryNoticeSource.textContent = "";
+        const link = document.createElement("a");
+        link.href = config.source_url || defaultEntryNotice.source_url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.textContent = "OpenAI Ads Guide";
+        entryNoticeSource.appendChild(link);
+        entryNoticeSource.append(` ${config.source_label || defaultEntryNotice.source_label}`);
+
+        entryNoticeList.innerHTML = "";
+        (config.bullets || defaultEntryNotice.bullets).forEach((line) => appendNoticeLine(entryNoticeList, line));
+        document.querySelectorAll(".notice-update-date").forEach((item) => {
+          item.textContent = config.updated_at || LAST_UPDATED;
+        });
+        return config;
+      }
+
+      async function loadEntryNotice() {
+        try {
+          const response = await fetch("/api/notice", { headers: { Accept: "application/json" } });
+          if (!response.ok) throw new Error("notice fetch failed");
+          return renderEntryNotice(await response.json());
+        } catch {
+          return renderEntryNotice(defaultEntryNotice);
+        }
+      }
+
       function focusableInEntryNotice() {
         return [
           ...entryNotice.querySelectorAll(
@@ -4325,7 +4427,7 @@ oaiq("measure", "order_created", {
       function closeEntryNotice() {
         if (entryNoticeSkip.checked) {
           try {
-            window.localStorage.setItem(ENTRY_NOTICE_STORAGE_KEY, todayInKst());
+            window.localStorage.setItem(ENTRY_NOTICE_STORAGE_KEY, noticeDismissValue());
           } catch {
             /* localStorage may be unavailable in strict browser modes. */
           }
@@ -4359,18 +4461,17 @@ oaiq("measure", "order_created", {
         }
       }
 
-      function initEntryNotice() {
-        document.querySelectorAll(".notice-update-date").forEach((item) => {
-          item.textContent = LAST_UPDATED;
-        });
+      async function initEntryNotice() {
+        const notice = await loadEntryNotice();
         if (!isRootPage()) return;
+        if (notice.enabled === false) return;
         let dismissedDate = "";
         try {
           dismissedDate = window.localStorage.getItem(ENTRY_NOTICE_STORAGE_KEY) || "";
         } catch {
           dismissedDate = "";
         }
-        if (dismissedDate !== todayInKst()) openEntryNotice();
+        if (dismissedDate !== noticeDismissValue()) openEntryNotice();
       }
 
       function splitCrawlerUrls() {
@@ -5365,6 +5466,7 @@ oaiq("measure", "order_created", {
       });
       hydrateGuideImages();
       initEntryNotice();
+      trackPageVisit(document.querySelector(".tab.active")?.dataset.tab || "chat");
       slidesPrintButton.addEventListener("click", () => {
         printDocument("print-slides", SLIDES_PDF_FILENAME);
       });

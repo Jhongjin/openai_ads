@@ -313,12 +313,15 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `INGEST_TOKEN` (선택, 배포 후 보호된 `/admin/reindex`를 호출할 때 사용)
 - `GOOGLE_SHEETS_WEBHOOK_URL` (집행 의뢰 접수용 Apps Script 웹앱 URL)
 - `SHEETS_SHARED_SECRET` (Apps Script와 동일한 공유 토큰)
+- `ADMIN_PASSWORD` (선택, `/admin` 관리자 페이지 비밀번호. 미설정 시 기본값 `nas2026@`)
 
 배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. 민감 환경변수를 로컬로 내려받을 수 없는 경우에는 `INGEST_TOKEN`을 설정한 뒤 배포된 `POST /admin/reindex`를 호출해 Vercel 런타임에서 재인덱싱할 수 있습니다.
 
 크롤러 셀프 체크(`/check`)는 Supabase 인덱싱 없이도 동작합니다.
 
 파비콘 셀프 체크(`/check-favicon`)도 Supabase 인덱싱 없이 동작합니다.
+
+관리자 페이지는 `/admin`에서 접근합니다. 메인 진입 공지 팝업 문구를 수정하고 탭별 방문 횟수를 확인할 수 있습니다. 공지 설정과 방문 집계는 `SUPABASE_SCHEMA` 아래 `admin_notice`, `page_visits` 테이블에 저장되며, Supabase 연결이 없을 때는 로컬 메모리 fallback으로만 동작합니다.
 
 ## 자동 재인덱싱
 

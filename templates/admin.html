@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAI Ads 관리자</title>
+    <style>
+      :root {
+        --kt-red: #ed1c24;
+        --ink: #111827;
+        --muted: #667085;
+        --line: #d6dde8;
+        --panel: #fff;
+        --soft: #f6f8fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f2f4f7;
+        color: var(--ink);
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          Roboto,
+          "Helvetica Neue",
+          "Segoe UI",
+          "Apple SD Gothic Neo",
+          "Noto Sans KR",
+          "Malgun Gothic",
+          sans-serif;
+      }
+
+      a {
+        color: #155eef;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--kt-red);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 4vw, 38px);
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .home-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 14px;
+        color: #344054;
+        font-size: 14px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+      }
+
+      .login-card {
+        max-width: 520px;
+        margin: 56px auto 0;
+        padding: 26px;
+      }
+
+      .section {
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+        gap: 18px;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        line-height: 1.3;
+      }
+
+      .help {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 14px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 11px 12px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 650;
+      }
+
+      textarea {
+        min-height: 190px;
+        line-height: 1.55;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: var(--kt-red);
+        box-shadow: 0 0 0 3px rgb(237 28 36 / 12%);
+        outline: none;
+      }
+
+      .check-label {
+        display: inline-flex;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .check-label input {
+        width: auto;
+        min-height: auto;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: #111;
+        padding: 0 18px;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+      }
+
+      button.secondary {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #344054;
+      }
+
+      button.danger {
+        background: var(--kt-red);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .status {
+        min-height: 22px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .status.error {
+        color: #b42318;
+      }
+
+      .status.ok {
+        color: #047857;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .metric {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 14px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        border-radius: 999px;
+        background: #fff1f1;
+        padding: 0 9px;
+        color: #c01018;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 900px) {
+        .topbar,
+        .grid {
+          display: block;
+        }
+
+        .home-link {
+          margin-top: 14px;
+        }
+
+        .grid > .card + .card {
+          margin-top: 18px;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">OpenAI Ads Admin</p>
+          <h1>관리자 설정</h1>
+        </div>
+        <a class="home-link" href="/">메인으로 돌아가기</a>
+      </div>
+
+      <section class="card login-card" id="login-card">
+        <h2>관리자 비밀번호</h2>
+        <p class="help">공지 팝업 문구와 페이지별 방문 횟수를 관리합니다.</p>
+        <label>
+          비밀번호
+          <input id="admin-password" type="password" autocomplete="current-password" placeholder="관리자 비밀번호 입력" />
+        </label>
+        <div class="actions">
+          <button id="login-button" type="button">접속하기</button>
+          <span class="status" id="login-status"></span>
+        </div>
+      </section>
+
+      <section class="grid hidden" id="admin-panel">
+        <div class="card section">
+          <h2>메인 공지 팝업 수정</h2>
+          <p class="help">
+            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 항목은 줄바꿈 기준으로 저장됩니다.
+          </p>
+          <label>
+            제목
+            <input id="notice-title" type="text" />
+          </label>
+          <label>
+            최종 업데이트
+            <input id="notice-updated" type="text" placeholder="YYYY-MM-DD" />
+          </label>
+          <label>
+            본문 항목
+            <textarea id="notice-bullets" placeholder="글자수 — 제목 24자 / 설명 48자..."></textarea>
+          </label>
+          <label>
+            OpenAI 가이드 링크 문구
+            <input id="notice-source-label" type="text" />
+          </label>
+          <label>
+            OpenAI 가이드 URL
+            <input id="notice-source-url" type="url" />
+          </label>
+          <label class="check-label">
+            <input id="notice-enabled" type="checkbox" />
+            <span>공지 팝업 사용</span>
+          </label>
+          <div class="actions">
+            <button class="danger" id="save-notice" type="button">공지 저장</button>
+            <button class="secondary" id="reload-notice" type="button">다시 불러오기</button>
+            <span class="status" id="notice-status"></span>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h2>페이지 방문 애널리틱스</h2>
+          <p class="help">
+            탭을 열 때마다 페이지별 방문 수가 누적됩니다. 저장 위치는 Supabase를 우선 사용합니다.
+          </p>
+          <div class="summary-grid">
+            <div class="metric">
+              <span>전체 방문</span>
+              <strong id="metric-total">0</strong>
+            </div>
+            <div class="metric">
+              <span>오늘 방문</span>
+              <strong id="metric-today">0</strong>
+            </div>
+            <div class="metric">
+              <span>집계 페이지</span>
+              <strong id="metric-pages">0</strong>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="secondary" id="refresh-analytics" type="button">새로고침</button>
+            <span class="badge" id="storage-badge">저장소 확인 중</span>
+          </div>
+          <div style="margin-top: 14px; overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>페이지</th>
+                  <th>전체</th>
+                  <th>오늘</th>
+                  <th>마지막 방문</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-body">
+                <tr>
+                  <td colspan="4">아직 데이터가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="status" id="analytics-status"></p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const loginCard = document.querySelector("#login-card");
+      const adminPanel = document.querySelector("#admin-panel");
+      const passwordInput = document.querySelector("#admin-password");
+      const loginButton = document.querySelector("#login-button");
+      const loginStatus = document.querySelector("#login-status");
+      const noticeStatus = document.querySelector("#notice-status");
+      const analyticsStatus = document.querySelector("#analytics-status");
+      const storageBadge = document.querySelector("#storage-badge");
+      const fields = {
+        title: document.querySelector("#notice-title"),
+        updatedAt: document.querySelector("#notice-updated"),
+        bullets: document.querySelector("#notice-bullets"),
+        sourceLabel: document.querySelector("#notice-source-label"),
+        sourceUrl: document.querySelector("#notice-source-url"),
+        enabled: document.querySelector("#notice-enabled"),
+      };
+
+      function password() {
+        return passwordInput.value || window.sessionStorage.getItem("openaiAdsAdminPassword") || "";
+      }
+
+      async function adminFetch(url, options = {}) {
+        const headers = new Headers(options.headers || {});
+        headers.set("x-admin-password", password());
+        if (options.body && !headers.has("content-type")) headers.set("content-type", "application/json");
+        const response = await fetch(url, { ...options, headers });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || "요청 처리 중 오류가 발생했습니다.");
+        }
+        return payload;
+      }
+
+      function setStatus(element, text, type = "") {
+        element.textContent = text || "";
+        element.className = `status ${type}`.trim();
+      }
+
+      function fillNoticeForm(notice) {
+        fields.title.value = notice.title || "";
+        fields.updatedAt.value = notice.updated_at || "";
+        fields.bullets.value = (notice.bullets || []).join("\n");
+        fields.sourceLabel.value = notice.source_label || "";
+        fields.sourceUrl.value = notice.source_url || "";
+        fields.enabled.checked = notice.enabled !== false;
+        storageBadge.textContent = `저장소: ${notice.storage || "확인 중"}`;
+      }
+
+      function readNoticeForm() {
+        return {
+          title: fields.title.value.trim(),
+          updated_at: fields.updatedAt.value.trim(),
+          bullets: fields.bullets.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
+          source_label: fields.sourceLabel.value.trim(),
+          source_url: fields.sourceUrl.value.trim(),
+          enabled: fields.enabled.checked,
+        };
+      }
+
+      async function loadNotice() {
+        setStatus(noticeStatus, "공지 설정을 불러오는 중...");
+        const notice = await adminFetch("/api/admin/notice");
+        fillNoticeForm(notice);
+        setStatus(noticeStatus, "공지 설정을 불러왔습니다.", "ok");
+        if (notice.storage_error) setStatus(noticeStatus, `DB 저장소 대신 임시 저장소 사용 중: ${notice.storage_error}`, "error");
+      }
+
+      async function saveNotice() {
+        setStatus(noticeStatus, "저장 중...");
+        const notice = await adminFetch("/api/admin/notice", {
+          method: "POST",
+          body: JSON.stringify(readNoticeForm()),
+        });
+        fillNoticeForm(notice);
+        setStatus(noticeStatus, "공지 팝업이 저장되었습니다.", notice.storage === "supabase" ? "ok" : "error");
+      }
+
+      function renderAnalytics(data) {
+        const items = data.items || [];
+        const total = items.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
+        const today = items.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
+        document.querySelector("#metric-total").textContent = total.toLocaleString("ko-KR");
+        document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
+        document.querySelector("#metric-pages").textContent = items.length.toLocaleString("ko-KR");
+        storageBadge.textContent = `저장소: ${data.storage || "확인 중"}`;
+
+        const body = document.querySelector("#analytics-body");
+        body.innerHTML = "";
+        if (!items.length) {
+          body.innerHTML = '<tr><td colspan="4">아직 데이터가 없습니다.</td></tr>';
+          return;
+        }
+        items.forEach((item) => {
+          const tr = document.createElement("tr");
+          const lastSeen = item.last_seen_at ? new Date(item.last_seen_at).toLocaleString("ko-KR") : "-";
+          tr.innerHTML = `
+            <td><strong>${item.page_label || item.page}</strong><br><span style="color:#667085">${item.page}</span></td>
+            <td>${Number(item.total_count || 0).toLocaleString("ko-KR")}</td>
+            <td>${Number(item.today_count || 0).toLocaleString("ko-KR")}<br><span style="color:#667085">${item.today_date || ""}</span></td>
+            <td>${lastSeen}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      async function loadAnalytics() {
+        setStatus(analyticsStatus, "방문 데이터를 불러오는 중...");
+        const data = await adminFetch("/api/admin/analytics");
+        renderAnalytics(data);
+        setStatus(analyticsStatus, "방문 데이터를 갱신했습니다.", "ok");
+        if (data.storage_error) setStatus(analyticsStatus, `DB 저장소 대신 임시 저장소 사용 중: ${data.storage_error}`, "error");
+      }
+
+      async function login() {
+        setStatus(loginStatus, "확인 중...");
+        try {
+          await loadNotice();
+          await loadAnalytics();
+          window.sessionStorage.setItem("openaiAdsAdminPassword", passwordInput.value);
+          loginCard.classList.add("hidden");
+          adminPanel.classList.remove("hidden");
+          setStatus(loginStatus, "");
+        } catch (error) {
+          setStatus(loginStatus, error.message, "error");
+        }
+      }
+
+      loginButton.addEventListener("click", login);
+      passwordInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") login();
+      });
+      document.querySelector("#save-notice").addEventListener("click", () => {
+        saveNotice().catch((error) => setStatus(noticeStatus, error.message, "error"));
+      });
+      document.querySelector("#reload-notice").addEventListener("click", () => {
+        loadNotice().catch((error) => setStatus(noticeStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-analytics").addEventListener("click", () => {
+        loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));
+      });
+
+      const savedPassword = window.sessionStorage.getItem("openaiAdsAdminPassword");
+      if (savedPassword) {
+        passwordInput.value = savedPassword;
+        login();
+      }
+    </script>
+  </body>
+</html>
