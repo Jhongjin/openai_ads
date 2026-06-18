@@ -85,6 +85,8 @@ Invoke-RestMethod -Method Post `
 
 서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body는 `secret` + `data` 구조로 맞춥니다. Apps Script 웹앱은 `secret` 값을 Script Properties의 `SHEETS_SHARED_SECRET`와 비교해 검증합니다. 예시 코드는 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs)에 있으며, Apps Script의 Script Properties에 `SHEETS_SHARED_SECRET` 값을 등록한 뒤 새 버전으로 배포합니다.
 
+여러 캠페인을 한 번에 접수하려면 Apps Script도 최신 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs) 버전이어야 합니다. 구버전처럼 `data.campaign` 한 건만 기록하거나 `adgroups`의 `campaign_name`을 첫 캠페인명으로 덮어쓰면, CPC/CPM 캠페인이 시트에서 섞여 보입니다. Apps Script 편집기에 최신 코드를 붙여넣은 뒤 `배포 > 배포 관리 > 수정 > 새 버전 > 배포`를 반드시 실행하세요.
+
 Apps Script로 전달되는 최종 body:
 
 ```json

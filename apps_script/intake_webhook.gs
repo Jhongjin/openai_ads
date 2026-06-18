@@ -69,10 +69,9 @@ function doPost(e) {
       const receiptNumber = nextReceiptNumber_();
       const submittedAtKst = nowKst_();
       const withReceipt = (row) => Object.assign({ receipt_number: receiptNumber }, row);
-      const primaryCampaignName = String(campaigns[0].campaign_name || "");
-      const adgroupsWithCampaigns = adgroups.map((row) =>
-        Object.assign({ campaign_name: primaryCampaignName }, row),
-      );
+      const adgroupsForSheet = adgroups.map((row) => Object.assign({}, row, {
+        campaign_name: row.campaign_name || campaigns[0].campaign_name || "",
+      }));
 
       const opsMeta = Object.assign({}, ops, {
         receipt_number: receiptNumber,
@@ -80,13 +79,22 @@ function doPost(e) {
       });
 
       appendRows_("campaigns", campaigns.map(withReceipt));
-      appendRows_("adgroups", adgroupsWithCampaigns.map(withReceipt));
+      appendRows_("adgroups", adgroupsForSheet.map(withReceipt));
       appendRows_("ads", ads.map(withReceipt));
       appendRows_("ops_meta", [opsMeta]);
 
       notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads);
 
-      return jsonResponse_({ ok: true, receiptNumber, submittedAtKst });
+      return jsonResponse_({
+        ok: true,
+        receiptNumber,
+        submittedAtKst,
+        counts: {
+          campaigns: campaigns.length,
+          adgroups: adgroups.length,
+          ads: ads.length,
+        },
+      });
     } finally {
       lock.releaseLock();
     }
