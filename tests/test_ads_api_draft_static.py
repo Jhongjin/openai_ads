@@ -18,9 +18,9 @@ class AdsApiDraftStaticTests(unittest.TestCase):
         response = client.get("/ads-api")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("OpenAI Ads API 운영 검토", response.text)
+        self.assertIn("OpenAI Ads API 성과 대시보드 준비", response.text)
         self.assertIn("공식 문서 기반 · 권한 확인 필요", response.text)
-        self.assertIn("메인 도구로 돌아가기", response.text)
+        self.assertIn("관리자 페이지로 돌아가기", response.text)
 
         legacy_response = client.get("/ads-api-draft")
         self.assertEqual(legacy_response.status_code, 200)
@@ -41,7 +41,7 @@ class AdsApiDraftStaticTests(unittest.TestCase):
             "hourly/daily/monthly/none",
             "API 키는 Vercel/GitHub Secrets 또는 서버 환경변수에만 저장",
             'page: "apiOps"',
-            'label: "API 운영 검토"',
+            'label: "Ads API 성과 대시보드 준비"',
             "https://developers.openai.com/ads/api-overview",
             "https://developers.openai.com/ads/api-reference/insights",
             "https://developers.openai.com/ads/api-reference/campaigns",
@@ -54,20 +54,21 @@ class AdsApiDraftStaticTests(unittest.TestCase):
         self.assertIn("인보이스·VAT·결제수단·정산 자동화", html)
         self.assertIn("문서 미확인", html)
 
-    def test_main_navigation_links_ads_api_page(self) -> None:
+    def test_ads_api_page_is_removed_from_public_navigation(self) -> None:
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        nav = html.split('<nav class="tabs"', 1)[1].split("</nav>", 1)[0]
+        admin_html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
 
-        required = [
-            'data-page-link="apiOps"',
-            'href="/ads-api"',
-            "API 운영 검토",
-            'grid-template-columns: repeat(4, minmax(0, 1fr));',
-        ]
-        for phrase in required:
-            self.assertIn(phrase, html)
+        self.assertNotIn('data-page-link="apiOps"', nav)
+        self.assertNotIn('href="/ads-api"', nav)
+        self.assertNotIn("API 운영 검토", nav)
+        self.assertIn('.tab-group[data-group="docs"]::before', html)
+        self.assertIn('grid-template-columns: repeat(3, minmax(0, 1fr));', html)
 
-        self.assertIn('"apiOps": "API 운영 검토"', app_py)
+        self.assertIn('href="/ads-api"', admin_html)
+        self.assertIn("Ads API 성과 대시보드 준비", admin_html)
+        self.assertIn('"apiOps": "Ads API 성과 대시보드 준비"', app_py)
 
 
 if __name__ == "__main__":

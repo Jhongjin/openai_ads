@@ -2089,6 +2089,7 @@
         align-items: stretch;
         gap: 8px;
         min-width: 0;
+        position: relative;
       }
 
       .tab-group[data-group="tools"] {
@@ -2096,7 +2097,20 @@
       }
 
       .tab-group[data-group="docs"] {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-left: 1px solid #cfd6df;
+        padding-left: 18px;
+      }
+
+      .tab-group[data-group="docs"]::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: 12px;
+        bottom: 12px;
+        width: 3px;
+        border-radius: 999px;
+        background: var(--brand);
       }
 
       .tab-group-label {
@@ -2143,11 +2157,6 @@
 
       .tab[data-tab="setupGuide"] {
         --tab-color: #8f1d1d;
-      }
-
-      .tab[data-page-link="apiOps"] {
-        --tab-color: #0f766e;
-        text-decoration: none;
       }
 
       .tab-icon {
@@ -3007,7 +3016,20 @@
         }
 
         .tab-group[data-group="docs"] {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          border-left: 0;
+          border-top: 1px solid #cfd6df;
+          padding-left: 5px;
+          padding-top: 14px;
+        }
+
+        .tab-group[data-group="docs"]::before {
+          left: 8px;
+          right: 8px;
+          top: 6px;
+          bottom: auto;
+          width: auto;
+          height: 3px;
         }
 
         .tab {
@@ -3532,10 +3554,6 @@
             <span class="tab-icon">PX</span>
             <span>픽셀 설치 가이드</span>
           </button>
-          <a class="tab" data-page-link="apiOps" href="/ads-api">
-            <span class="tab-icon">API</span>
-            <span>API 운영 검토</span>
-          </a>
         </div>
       </nav>
 

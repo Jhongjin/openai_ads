@@ -128,7 +128,7 @@ PAGE_LABELS = {
     "slides": "광고주 안내 자료",
     "setupGuide": "캠페인 세팅 가이드",
     "pixelGuide": "픽셀 설치 가이드",
-    "apiOps": "API 운영 검토",
+    "apiOps": "Ads API 성과 대시보드 준비",
 }
 
 

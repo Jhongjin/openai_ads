@@ -90,6 +90,21 @@
         white-space: nowrap;
       }
 
+      .admin-tool-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 12px;
+        color: #155eef;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
       .card {
         border: 1px solid var(--line);
         border-radius: 10px;
@@ -364,6 +379,32 @@
         margin-bottom: 16px;
       }
 
+      .admin-tool-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+        border: 1px solid #cfe0ff;
+        border-left: 4px solid #155eef;
+        border-radius: 10px;
+        background: #f8fbff;
+        padding: 14px;
+      }
+
+      .admin-tool-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 15px;
+      }
+
+      .admin-tool-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
       .chart-shell {
         margin: 14px 0 16px;
         border: 1px solid #e2e8f0;
@@ -475,6 +516,10 @@
         }
 
         .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-tool-card {
           grid-template-columns: 1fr;
         }
       }
@@ -612,6 +657,15 @@
             </table>
           </div>
           <p class="status" id="analytics-status"></p>
+          <div class="admin-tool-card">
+            <div>
+              <strong>Ads API 성과 대시보드 준비</strong>
+              <p>
+                공개 탭에서는 숨기고 관리자 영역에서만 공식 Ads API 기반 성과 대시보드 설계 자료를 확인합니다.
+              </p>
+            </div>
+            <a class="admin-tool-link" href="/ads-api">검토 페이지 열기</a>
+          </div>
         </div>
       </section>
     </main>
