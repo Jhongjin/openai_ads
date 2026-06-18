@@ -201,6 +201,106 @@
         border-style: dashed;
       }
 
+      .workbook-file-native {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .workbook-file-picker {
+        display: grid;
+        min-height: 52px;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 7px 8px 7px 10px;
+        box-shadow: 0 1px 0 rgb(16 24 40 / 3%);
+        cursor: pointer;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          background 160ms ease;
+      }
+
+      .workbook-file-picker:hover {
+        border-color: #98a2b3;
+        background: #fbfcfe;
+        box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+      }
+
+      .field:focus-within .workbook-file-picker {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgb(237 28 36 / 14%);
+      }
+
+      .workbook-file-icon {
+        display: inline-flex;
+        width: 44px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #bbf7d0;
+        border-radius: 7px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .workbook-file-copy {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .workbook-file-name {
+        overflow: hidden;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 850;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workbook-file-meta {
+        overflow: hidden;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workbook-file-action {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d0d5dd;
+        border-radius: 7px;
+        background: #f8fafc;
+        color: #344054;
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .workbook-file-picker.has-file {
+        border-color: #a7f3d0;
+        background: #f7fffb;
+      }
+
       textarea {
         min-height: 120px;
         resize: vertical;
@@ -614,6 +714,18 @@
         .ad-list {
           margin-left: 0;
         }
+
+        .workbook-file-picker {
+          grid-template-columns: 40px minmax(0, 1fr);
+        }
+
+        .workbook-file-icon {
+          width: 40px;
+        }
+
+        .workbook-file-action {
+          display: none;
+        }
       }
     </style>
   </head>
@@ -641,7 +753,20 @@
         <div class="grid">
           <div class="field full">
             <label for="bulk-workbook">워크북 파일</label>
-            <input id="bulk-workbook" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            <input
+              class="workbook-file-native"
+              id="bulk-workbook"
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
+            <label class="workbook-file-picker" for="bulk-workbook">
+              <span class="workbook-file-icon" aria-hidden="true">XLSX</span>
+              <span class="workbook-file-copy">
+                <span class="workbook-file-name" id="bulk-workbook-file-name">워크북 파일을 선택하세요</span>
+                <span class="workbook-file-meta">campaigns / adgroups / ads 시트 자동 불러오기</span>
+              </span>
+              <span class="workbook-file-action" aria-hidden="true">파일 선택</span>
+            </label>
             <span class="help">공식 템플릿 컬럼 기준: campaigns / adgroups / ads</span>
           </div>
         </div>
@@ -899,6 +1024,7 @@
       const structureOverview = document.querySelector("#structure-overview");
       const statusEl = document.querySelector("#form-status");
       const bulkInput = document.querySelector("#bulk-workbook");
+      const bulkFileName = document.querySelector("#bulk-workbook-file-name");
       const bulkResult = document.querySelector("#bulk-result");
       const startedAt = document.querySelector("#form-started-at");
       const reviewOverlay = document.querySelector("#review-overlay");
@@ -1655,7 +1781,16 @@
       });
       reviewCancel.addEventListener("click", closeReviewModal);
       reviewConfirm.addEventListener("click", submitReviewedPayload);
-      bulkInput.addEventListener("change", () => inspectWorkbook(bulkInput.files?.[0]));
+      function updateWorkbookFileDisplay(input, target, fallbackText) {
+        if (!input || !target) return;
+        const file = input.files?.[0];
+        target.textContent = file?.name || fallbackText;
+        target.closest(".workbook-file-picker")?.classList.toggle("has-file", Boolean(file));
+      }
+      bulkInput.addEventListener("change", () => {
+        updateWorkbookFileDisplay(bulkInput, bulkFileName, "워크북 파일을 선택하세요");
+        inspectWorkbook(bulkInput.files?.[0]);
+      });
       syncState();
     </script>
   </body>

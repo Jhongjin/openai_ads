@@ -39,6 +39,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "팀",
             "기존 워크북 파일 불러오기",
             'id="intake-workbook-file"',
+            'id="intake-workbook-file-name"',
+            "workbook-file-picker",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
@@ -166,6 +168,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "/intake/workbook",
             "/intake/inspect-workbook",
             "populateFromWorkbook",
+            'id="bulk-workbook-file-name"',
+            "workbook-file-picker",
             "collapse-toggle",
             "campaign-body",
             "adgroup-body",
