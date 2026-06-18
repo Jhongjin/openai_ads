@@ -518,6 +518,13 @@
         margin-bottom: 14px;
       }
 
+      .form-card-header.with-toggle {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
       .form-card-header.action-header {
         display: flex;
         flex-wrap: wrap;
@@ -542,6 +549,45 @@
         color: #697077;
         font-size: 13px;
         line-height: 1.45;
+      }
+
+      .collapsible-body {
+        display: grid;
+        gap: 14px;
+      }
+
+      [data-collapsible][data-collapsed="true"] > .collapsible-body {
+        display: none;
+      }
+
+      [data-collapsible][data-collapsed="true"] > .form-card-header,
+      [data-collapsible][data-collapsed="true"] > .campaign-card-header,
+      [data-collapsible][data-collapsed="true"] > .adgroup-card-header,
+      [data-collapsible][data-collapsed="true"] > .ad-card-header {
+        margin-bottom: 0;
+      }
+
+      .card-actions,
+      .header-actions {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .collapse-toggle {
+        min-height: 34px;
+        border: 1px solid #cfd6df;
+        background: #fff;
+        padding: 0 11px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .collapse-toggle:hover {
+        background: #f7f8fa;
       }
 
       .field {
@@ -639,17 +685,23 @@
       }
 
       .campaign-card {
+        --campaign-color: #ed1c24;
+        --campaign-bg: #fff4f4;
+        border-left: 6px solid var(--campaign-color);
+        background: linear-gradient(90deg, var(--campaign-bg) 0, #fff 28%);
         padding: 16px;
         box-shadow: 0 4px 14px rgb(21 23 26 / 4%);
       }
 
       .adgroup-card {
+        border-left: 4px solid var(--campaign-color);
         padding: 14px;
         background: #fbfcfe;
       }
 
       .ad-card {
         border: 1px solid #d9dee7;
+        border-left: 4px solid var(--campaign-color);
         border-radius: 8px;
         background: #fbfcfe;
         padding: 14px;
@@ -670,6 +722,16 @@
       .ad-card-header strong {
         color: #0f1115;
         font-size: 14px;
+      }
+
+      .campaign-card-header strong {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid color-mix(in srgb, var(--campaign-color) 35%, #d9dee7);
+        border-radius: 999px;
+        background: var(--campaign-bg);
+        padding: 6px 10px;
+        color: var(--campaign-color);
       }
 
       .nested-section-title {
@@ -3177,11 +3239,15 @@
             </p>
           </div>
 
-          <section class="form-card">
-            <div class="form-card-header">
-              <h2>운영팀용 추가 정보</h2>
-              <p>공식 업로드 시트에는 들어가지 않고 ops_meta 탭에 접수번호와 함께 기록됩니다.</p>
+          <section class="form-card" data-collapsible>
+            <div class="form-card-header with-toggle">
+              <div>
+                <h2>운영팀용 추가 정보</h2>
+                <p>공식 업로드 시트에는 들어가지 않고 ops_meta 탭에 접수번호와 함께 기록됩니다.</p>
+              </div>
+              <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
             </div>
+            <div class="collapsible-body form-card-body">
             <div class="form-grid">
               <div class="field full">
                 <span class="radio-group-label required">집행 경로</span>
@@ -3243,25 +3309,34 @@
                 <textarea id="intake-notes" name="notes" placeholder="추가 요청사항이나 세팅 참고사항을 입력하세요."></textarea>
               </div>
             </div>
+            </div>
           </section>
 
-          <section class="form-card">
+          <section class="form-card" data-collapsible>
             <div class="form-card-header action-header">
               <div>
                 <h2>캠페인 · 광고그룹 · 소재 정보</h2>
                 <p>① 캠페인 정보 → ② 광고그룹 정보 → ③ 소재 정보 순서로 입력합니다. 한 광고주 접수 안에 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.</p>
               </div>
-              <button class="secondary" id="add-campaign" type="button">캠페인 추가</button>
+              <div class="header-actions">
+                <button class="secondary" id="add-campaign" type="button">캠페인 추가</button>
+                <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
+              </div>
             </div>
+            <div class="collapsible-body form-card-body">
             <p class="budget-note">
               예산 안내: OpenAI 직접 최소 400만원 Net / 크리테오 경유 1,000만원 Net(월 구좌제) / 일예산 최소 KRW 25,000(시스템 표기값, 실무상 더 높게 권장). 기준 미달 제출은 막지 않고 영업담당자가 별도 확인합니다.
             </p>
             <div class="campaign-list" id="campaign-list">
-              <article class="campaign-card" data-campaign-item>
+              <article class="campaign-card" data-campaign-item data-collapsible>
                 <div class="campaign-card-header">
                   <strong>캠페인 1</strong>
-                  <button class="ghost danger remove-campaign" type="button" hidden>캠페인 삭제</button>
+                  <div class="card-actions">
+                    <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
+                    <button class="ghost danger remove-campaign" type="button" hidden>캠페인 삭제</button>
+                  </div>
                 </div>
+                <div class="collapsible-body campaign-card-body">
                 <div class="form-grid">
                   <div class="field">
                     <label class="required">캠페인명</label>
@@ -3318,11 +3393,15 @@
                   <button class="secondary add-adgroup" type="button">광고그룹 추가</button>
                 </div>
                 <div class="adgroup-list">
-                  <article class="adgroup-card" data-adgroup-item>
+                  <article class="adgroup-card" data-adgroup-item data-collapsible>
                     <div class="adgroup-card-header">
                       <strong>광고그룹 1</strong>
-                      <button class="ghost danger remove-adgroup" type="button" hidden>광고그룹 삭제</button>
+                      <div class="card-actions">
+                        <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
+                        <button class="ghost danger remove-adgroup" type="button" hidden>광고그룹 삭제</button>
+                      </div>
                     </div>
+                    <div class="collapsible-body adgroup-card-body">
                     <div class="form-grid">
                       <div class="field">
                         <label>campaign_name</label>
@@ -3354,11 +3433,15 @@
                       <button class="secondary add-ad" type="button">소재 추가</button>
                     </div>
                     <div class="ad-list">
-                      <article class="ad-card" data-ad-item>
+                      <article class="ad-card" data-ad-item data-collapsible>
                         <div class="ad-card-header">
                           <strong>소재 1</strong>
-                          <button class="ghost danger remove-ad" type="button" hidden>삭제</button>
+                          <div class="card-actions">
+                            <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
+                            <button class="ghost danger remove-ad" type="button" hidden>삭제</button>
+                          </div>
                         </div>
+                        <div class="collapsible-body ad-card-body">
                         <div class="form-grid">
                           <div class="field">
                             <label>adgroup_name</label>
@@ -3386,23 +3469,35 @@
                             <span class="field-help">image_link · 정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
                           </div>
                         </div>
+                        </div>
                       </article>
+                    </div>
                     </div>
                   </article>
                 </div>
+                </div>
               </article>
+            </div>
             </div>
           </section>
 
-          <section class="form-card">
-            <h2>준비상태 체크</h2>
-            <div class="checkbox-grid">
-              <label class="check-chip"><input type="checkbox" name="adsManagerReady" /> Ads Manager 계정 생성 완료</label>
-              <label class="check-chip"><input type="checkbox" name="paymentReady" /> 결제수단 등록 완료</label>
-              <label class="check-chip"><input type="checkbox" name="crawlerReady" /> 랜딩 URL 크롤러 허용 점검 완료</label>
-              <label class="check-chip"><input type="checkbox" name="faviconReady" /> 파비콘 준비 완료</label>
+          <section class="form-card" data-collapsible>
+            <div class="form-card-header with-toggle">
+              <div>
+                <h2>준비상태 체크</h2>
+                <p>집행 전 준비 여부만 기록합니다.</p>
+              </div>
+              <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
             </div>
-            <p class="field-help">카드 정보는 수집하지 않습니다. 준비 여부만 체크해 주세요.</p>
+            <div class="collapsible-body form-card-body">
+              <div class="checkbox-grid">
+                <label class="check-chip"><input type="checkbox" name="adsManagerReady" /> Ads Manager 계정 생성 완료</label>
+                <label class="check-chip"><input type="checkbox" name="paymentReady" /> 결제수단 등록 완료</label>
+                <label class="check-chip"><input type="checkbox" name="crawlerReady" /> 랜딩 URL 크롤러 허용 점검 완료</label>
+                <label class="check-chip"><input type="checkbox" name="faviconReady" /> 파비콘 준비 완료</label>
+              </div>
+              <p class="field-help">카드 정보는 수집하지 않습니다. 준비 여부만 체크해 주세요.</p>
+            </div>
           </section>
 
           <div class="honeypot" aria-hidden="true">
@@ -4192,6 +4287,14 @@ oaiq("measure", "order_created", {
       const SETUP_GUIDE_PDF_FILENAME = `ChatGPT광고_캠페인세팅가이드_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const PIXEL_GUIDE_PDF_FILENAME = `ChatGPT광고_픽셀설치가이드_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const ENTRY_NOTICE_STORAGE_KEY = "openaiAdsEntryNoticeDismissedDate";
+      const campaignPalette = [
+        { color: "#ed1c24", bg: "#fff4f4" },
+        { color: "#0f62fe", bg: "#f2f7ff" },
+        { color: "#008a5b", bg: "#f1fbf6" },
+        { color: "#8a3ffc", bg: "#f7f2ff" },
+        { color: "#b26a00", bg: "#fff8eb" },
+        { color: "#0f766e", bg: "#effcf9" },
+      ];
       const pageMain = document.querySelector("main");
       const entryNotice = document.querySelector("#entry-notice");
       const entryNoticeDialog = entryNotice.querySelector(".notice-modal");
@@ -5150,6 +5253,40 @@ oaiq("measure", "order_created", {
         intakeStatus.className = `form-status ${type}`.trim();
       }
 
+      function collapseButtonFor(container) {
+        return container.querySelector(
+          ":scope > .form-card-header .collapse-toggle, :scope > .campaign-card-header .collapse-toggle, :scope > .adgroup-card-header .collapse-toggle, :scope > .ad-card-header .collapse-toggle",
+        );
+      }
+
+      function setCollapsed(container, collapsed) {
+        if (!container) return;
+        const button = collapseButtonFor(container);
+        container.dataset.collapsed = collapsed ? "true" : "false";
+        if (button) {
+          button.setAttribute("aria-expanded", String(!collapsed));
+          button.textContent = collapsed ? "펼치기" : "접기";
+        }
+      }
+
+      function resetCollapsibleState(container) {
+        [container, ...container.querySelectorAll("[data-collapsible]")].forEach((item) => {
+          setCollapsed(item, false);
+        });
+      }
+
+      function expandIntakeAncestors(control) {
+        const containers = [];
+        let node = control?.parentElement;
+        while (node && node !== intakeForm) {
+          if (node.matches?.("[data-collapsible]")) {
+            containers.push(node);
+          }
+          node = node.parentElement;
+        }
+        containers.reverse().forEach((container) => setCollapsed(container, false));
+      }
+
       function fieldLabelText(control) {
         const field = control.closest(".field");
         const label = field?.querySelector("label, .radio-group-label");
@@ -5161,6 +5298,7 @@ oaiq("measure", "order_created", {
       function focusIntakeField(control, message = "") {
         if (!control) return;
         if (message) setIntakeStatus(message, "error");
+        expandIntakeAncestors(control);
         control.scrollIntoView({ block: "center", behavior: "smooth" });
         window.setTimeout(() => {
           control.focus({ preventScroll: true });
@@ -5282,10 +5420,16 @@ oaiq("measure", "order_created", {
       }
 
       function updateIntakeStructureState() {
+        intakeForm.querySelectorAll("[data-collapsible]").forEach((item) => {
+          if (!item.dataset.collapsed) setCollapsed(item, false);
+        });
         const campaigns = campaignItems();
         const route = selectedValue("executionRoute");
         campaigns.forEach((campaignItem, campaignIndex) => {
           const campaignNumber = campaignIndex + 1;
+          const tone = campaignPalette[campaignIndex % campaignPalette.length];
+          campaignItem.style.setProperty("--campaign-color", tone.color);
+          campaignItem.style.setProperty("--campaign-bg", tone.bg);
           campaignItem.querySelector(".campaign-card-header strong").textContent = `캠페인 ${campaignNumber}`;
           campaignItem.querySelector(".remove-campaign").hidden = campaigns.length === 1;
 
@@ -5339,6 +5483,7 @@ oaiq("measure", "order_created", {
         const item = template.cloneNode(true);
         trimToSingleAdgroup(item);
         resetInputs(item);
+        resetCollapsibleState(item);
         campaignList.append(item);
         updateIntakeStructureState();
         item.querySelector(".campaign-name").focus();
@@ -5350,6 +5495,7 @@ oaiq("measure", "order_created", {
         const item = template.cloneNode(true);
         trimToSingleAd(item);
         resetInputs(item);
+        resetCollapsibleState(item);
         list.append(item);
         updateIntakeStructureState();
         item.querySelector(".adgroup-name").focus();
@@ -5360,6 +5506,7 @@ oaiq("measure", "order_created", {
         const template = list.querySelector("[data-ad-item]");
         const item = template.cloneNode(true);
         resetInputs(item);
+        resetCollapsibleState(item);
         list.append(item);
         updateIntakeStructureState();
         item.querySelector(".ad-title").focus();
@@ -5370,6 +5517,7 @@ oaiq("measure", "order_created", {
         const firstCampaign = campaignItems()[0];
         trimToSingleAdgroup(firstCampaign);
         resetInputs(firstCampaign);
+        resetCollapsibleState(firstCampaign);
         updateIntakeStructureState();
       }
 
@@ -5756,6 +5904,12 @@ oaiq("measure", "order_created", {
       checklistCopyButton.addEventListener("click", copyChecklist);
       checklistDownloadButton.addEventListener("click", downloadChecklistCsv);
       intakeForm.addEventListener("submit", submitIntake);
+      intakeForm.addEventListener("click", (event) => {
+        const toggleButton = event.target.closest(".collapse-toggle");
+        if (!toggleButton || !intakeForm.contains(toggleButton)) return;
+        const container = toggleButton.closest("[data-collapsible]");
+        setCollapsed(container, container.dataset.collapsed !== "true");
+      });
       intakeForm.querySelectorAll('input[name="executionRoute"]').forEach((input) => {
         input.addEventListener("change", syncObjectiveForRoute);
       });

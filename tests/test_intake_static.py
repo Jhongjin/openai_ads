@@ -49,6 +49,25 @@ class IntakeFormStaticTests(unittest.TestCase):
         for phrase in removed:
             self.assertNotIn(phrase, html)
 
+    def test_intake_form_has_campaign_color_and_collapse_controls(self) -> None:
+        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        panel = intake_panel_html()
+
+        required = [
+            "campaignPalette",
+            "data-collapsible",
+            "collapse-toggle",
+            "expandIntakeAncestors",
+            "--campaign-color",
+            "접기",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
+
+        self.assertIn("캠페인 추가", panel)
+        self.assertIn("광고그룹 추가", panel)
+        self.assertIn("소재 추가", panel)
+
 
 if __name__ == "__main__":
     unittest.main()
