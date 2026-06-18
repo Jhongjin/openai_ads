@@ -5427,14 +5427,25 @@ oaiq("measure", "order_created", {
         return container.querySelector(`${selector}:checked`)?.value || "";
       }
 
+      function isolateCampaignRadioNames(campaignItem, campaignNumber) {
+        campaignItem.querySelectorAll(".budget-type").forEach((input) => {
+          input.name = `budget_type_${campaignNumber}`;
+        });
+        campaignItem.querySelectorAll(".campaign-objective").forEach((input) => {
+          input.name = `objective_${campaignNumber}`;
+        });
+      }
+
       function syncNameMirrors() {
         campaignItems().forEach((campaignItem) => {
-          const campaignName = campaignItem.querySelector(".campaign-name").value.trim();
+          const campaignName = campaignItem.querySelector(".campaign-name")?.value.trim() || "";
           adgroupItems(campaignItem).forEach((adgroupItem) => {
-            const adgroupName = adgroupItem.querySelector(".adgroup-name").value.trim();
-            adgroupItem.querySelector(".campaign-name-mirror").value = campaignName;
+            const adgroupName = adgroupItem.querySelector(".adgroup-name")?.value.trim() || "";
+            const campaignMirror = adgroupItem.querySelector(".campaign-name-mirror");
+            if (campaignMirror) campaignMirror.value = campaignName;
             adItems(adgroupItem).forEach((adItem) => {
-              adItem.querySelector(".adgroup-name-mirror").value = adgroupName;
+              const adgroupMirror = adItem.querySelector(".adgroup-name-mirror");
+              if (adgroupMirror) adgroupMirror.value = adgroupName;
             });
           });
         });
@@ -5461,6 +5472,8 @@ oaiq("measure", "order_created", {
             input.checked = input.value === "views" || input.value === "lifetime";
           } else if (input.type === "checkbox") {
             input.checked = false;
+          } else if (input.matches(".campaign-name-mirror, .adgroup-name-mirror")) {
+            input.value = "";
           } else if (!input.readOnly) {
             input.value = "";
           }
@@ -5496,12 +5509,7 @@ oaiq("measure", "order_created", {
           campaignItem.querySelector(".campaign-card-header strong").textContent = `캠페인 ${campaignNumber}`;
           campaignItem.querySelector(".remove-campaign").hidden = campaigns.length === 1;
 
-          campaignItem.querySelectorAll(".budget-type").forEach((input) => {
-            input.name = `budget_type_${campaignNumber}`;
-          });
-          campaignItem.querySelectorAll(".campaign-objective").forEach((input) => {
-            input.name = `objective_${campaignNumber}`;
-          });
+          isolateCampaignRadioNames(campaignItem, campaignNumber);
           const clickObjective = campaignItem.querySelector(".objective-clicks");
           if (route === "criteo") {
             campaignItem.querySelector('.campaign-objective[value="views"]').checked = true;
@@ -5544,6 +5552,8 @@ oaiq("measure", "order_created", {
       function addCampaignItem() {
         const template = campaignList.querySelector("[data-campaign-item]");
         const item = template.cloneNode(true);
+        const nextCampaignNumber = campaignItems().length + 1;
+        isolateCampaignRadioNames(item, nextCampaignNumber);
         trimToSingleAdgroup(item);
         resetInputs(item);
         resetCollapsibleState(item);
@@ -5586,6 +5596,12 @@ oaiq("measure", "order_created", {
 
       function syncObjectiveForRoute() {
         updateIntakeStructureState();
+      }
+
+      function handleIntakeHierarchyInput(event) {
+        const item = event.target.closest("[data-ad-item]");
+        if (item) updateAdCounters(item);
+        if (event.target.matches(".campaign-name, .adgroup-name")) syncNameMirrors();
       }
 
       function validateIntakeForm() {
@@ -6006,11 +6022,8 @@ oaiq("measure", "order_created", {
           updateIntakeStructureState();
         }
       });
-      campaignList.addEventListener("input", (event) => {
-        const item = event.target.closest("[data-ad-item]");
-        if (item) updateAdCounters(item);
-        if (event.target.matches(".campaign-name, .adgroup-name")) syncNameMirrors();
-      });
+      campaignList.addEventListener("input", handleIntakeHierarchyInput);
+      campaignList.addEventListener("change", handleIntakeHierarchyInput);
       entryNoticeClose.addEventListener("click", closeEntryNotice);
       document.addEventListener("keydown", trapEntryNoticeFocus);
       formStartedAt.value = String(Date.now());

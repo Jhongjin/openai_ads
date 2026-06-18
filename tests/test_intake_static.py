@@ -68,6 +68,17 @@ class IntakeFormStaticTests(unittest.TestCase):
         self.assertIn("광고그룹 추가", panel)
         self.assertIn("소재 추가", panel)
 
+    def test_campaign_clone_isolates_radios_before_append(self) -> None:
+        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("function isolateCampaignRadioNames", html)
+
+        start = html.index("function addCampaignItem()")
+        end = html.index("function addAdgroupItem(", start)
+        add_campaign = html[start:end]
+
+        self.assertLess(add_campaign.index("isolateCampaignRadioNames"), add_campaign.index("campaignList.append(item)"))
+        self.assertIn('campaignList.addEventListener("change", handleIntakeHierarchyInput)', html)
+
 
 if __name__ == "__main__":
     unittest.main()
