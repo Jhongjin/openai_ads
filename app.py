@@ -167,6 +167,11 @@ def creative_upload_draft_page() -> FileResponse:
     return FileResponse(project_root() / "templates" / "creative_upload_draft.html")
 
 
+@app.get("/ads-api-draft", include_in_schema=False)
+def ads_api_draft_page() -> FileResponse:
+    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
+
+
 @app.get("/slides", include_in_schema=False)
 def slides_page() -> FileResponse:
     return _index_file()

@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAI Ads API 운영 검토 초안</title>
+    <style>
+      @font-face {
+        font-family: "Pretendard Variable";
+        src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/woff2/PretendardVariable.woff2")
+          format("woff2-variations");
+        font-weight: 45 920;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --brand: #ed1c24;
+        --brand-dark: #b5121b;
+        --blue: #0f62fe;
+        --green: #008a5b;
+        --orange: #b45309;
+        --ink: #111827;
+        --muted: #5f6b7a;
+        --line: #d9dee7;
+        --soft: #f6f8fb;
+        --panel: #ffffff;
+        --shadow: 0 14px 36px rgb(17 24 39 / 8%);
+        --radius: 8px;
+        --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+          BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI",
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f6f9;
+        color: var(--ink);
+        font-family: var(--font-sans);
+        line-height: 1.56;
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
+      code {
+        border: 1px solid #dbe2ee;
+        border-radius: 6px;
+        background: #f8fafc;
+        padding: 2px 6px;
+        color: #172554;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono",
+          monospace;
+        font-size: 0.92em;
+      }
+
+      .page {
+        width: min(1520px, calc(100% - 48px));
+        margin: 32px auto 72px;
+      }
+
+      .hero,
+      .card,
+      .matrix,
+      .source-list {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 24px;
+        align-items: end;
+        padding: 28px 32px;
+        border-left: 6px solid var(--brand);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        font-size: 34px;
+        line-height: 1.22;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-bottom: 14px;
+        font-size: 21px;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 16px;
+        letter-spacing: 0;
+      }
+
+      .note {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .draft-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #fecdd3;
+        border-radius: 999px;
+        background: #fff1f2;
+        color: #9f1239;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .updated {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .card {
+        margin-top: 18px;
+        padding: 24px;
+      }
+
+      .lead-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .summary-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 18px;
+      }
+
+      .summary-card.good {
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+      }
+
+      .summary-card.warn {
+        border-color: #fed7aa;
+        background: #fff7ed;
+      }
+
+      .summary-card.no {
+        border-color: #fecdd3;
+        background: #fff1f2;
+      }
+
+      .summary-card ul,
+      .card ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      .summary-card li,
+      .card li {
+        margin: 6px 0;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #fff;
+        padding: 6px 10px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .pill.good {
+        border-color: #86efac;
+        color: #166534;
+      }
+
+      .pill.warn {
+        border-color: #fdba74;
+        color: #9a3412;
+      }
+
+      .pill.blue {
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        box-shadow: none;
+      }
+
+      .matrix th,
+      .matrix td {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 14px 16px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .matrix th {
+        background: #f1f5f9;
+        color: #263445;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .matrix tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .status.ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .status.warn {
+        background: #ffedd5;
+        color: #9a3412;
+      }
+
+      .status.no {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      .callout {
+        border-left: 5px solid var(--brand);
+        background: #fff1f2;
+        padding: 16px 18px;
+        color: #334155;
+      }
+
+      .callout.green {
+        border-left-color: var(--green);
+        background: #ecfdf5;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .source-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        box-shadow: none;
+        padding: 16px;
+      }
+
+      .source-list a {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 10px 12px;
+        color: #1e293b;
+        font-size: 14px;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .code-box {
+        overflow-x: auto;
+        border: 1px solid #dbe2ee;
+        border-radius: 8px;
+        background: #0f172a;
+        padding: 16px;
+        color: #dbeafe;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono",
+          monospace;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .footer {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          width: min(100% - 28px, 760px);
+          margin-top: 18px;
+        }
+
+        .hero,
+        .lead-grid,
+        .two-col,
+        .source-list {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          align-items: start;
+          padding: 22px;
+        }
+
+        .updated {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">OpenAI Ads API</p>
+          <h1>OpenAI Ads API 운영 검토 초안</h1>
+          <p class="note">
+            운영 대시보드, 예산 소진 모니터링, 캠페인·광고 소재 자동화에서
+            무엇을 API로 처리할 수 있는지 정리한 검토용 별도 페이지입니다.
+          </p>
+        </div>
+        <div>
+          <span class="draft-badge">별도 초안 페이지 · 메인 메뉴 미노출</span>
+          <div class="updated">최종 업데이트: 2026-06-18</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>운영 관점 결론</h2>
+        <div class="lead-grid">
+          <article class="summary-card good">
+            <h3>바로 설계 가능한 영역</h3>
+            <ul>
+              <li>캠페인, 광고그룹, 광고의 생성·조회·수정·상태 변경</li>
+              <li>이미지 파일 업로드 후 광고 소재에 재사용</li>
+              <li>계정·캠페인·광고그룹·광고 단위 성과 리포트 조회</li>
+              <li>노출, 클릭, 비용, CTR, CPC, CPM 기반 운영 대시보드</li>
+            </ul>
+          </article>
+          <article class="summary-card warn">
+            <h3>보수적으로 봐야 할 영역</h3>
+            <ul>
+              <li>완전한 실시간 수치 또는 반영 지연 SLA는 문서상 확인 필요</li>
+              <li>전환 성과는 픽셀·이벤트 설치 상태와 매칭 품질에 의존</li>
+              <li>상품 피드 광고는 피드 준비·매핑·측정 구조를 별도 점검</li>
+            </ul>
+          </article>
+          <article class="summary-card no">
+            <h3>API 범위 밖으로 보는 영역</h3>
+            <ul>
+              <li>인보이스, VAT, 결제수단, 크리테오 정산 정책</li>
+              <li>계정 Spend Cap 승인·상향 요청</li>
+              <li>Ads Manager 계정 신규 provisioning 승인</li>
+              <li>공식 문서에 없는 내부 영업 조건 자동 확정</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>실시간 노출량·효율·예산 소진을 볼 수 있나?</h2>
+        <div class="callout green">
+          <strong>가능한 방향:</strong> OpenAI Ads API의 Insights는 광고 계정,
+          캠페인, 광고그룹, 광고 범위의 집계 성과 데이터를 조회하며 공식
+          지표로 <code>impressions</code>, <code>clicks</code>,
+          <code>spend</code>, <code>ctr</code>, <code>cpc</code>,
+          <code>cpm</code>을 제공합니다. 따라서 운영 대시보드에서 노출·클릭·비용·효율
+          지표를 가져오는 설계는 가능합니다.
+        </div>
+        <p class="footer">
+          단, 공식 문서에서 “완전한 실시간” 갱신 주기나 지연 SLA를 확인하지
+          못했으므로, 초기 구현은 30분~1시간 단위 주기적 동기화와 “최근
+          수집시각” 표시를 권장합니다.
+        </p>
+        <div class="pill-row">
+          <span class="pill good">노출량 조회 가능</span>
+          <span class="pill good">클릭·비용 조회 가능</span>
+          <span class="pill good">CTR/CPC/CPM 조회 가능</span>
+          <span class="pill warn">완전 실시간 SLA 미확인</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>API 활용 범위 매트릭스</h2>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>운영 업무</th>
+              <th>판정</th>
+              <th>사용 API/근거</th>
+              <th>운영 메모</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>캠페인 목록·생성·수정·일시정지</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Campaigns API: create, list, retrieve, update, state change</td>
+              <td>예산, 상태, 기간 같은 운영 메타데이터를 서버에서 관리 가능.</td>
+            </tr>
+            <tr>
+              <td>광고그룹 목록·생성·수정·보관</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Ad Groups API: create, list, retrieve, update, state change</td>
+              <td>입찰가, 키워드/컨텍스트 힌트, 기본 URL 자동 세팅 후보.</td>
+            </tr>
+            <tr>
+              <td>광고 소재 목록·생성·수정·상태 변경</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Ads API: create, list, retrieve, update, state change</td>
+              <td>제목·설명·랜딩 URL·이미지 파일 ID 기반으로 소재 생성.</td>
+            </tr>
+            <tr>
+              <td>이미지/파일 등록</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Files API: remote image 또는 binary upload 후 file ID 재사용</td>
+              <td>광고주가 올린 이미지를 검수 후 OpenAI Ads 파일로 업로드 가능.</td>
+            </tr>
+            <tr>
+              <td>노출·클릭·비용·효율 대시보드</td>
+              <td><span class="status ok">가능</span></td>
+              <td>
+                Insights API: ad account, campaign, ad group, ad scope의 집계 성과
+              </td>
+              <td>캠페인별 소진율, 저성과, 미노출 경보를 만들 수 있음.</td>
+            </tr>
+            <tr>
+              <td>국가·디바이스·상품 기준 세그먼트 분석</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Insights segments: product, country, device</td>
+              <td>문서상 세그먼트는 1개 추가 차원 기준으로 설계하는 것이 안전.</td>
+            </tr>
+            <tr>
+              <td>지역 타겟팅 설계</td>
+              <td><span class="status ok">가능</span></td>
+              <td>Campaign Targeting guide: country, region, DMA</td>
+              <td>초기 한국 운영은 KR 중심, 추후 국가 확장 시 코드 검증 필요.</td>
+            </tr>
+            <tr>
+              <td>상품 피드 기반 광고</td>
+              <td><span class="status warn">확인 필요</span></td>
+              <td>Product feeds guide</td>
+              <td>피드 포맷·매핑·상품별 리포팅은 별도 파일/운영 플로우 점검 필요.</td>
+            </tr>
+            <tr>
+              <td>인보이스·VAT·결제수단·정산 자동화</td>
+              <td><span class="status no">문서 미확인</span></td>
+              <td>공개 Ads API 문서 범위에서 확인되지 않음</td>
+              <td>나스미디어/크리테오 정산 운영 프로세스로 유지.</td>
+            </tr>
+            <tr>
+              <td>Account Spend Cap 상향·승인</td>
+              <td><span class="status no">문서 미확인</span></td>
+              <td>공개 Ads API 문서 범위에서 확인되지 않음</td>
+              <td>OpenAI 담당자 요청·승인 루트로 처리하는 것이 안전.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>추천 MVP 구현안</h2>
+        <div class="two-col">
+          <div>
+            <h3>1단계: 읽기 전용 운영 대시보드</h3>
+            <ul>
+              <li>API key를 서버 환경변수로 저장하고 브라우저에는 노출하지 않음</li>
+              <li>캠페인·광고그룹·광고 목록을 주기적으로 동기화</li>
+              <li>Insights를 시간 단위 또는 일 단위로 수집해 Supabase에 저장</li>
+              <li>최근 수집시각, 예산 대비 소진율, 노출/클릭/비용 추이를 표시</li>
+            </ul>
+          </div>
+          <div>
+            <h3>2단계: 운영 알림과 제한적 쓰기</h3>
+            <ul>
+              <li>소진율 80%/95%, 미노출, CPC·CPM 급등 경보</li>
+              <li>승인된 워크북만 Campaigns/Ad Groups/Ads API로 생성</li>
+              <li>일시정지·재개 같은 상태 변경은 관리자 확인 후 실행</li>
+              <li>수정 이력은 별도 ops log에 남겨 추적 가능하게 설계</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>예시 호출 형태</h2>
+        <div class="code-box">
+GET https://api.ads.openai.com/v1/ad_account/insights
+Authorization: Bearer $OPENAI_ADS_API_KEY
+
+fields[]=campaign.id
+fields[]=campaign.name
+fields[]=campaign.impressions
+fields[]=campaign.clicks
+fields[]=campaign.spend
+fields[]=campaign.ctr
+fields[]=campaign.cpc
+fields[]=campaign.cpm
+time_granularity=daily
+aggregation_level=campaign
+        </div>
+        <p class="footer">
+          실제 파라미터와 time range 구성은 공식 Insights 문서를 기준으로
+          구현합니다. API key는 Ads Manager의 Settings에서 발급하고, 모든
+          요청은 <code>Authorization: Bearer $OPENAI_ADS_API_KEY</code> 헤더를
+          사용합니다.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>보안·운영 가드레일</h2>
+        <ul>
+          <li>API 키는 Vercel/GitHub Secrets 또는 서버 환경변수에만 저장합니다.</li>
+          <li>브라우저 JS에서 Ads API를 직접 호출하지 않습니다.</li>
+          <li>쓰기 API는 승인된 관리자 액션 또는 승인된 워크북에만 연결합니다.</li>
+          <li>성과 데이터 저장 시 광고주명, 캠페인명, 비용 데이터 접근 권한을 제한합니다.</li>
+          <li>공식 문서에 없는 정산·계정 승인 값은 RAG 내부 확정 문서 또는 담당자 확인으로만 안내합니다.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>공식 문서 링크</h2>
+        <p class="note">
+          이 초안은 아래 OpenAI Developers 공식 Ads API 문서를 기준으로
+          정리했습니다.
+        </p>
+        <div class="source-list">
+          <a href="https://developers.openai.com/ads/api-overview" target="_blank" rel="noreferrer">API Overview <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-quickstart" target="_blank" rel="noreferrer">API Quickstart <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/authentication" target="_blank" rel="noreferrer">Authentication <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/campaigns" target="_blank" rel="noreferrer">Campaigns <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/ad-groups" target="_blank" rel="noreferrer">Ad Groups <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/ads" target="_blank" rel="noreferrer">Ads <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/insights" target="_blank" rel="noreferrer">Insights <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/api-reference/files" target="_blank" rel="noreferrer">Files <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/product-feeds" target="_blank" rel="noreferrer">Product Feeds <span>↗</span></a>
+          <a href="https://developers.openai.com/ads/campaign-targeting" target="_blank" rel="noreferrer">Campaign Targeting <span>↗</span></a>
+        </div>
+      </section>
+
+      <p class="footer">
+        케이티나스미디어 미디어채널실 / openai@nasmedia.co.kr · 본 페이지는
+        검토용 초안이며, API 문서 변경과 계정 권한에 따라 실제 구현 범위가
+        달라질 수 있습니다.
+      </p>
+    </main>
+  </body>
+</html>
