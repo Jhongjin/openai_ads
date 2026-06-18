@@ -31,6 +31,11 @@ class IntakeAppsScriptStaticTests(unittest.TestCase):
         self.assertNotIn("submitter_email", script)
         self.assertNotIn("primaryCampaignName", script)
         self.assertNotIn("adgroupsWithCampaigns", script)
+        self.assertIn("mailSent: mailResult.sent", script)
+        self.assertIn("mailError: mailResult.error", script)
+        self.assertIn("return { sent: true", script)
+        self.assertIn("return { sent: false", script)
+        self.assertIn("function sendMailAuthTest()", script)
 
 
 if __name__ == "__main__":

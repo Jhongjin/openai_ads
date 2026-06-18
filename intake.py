@@ -77,10 +77,6 @@ def _date_for_sheet(value: date | None) -> str:
 
 
 class OpsMeta(BaseModel):
-    upload_mode: Literal["bulk_sheet", "campaigns", "adgroups", "ads"] = Field(
-        default="bulk_sheet",
-        alias="uploadMode",
-    )
     execution_route: Literal["openai_cbt", "criteo"] = Field(default="openai_cbt", alias="executionRoute")
     advertiser_name: str = Field(..., alias="advertiserName")
     ads_manager_account: str = Field(default="", alias="adsManagerAccount")
@@ -729,7 +725,7 @@ async def forward_intake_to_sheet(
     submission: IntakeSubmission,
     *,
     client_key: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     _enforce_spam_controls(submission, client_key)
 
     webhook_url = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "").strip()
@@ -770,4 +766,8 @@ async def forward_intake_to_sheet(
             or response_payload.get("submitted_at_kst")
             or fallback_submitted_at_kst
         ),
+        "mail_sent": response_payload.get("mailSent")
+        if isinstance(response_payload.get("mailSent"), bool)
+        else None,
+        "mail_error": str(response_payload.get("mailError") or ""),
     }

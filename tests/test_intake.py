@@ -255,7 +255,6 @@ class IntakeValidationTests(unittest.TestCase):
     def test_new_creative_upload_meta_payload_is_supported(self) -> None:
         payload = valid_payload()
         payload["opsMeta"] = {
-            "uploadMode": "bulk_sheet",
             "advertiserName": "테스트 광고주",
             "adsManagerAccount": "Test Ads Account",
             "salesOwner": "케이티나스 담당자",

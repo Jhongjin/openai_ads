@@ -286,6 +286,10 @@
         color: #b91c1c;
       }
 
+      .status.warning {
+        color: #b45309;
+      }
+
       .bulk-result {
         margin-top: 12px;
         border: 1px solid #d9dee7;
@@ -653,15 +657,6 @@
             </div>
           </div>
           <div class="grid">
-            <div class="field full">
-              <span class="group-label required">업로드 유형</span>
-              <div class="radio-row">
-                <label class="chip"><input type="radio" name="uploadMode" value="bulk_sheet" checked /> 전체 일괄 시트</label>
-                <label class="chip"><input type="radio" name="uploadMode" value="campaigns" /> 캠페인만</label>
-                <label class="chip"><input type="radio" name="uploadMode" value="adgroups" /> 광고그룹만</label>
-                <label class="chip"><input type="radio" name="uploadMode" value="ads" /> 광고만</label>
-              </div>
-            </div>
             <div class="field">
               <label class="required" for="advertiser-name">광고주명</label>
               <input id="advertiser-name" name="advertiserName" required />
@@ -1321,7 +1316,6 @@
         const data = new FormData(form);
         return {
           opsMeta: {
-            uploadMode: selected("uploadMode"),
             advertiserName: data.get("advertiserName")?.trim(),
             adsManagerAccount: data.get("adsManagerAccount")?.trim(),
             salesOwner: data.get("salesOwner")?.trim(),
@@ -1461,7 +1455,13 @@
           setStatus(`기록 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
           return;
         }
-        setStatus(`기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST · openai@nasmedia.co.kr 알림 발송`, "success");
+        const mailNotice = body.mail_sent === false
+          ? ` · 메일 발송 확인 필요${body.mail_error ? `: ${body.mail_error}` : ""}`
+          : " · openai@nasmedia.co.kr 알림 발송";
+        setStatus(
+          `기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST${mailNotice}`,
+          body.mail_sent === false ? "warning" : "success",
+        );
         pendingSubmissionPayload = null;
         startedAt.value = String(Date.now());
       }

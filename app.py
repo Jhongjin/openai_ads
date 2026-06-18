@@ -82,6 +82,8 @@ class IngestResponse(BaseModel):
 class IntakeResponse(BaseModel):
     receipt_number: str
     submitted_at_kst: str
+    mail_sent: bool | None = None
+    mail_error: str | None = None
 
 
 class WorkbookInspectResponse(BaseModel):

@@ -85,12 +85,14 @@ function doPost(e) {
       appendRows_("ads", ads.map(withReceipt));
       appendRows_("ops_meta", [opsMeta]);
 
-      notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads);
+      const mailResult = notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads);
 
       return jsonResponse_({
         ok: true,
         receiptNumber,
         submittedAtKst,
+        mailSent: mailResult.sent,
+        mailError: mailResult.error || "",
         counts: {
           campaigns: campaigns.length,
           adgroups: adgroups.length,
@@ -181,9 +183,20 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
 
   try {
     MailApp.sendEmail(recipient, subject, body);
+    return { sent: true, error: "" };
   } catch (error) {
-    console.log(`MailApp.sendEmail failed: ${error}`);
+    const message = String(error && error.message ? error.message : error);
+    Logger.log(`MailApp.sendEmail failed: ${message}`);
+    return { sent: false, error: message };
   }
+}
+
+function sendMailAuthTest() {
+  MailApp.sendEmail(
+    "openai@nasmedia.co.kr",
+    "[OpenAI Ads] Apps Script 메일 권한 테스트",
+    "이 메일이 도착하면 Apps Script MailApp 권한과 발송 설정이 정상입니다."
+  );
 }
 
 function jsonResponse_(body) {

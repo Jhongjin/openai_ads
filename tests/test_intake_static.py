@@ -21,7 +21,6 @@ class IntakeFormStaticTests(unittest.TestCase):
         required = [
             "Ads Manager 벌크 업로드",
             "소재 접수 기본 정보",
-            "업로드 유형",
             "campaign_name",
             "adgroup_name",
             "budget_max",
@@ -43,6 +42,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             'name="campaignObjective"',
             'name="startDate"',
             'name="targetCountry"',
+            "업로드 유형",
+            "uploadMode",
         ]
         for phrase in removed:
             self.assertNotIn(phrase, html)
@@ -124,6 +125,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "OpenAI 직접 업로드",
             "크리테오 경유",
             "케이티나스미디어 담당자",
+            "업로드 유형",
+            "uploadMode",
         ]
         for phrase in removed:
             self.assertNotIn(phrase, html)
@@ -139,6 +142,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "submitReviewedPayload",
             "구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.",
             "openai@nasmedia.co.kr 알림 발송",
+            "메일 발송 확인 필요",
+            "body.mail_sent === false",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
