@@ -897,8 +897,9 @@
         gap: 10px;
         border: 1px solid #d9dee7;
         border-radius: 8px;
-        background: #f8fafc;
-        padding: 12px;
+        background: #fff;
+        padding: 14px 16px;
+        box-shadow: 0 8px 20px rgb(15 23 42 / 3%);
       }
 
       .structure-summary,
@@ -911,26 +912,44 @@
 
       .structure-chip {
         display: inline-flex;
-        min-height: 28px;
+        min-height: 34px;
         align-items: center;
         border: 1px solid #d6dce7;
-        border-radius: 999px;
+        border-radius: 6px;
         background: #fff;
-        padding: 0 10px;
-        color: #344054;
+        padding: 0 11px;
+        color: #243041;
         font-size: 12px;
         font-weight: 850;
         font-variant-numeric: tabular-nums;
       }
 
+      .structure-summary .structure-chip:not([data-jump-campaign]) {
+        min-height: 22px;
+        margin-right: 8px;
+        padding: 0 14px 0 0;
+        border: 0;
+        border-right: 1px solid #d6dce7;
+        border-radius: 0;
+        background: transparent;
+        color: #475467;
+      }
+
+      .structure-summary .structure-chip:not([data-jump-campaign]):last-child {
+        margin-right: 0;
+        border-right: 0;
+      }
+
       .structure-chip[data-jump-campaign] {
-        border-color: color-mix(in srgb, var(--chip-color, var(--brand)) 38%, #d6dce7);
-        color: var(--chip-color, var(--brand));
+        border-left: 3px solid var(--chip-color, var(--brand));
+        color: #243041;
         cursor: pointer;
       }
 
       .structure-chip[data-jump-campaign]:hover {
-        background: color-mix(in srgb, var(--chip-color, var(--brand)) 8%, #fff);
+        border-color: #c8d1de;
+        border-left-color: var(--chip-color, var(--brand));
+        background: #f8fafc;
       }
 
       .campaign-card,
@@ -983,11 +1002,13 @@
       .campaign-card-header strong {
         display: inline-flex;
         align-items: center;
-        border: 1px solid color-mix(in srgb, var(--campaign-color) 35%, #d9dee7);
-        border-radius: 999px;
-        background: var(--campaign-bg);
-        padding: 6px 10px;
-        color: var(--campaign-color);
+        min-height: 32px;
+        border-left: 3px solid var(--campaign-color);
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: inset 0 0 0 1px #e0e6ef;
+        padding: 0 10px;
+        color: #172033;
       }
 
       .campaign-card-header .card-title,
