@@ -239,7 +239,10 @@ async def intake(request: Request) -> IntakeResponse:
         client_key = request.client.host if request.client else "unknown"
         result = await forward_intake_to_sheet(submission, client_key=client_key)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=400,
+            detail=exc.errors(include_url=False, include_input=False),
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

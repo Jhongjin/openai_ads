@@ -92,6 +92,89 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertNotIn("honeypot", payload["data"]["ops"])
         self.assertNotIn("receiptNumber", payload)
 
+    def test_multi_campaign_payload_preserves_each_campaign_and_adgroup_link(self) -> None:
+        payload = valid_payload()
+        tomorrow = datetime.now(KST).date() + timedelta(days=1)
+        end = tomorrow + timedelta(days=14)
+        payload.pop("campaign")
+        payload.pop("adgroup")
+        payload.pop("ads")
+        payload["campaigns"] = [
+            {
+                "campaign": {
+                    "campaign_name": "campaign_cpm",
+                    "budget_max": 4000000,
+                    "budget_type": "lifetime",
+                    "launch_date": tomorrow.isoformat(),
+                    "end_date": end.isoformat(),
+                    "objective": "views",
+                    "target_countries": ["KR"],
+                },
+                "adgroups": [
+                    {
+                        "adgroup": {
+                            "adgroup_name": "ag_cpm",
+                            "max_bid": 91000,
+                            "keywords": ["노출"],
+                        },
+                        "ads": [
+                            {
+                                "title": "노출 캠페인 소재",
+                                "copy": "브랜드 메시지를 넓게 알립니다",
+                                "link": "https://example.com/cpm",
+                                "image_link": "https://example.com/cpm.png",
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "campaign": {
+                    "campaign_name": "campaign_cpc",
+                    "budget_max": 4000000,
+                    "budget_type": "daily",
+                    "launch_date": tomorrow.isoformat(),
+                    "end_date": end.isoformat(),
+                    "objective": "clicks",
+                    "target_countries": ["KR"],
+                },
+                "adgroups": [
+                    {
+                        "adgroup": {
+                            "adgroup_name": "ag_cpc",
+                            "max_bid": 4100,
+                            "keywords": ["클릭"],
+                        },
+                        "ads": [
+                            {
+                                "title": "클릭 캠페인 소재",
+                                "copy": "랜딩 페이지 방문을 유도합니다",
+                                "link": "https://example.com/cpc",
+                                "image_link": "https://example.com/cpc.png",
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+
+        submission = IntakeSubmission.model_validate(payload)
+        sheet_payload = build_sheet_payload(submission, shared_secret="secret")
+
+        self.assertEqual(
+            [item["campaign_name"] for item in sheet_payload["data"]["campaigns"]],
+            ["campaign_cpm", "campaign_cpc"],
+        )
+        self.assertEqual(
+            [item["objective"] for item in sheet_payload["data"]["campaigns"]],
+            ["views", "clicks"],
+        )
+        self.assertEqual(
+            [(item["campaign_name"], item["adgroup_name"]) for item in sheet_payload["data"]["adgroups"]],
+            [("campaign_cpm", "ag_cpm"), ("campaign_cpc", "ag_cpc")],
+        )
+        self.assertEqual(len(sheet_payload["data"]["ads"]), 2)
+
     def test_rejects_special_characters_in_names(self) -> None:
         payload = valid_payload()
         payload["campaign"]["campaign_name"] = "캠페인#1"

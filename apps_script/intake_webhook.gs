@@ -70,6 +70,9 @@ function doPost(e) {
       const submittedAtKst = nowKst_();
       const withReceipt = (row) => Object.assign({ receipt_number: receiptNumber }, row);
       const primaryCampaignName = String(campaigns[0].campaign_name || "");
+      const adgroupsWithCampaigns = adgroups.map((row) =>
+        Object.assign({ campaign_name: primaryCampaignName }, row),
+      );
 
       const opsMeta = Object.assign({}, ops, {
         receipt_number: receiptNumber,
@@ -77,10 +80,7 @@ function doPost(e) {
       });
 
       appendRows_("campaigns", campaigns.map(withReceipt));
-      appendRows_(
-        "adgroups",
-        adgroups.map((row) => withReceipt(Object.assign({ campaign_name: primaryCampaignName }, row))),
-      );
+      appendRows_("adgroups", adgroupsWithCampaigns.map(withReceipt));
       appendRows_("ads", ads.map(withReceipt));
       appendRows_("ops_meta", [opsMeta]);
 

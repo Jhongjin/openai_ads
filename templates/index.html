@@ -3249,7 +3249,7 @@
             <div class="form-card-header action-header">
               <div>
                 <h2>캠페인 · 광고그룹 · 소재 정보</h2>
-                <p>한 광고주 접수 안에 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.</p>
+                <p>① 캠페인 정보 → ② 광고그룹 정보 → ③ 소재 정보 순서로 입력합니다. 한 광고주 접수 안에 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.</p>
               </div>
               <button class="secondary" id="add-campaign" type="button">캠페인 추가</button>
             </div>
@@ -3383,7 +3383,7 @@
                           <div class="field full">
                             <label class="required">이미지 URL</label>
                             <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
-                            <span class="field-help">정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
+                            <span class="field-help">image_link · 정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
                           </div>
                         </div>
                       </article>
@@ -5150,6 +5150,40 @@ oaiq("measure", "order_created", {
         intakeStatus.className = `form-status ${type}`.trim();
       }
 
+      function fieldLabelText(control) {
+        const field = control.closest(".field");
+        const label = field?.querySelector("label, .radio-group-label");
+        return (label?.textContent || control.name || "필수 항목")
+          .replace("*", "")
+          .trim();
+      }
+
+      function focusIntakeField(control, message = "") {
+        if (!control) return;
+        if (message) setIntakeStatus(message, "error");
+        control.scrollIntoView({ block: "center", behavior: "smooth" });
+        window.setTimeout(() => {
+          control.focus({ preventScroll: true });
+          if (typeof control.reportValidity === "function") {
+            control.reportValidity();
+          }
+        }, 180);
+      }
+
+      function firstInvalidIntakeControl() {
+        return [...intakeForm.querySelectorAll("input, select, textarea")].find((control) => {
+          if (control.disabled || control.type === "hidden") return false;
+          return typeof control.checkValidity === "function" && !control.checkValidity();
+        });
+      }
+
+      function validateNativeIntakeFields() {
+        const invalidControl = firstInvalidIntakeControl();
+        if (!invalidControl) return true;
+        focusIntakeField(invalidControl, `${fieldLabelText(invalidControl)} 항목을 입력하거나 형식을 확인해 주세요.`);
+        return false;
+      }
+
       function selectedValue(name) {
         return intakeForm.querySelector(`input[name="${name}"]:checked`)?.value || "";
       }
@@ -5345,7 +5379,7 @@ oaiq("measure", "order_created", {
 
       function validateIntakeForm() {
         syncNameMirrors();
-        if (!intakeForm.reportValidity()) return false;
+        if (!validateNativeIntakeFields()) return false;
 
         const campaignNames = new Set();
         const adgroupNames = new Set();
@@ -5353,13 +5387,11 @@ oaiq("measure", "order_created", {
           const campaignNameInput = campaignItem.querySelector(".campaign-name");
           const campaignName = campaignNameInput.value.trim();
           if (!isSafeWorkbookName(campaignName)) {
-            setIntakeStatus("캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
-            campaignNameInput.focus();
+            focusIntakeField(campaignNameInput, "캠페인명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.");
             return false;
           }
           if (campaignNames.has(campaignName)) {
-            setIntakeStatus(`캠페인명 "${campaignName}"이 중복되었습니다. 캠페인명은 접수 내에서 고유해야 합니다.`, "error");
-            campaignNameInput.focus();
+            focusIntakeField(campaignNameInput, `캠페인명 "${campaignName}"이 중복되었습니다. 캠페인명은 접수 내에서 고유해야 합니다.`);
             return false;
           }
           campaignNames.add(campaignName);
@@ -5367,8 +5399,7 @@ oaiq("measure", "order_created", {
           const launchDate = campaignItem.querySelector(".launch-date").value;
           const endDate = campaignItem.querySelector(".end-date").value;
           if (launchDate && endDate && endDate < launchDate) {
-            setIntakeStatus(`"${campaignName}" 캠페인의 종료일은 시작일 이후여야 합니다.`, "error");
-            campaignItem.querySelector(".end-date").focus();
+            focusIntakeField(campaignItem.querySelector(".end-date"), `"${campaignName}" 캠페인의 종료일은 시작일 이후여야 합니다.`);
             return false;
           }
           if (
@@ -5376,6 +5407,7 @@ oaiq("measure", "order_created", {
             checkedValue(campaignItem, ".campaign-objective") !== "views"
           ) {
             setIntakeStatus("크리테오 경유는 모든 캠페인이 CPM(Views) 목표로 고정됩니다.", "error");
+            focusIntakeField(campaignItem.querySelector('.campaign-objective[value="views"]'));
             return false;
           }
 
@@ -5383,13 +5415,11 @@ oaiq("measure", "order_created", {
             const adgroupNameInput = adgroupItem.querySelector(".adgroup-name");
             const adgroupName = adgroupNameInput.value.trim();
             if (!isSafeWorkbookName(adgroupName)) {
-              setIntakeStatus("광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.", "error");
-              adgroupNameInput.focus();
+              focusIntakeField(adgroupNameInput, "광고그룹명에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다.");
               return false;
             }
             if (adgroupNames.has(adgroupName)) {
-              setIntakeStatus(`광고그룹명 "${adgroupName}"이 중복되었습니다. ads 탭 연결을 위해 광고그룹명은 접수 내에서 고유해야 합니다.`, "error");
-              adgroupNameInput.focus();
+              focusIntakeField(adgroupNameInput, `광고그룹명 "${adgroupName}"이 중복되었습니다. ads 탭 연결을 위해 광고그룹명은 접수 내에서 고유해야 합니다.`);
               return false;
             }
             adgroupNames.add(adgroupName);
@@ -5461,6 +5491,45 @@ oaiq("measure", "order_created", {
         };
       }
 
+      function formatIntakeServerError(detail) {
+        if (Array.isArray(detail)) {
+          return detail.map((item) => item.msg || item.message || String(item)).join(" / ");
+        }
+        return detail || "서버에서 접수를 처리하지 못했습니다.";
+      }
+
+      function firstServerErrorPath(detail) {
+        if (!Array.isArray(detail) || !detail.length) return "";
+        return (detail[0].loc || []).join(".");
+      }
+
+      function fieldForServerError(detail) {
+        const path = firstServerErrorPath(detail);
+        if (!path) return null;
+        const selectors = [
+          ["advertiserName", '[name="advertiserName"]'],
+          ["legalName", '[name="legalName"]'],
+          ["brn", '[name="brn"]'],
+          ["advertiserHomepageUrl", '[name="advertiserHomepageUrl"]'],
+          ["invoiceEmail", '[name="invoiceEmail"]'],
+          ["contactName", '[name="contactName"]'],
+          ["contactPhone", '[name="contactPhone"]'],
+          ["contactEmail", '[name="contactEmail"]'],
+          ["salesOwner", '[name="salesOwner"]'],
+          ["campaign_name", ".campaign-name"],
+          ["budget_max", ".budget-max"],
+          ["launch_date", ".launch-date"],
+          ["end_date", ".end-date"],
+          ["adgroup_name", ".adgroup-name"],
+          ["title", ".ad-title"],
+          ["copy", ".ad-copy"],
+          ["link", ".ad-link"],
+          ["image_link", ".ad-image-link"],
+        ];
+        const selector = selectors.find(([key]) => path.includes(key))?.[1];
+        return selector ? intakeForm.querySelector(selector) : null;
+      }
+
       async function submitIntake(event) {
         event.preventDefault();
         setIntakeStatus("");
@@ -5477,7 +5546,12 @@ oaiq("measure", "order_created", {
           });
           const payload = await response.json();
           if (!response.ok) {
-            throw new Error(payload.detail || response.statusText);
+            const message = formatIntakeServerError(payload.detail || response.statusText);
+            const target = fieldForServerError(payload.detail);
+            if (target) {
+              focusIntakeField(target, `접수 실패 — ${message}`);
+            }
+            throw new Error(message);
           }
           setIntakeStatus(
             `접수 완료: ${payload.receipt_number} · ${payload.submitted_at_kst} KST`,
