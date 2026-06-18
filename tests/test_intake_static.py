@@ -108,6 +108,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "ad-body",
             "expandInvalidAncestors",
             "clearCollapsedState",
+            "담당자명",
+            "담당자 이메일",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
@@ -120,6 +122,7 @@ class IntakeFormStaticTests(unittest.TestCase):
             "이미지 처리 방식",
             "OpenAI 직접 업로드",
             "크리테오 경유",
+            "케이티나스미디어 담당자",
         ]
         for phrase in removed:
             self.assertNotIn(phrase, html)

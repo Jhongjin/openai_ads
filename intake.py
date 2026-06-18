@@ -362,7 +362,6 @@ def build_sheet_payload(
 
     primary_campaign = campaigns[0]
     ops = {
-        "upload_mode": submission.ops_meta.upload_mode,
         "advertiser_name": submission.ops_meta.advertiser_name,
         "brand_name": submission.ops_meta.ads_manager_account,
         "sales_owner": submission.ops_meta.sales_owner,

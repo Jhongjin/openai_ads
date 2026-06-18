@@ -84,6 +84,7 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(payload["data"]["ops"]["advertiser_name"], "테스트 광고주")
         self.assertEqual(payload["data"]["ops"]["brand_name"], "테스트 브랜드")
         self.assertEqual(payload["data"]["ops"]["sales_owner_email"], "owner@nasmedia.co.kr")
+        self.assertNotIn("upload_mode", payload["data"]["ops"])
         self.assertNotIn("route", payload["data"]["ops"])
         self.assertNotIn("legal_name", payload["data"]["ops"])
         self.assertNotIn("brn", payload["data"]["ops"])
@@ -270,7 +271,7 @@ class IntakeValidationTests(unittest.TestCase):
         submission = IntakeSubmission.model_validate(payload)
         sheet_payload = build_sheet_payload(submission, shared_secret="secret")
 
-        self.assertEqual(sheet_payload["data"]["ops"]["upload_mode"], "bulk_sheet")
+        self.assertNotIn("upload_mode", sheet_payload["data"]["ops"])
         self.assertEqual(sheet_payload["data"]["ops"]["brand_name"], "Test Ads Account")
         self.assertEqual(sheet_payload["data"]["ops"]["sales_owner_email"], "owner@nasmedia.co.kr")
         self.assertEqual(sheet_payload["data"]["ops"]["owner_office"], "미디어채널실")
