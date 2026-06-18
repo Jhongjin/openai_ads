@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def setup_guide_html() -> str:
     html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
     start = html.index('<section class="panel" id="setup-guide-panel">')
-    end = html.index("    </main>", start)
+    end = html.index('<section class="panel" id="pixel-guide-panel">', start)
     return html[start:end]
 
 

@@ -1202,6 +1202,63 @@
         font-size: 15px;
       }
 
+      .pixel-code {
+        max-height: none;
+        margin: 10px 0 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .pixel-code.compact {
+        font-size: 11px;
+        line-height: 1.38;
+      }
+
+      .pixel-event-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .pixel-event-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 13px;
+      }
+
+      .pixel-event-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 850;
+      }
+
+      .pixel-event-card span {
+        display: block;
+        color: #475467;
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
+      .pixel-source-note {
+        margin: 10px 0 0;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .pixel-source-note a {
+        color: #1849a9;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .pixel-source-note a:hover {
+        text-decoration: underline;
+      }
+
       .guide-channel-note {
         margin: 10px 0 0;
         color: #4d5358;
@@ -2227,6 +2284,7 @@
         .guide-process-grid,
         .guide-overview-grid,
         .guide-two-column,
+        .pixel-event-grid,
         .guide-preview-layout {
           grid-template-columns: 1fr;
         }
@@ -2273,7 +2331,8 @@
         }
 
         body.print-slides #slides-panel,
-        body.print-guide #setup-guide-panel {
+        body.print-guide #setup-guide-panel,
+        body.print-pixel-guide #pixel-guide-panel {
           display: block !important;
         }
 
@@ -2342,6 +2401,12 @@
         .crawler-steps,
         .guide-process-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 3mm;
+        }
+
+        .pixel-event-grid,
+        .guide-overview-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           gap: 3mm;
         }
 
@@ -2558,6 +2623,10 @@
         <button class="tab" data-tab="setupGuide" type="button">
           <span class="tab-icon">SET</span>
           <span>캠페인 세팅 가이드</span>
+        </button>
+        <button class="tab" data-tab="pixelGuide" type="button">
+          <span class="tab-icon">PX</span>
+          <span>픽셀 설치 가이드</span>
         </button>
       </nav>
 
@@ -3485,6 +3554,275 @@ Allow: /</pre>
           </div>
         </div>
       </section>
+
+      <section class="panel" id="pixel-guide-panel">
+        <div class="slide-panel-shell">
+          <div class="input-band slides-toolbar no-print">
+            <div>
+              <label>픽셀 설치 가이드</label>
+              <p class="section-note">
+                OpenAI Ads Measurement Pixel을 광고주 웹사이트에 설치하고 페이지뷰·전환·커스텀 이벤트를 측정하는 광고주 전달용 문서입니다.
+              </p>
+            </div>
+            <button class="primary" id="pixel-guide-print" type="button">PDF로 저장</button>
+          </div>
+
+          <div class="slide-deck" aria-label="OpenAI 광고 픽셀 설치 가이드 슬라이드">
+            <section class="slide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">OpenAI Ads Measurement Pixel</p>
+                <h2 class="slide-title">픽셀 설치 가이드</h2>
+                <p class="slide-subtitle">웹 페이지뷰·전환·이벤트 측정 설정</p>
+                <p class="guide-channel-note">
+                  본 문서는 광고주 웹사이트에 설치하는 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID와 전환 이벤트명은 광고 계정에서 발급된 값으로 교체해 주세요.
+                </p>
+                <div class="guide-process-grid">
+                  <div class="guide-step-card">
+                    <strong>STEP 1 · 데이터 소스</strong>
+                    <span>Ads Manager 전환 메뉴에서 웹 데이터 소스를 만들고 Pixel ID와 설치 코드를 발급합니다.</span>
+                  </div>
+                  <div class="guide-step-card">
+                    <strong>STEP 2 · 웹사이트 설치</strong>
+                    <span>공통 픽셀 스크립트를 모든 측정 대상 페이지의 HTML head 상단에 설치합니다.</span>
+                  </div>
+                  <div class="guide-step-card">
+                    <strong>STEP 3 · 이벤트 연결</strong>
+                    <span>페이지뷰·리드·구매 등 측정 목적에 맞는 measure 코드를 전환 시점에 호출합니다.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr</span>
+                <span class="slide-page-number">1/6</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 1 · Ads Manager</p>
+                <h2 class="slide-section-title">픽셀 발급 위치</h2>
+                <div class="guide-two-column">
+                  <div class="guide-field-table">
+                    <div class="guide-field-row"><strong>진입 경로</strong><span>광고 관리자 → 도구 → 전환 → 데이터 소스 탭</span></div>
+                    <div class="guide-field-row"><strong>데이터 소스</strong><span>데이터 소스 만들기 → 이름 입력 → 유형은 웹 선택</span></div>
+                    <div class="guide-field-row"><strong>발급값</strong><span>설정 코드와 Pixel ID를 복사해 광고주 개발팀에 전달</span></div>
+                    <div class="guide-field-row"><strong>전환 이벤트</strong><span>전환 이벤트 탭 → 표준 이벤트 선택 또는 맞춤 이벤트 입력 → 이름·전환 기간 설정</span></div>
+                    <div class="guide-field-row"><strong>캠페인 연결</strong><span>생성한 전환 이벤트를 캠페인에 연결해야 리포팅·최적화에 활용 가능</span></div>
+                  </div>
+                  <div>
+                    <ul class="slide-list">
+                      <li>하나의 웹사이트에는 공통 픽셀 스크립트를 먼저 설치하고, 각 전환 지점에는 이벤트 호출 코드를 추가합니다.</li>
+                      <li>페이지뷰 측정은 주요 랜딩 페이지 로드 시 `page_viewed` 이벤트를 호출합니다.</li>
+                      <li>구매·회원가입·문의 등 성과 측정은 해당 완료 시점에 맞는 표준 이벤트를 선택합니다.</li>
+                    </ul>
+                    <p class="pixel-source-note">
+                      참고:
+                      <a href="https://developers.openai.com/ads/measurement-pixel" target="_blank" rel="noreferrer">OpenAI JavaScript Pixel</a>
+                      ·
+                      <a href="https://developers.openai.com/ads/supported-events" target="_blank" rel="noreferrer">Supported events</a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>광고 계정에서 발급된 Pixel ID를 설치 코드의 PIXEL_ID 자리에 넣어야 합니다.</span>
+                <span class="slide-page-number">2/6</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 2 · 공통 설치 코드</p>
+                <h2 class="slide-section-title">웹사이트 head에 설치</h2>
+                <div class="guide-two-column">
+                  <div>
+                    <div class="guide-field-table">
+                      <div class="guide-field-row"><strong>설치 위치</strong><span>측정할 모든 페이지의 HTML &lt;head&gt; 안, 가능하면 상단 가까이</span></div>
+                      <div class="guide-field-row"><strong>필수 값</strong><span>pixelId: Ads Manager 데이터 소스에서 발급된 Pixel ID</span></div>
+                      <div class="guide-field-row"><strong>테스트</strong><span>초기 검수 중에는 debug: true를 켜고 브라우저 콘솔에서 동작 확인</span></div>
+                      <div class="guide-field-row"><strong>주의</strong><span>페이지당 공통 설치 스크립트는 1회만 추가</span></div>
+                    </div>
+                    <p class="guide-note">원본 설치 코드는 Ads Manager에서 복사한 코드를 우선 사용하세요. 아래는 개발팀 전달용 구조 예시입니다.</p>
+                  </div>
+                  <div>
+                    <pre class="crawler-code pixel-code compact">&lt;script&gt;
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = [];
+    w.oaiq = q;
+    var js = d.createElement(s);
+    js.async = true;
+    js.src = u;
+    var f = d.getElementsByTagName(s)[0];
+    f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+
+  oaiq("init", {
+    pixelId: "PIXEL_ID",
+    debug: true
+  });
+&lt;/script&gt;</pre>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>개인정보 매칭값을 추가할 경우 원문 이메일·전화번호를 보내지 말고 공식 문서의 해시 규칙을 따라야 합니다.</span>
+                <span class="slide-page-number">3/6</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 3-A · 페이지뷰 측정</p>
+                <h2 class="slide-section-title">랜딩·콘텐츠 조회 이벤트</h2>
+                <div class="guide-two-column">
+                  <div class="pixel-event-grid">
+                    <div class="pixel-event-card">
+                      <strong>page_viewed</strong>
+                      <span>광고 랜딩 페이지, 가격 안내, 이벤트 페이지처럼 중요한 페이지가 로드될 때 사용합니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>contents_viewed</strong>
+                      <span>상품 상세, 콘텐츠, 리스트 항목 등 특정 대상 조회를 별도로 측정할 때 사용합니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>contents[] 값</strong>
+                      <span>id, name, content_type에는 광고주 내부 페이지·상품 식별값을 넣습니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>설치 위치</strong>
+                      <span>공통 픽셀 init 이후, 해당 페이지 로드 시점 또는 콘텐츠 노출 시점에 호출합니다.</span>
+                    </div>
+                  </div>
+                  <div>
+                    <pre class="crawler-code pixel-code">oaiq("measure", "page_viewed", {
+  type: "contents",
+  contents: [{
+    id: "landing_summer_2026",
+    name: "Summer campaign landing",
+    content_type: "page"
+  }]
+});
+
+oaiq("measure", "contents_viewed", {
+  type: "contents",
+  contents: [{
+    id: "sku_123",
+    name: "Starter bundle",
+    content_type: "product"
+  }]
+});</pre>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>페이지 로드 자체는 page_viewed, 특정 상품·콘텐츠 조회는 contents_viewed로 구분합니다.</span>
+                <span class="slide-page-number">4/6</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 3-B · 전환 측정</p>
+                <h2 class="slide-section-title">구매·문의·가입 완료 이벤트</h2>
+                <div class="guide-two-column">
+                  <div class="pixel-event-grid">
+                    <div class="pixel-event-card">
+                      <strong>order_created</strong>
+                      <span>구매 완료 페이지 또는 결제 성공 콜백에서 호출합니다. 금액은 정수로 전달합니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>lead_created</strong>
+                      <span>상담 신청, 문의 제출, 견적 요청 등 리드 폼 제출 완료 시 사용합니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>registration_completed</strong>
+                      <span>회원가입, 이벤트 등록 등 등록 완료 플로우에 사용합니다.</span>
+                    </div>
+                    <div class="pixel-event-card">
+                      <strong>appointment_scheduled</strong>
+                      <span>예약·상담·데모 일정 확정 시 사용합니다.</span>
+                    </div>
+                  </div>
+                  <div>
+                    <pre class="crawler-code pixel-code">oaiq("measure", "lead_created", {
+  type: "customer_action"
+});
+
+oaiq("measure", "registration_completed", {
+  type: "customer_action"
+});
+
+oaiq("measure", "order_created", {
+  type: "contents",
+  amount: 59000,
+  currency: "KRW",
+  contents: [{
+    id: "order_12345",
+    name: "Order 12345",
+    content_type: "order",
+    quantity: 1
+  }]
+});</pre>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>amount와 quantity는 숫자 정수로 넣고, amount를 넣을 때는 currency도 함께 넣습니다.</span>
+                <span class="slide-page-number">5/6</span>
+              </div>
+            </section>
+
+            <section class="slide-card dense guide-card">
+              <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
+              <div>
+                <p class="slide-kicker">STEP 3-C · 맞춤 이벤트 & QA</p>
+                <h2 class="slide-section-title">표준 이벤트가 없을 때</h2>
+                <div class="guide-two-column">
+                  <div>
+                    <div class="guide-field-table">
+                      <div class="guide-field-row"><strong>맞춤 이벤트</strong><span>표준 이벤트로 설명하기 어려운 행동만 custom으로 생성</span></div>
+                      <div class="guide-field-row"><strong>이름 규칙</strong><span>1~64자, 영문/숫자/언더스코어/하이픈, 시작·끝은 영문 또는 숫자</span></div>
+                      <div class="guide-field-row"><strong>중복 제거</strong><span>브라우저와 서버에서 같은 전환을 보낼 때 같은 event_id 사용</span></div>
+                      <div class="guide-field-row"><strong>검수</strong><span>브라우저 콘솔 debug 로그, 전환 이벤트 탭, 이벤트 스트림에서 수신 여부 확인</span></div>
+                    </div>
+                    <p class="guide-note">페이지 코드에서는 서버 Conversions API를 직접 호출하지 말고, 브라우저에서는 JavaScript Pixel만 사용하세요.</p>
+                  </div>
+                  <div>
+                    <pre class="crawler-code pixel-code">oaiq(
+  "measure",
+  "custom",
+  { type: "custom" },
+  { custom_event_name: "quote_requested" }
+);
+
+oaiq(
+  "measure",
+  "order_created",
+  {
+    type: "contents",
+    amount: 59000,
+    currency: "KRW"
+  },
+  { event_id: "order_12345" }
+);</pre>
+                  </div>
+                </div>
+              </div>
+              <div class="slide-footer">
+                <span>베타 기준으로 화면과 기능명이 바뀔 수 있습니다. 최종 검수는 Ads Manager와 공식 문서를 재확인해 주세요.</span>
+                <span class="slide-page-number">6/6</span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div class="notice">
@@ -3521,12 +3859,16 @@ Allow: /</pre>
       <span id="setup-guide-notice">
         ※ 캠페인 세팅 가이드는 Ads Manager 직접 입력 화면 기준입니다. 접수 폼 글자수와 크리테오 경유 기준은 별도 채널 기준으로 구분해 주세요.
       </span>
+      <span id="pixel-guide-notice">
+        ※ 픽셀 설치 가이드는 OpenAI Ads Measurement Pixel의 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID·이벤트명·설치 위치는 광고주 사이트 구조와 Ads Manager 발급값에 맞춰 최종 확인해 주세요.
+      </span>
     </div>
 
     <script>
       const LAST_UPDATED = "2026-06-17";
       const SLIDES_PDF_FILENAME = `ChatGPT광고_집행준비안내_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const SETUP_GUIDE_PDF_FILENAME = `ChatGPT광고_캠페인세팅가이드_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
+      const PIXEL_GUIDE_PDF_FILENAME = `ChatGPT광고_픽셀설치가이드_케이티나스미디어_${LAST_UPDATED.replaceAll("-", "")}.pdf`;
       const ENTRY_NOTICE_STORAGE_KEY = "openaiAdsEntryNoticeDismissedDate";
       const pageMain = document.querySelector("main");
       const entryNotice = document.querySelector("#entry-notice");
@@ -3543,6 +3885,7 @@ Allow: /</pre>
         intake: document.querySelector("#intake-panel"),
         slides: document.querySelector("#slides-panel"),
         setupGuide: document.querySelector("#setup-guide-panel"),
+        pixelGuide: document.querySelector("#pixel-guide-panel"),
       };
       const notices = {
         chat: document.querySelector("#chat-notice"),
@@ -3552,6 +3895,7 @@ Allow: /</pre>
         intake: document.querySelector("#intake-notice"),
         slides: document.querySelector("#slides-notice"),
         setupGuide: document.querySelector("#setup-guide-notice"),
+        pixelGuide: document.querySelector("#pixel-guide-notice"),
       };
 
       tabs.forEach((tab) => {
@@ -3602,6 +3946,7 @@ Allow: /</pre>
       const adgroupNameInput = document.querySelector("#adgroup-name");
       const slidesPrintButton = document.querySelector("#slides-print");
       const setupGuidePrintButton = document.querySelector("#setup-guide-print");
+      const pixelGuidePrintButton = document.querySelector("#pixel-guide-print");
 
       const crawlerVerdictLabel = {
         allow: "✅ 접근 가능",
@@ -4505,6 +4850,9 @@ Allow: /</pre>
       });
       setupGuidePrintButton.addEventListener("click", () => {
         printDocument("print-guide", SETUP_GUIDE_PDF_FILENAME);
+      });
+      pixelGuidePrintButton.addEventListener("click", () => {
+        printDocument("print-pixel-guide", PIXEL_GUIDE_PDF_FILENAME);
       });
       syncObjectiveForRoute();
     </script>
