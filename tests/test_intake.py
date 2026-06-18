@@ -31,6 +31,10 @@ def valid_payload() -> dict:
             "contactPhone": "010-0000-0000",
             "contactEmail": "client@example.com",
             "salesOwner": "케이티나스 담당자",
+            "salesOwnerEmail": "owner@nasmedia.co.kr",
+            "ownerHeadquarters": "미디어본부",
+            "ownerOffice": "미디어채널실",
+            "ownerTeam": "미디어채널1팀",
             "notes": "테스트",
             "honeypot": "",
             "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
@@ -254,6 +258,10 @@ class IntakeValidationTests(unittest.TestCase):
             "submitterName": "홍길동",
             "submitterEmail": "client@example.com",
             "salesOwner": "케이티나스 담당자",
+            "salesOwnerEmail": "owner@nasmedia.co.kr",
+            "ownerHeadquarters": "미디어본부",
+            "ownerOffice": "미디어채널실",
+            "ownerTeam": "미디어채널1팀",
             "imagePolicy": "direct_url_or_uploaded",
             "notes": "",
             "honeypot": "",
@@ -265,7 +273,26 @@ class IntakeValidationTests(unittest.TestCase):
 
         self.assertEqual(sheet_payload["data"]["ops"]["upload_mode"], "bulk_sheet")
         self.assertEqual(sheet_payload["data"]["ops"]["ads_manager_account"], "Test Ads Account")
+        self.assertEqual(sheet_payload["data"]["ops"]["brand_name"], "Test Ads Account")
         self.assertEqual(sheet_payload["data"]["ops"]["submitter_email"], "client@example.com")
+        self.assertEqual(sheet_payload["data"]["ops"]["sales_owner_email"], "owner@nasmedia.co.kr")
+        self.assertEqual(sheet_payload["data"]["ops"]["owner_office"], "미디어채널실")
+
+    def test_brand_is_optional_for_creative_upload_meta(self) -> None:
+        payload = valid_payload()
+        payload["opsMeta"].pop("adsManagerAccount", None)
+        payload["opsMeta"].pop("submitterName", None)
+        payload["opsMeta"].pop("submitterEmail", None)
+        payload["opsMeta"].pop("contactName", None)
+        payload["opsMeta"].pop("contactEmail", None)
+
+        submission = IntakeSubmission.model_validate(payload)
+        sheet_payload = build_sheet_payload(submission, shared_secret="secret")
+
+        self.assertEqual(sheet_payload["data"]["ops"]["ads_manager_account"], "")
+        self.assertEqual(sheet_payload["data"]["ops"]["brand_name"], "")
+        self.assertEqual(sheet_payload["data"]["ops"]["submitter_name"], "케이티나스 담당자")
+        self.assertEqual(sheet_payload["data"]["ops"]["submitter_email"], "owner@nasmedia.co.kr")
 
     def test_can_create_and_inspect_ads_manager_workbook(self) -> None:
         submission = IntakeSubmission.model_validate(valid_payload())

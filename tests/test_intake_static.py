@@ -102,10 +102,21 @@ class IntakeFormStaticTests(unittest.TestCase):
             "업로드용 .xlsx 생성",
             "/intake/workbook",
             "/intake/inspect-workbook",
-            "/intake/upload-image",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+
+        removed = [
+            "/intake/upload-image",
+            "이미지 파일 첨부",
+            "ad-image-file",
+            "image-upload-status",
+            "이미지 처리 방식",
+            "OpenAI 직접 업로드",
+            "크리테오 경유",
+        ]
+        for phrase in removed:
+            self.assertNotIn(phrase, html)
 
     def test_creative_upload_draft_reviews_before_sheet_submit(self) -> None:
         html = (ROOT / "templates" / "creative_upload_draft.html").read_text(encoding="utf-8")

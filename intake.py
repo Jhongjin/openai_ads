@@ -85,13 +85,17 @@ class OpsMeta(BaseModel):
         default="bulk_sheet",
         alias="uploadMode",
     )
-    execution_route: Literal["openai_cbt", "criteo"] = Field(..., alias="executionRoute")
+    execution_route: Literal["openai_cbt", "criteo"] = Field(default="openai_cbt", alias="executionRoute")
     advertiser_name: str = Field(..., alias="advertiserName")
     ads_manager_account: str = Field(default="", alias="adsManagerAccount")
 
     submitter_name: str = Field(default="", alias="submitterName")
     submitter_email: str = Field(default="", alias="submitterEmail")
     sales_owner: str = Field(..., alias="salesOwner")
+    sales_owner_email: str = Field(..., alias="salesOwnerEmail")
+    owner_headquarters: str = Field(..., alias="ownerHeadquarters")
+    owner_office: str = Field(..., alias="ownerOffice")
+    owner_team: str = Field(..., alias="ownerTeam")
     image_policy: str = Field(default="direct_url_or_uploaded", alias="imagePolicy")
     notes: str = ""
 
@@ -122,16 +126,15 @@ class OpsMeta(BaseModel):
             values["submitterName"] = values.get("contactName")
         if not values.get("submitterEmail") and values.get("contactEmail"):
             values["submitterEmail"] = values.get("contactEmail")
-        if not values.get("adsManagerAccount") and values.get("advertiserName"):
-            values["adsManagerAccount"] = values.get("advertiserName")
         return values
 
     @field_validator(
         "advertiser_name",
-        "ads_manager_account",
-        "submitter_name",
-        "submitter_email",
         "sales_owner",
+        "sales_owner_email",
+        "owner_headquarters",
+        "owner_office",
+        "owner_team",
     )
     @classmethod
     def _required_text(cls, value: str) -> str:
@@ -140,6 +143,9 @@ class OpsMeta(BaseModel):
     @field_validator(
         "notes",
         "honeypot",
+        "ads_manager_account",
+        "submitter_name",
+        "submitter_email",
         "image_policy",
         "legal_name",
         "brn",
@@ -160,7 +166,7 @@ class OpsMeta(BaseModel):
             return ""
         return _valid_http_url(value, "advertiser 공식 홈페이지 URL")
 
-    @field_validator("submitter_email", "invoice_email", "contact_email")
+    @field_validator("submitter_email", "sales_owner_email", "invoice_email", "contact_email")
     @classmethod
     def _valid_email(cls, value: str) -> str:
         text = _clean_text(value)
@@ -406,9 +412,14 @@ def build_sheet_payload(
         "route": _route_label(submission.ops_meta.execution_route),
         "advertiser_name": submission.ops_meta.advertiser_name,
         "ads_manager_account": submission.ops_meta.ads_manager_account,
-        "submitter_name": submission.ops_meta.submitter_name,
-        "submitter_email": submission.ops_meta.submitter_email,
+        "brand_name": submission.ops_meta.ads_manager_account,
+        "submitter_name": submission.ops_meta.submitter_name or submission.ops_meta.sales_owner,
+        "submitter_email": submission.ops_meta.submitter_email or submission.ops_meta.sales_owner_email,
         "sales_owner": submission.ops_meta.sales_owner,
+        "sales_owner_email": submission.ops_meta.sales_owner_email,
+        "owner_headquarters": submission.ops_meta.owner_headquarters,
+        "owner_office": submission.ops_meta.owner_office,
+        "owner_team": submission.ops_meta.owner_team,
         "image_policy": submission.ops_meta.image_policy,
         "note": submission.ops_meta.notes,
         "legal_name": submission.ops_meta.legal_name,
