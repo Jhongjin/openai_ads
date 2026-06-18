@@ -11,10 +11,12 @@ class IntakeAppsScriptStaticTests(unittest.TestCase):
     def test_multi_campaign_apps_script_preserves_adgroup_campaign_name(self) -> None:
         script = (ROOT / "apps_script" / "intake_webhook.gs").read_text(encoding="utf-8")
 
-        self.assertIn("data.campaigns || data.campaign", script)
+        self.assertIn("data.campaigns || data.campaign_rows || data.campaign", script)
         self.assertIn('appendRows_("campaigns", campaigns.map(withReceipt))', script)
         self.assertIn("const adgroupsForSheet = adgroups.map", script)
-        self.assertIn("campaign_name: row.campaign_name || campaigns[0].campaign_name || \"\"", script)
+        self.assertIn("const fallbackCampaignName = campaigns.length === 1", script)
+        self.assertIn("campaign_name: row.campaign_name || fallbackCampaignName", script)
+        self.assertIn("has no campaign_name", script)
         self.assertIn('appendRows_("adgroups", adgroupsForSheet.map(withReceipt))', script)
         self.assertIn("업로드유형", script)
         self.assertIn("브랜드명", script)

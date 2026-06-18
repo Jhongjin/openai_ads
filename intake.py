@@ -375,7 +375,10 @@ def build_sheet_payload(
     return {
         "secret": shared_secret,
         "data": {
-            "campaign": primary_campaign,
+            # Keep both shapes while the Apps Script web app is being redeployed.
+            # Older script versions only read data.campaign; newer versions read data.campaigns.
+            "campaign": campaigns,
+            "primary_campaign": primary_campaign,
             "campaigns": campaigns,
             "adgroups": adgroups,
             "ads": ads,

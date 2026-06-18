@@ -362,6 +362,28 @@
         margin-bottom: 16px;
       }
 
+      .campaign-header .toolbar,
+      .adgroup-header .toolbar,
+      .ad-header .toolbar {
+        flex-wrap: nowrap;
+        gap: 8px;
+      }
+
+      .collapse-toggle {
+        min-height: 36px;
+        padding: 8px 12px;
+        border-color: #d6dce7;
+        background: #fff;
+        color: #243041;
+        font-size: 13px;
+      }
+
+      .campaign.is-collapsed > .campaign-body,
+      .adgroup.is-collapsed > .adgroup-body,
+      .ad.is-collapsed > .ad-body {
+        display: none;
+      }
+
       .campaign-header strong,
       .adgroup-header strong,
       .ad-header strong {
@@ -660,130 +682,145 @@
             <article class="campaign" data-campaign>
               <div class="campaign-header">
                 <span class="campaign-pill">캠페인 1</span>
-                <button type="button" class="danger remove-campaign" hidden>캠페인 삭제</button>
-              </div>
-              <div class="grid">
-                <div class="field">
-                  <label class="required">캠페인명</label>
-                  <input class="campaign-name" required />
-                  <span class="help">campaign_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
-                </div>
-                <div class="field">
-                  <label class="required">예산 금액</label>
-                  <input class="budget-max" type="number" min="1" step="1" placeholder="4000000" required />
-                </div>
-                <div class="field">
-                  <span class="group-label">예산 유형</span>
-                  <div class="radio-row">
-                    <label class="chip"><input class="budget-type" type="radio" value="lifetime" checked /> 총예산(lifetime)</label>
-                    <label class="chip"><input class="budget-type" type="radio" value="daily" /> 일예산(daily)</label>
-                  </div>
-                </div>
-                <div class="field">
-                  <span class="group-label required">캠페인 목표</span>
-                  <div class="radio-row">
-                    <label class="chip"><input class="campaign-objective" type="radio" value="views" checked /> Views = CPM</label>
-                    <label class="chip"><input class="campaign-objective objective-clicks" type="radio" value="clicks" /> Clicks = CPC</label>
-                  </div>
-                </div>
-                <div class="field">
-                  <label>시작일</label>
-                  <input class="launch-date" type="date" />
-                </div>
-                <div class="field">
-                  <label>종료일</label>
-                  <input class="end-date" type="date" />
-                </div>
-                <div class="field">
-                  <label>국가</label>
-                  <select class="target-countries">
-                    <option value="" selected>비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
-                    <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
-                    <option value="US">미국(US)</option>
-                    <option value="JP">일본(JP)</option>
-                  </select>
-                  <span class="help">한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
+                <div class="toolbar">
+                  <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                  <button type="button" class="danger remove-campaign" hidden>캠페인 삭제</button>
                 </div>
               </div>
-
-              <div class="nested">
-                <div class="nested-header">
-                  <div>
-                    <h3>광고그룹 정보</h3>
-                    <p class="note">adgroups 시트에 광고그룹 수만큼 행이 추가됩니다.</p>
+              <div class="campaign-body">
+                <div class="grid">
+                  <div class="field">
+                    <label class="required">캠페인명</label>
+                    <input class="campaign-name" required />
+                    <span class="help">campaign_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
                   </div>
-                  <button type="button" class="add-adgroup">광고그룹 추가</button>
+                  <div class="field">
+                    <label class="required">예산 금액</label>
+                    <input class="budget-max" type="number" min="1" step="1" placeholder="4000000" required />
+                  </div>
+                  <div class="field">
+                    <span class="group-label">예산 유형</span>
+                    <div class="radio-row">
+                      <label class="chip"><input class="budget-type" type="radio" value="lifetime" checked /> 총예산(lifetime)</label>
+                      <label class="chip"><input class="budget-type" type="radio" value="daily" /> 일예산(daily)</label>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <span class="group-label required">캠페인 목표</span>
+                    <div class="radio-row">
+                      <label class="chip"><input class="campaign-objective" type="radio" value="views" checked /> Views = CPM</label>
+                      <label class="chip"><input class="campaign-objective objective-clicks" type="radio" value="clicks" /> Clicks = CPC</label>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>시작일</label>
+                    <input class="launch-date" type="date" />
+                  </div>
+                  <div class="field">
+                    <label>종료일</label>
+                    <input class="end-date" type="date" />
+                  </div>
+                  <div class="field">
+                    <label>국가</label>
+                    <select class="target-countries">
+                      <option value="" selected>비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
+                      <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
+                      <option value="US">미국(US)</option>
+                      <option value="JP">일본(JP)</option>
+                    </select>
+                    <span class="help">한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
+                  </div>
                 </div>
-                <div class="adgroup-list">
-                  <article class="adgroup" data-adgroup>
-                    <div class="adgroup-header">
-                      <h3>광고그룹 1-1</h3>
-                      <button type="button" class="danger remove-adgroup" hidden>광고그룹 삭제</button>
-                    </div>
-                    <div class="grid">
-                      <div class="field">
-                        <label>campaign_name</label>
-                        <input class="campaign-name-mirror" readonly />
-                      </div>
-                      <div class="field">
-                        <label class="required">광고그룹명</label>
-                        <input class="adgroup-name" required />
-                        <span class="help">adgroup_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용. 소재 연결을 위해 접수 내 중복 불가</span>
-                      </div>
-                      <div class="field">
-                        <label>최대 입찰가</label>
-                        <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
-                        <span class="help max-bid-help">Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. Views(CPM) 캠페인은 비워야 합니다.</span>
-                      </div>
-                      <div class="field">
-                        <label>키워드</label>
-                        <input class="keywords" placeholder="키워드1, 키워드2" />
-                      </div>
-                    </div>
 
-                    <div class="nested">
-                      <div class="nested-header">
-                        <div>
-                          <h3>소재 정보</h3>
-                          <p class="note">ads 시트에 소재 수만큼 행이 추가됩니다.</p>
+                <div class="nested">
+                  <div class="nested-header">
+                    <div>
+                      <h3>광고그룹 정보</h3>
+                      <p class="note">adgroups 시트에 광고그룹 수만큼 행이 추가됩니다.</p>
+                    </div>
+                    <button type="button" class="add-adgroup">광고그룹 추가</button>
+                  </div>
+                  <div class="adgroup-list">
+                    <article class="adgroup" data-adgroup>
+                      <div class="adgroup-header">
+                        <h3>광고그룹 1-1</h3>
+                        <div class="toolbar">
+                          <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                          <button type="button" class="danger remove-adgroup" hidden>광고그룹 삭제</button>
                         </div>
-                        <button type="button" class="add-ad">소재 추가</button>
                       </div>
-                      <div class="ad-list">
-                        <article class="ad" data-ad>
-                          <div class="ad-header">
-                            <h3>소재 1-1-1</h3>
-                            <button type="button" class="danger remove-ad" hidden>소재 삭제</button>
+                      <div class="adgroup-body">
+                        <div class="grid">
+                          <div class="field">
+                            <label>campaign_name</label>
+                            <input class="campaign-name-mirror" readonly />
                           </div>
-                          <div class="grid">
-                            <div class="field">
-                              <label>adgroup_name</label>
-                              <input class="adgroup-name-mirror" readonly />
-                            </div>
-                            <div class="field">
-                              <label class="required">광고 제목</label>
-                              <input class="ad-title" maxlength="24" required />
-                              <span class="counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
-                            </div>
-                            <div class="field full">
-                              <label class="required">광고 설명</label>
-                              <input class="ad-copy" maxlength="48" required />
-                              <span class="counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
-                            </div>
-                            <div class="field full">
-                              <label class="required">랜딩 URL</label>
-                              <input class="ad-link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
-                            </div>
-                            <div class="field full">
-                              <label class="required">이미지 URL</label>
-                              <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
-                              <span class="help">http:// 또는 https://로 시작하는 URL 형식 필수. 최종 소재용 공개 이미지 URL인지 별도 확인해 주세요.</span>
-                            </div>
+                          <div class="field">
+                            <label class="required">광고그룹명</label>
+                            <input class="adgroup-name" required />
+                            <span class="help">adgroup_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용. 소재 연결을 위해 접수 내 중복 불가</span>
                           </div>
-                        </article>
+                          <div class="field">
+                            <label>최대 입찰가</label>
+                            <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
+                            <span class="help max-bid-help">Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. Views(CPM) 캠페인은 비워야 합니다.</span>
+                          </div>
+                          <div class="field">
+                            <label>키워드</label>
+                            <input class="keywords" placeholder="키워드1, 키워드2" />
+                          </div>
+                        </div>
+
+                        <div class="nested">
+                          <div class="nested-header">
+                            <div>
+                              <h3>소재 정보</h3>
+                              <p class="note">ads 시트에 소재 수만큼 행이 추가됩니다.</p>
+                            </div>
+                            <button type="button" class="add-ad">소재 추가</button>
+                          </div>
+                          <div class="ad-list">
+                            <article class="ad" data-ad>
+                              <div class="ad-header">
+                                <h3>소재 1-1-1</h3>
+                                <div class="toolbar">
+                                  <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                                  <button type="button" class="danger remove-ad" hidden>소재 삭제</button>
+                                </div>
+                              </div>
+                              <div class="ad-body">
+                                <div class="grid">
+                                  <div class="field">
+                                    <label>adgroup_name</label>
+                                    <input class="adgroup-name-mirror" readonly />
+                                  </div>
+                                  <div class="field">
+                                    <label class="required">광고 제목</label>
+                                    <input class="ad-title" maxlength="24" required />
+                                    <span class="counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">광고 설명</label>
+                                    <input class="ad-copy" maxlength="48" required />
+                                    <span class="counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">랜딩 URL</label>
+                                    <input class="ad-link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">이미지 URL</label>
+                                    <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
+                                    <span class="help">http:// 또는 https://로 시작하는 URL 형식 필수. 최종 소재용 공개 이미지 URL인지 별도 확인해 주세요.</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </article>
+                    </article>
+                  </div>
                 </div>
               </div>
             </article>
@@ -867,6 +904,37 @@
 
       function adItems(adgroup) {
         return [...adgroup.querySelectorAll(":scope .ad-list > [data-ad]")];
+      }
+
+      function collapseButtonFor(item) {
+        return (
+          item.querySelector(":scope > .campaign-header .collapse-toggle") ||
+          item.querySelector(":scope > .adgroup-header .collapse-toggle") ||
+          item.querySelector(":scope > .ad-header .collapse-toggle")
+        );
+      }
+
+      function setCollapseButtonState(item) {
+        const button = collapseButtonFor(item);
+        if (!button) return;
+        const expanded = !item.classList.contains("is-collapsed");
+        button.textContent = expanded ? "접기" : "펼치기";
+        button.setAttribute("aria-expanded", String(expanded));
+      }
+
+      function expandInvalidAncestors(control) {
+        [control.closest("[data-ad]"), control.closest("[data-adgroup]"), control.closest("[data-campaign]")]
+          .filter(Boolean)
+          .forEach((item) => {
+            item.classList.remove("is-collapsed");
+            setCollapseButtonState(item);
+          });
+      }
+
+      function clearCollapsedState(container) {
+        container.classList.remove("is-collapsed");
+        container.querySelectorAll(".is-collapsed").forEach((item) => item.classList.remove("is-collapsed"));
+        container.querySelectorAll("[data-campaign], [data-adgroup], [data-ad]").forEach(setCollapseButtonState);
       }
 
       function checkedValue(container, selector) {
@@ -979,11 +1047,13 @@
           campaign.style.setProperty("--tone", tone.color);
           campaign.style.setProperty("--tone-bg", tone.bg);
           campaign.querySelector(".remove-campaign").hidden = campaignItems().length === 1;
+          setCollapseButtonState(campaign);
           isolateRadios(campaign, campaignNumber);
           const campaignName = campaign.querySelector(".campaign-name").value.trim();
           adgroupItems(campaign).forEach((adgroup, adgroupIndex) => {
             const adgroupNumber = adgroupIndex + 1;
             adgroup.querySelector(".remove-adgroup").hidden = adgroupItems(campaign).length === 1;
+            setCollapseButtonState(adgroup);
             const adgroupName = adgroup.querySelector(".adgroup-name").value.trim();
             adgroup.querySelector(".campaign-name-mirror").value = campaignName;
             const maxBidInput = adgroup.querySelector(".max-bid");
@@ -1002,6 +1072,7 @@
             adItems(adgroup).forEach((ad, adIndex) => {
               const adNumber = adIndex + 1;
               ad.querySelector(".remove-ad").hidden = adItems(adgroup).length === 1;
+              setCollapseButtonState(ad);
               const adTitle = ad.querySelector(".ad-title").value.trim();
               ad.querySelector(".ad-header h3").innerHTML = `<strong>소재 ${campaignNumber}-${adgroupNumber}-${adNumber}</strong>${adTitle ? ` · ${escapeHtml(adTitle)}` : ""}`;
               ad.querySelector(".adgroup-name-mirror").value = adgroupName;
@@ -1052,6 +1123,7 @@
         const clone = template.cloneNode(true);
         trimToOneAdgroup(clone);
         resetInputs(clone);
+        clearCollapsedState(clone);
         campaignList.append(clone);
         syncState();
         clone.querySelector(".campaign-name").focus();
@@ -1062,6 +1134,7 @@
         const clone = list.querySelector("[data-adgroup]").cloneNode(true);
         adItems(clone).slice(1).forEach((item) => item.remove());
         resetInputs(clone);
+        clearCollapsedState(clone);
         list.append(clone);
         syncState();
         clone.querySelector(".adgroup-name").focus();
@@ -1071,6 +1144,7 @@
         const list = adgroup.querySelector(".ad-list");
         const clone = list.querySelector("[data-ad]").cloneNode(true);
         resetInputs(clone);
+        clearCollapsedState(clone);
         list.append(clone);
         syncState();
         clone.querySelector(".ad-title").focus();
@@ -1078,6 +1152,7 @@
 
       function focusInvalid(control, message) {
         setStatus(message, "error");
+        expandInvalidAncestors(control);
         control.scrollIntoView({ block: "center", behavior: "smooth" });
         window.setTimeout(() => {
           control.focus({ preventScroll: true });
@@ -1400,6 +1475,15 @@
         if (event.target.matches(".campaign-objective")) syncState();
       });
       campaignList.addEventListener("click", (event) => {
+        const collapseToggle = event.target.closest(".collapse-toggle");
+        if (collapseToggle) {
+          const item = collapseToggle.closest("[data-ad], [data-adgroup], [data-campaign]");
+          if (item) {
+            item.classList.toggle("is-collapsed");
+            setCollapseButtonState(item);
+          }
+          return;
+        }
         const addGroup = event.target.closest(".add-adgroup");
         if (addGroup) return addAdgroup(addGroup.closest("[data-campaign]"));
         const addAdButton = event.target.closest(".add-ad");
@@ -1425,6 +1509,10 @@
         if (!chip) return;
         const index = Number(chip.dataset.jumpCampaign);
         const target = campaignItems()[index];
+        if (target) {
+          target.classList.remove("is-collapsed");
+          setCollapseButtonState(target);
+        }
         target?.scrollIntoView({ block: "start", behavior: "smooth" });
       });
       reviewCancel.addEventListener("click", closeReviewModal);

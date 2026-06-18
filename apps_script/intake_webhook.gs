@@ -48,7 +48,7 @@ function doPost(e) {
     }
 
     const data = payload.data || {};
-    const campaigns = normalizeRows_(data.campaigns || data.campaign);
+    const campaigns = normalizeRows_(data.campaigns || data.campaign_rows || data.campaign);
     const adgroups = normalizeRows_(data.adgroups);
     const ads = normalizeRows_(data.ads);
     const ops = data.ops || {};
@@ -63,9 +63,18 @@ function doPost(e) {
       const receiptNumber = nextReceiptNumber_();
       const submittedAtKst = nowKst_();
       const withReceipt = (row) => Object.assign({ receipt_number: receiptNumber }, row);
+      const fallbackCampaignName = campaigns.length === 1 ? campaigns[0].campaign_name || "" : "";
       const adgroupsForSheet = adgroups.map((row) => Object.assign({}, row, {
-        campaign_name: row.campaign_name || campaigns[0].campaign_name || "",
+        campaign_name: row.campaign_name || fallbackCampaignName,
       }));
+
+      const missingCampaignNameAdgroup = adgroupsForSheet.find((row) => !row.campaign_name);
+      if (missingCampaignNameAdgroup) {
+        return jsonResponse_({
+          ok: false,
+          error: `adgroup "${missingCampaignNameAdgroup.adgroup_name || ""}" has no campaign_name`,
+        });
+      }
 
       const opsMeta = Object.assign({}, ops, {
         receipt_number: receiptNumber,

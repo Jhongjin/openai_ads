@@ -72,9 +72,11 @@ class IntakeValidationTests(unittest.TestCase):
         )
 
         self.assertEqual(payload["secret"], "secret")
-        self.assertEqual(payload["data"]["campaign"]["campaign_name"], "ChatGPT_Ads_Test")
-        self.assertEqual(payload["data"]["campaign"]["budget_max"], "4000000")
-        self.assertEqual(payload["data"]["campaign"]["target_countries"], [])
+        self.assertEqual(payload["data"]["primary_campaign"]["campaign_name"], "ChatGPT_Ads_Test")
+        self.assertEqual(payload["data"]["campaign"][0]["campaign_name"], "ChatGPT_Ads_Test")
+        self.assertEqual(payload["data"]["campaign"][0]["budget_max"], "4000000")
+        self.assertEqual(payload["data"]["campaign"][0]["target_countries"], [])
+        self.assertEqual(payload["data"]["campaigns"][0]["campaign_name"], "ChatGPT_Ads_Test")
         self.assertEqual(len(payload["data"]["adgroups"]), 1)
         self.assertEqual(len(payload["data"]["ads"]), 2)
         self.assertEqual(payload["data"]["adgroups"][0]["keywords"], ["밀키트", "저녁"])
@@ -165,6 +167,11 @@ class IntakeValidationTests(unittest.TestCase):
             [item["campaign_name"] for item in sheet_payload["data"]["campaigns"]],
             ["campaign_cpm", "campaign_cpc"],
         )
+        self.assertEqual(
+            [item["campaign_name"] for item in sheet_payload["data"]["campaign"]],
+            ["campaign_cpm", "campaign_cpc"],
+        )
+        self.assertEqual(sheet_payload["data"]["primary_campaign"]["campaign_name"], "campaign_cpm")
         self.assertEqual(
             [item["objective"] for item in sheet_payload["data"]["campaigns"]],
             ["views", "clicks"],

@@ -102,6 +102,12 @@ class IntakeFormStaticTests(unittest.TestCase):
             "업로드용 .xlsx 생성",
             "/intake/workbook",
             "/intake/inspect-workbook",
+            "collapse-toggle",
+            "campaign-body",
+            "adgroup-body",
+            "ad-body",
+            "expandInvalidAncestors",
+            "clearCollapsedState",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
