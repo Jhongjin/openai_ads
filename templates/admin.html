@@ -229,6 +229,72 @@
         color: #155eef;
       }
 
+      .notice-preview-wrap {
+        margin: 18px 0 14px;
+      }
+
+      .notice-preview-card {
+        border: 1px solid #ffd7da;
+        border-left: 5px solid var(--kt-red);
+        border-radius: 12px;
+        background: #fffafa;
+        padding: 18px;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+      }
+
+      .preview-eyebrow {
+        margin: 0 0 8px;
+        color: var(--kt-red);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .notice-preview-card h3 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .preview-updated {
+        display: inline-flex;
+        border-radius: 999px;
+        background: #fff1f2;
+        padding: 5px 9px;
+        color: #be123c;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .notice-preview-body {
+        margin-top: 14px;
+        color: #344054;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .notice-preview-body ul,
+      .notice-preview-body ol {
+        margin: 8px 0;
+        padding-left: 22px;
+      }
+
+      .notice-preview-body p {
+        margin: 0 0 10px;
+      }
+
+      .notice-preview-source {
+        display: inline-flex;
+        margin-top: 12px;
+        color: #155eef;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .notice-preview-source[hidden] {
+        display: none;
+      }
+
       .check-label {
         display: inline-flex;
         grid-template-columns: auto 1fr;
@@ -475,6 +541,19 @@
             OpenAI 가이드 URL
             <input id="notice-source-url" type="url" />
           </label>
+          <div class="notice-preview-wrap">
+            <div class="field-label">공지 미리보기</div>
+            <article class="notice-preview-card" id="notice-preview" aria-live="polite">
+              <p class="preview-eyebrow">팝업 미리보기</p>
+              <h3 id="notice-preview-title">OpenAI 광고 집행 의뢰 안내</h3>
+              <div class="preview-updated" id="notice-preview-updated">저장 전 미리보기</div>
+              <div class="notice-preview-body" id="notice-preview-body">
+                <p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>
+              </div>
+              <a class="notice-preview-source" id="notice-preview-source" href="#" target="_blank" rel="noopener" hidden></a>
+            </article>
+            <p class="help">저장 전 실제 메인 공지 팝업에 가까운 형태로 확인합니다.</p>
+          </div>
           <label class="check-label">
             <input id="notice-enabled" type="checkbox" />
             <span>공지 팝업 사용</span>
@@ -489,7 +568,7 @@
         <div class="card section">
           <h2>페이지 방문 애널리틱스</h2>
           <p class="help">
-            탭을 열 때마다 페이지별 방문 수가 누적됩니다. 저장 위치는 Supabase를 우선 사용합니다.
+            탭을 열 때마다 페이지별 방문 수가 누적됩니다. 아래 차트와 표에서 전체 추이를 확인할 수 있습니다.
           </p>
           <div class="summary-grid">
             <div class="metric">
@@ -507,7 +586,6 @@
           </div>
           <div class="actions">
             <button class="secondary" id="refresh-analytics" type="button">새로고침</button>
-            <span class="badge" id="storage-badge">저장소 확인 중</span>
           </div>
           <div class="chart-shell">
             <div class="chart-head">
@@ -546,7 +624,6 @@
       const loginStatus = document.querySelector("#login-status");
       const noticeStatus = document.querySelector("#notice-status");
       const analyticsStatus = document.querySelector("#analytics-status");
-      const storageBadge = document.querySelector("#storage-badge");
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -554,6 +631,12 @@
         sourceLabel: document.querySelector("#notice-source-label"),
         sourceUrl: document.querySelector("#notice-source-url"),
         enabled: document.querySelector("#notice-enabled"),
+      };
+      const previewFields = {
+        title: document.querySelector("#notice-preview-title"),
+        updated: document.querySelector("#notice-preview-updated"),
+        body: document.querySelector("#notice-preview-body"),
+        source: document.querySelector("#notice-preview-source"),
       };
 
       function password() {
@@ -605,7 +688,26 @@
         fields.sourceLabel.value = notice.source_label || "";
         fields.sourceUrl.value = notice.source_url || "";
         fields.enabled.checked = notice.enabled !== false;
-        storageBadge.textContent = `저장소: ${notice.storage || "확인 중"}`;
+        renderNoticePreview();
+      }
+
+      function renderNoticePreview() {
+        previewFields.title.textContent = fields.title.value.trim() || "OpenAI 광고 집행 의뢰 안내";
+        const updatedText = fields.updatedAt.textContent.trim();
+        previewFields.updated.textContent =
+          updatedText && updatedText !== "저장 시 자동 반영" ? `최종 업데이트: ${updatedText}` : "저장 전 미리보기";
+        previewFields.body.innerHTML = fields.editor.innerHTML.trim() || "<p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>";
+        const label = fields.sourceLabel.value.trim();
+        const url = fields.sourceUrl.value.trim();
+        if (url) {
+          previewFields.source.hidden = false;
+          previewFields.source.href = url;
+          previewFields.source.textContent = label || url;
+        } else {
+          previewFields.source.hidden = true;
+          previewFields.source.removeAttribute("href");
+          previewFields.source.textContent = "";
+        }
       }
 
       function readNoticeForm() {
@@ -644,7 +746,6 @@
         document.querySelector("#metric-total").textContent = total.toLocaleString("ko-KR");
         document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
         document.querySelector("#metric-pages").textContent = items.length.toLocaleString("ko-KR");
-        storageBadge.textContent = `저장소: ${data.storage || "확인 중"}`;
         renderVisitChart(data.series || []);
 
         const body = document.querySelector("#analytics-body");
@@ -691,8 +792,9 @@
         const chart = { width: 640, height: 190, top: 14, right: 12, bottom: 34, left: 38 };
         const plotWidth = chart.width - chart.left - chart.right;
         const plotHeight = chart.height - chart.top - chart.bottom;
-        const barGap = 8;
-        const barWidth = Math.max(10, (plotWidth - barGap * (points.length - 1)) / points.length);
+        const barWidth = Math.min(28, Math.max(10, plotWidth / Math.max(points.length * 2, 12)));
+        const xForIndex = (index) =>
+          points.length > 1 ? chart.left + (plotWidth / (points.length - 1)) * index : chart.left + plotWidth / 2;
         caption.textContent = `최근 ${points.length}일 기준`;
 
         [0, 0.5, 1].forEach((ratio) => {
@@ -706,22 +808,46 @@
           svg.appendChild(line);
         });
 
+        const pathData = points.map((item, index) => {
+          const x = xForIndex(index);
+          const y = chart.top + plotHeight - (item.count / max) * plotHeight;
+          return `${index ? "L" : "M"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+        }).join(" ");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", pathData);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "#ed1c24");
+        path.setAttribute("stroke-width", "3");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(path);
+
         points.forEach((item, index) => {
           const height = Math.max(2, (item.count / max) * plotHeight);
-          const x = chart.left + index * (barWidth + barGap);
+          const x = xForIndex(index);
           const y = chart.top + plotHeight - height;
           const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          rect.setAttribute("x", String(x));
+          rect.setAttribute("x", String(x - barWidth / 2));
           rect.setAttribute("y", String(y));
           rect.setAttribute("width", String(barWidth));
           rect.setAttribute("height", String(height));
           rect.setAttribute("rx", "5");
-          rect.setAttribute("fill", "#ed1c24");
-          rect.setAttribute("opacity", "0.9");
+          rect.setAttribute("fill", "#fee2e2");
+          rect.setAttribute("stroke", "#ed1c24");
+          rect.setAttribute("opacity", "0.95");
           svg.appendChild(rect);
 
+          const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          dot.setAttribute("cx", String(x));
+          dot.setAttribute("cy", String(y));
+          dot.setAttribute("r", "4");
+          dot.setAttribute("fill", "#ed1c24");
+          dot.setAttribute("stroke", "#fff");
+          dot.setAttribute("stroke-width", "2");
+          svg.appendChild(dot);
+
           const value = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          value.setAttribute("x", String(x + barWidth / 2));
+          value.setAttribute("x", String(x));
           value.setAttribute("y", String(Math.max(12, y - 6)));
           value.setAttribute("text-anchor", "middle");
           value.setAttribute("fill", "#344054");
@@ -732,7 +858,7 @@
 
           if (index === 0 || index === points.length - 1 || points.length <= 7 || index % 3 === 0) {
             const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            label.setAttribute("x", String(x + barWidth / 2));
+            label.setAttribute("x", String(x));
             label.setAttribute("y", String(chart.height - 10));
             label.setAttribute("text-anchor", "middle");
             label.setAttribute("fill", "#667085");
@@ -786,10 +912,15 @@
             const url = window.prompt("링크 URL을 입력해 주세요. http:// 또는 https://로 시작해야 합니다.");
             if (!url || !/^https?:\/\//i.test(url)) return;
             document.execCommand(command, false, url);
+            renderNoticePreview();
             return;
           }
           document.execCommand(command, false, null);
+          renderNoticePreview();
         });
+      });
+      [fields.title, fields.editor, fields.sourceLabel, fields.sourceUrl].forEach((element) => {
+        element.addEventListener("input", renderNoticePreview);
       });
 
       const savedPassword = window.sessionStorage.getItem("openaiAdsAdminPassword");

@@ -37,9 +37,15 @@ class IntakeFormStaticTests(unittest.TestCase):
             "본부",
             "실",
             "팀",
+            "기존 워크북 파일 불러오기",
+            'id="intake-workbook-file"',
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+
+        full_html = index_html()
+        self.assertIn("/intake/inspect-workbook", full_html)
+        self.assertIn("populateIntakeFromWorkbook", full_html)
 
         removed = [
             "이미지 파일 첨부",
@@ -104,6 +110,8 @@ class IntakeFormStaticTests(unittest.TestCase):
         add_start = html.index("function addCampaignItem()")
         add_end = html.index("function addAdgroupItem(", add_start)
         add_campaign = html[add_start:add_end]
+        self.assertIn("captureCampaignSelections", add_campaign)
+        self.assertIn("restoreCampaignSelections", add_campaign)
         self.assertIn("isolateCampaignRadioNames(item, campaignInstanceId)", add_campaign)
         self.assertLess(add_campaign.index("isolateCampaignRadioNames"), add_campaign.index("campaignList.append(item)"))
 

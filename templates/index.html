@@ -572,6 +572,47 @@
         gap: 14px;
       }
 
+      .workbook-import-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: end;
+      }
+
+      .workbook-import-actions {
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 22px;
+      }
+
+      .workbook-import-result {
+        margin-top: 12px;
+        border: 1px solid #d6dde8;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 12px 14px;
+        color: #475467;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .workbook-import-result.success {
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+        color: #065f46;
+      }
+
+      .workbook-import-result.error {
+        border-color: #fecaca;
+        background: #fff1f2;
+        color: #991b1b;
+      }
+
+      .workbook-import-result ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+
       .form-card {
         border: 1px solid var(--line);
         border-radius: var(--radius-lg, 8px);
@@ -3011,6 +3052,14 @@
           grid-template-columns: 1fr;
         }
 
+        .workbook-import-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .workbook-import-actions {
+          padding-bottom: 0;
+        }
+
         .intake-hero,
         .intake-actions {
           grid-template-columns: 1fr;
@@ -3802,6 +3851,35 @@
             </div>
           </div>
 
+          <section class="form-card workbook-import-card" data-collapsible>
+            <div class="form-card-header with-toggle">
+              <div>
+                <h2>기존 워크북 파일 불러오기</h2>
+                <p>광고주가 작성한 .xlsx를 올리면 campaigns / adgroups / ads 값을 검사하고 현재 입력 폼에 자동으로 채웁니다.</p>
+              </div>
+              <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
+            </div>
+            <div class="collapsible-body form-card-body">
+              <div class="workbook-import-grid">
+                <div class="field">
+                  <label for="intake-workbook-file">워크북 파일</label>
+                  <input
+                    id="intake-workbook-file"
+                    type="file"
+                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  />
+                  <span class="field-help">공식 템플릿 컬럼 기준: campaigns / adgroups / ads</span>
+                </div>
+                <div class="workbook-import-actions">
+                  <button class="secondary" id="intake-workbook-import" type="button">워크북 불러오기</button>
+                </div>
+              </div>
+              <div class="workbook-import-result" id="intake-workbook-import-result">
+                파일을 선택하면 워크북 내용을 검사한 뒤, 통과한 값만 아래 폼으로 불러옵니다.
+              </div>
+            </div>
+          </section>
+
           <section class="form-card" data-collapsible>
             <div class="form-card-header with-toggle">
               <div>
@@ -3815,6 +3893,7 @@
               <div class="field">
                 <label class="required" for="advertiser-name">광고주명</label>
                 <input id="advertiser-name" name="advertiserName" required />
+                <span class="field-help">내부 접수와 시트 식별에 사용하는 광고주명입니다.</span>
               </div>
               <div class="field">
                 <label for="ads-manager-account">브랜드명</label>
@@ -5057,6 +5136,9 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       const intakeForm = document.querySelector("#intake-form");
       const intakeSubmitButton = document.querySelector("#intake-submit");
       const intakeWorkbookDownloadButton = document.querySelector("#intake-workbook-download");
+      const intakeWorkbookFileInput = document.querySelector("#intake-workbook-file");
+      const intakeWorkbookImportButton = document.querySelector("#intake-workbook-import");
+      const intakeWorkbookImportResult = document.querySelector("#intake-workbook-import-result");
       const intakeStatus = document.querySelector("#intake-status");
       const formStartedAt = document.querySelector("#form-started-at");
       const campaignList = document.querySelector("#campaign-list");
@@ -6056,6 +6138,45 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         return container.querySelector(`${selector}:checked`)?.value || "";
       }
 
+      function setRadioValue(container, selector, value) {
+        const normalized = String(value || "").trim().toLowerCase();
+        const input = [...container.querySelectorAll(selector)].find((item) => item.value === normalized);
+        if (input) input.checked = true;
+      }
+
+      function captureCampaignSelections() {
+        return campaignItems().map((item) => ({
+          budgetType: checkedValue(item, ".budget-type") || "lifetime",
+          objective: checkedValue(item, ".campaign-objective") || "views",
+        }));
+      }
+
+      function restoreCampaignSelections(snapshot) {
+        campaignItems().forEach((item, index) => {
+          const state = snapshot[index];
+          if (!state) return;
+          setRadioValue(item, ".budget-type", state.budgetType);
+          setRadioValue(item, ".campaign-objective", state.objective);
+        });
+      }
+
+      function normalizeWorkbookArray(value) {
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (value === null || value === undefined) return [];
+        const text = String(value).trim();
+        if (!text) return [];
+        try {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        } catch {
+          /* Keep permissive comma parsing for human-authored sheets. */
+        }
+        return text
+          .split(",")
+          .map((item) => item.trim().replace(/^["']|["']$/g, ""))
+          .filter(Boolean);
+      }
+
       function isolateCampaignRadioNames(campaignItem, campaignNumber) {
         campaignItem.querySelectorAll(".budget-type").forEach((input) => {
           input.name = `budget_type_${campaignNumber}`;
@@ -6231,14 +6352,16 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       }
 
       function addCampaignItem() {
+        const previousSelections = captureCampaignSelections();
         const template = campaignList.querySelector("[data-campaign-item]");
         const item = template.cloneNode(true);
-        campaignInstanceId += 1;
-        isolateCampaignRadioNames(item, campaignInstanceId);
         trimToSingleAdgroup(item);
         resetInputs(item);
         resetCollapsibleState(item);
+        campaignInstanceId += 1;
+        isolateCampaignRadioNames(item, campaignInstanceId);
         campaignList.append(item);
+        restoreCampaignSelections(previousSelections);
         updateIntakeStructureState();
         item.querySelector(".campaign-name").focus();
       }
@@ -6273,6 +6396,124 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         resetInputs(firstCampaign);
         resetCollapsibleState(firstCampaign);
         updateIntakeStructureState();
+      }
+
+      function populateIntakeFromWorkbook(workbookData) {
+        const campaigns = workbookData?.campaigns || [];
+        const adgroups = workbookData?.adgroups || [];
+        const ads = workbookData?.ads || [];
+        if (!campaigns.length) return;
+
+        const baseCampaign = campaignList.querySelector("[data-campaign-item]")?.cloneNode(true);
+        if (!baseCampaign) return;
+        campaignList.innerHTML = "";
+
+        campaigns.forEach((campaignData) => {
+          const campaign = baseCampaign.cloneNode(true);
+          trimToSingleAdgroup(campaign);
+          resetInputs(campaign);
+          resetCollapsibleState(campaign);
+          campaignInstanceId += 1;
+          isolateCampaignRadioNames(campaign, campaignInstanceId);
+          campaign.querySelector(".campaign-name").value = campaignData.campaign_name || "";
+          campaign.querySelector(".budget-max").value = campaignData.budget_max || "";
+          setRadioValue(campaign, ".budget-type", campaignData.budget_type || "lifetime");
+          setRadioValue(campaign, ".campaign-objective", campaignData.objective || "views");
+          campaign.querySelector(".launch-date").value = campaignData.launch_date || "";
+          campaign.querySelector(".end-date").value = campaignData.end_date || "";
+          const countries = normalizeWorkbookArray(campaignData.target_countries);
+          campaign.querySelector(".target-countries").value = countries[0] || "";
+
+          const groupList = campaign.querySelector(".adgroup-list");
+          const baseAdgroup = groupList.querySelector(":scope > [data-adgroup-item]")?.cloneNode(true);
+          if (!baseAdgroup) return;
+          groupList.innerHTML = "";
+          const relatedGroups = adgroups.filter((group) => group.campaign_name === campaignData.campaign_name);
+          (relatedGroups.length ? relatedGroups : [{}]).forEach((groupData) => {
+            const adgroup = baseAdgroup.cloneNode(true);
+            trimToSingleAd(adgroup);
+            resetInputs(adgroup);
+            resetCollapsibleState(adgroup);
+            adgroup.querySelector(".adgroup-name").value = groupData.adgroup_name || "";
+            adgroup.querySelector(".max-bid").value = groupData.max_bid || "";
+            adgroup.querySelector(".keywords").value = normalizeWorkbookArray(groupData.keywords).join(", ");
+
+            const adList = adgroup.querySelector(".ad-list");
+            const baseAd = adList.querySelector(":scope > [data-ad-item]")?.cloneNode(true);
+            if (!baseAd) return;
+            adList.innerHTML = "";
+            const relatedAds = ads.filter((ad) => ad.adgroup_name === groupData.adgroup_name);
+            (relatedAds.length ? relatedAds : [{}]).forEach((adData) => {
+              const ad = baseAd.cloneNode(true);
+              resetInputs(ad);
+              resetCollapsibleState(ad);
+              ad.querySelector(".ad-title").value = adData.title || "";
+              ad.querySelector(".ad-copy").value = adData.copy || "";
+              ad.querySelector(".ad-link").value = adData.link || "";
+              ad.querySelector(".ad-image-link").value = adData.image_link || "";
+              adList.append(ad);
+            });
+            groupList.append(adgroup);
+          });
+          campaignList.append(campaign);
+        });
+        updateIntakeStructureState();
+        campaignList.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+
+      function renderIntakeWorkbookInspectResult(body, imported) {
+        const lines = Object.entries(body.sheets || {}).map(([name, item]) => {
+          const missing = item.missing_columns?.length ? ` / 누락: ${item.missing_columns.join(", ")}` : "";
+          const skipped = [];
+          if (item.sample_rows) skipped.push(`샘플 제외 ${item.sample_rows}개`);
+          if (item.guide_rows) skipped.push(`가이드 제외 ${item.guide_rows}개`);
+          const skippedText = skipped.length ? ` (${skipped.join(", ")})` : "";
+          return `${name}: 실제 데이터 행 ${item.rows}개${skippedText}${missing}`;
+        });
+        const errors = (body.errors || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const warnings = (body.warnings || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const summary = imported
+          ? "워크북을 현재 폼에 불러왔습니다. 입력값을 확인한 뒤 XLSX 다운로드 또는 구글 시트 저장을 진행하세요."
+          : body.ok
+            ? "검수 통과 — 워크북 값을 현재 폼에 불러올 수 있습니다."
+            : "확인 필요 — 아래 오류를 먼저 수정해 주세요.";
+        intakeWorkbookImportResult.className = `workbook-import-result ${body.ok ? "success" : "error"}`;
+        intakeWorkbookImportResult.innerHTML = `
+          <strong>${escapeHtml(summary)}</strong>
+          ${lines.length ? `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>` : ""}
+          ${errors ? `<p class="field-help"><strong>오류</strong></p><ul>${errors}</ul>` : ""}
+          ${warnings ? `<p class="field-help"><strong>참고</strong></p><ul>${warnings}</ul>` : ""}
+        `;
+      }
+
+      async function inspectIntakeWorkbook(file) {
+        if (!file) {
+          intakeWorkbookImportResult.className = "workbook-import-result error";
+          intakeWorkbookImportResult.textContent = "불러올 .xlsx 파일을 먼저 선택해 주세요.";
+          return;
+        }
+        intakeWorkbookImportButton.disabled = true;
+        intakeWorkbookImportResult.className = "workbook-import-result";
+        intakeWorkbookImportResult.textContent = "워크북을 검사하고 현재 폼에 불러오는 중입니다.";
+        try {
+          const data = new FormData();
+          data.append("file", file);
+          const response = await fetch("/intake/inspect-workbook", { method: "POST", body: data });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            intakeWorkbookImportResult.className = "workbook-import-result error";
+            intakeWorkbookImportResult.textContent = `검수 실패 — ${formatIntakeServerError(body.detail || response.statusText)}`;
+            return;
+          }
+          const imported = Boolean(body.ok && body.data);
+          if (imported) populateIntakeFromWorkbook(body.data);
+          renderIntakeWorkbookInspectResult(body, imported);
+        } catch (error) {
+          intakeWorkbookImportResult.className = "workbook-import-result error";
+          intakeWorkbookImportResult.textContent = `불러오기 실패 — ${error.message}`;
+        } finally {
+          intakeWorkbookImportButton.disabled = false;
+        }
       }
 
       function syncObjectiveForRoute() {
@@ -6845,6 +7086,12 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       checklistDownloadButton.addEventListener("click", downloadChecklistCsv);
       intakeForm.addEventListener("submit", submitIntake);
       intakeWorkbookDownloadButton.addEventListener("click", downloadIntakeWorkbook);
+      intakeWorkbookImportButton?.addEventListener("click", () => {
+        inspectIntakeWorkbook(intakeWorkbookFileInput?.files?.[0]);
+      });
+      intakeWorkbookFileInput?.addEventListener("change", () => {
+        inspectIntakeWorkbook(intakeWorkbookFileInput?.files?.[0]);
+      });
       intakeReviewEditButton.addEventListener("click", closeIntakeReviewModal);
       intakeReviewSubmitButton.addEventListener("click", submitReviewedIntake);
       intakeForm.addEventListener("click", (event) => {

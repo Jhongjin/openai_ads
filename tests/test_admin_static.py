@@ -20,11 +20,16 @@ class AdminStaticTests(unittest.TestCase):
             "renderVisitChart",
             "body_html",
             'id="notice-updated"',
+            'id="notice-preview"',
+            'id="notice-preview-body"',
+            "renderNoticePreview",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
 
         self.assertNotIn('id="notice-bullets"', html)
+        self.assertNotIn('id="storage-badge"', html)
+        self.assertNotIn("저장소:", html)
 
 
 if __name__ == "__main__":
