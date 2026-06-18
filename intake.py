@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from io import BytesIO
+import json
 from datetime import date, datetime
 import os
 import re
@@ -63,42 +65,74 @@ def _route_label(route: str) -> str:
 
 
 class OpsMeta(BaseModel):
+    upload_mode: Literal["bulk_sheet", "campaigns", "adgroups", "ads"] = Field(
+        default="bulk_sheet",
+        alias="uploadMode",
+    )
     execution_route: Literal["openai_cbt", "criteo"] = Field(..., alias="executionRoute")
     advertiser_name: str = Field(..., alias="advertiserName")
-    legal_name: str = Field(..., alias="legalName")
-    brn: str = Field(..., alias="brn")
-    advertiser_homepage_url: str = Field(..., alias="advertiserHomepageUrl")
-    invoice_email: str = Field(..., alias="invoiceEmail")
+    ads_manager_account: str = Field(default="", alias="adsManagerAccount")
 
+    submitter_name: str = Field(default="", alias="submitterName")
+    submitter_email: str = Field(default="", alias="submitterEmail")
+    sales_owner: str = Field(..., alias="salesOwner")
+    image_policy: str = Field(default="direct_url_or_uploaded", alias="imagePolicy")
+    notes: str = ""
+
+    # Legacy booking fields are accepted for compatibility, but the new draft
+    # page treats advertiser onboarding and billing as a separate workflow.
+    legal_name: str = Field(default="", alias="legalName")
+    brn: str = Field(default="", alias="brn")
+    advertiser_homepage_url: str = Field(default="", alias="advertiserHomepageUrl")
+    invoice_email: str = Field(default="", alias="invoiceEmail")
+    contact_name: str = Field(default="", alias="contactName")
+    contact_phone: str = Field(default="", alias="contactPhone")
+    contact_email: str = Field(default="", alias="contactEmail")
     ads_manager_ready: bool = Field(default=False, alias="adsManagerReady")
     payment_ready: bool = Field(default=False, alias="paymentReady")
     crawler_ready: bool = Field(default=False, alias="crawlerReady")
     favicon_ready: bool = Field(default=False, alias="faviconReady")
 
-    contact_name: str = Field(..., alias="contactName")
-    contact_phone: str = Field(..., alias="contactPhone")
-    contact_email: str = Field(..., alias="contactEmail")
-    sales_owner: str = Field(..., alias="salesOwner")
-    notes: str = ""
-
     honeypot: str = ""
     form_started_at: int | None = Field(default=None, alias="formStartedAt")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_contact_fields(cls, values: Any) -> Any:
+        if not isinstance(values, dict):
+            return values
+        values = dict(values)
+        if not values.get("submitterName") and values.get("contactName"):
+            values["submitterName"] = values.get("contactName")
+        if not values.get("submitterEmail") and values.get("contactEmail"):
+            values["submitterEmail"] = values.get("contactEmail")
+        if not values.get("adsManagerAccount") and values.get("advertiserName"):
+            values["adsManagerAccount"] = values.get("advertiserName")
+        return values
+
     @field_validator(
         "advertiser_name",
-        "legal_name",
-        "brn",
-        "invoice_email",
-        "contact_name",
-        "contact_phone",
-        "contact_email",
+        "ads_manager_account",
+        "submitter_name",
+        "submitter_email",
         "sales_owner",
     )
     @classmethod
     def _required_text(cls, value: str) -> str:
         return _require_text(value)
 
-    @field_validator("notes", "honeypot")
+    @field_validator(
+        "notes",
+        "honeypot",
+        "image_policy",
+        "legal_name",
+        "brn",
+        "advertiser_homepage_url",
+        "invoice_email",
+        "contact_name",
+        "contact_phone",
+        "contact_email",
+    )
     @classmethod
     def _optional_text(cls, value: str) -> str:
         return _clean_text(value)
@@ -106,12 +140,16 @@ class OpsMeta(BaseModel):
     @field_validator("advertiser_homepage_url")
     @classmethod
     def _valid_homepage(cls, value: str) -> str:
+        if not _clean_text(value):
+            return ""
         return _valid_http_url(value, "advertiser 공식 홈페이지 URL")
 
-    @field_validator("invoice_email", "contact_email")
+    @field_validator("submitter_email", "invoice_email", "contact_email")
     @classmethod
     def _valid_email(cls, value: str) -> str:
-        text = _require_text(value)
+        text = _clean_text(value)
+        if not text:
+            return ""
         if not _EMAIL_RE.match(text):
             raise ValueError("이메일 형식이 올바르지 않습니다.")
         return text
@@ -345,21 +383,19 @@ def build_sheet_payload(
 
     primary_campaign = campaigns[0]
     ops = {
+        "upload_mode": submission.ops_meta.upload_mode,
         "route": _route_label(submission.ops_meta.execution_route),
         "advertiser_name": submission.ops_meta.advertiser_name,
+        "ads_manager_account": submission.ops_meta.ads_manager_account,
+        "submitter_name": submission.ops_meta.submitter_name,
+        "submitter_email": submission.ops_meta.submitter_email,
+        "sales_owner": submission.ops_meta.sales_owner,
+        "image_policy": submission.ops_meta.image_policy,
+        "note": submission.ops_meta.notes,
         "legal_name": submission.ops_meta.legal_name,
         "brn": submission.ops_meta.brn,
         "homepage": submission.ops_meta.advertiser_homepage_url,
         "invoice_email": submission.ops_meta.invoice_email,
-        "contact_name": submission.ops_meta.contact_name,
-        "contact_phone": submission.ops_meta.contact_phone,
-        "contact_email": submission.ops_meta.contact_email,
-        "sales_owner": submission.ops_meta.sales_owner,
-        "ready_ads_manager": submission.ops_meta.ads_manager_ready,
-        "ready_payment": submission.ops_meta.payment_ready,
-        "ready_crawler": submission.ops_meta.crawler_ready,
-        "ready_favicon": submission.ops_meta.favicon_ready,
-        "note": submission.ops_meta.notes,
     }
     return {
         "secret": shared_secret,
@@ -371,6 +407,91 @@ def build_sheet_payload(
             "ops": ops,
         },
     }
+
+
+WORKBOOK_COLUMNS = {
+    "campaigns": [
+        "campaign_name",
+        "budget_max",
+        "budget_type",
+        "launch_date",
+        "end_date",
+        "objective",
+        "target_countries",
+    ],
+    "adgroups": ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+    "ads": ["adgroup_name", "title", "copy", "link", "image_link"],
+}
+
+
+def _sheet_value(value: Any) -> Any:
+    if isinstance(value, (list, dict)):
+        return json.dumps(value, ensure_ascii=False)
+    return "" if value is None else value
+
+
+def create_workbook_bytes(submission: IntakeSubmission) -> bytes:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    sheet_payload = build_sheet_payload(submission, shared_secret="workbook")
+    data = sheet_payload["data"]
+    wb = Workbook()
+    default = wb.active
+    wb.remove(default)
+    header_fill = PatternFill("solid", fgColor="1F2937")
+    header_font = Font(color="FFFFFF", bold=True)
+
+    for sheet_name in ("campaigns", "adgroups", "ads"):
+        ws = wb.create_sheet(sheet_name)
+        columns = WORKBOOK_COLUMNS[sheet_name]
+        ws.append(columns)
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+        for row in data[sheet_name]:
+            ws.append([_sheet_value(row.get(column)) for column in columns])
+        for column_cells in ws.columns:
+            max_length = max(len(str(cell.value or "")) for cell in column_cells)
+            ws.column_dimensions[column_cells[0].column_letter].width = min(max(max_length + 2, 14), 44)
+
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
+
+def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
+    from openpyxl import load_workbook
+
+    errors: list[str] = []
+    summary: dict[str, Any] = {"sheets": {}, "errors": errors}
+    workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+    for sheet_name, required_columns in WORKBOOK_COLUMNS.items():
+        if sheet_name not in workbook.sheetnames:
+            errors.append(f"{sheet_name} 시트가 없습니다.")
+            continue
+        ws = workbook[sheet_name]
+        header = [str(cell.value or "").strip() for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+        missing = [column for column in required_columns if column not in header]
+        if missing:
+            errors.append(f"{sheet_name} 시트에 필수 컬럼이 없습니다: {', '.join(missing)}")
+        rows = 0
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            first = str(row[0] or "").strip()
+            if not any(cell not in (None, "") for cell in row):
+                continue
+            if first in {"Required"} or first.startswith("How we will") or first.startswith("The "):
+                continue
+            if first.startswith("oaitest"):
+                continue
+            rows += 1
+        summary["sheets"][sheet_name] = {
+            "columns": header,
+            "rows": rows,
+            "missing_columns": missing,
+        }
+    summary["ok"] = not errors
+    return summary
 
 
 async def forward_intake_to_sheet(

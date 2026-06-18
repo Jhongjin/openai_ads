@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+from io import BytesIO
 import os
+from pathlib import Path
+import re
+from uuid import uuid4
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+import httpx
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -79,6 +84,19 @@ class IntakeResponse(BaseModel):
     submitted_at_kst: str
 
 
+class WorkbookInspectResponse(BaseModel):
+    ok: bool
+    sheets: dict[str, Any]
+    errors: list[str]
+
+
+class ImageUploadResponse(BaseModel):
+    image_url: str
+    width: int
+    height: int
+    content_type: str
+
+
 class NoticeConfigRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=120)
     updated_at: str = Field(..., min_length=8, max_length=20)
@@ -142,6 +160,11 @@ def rag_page() -> FileResponse:
 @app.get("/intake", include_in_schema=False)
 def intake_page() -> FileResponse:
     return _index_file()
+
+
+@app.get("/creative-upload-draft", include_in_schema=False)
+def creative_upload_draft_page() -> FileResponse:
+    return FileResponse(project_root() / "templates" / "creative_upload_draft.html")
 
 
 @app.get("/slides", include_in_schema=False)
@@ -250,6 +273,102 @@ async def intake(request: Request) -> IntakeResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return IntakeResponse(**result)
+
+
+@app.post("/intake/workbook", include_in_schema=False)
+async def intake_workbook(request: Request) -> StreamingResponse:
+    try:
+        from intake import IntakeSubmission, create_workbook_bytes
+
+        payload = await request.json()
+        submission = IntakeSubmission.model_validate(payload)
+        workbook_bytes = create_workbook_bytes(submission)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=exc.errors(include_url=False, include_input=False),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    filename = "openai_ads_bulk_upload.xlsx"
+    return StreamingResponse(
+        BytesIO(workbook_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/intake/inspect-workbook", response_model=WorkbookInspectResponse, include_in_schema=False)
+async def inspect_intake_workbook(file: UploadFile = File(...)) -> WorkbookInspectResponse:
+    if not file.filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="xlsx 파일만 업로드할 수 있습니다.")
+    try:
+        from intake import inspect_workbook_bytes
+
+        content = await file.read()
+        if len(content) > 8 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="파일은 8MB 이하만 업로드할 수 있습니다.")
+        result = inspect_workbook_bytes(content)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"워크북을 읽을 수 없습니다: {exc}") from exc
+    return WorkbookInspectResponse(**result)
+
+
+@app.post("/intake/upload-image", response_model=ImageUploadResponse, include_in_schema=False)
+async def upload_intake_image(file: UploadFile = File(...)) -> ImageUploadResponse:
+    supabase_url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    bucket = os.getenv("SUPABASE_STORAGE_BUCKET", "openai-ad-assets").strip()
+    if not supabase_url or not service_role_key:
+        raise HTTPException(
+            status_code=503,
+            detail="이미지 업로드 저장소가 아직 설정되지 않았습니다. 공개 직접 이미지 URL을 입력해 주세요.",
+        )
+
+    content_type = file.content_type or ""
+    if content_type not in {"image/png", "image/jpeg"}:
+        raise HTTPException(status_code=400, detail="PNG 또는 JPG 이미지만 첨부할 수 있습니다.")
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="이미지 파일은 5MB 이하만 첨부할 수 있습니다.")
+
+    try:
+        from PIL import Image
+
+        image = Image.open(BytesIO(data))
+        width, height = image.size
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="이미지 파일을 열 수 없습니다.") from exc
+    if width != height:
+        raise HTTPException(status_code=400, detail="이미지는 정사각형이어야 합니다.")
+    if width < 640 or height < 640 or width > 1200 or height > 1200:
+        raise HTTPException(status_code=400, detail="이미지는 640×640 이상, 1200×1200 이하이어야 합니다.")
+
+    suffix = ".png" if content_type == "image/png" else ".jpg"
+    safe_stem = re.sub(r"[^0-9A-Za-z._-]+", "-", Path(file.filename or "image").stem).strip("-")
+    object_name = f"creative-upload/{uuid4().hex}-{safe_stem or 'image'}{suffix}"
+    upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{object_name}"
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+        "Content-Type": content_type,
+        "x-upsert": "false",
+    }
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+        response = await client.post(upload_url, content=data, headers=headers)
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"Supabase Storage 업로드 실패(HTTP {response.status_code})")
+
+    public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{object_name}"
+    return ImageUploadResponse(
+        image_url=public_url,
+        width=width,
+        height=height,
+        content_type=content_type,
+    )
 
 
 @app.post("/admin/reindex", response_model=IngestResponse, include_in_schema=False)

@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 
-from intake import IntakeSubmission, build_sheet_payload
+from intake import IntakeSubmission, build_sheet_payload, create_workbook_bytes, inspect_workbook_bytes
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -224,6 +224,39 @@ class IntakeValidationTests(unittest.TestCase):
         payload["ads"][0]["title"] = "가" * 31
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
+
+    def test_new_creative_upload_meta_payload_is_supported(self) -> None:
+        payload = valid_payload()
+        payload["opsMeta"] = {
+            "uploadMode": "bulk_sheet",
+            "executionRoute": "openai_cbt",
+            "advertiserName": "테스트 광고주",
+            "adsManagerAccount": "Test Ads Account",
+            "submitterName": "홍길동",
+            "submitterEmail": "client@example.com",
+            "salesOwner": "케이티나스 담당자",
+            "imagePolicy": "direct_url_or_uploaded",
+            "notes": "",
+            "honeypot": "",
+            "formStartedAt": int(datetime.now(KST).timestamp() * 1000) - 3000,
+        }
+
+        submission = IntakeSubmission.model_validate(payload)
+        sheet_payload = build_sheet_payload(submission, shared_secret="secret")
+
+        self.assertEqual(sheet_payload["data"]["ops"]["upload_mode"], "bulk_sheet")
+        self.assertEqual(sheet_payload["data"]["ops"]["ads_manager_account"], "Test Ads Account")
+        self.assertEqual(sheet_payload["data"]["ops"]["submitter_email"], "client@example.com")
+
+    def test_can_create_and_inspect_ads_manager_workbook(self) -> None:
+        submission = IntakeSubmission.model_validate(valid_payload())
+        workbook = create_workbook_bytes(submission)
+        summary = inspect_workbook_bytes(workbook)
+
+        self.assertTrue(summary["ok"])
+        self.assertEqual(summary["sheets"]["campaigns"]["rows"], 1)
+        self.assertEqual(summary["sheets"]["adgroups"]["rows"], 1)
+        self.assertEqual(summary["sheets"]["ads"]["rows"], 2)
 
 
 if __name__ == "__main__":

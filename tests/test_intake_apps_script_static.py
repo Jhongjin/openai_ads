@@ -16,6 +16,9 @@ class IntakeAppsScriptStaticTests(unittest.TestCase):
         self.assertIn("const adgroupsForSheet = adgroups.map", script)
         self.assertIn("campaign_name: row.campaign_name || campaigns[0].campaign_name || \"\"", script)
         self.assertIn('appendRows_("adgroups", adgroupsForSheet.map(withReceipt))', script)
+        self.assertIn("AdsManager계정명", script)
+        self.assertIn("업로드유형", script)
+        self.assertIn("submitter_email", script)
         self.assertNotIn("primaryCampaignName", script)
         self.assertNotIn("adgroupsWithCampaigns", script)
 

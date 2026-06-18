@@ -19,19 +19,17 @@ class IntakeFormStaticTests(unittest.TestCase):
         html = intake_panel_html()
 
         required = [
-            "campaigns / adgroups / ads / ops_meta",
-            "① 캠페인 정보",
-            "② 광고그룹 정보",
-            "③ 소재 정보",
+            "Ads Manager 벌크 업로드",
+            "소재 접수 기본 정보",
+            "업로드 유형",
             "campaign_name",
             "adgroup_name",
             "budget_max",
             "target_countries",
             "image_link",
+            "이미지 파일 첨부",
             "소재 추가",
-            "BRN / 사업자등록번호",
-            "KRW 고정",
-            "Asia/Seoul 고정",
+            "업로드용 .xlsx 생성",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
@@ -91,8 +89,23 @@ class IntakeFormStaticTests(unittest.TestCase):
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn('data-tab="intake"', html)
-        self.assertIn("집행 의뢰 접수는 방향성 변경으로 일시 중단되었습니다.", html)
+        self.assertIn("소재 업로드 도구는 개편 중입니다.", html)
         self.assertIn('aria-disabled="true"', html)
+
+    def test_creative_upload_draft_page_exists_off_main_tab(self) -> None:
+        html = (ROOT / "templates" / "creative_upload_draft.html").read_text(encoding="utf-8")
+
+        required = [
+            "OpenAI 광고 소재 업로드 시트 생성",
+            "DRAFT · 메인 탭 비활성 상태로 작업 중",
+            "공식 벌크 워크북 검수",
+            "업로드용 .xlsx 생성",
+            "/intake/workbook",
+            "/intake/inspect-workbook",
+            "/intake/upload-image",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
 
 
 if __name__ == "__main__":

@@ -763,6 +763,41 @@
         gap: 10px;
       }
 
+      .export-options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .export-card {
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 14px 16px;
+      }
+
+      .export-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #0f1115;
+      }
+
+      .export-card p,
+      .image-upload-status {
+        margin: 0;
+        color: #697077;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .image-upload-status.success {
+        color: var(--green-ink);
+      }
+
+      .image-upload-status.error {
+        color: var(--red-ink);
+      }
+
       .option-chip,
       .check-chip {
         display: inline-flex;
@@ -2998,10 +3033,10 @@
             type="button"
             disabled
             aria-disabled="true"
-            title="집행 의뢰 접수는 방향성 변경으로 일시 중단되었습니다."
+            title="소재 업로드 도구는 개편 중입니다."
           >
             <span class="tab-icon">IN</span>
-            <span>집행 의뢰 접수</span>
+            <span>소재 업로드</span>
           </button>
         </div>
         <div class="tab-group" data-group="docs">
@@ -3319,80 +3354,69 @@
       <section class="panel" id="intake-panel">
         <form class="form-shell" id="intake-form" novalidate>
           <div class="input-band">
-            <label>OpenAI 광고 집행 의뢰 접수</label>
+            <label>OpenAI 광고 소재 업로드 시트 생성</label>
             <p class="section-note">
-              공식 워크북 구조에 맞춰 캠페인, 광고그룹, 소재를 나누어 접수합니다. 제출 내용은 구글 시트의 campaigns / adgroups / ads / ops_meta 탭에 자동 기록됩니다.
+              광고주 등록은 별도 시트에서 관리하고, 이 화면에서는 Ads Manager 벌크 업로드에 필요한 캠페인·광고그룹·광고 소재 정보를 수집합니다. 최종 산출은 campaigns / adgroups / ads 3개 시트 구조입니다.
             </p>
           </div>
 
           <section class="form-card" data-collapsible>
             <div class="form-card-header with-toggle">
               <div>
-                <h2>운영팀용 추가 정보</h2>
-                <p>공식 업로드 시트에는 들어가지 않고 ops_meta 탭에 접수번호와 함께 기록됩니다.</p>
+                <h2>소재 접수 기본 정보</h2>
+                <p>공식 업로드 시트에는 들어가지 않고 ops_meta 탭에 접수번호와 함께 기록되는 내부 식별 정보입니다.</p>
               </div>
               <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
             </div>
             <div class="collapsible-body form-card-body">
             <div class="form-grid">
               <div class="field full">
-                <span class="radio-group-label required">집행 경로</span>
+                <span class="radio-group-label required">업로드 유형</span>
                 <div class="radio-row">
-                  <label class="option-chip"><input type="radio" name="executionRoute" value="openai_cbt" checked /> OpenAI 직접 CBT</label>
+                  <label class="option-chip"><input type="radio" name="uploadMode" value="bulk_sheet" checked /> 전체 일괄 시트</label>
+                  <label class="option-chip"><input type="radio" name="uploadMode" value="campaigns" /> 캠페인만</label>
+                  <label class="option-chip"><input type="radio" name="uploadMode" value="adgroups" /> 광고그룹만</label>
+                  <label class="option-chip"><input type="radio" name="uploadMode" value="ads" /> 광고만</label>
+                </div>
+                <span class="field-help">Ads Manager의 일괄 업로드 메뉴 기준입니다. 현재 화면은 전체 일괄 생성 구조를 기본으로 검수합니다.</span>
+              </div>
+              <div class="field full">
+                <span class="radio-group-label required">업로드 채널/글자수 기준</span>
+                <div class="radio-row">
+                  <label class="option-chip"><input type="radio" name="executionRoute" value="openai_cbt" checked /> OpenAI 직접 업로드</label>
                   <label class="option-chip"><input type="radio" name="executionRoute" value="criteo" /> 크리테오 경유</label>
                 </div>
+                <span class="field-help">OpenAI 공식 워크북 기준은 제목 24자/설명 48자, 크리테오 경유는 제목 30자/설명 60자입니다.</span>
               </div>
               <div class="field">
                 <label class="required" for="advertiser-name">광고주명</label>
                 <input id="advertiser-name" name="advertiserName" required />
               </div>
               <div class="field">
-                <label class="required" for="legal-name">법인 정식 명칭</label>
-                <input id="legal-name" name="legalName" required />
+                <label class="required" for="ads-manager-account">Ads Manager 계정명</label>
+                <input id="ads-manager-account" name="adsManagerAccount" placeholder="예: Catsenglish(캐츠잉글리시)" required />
+                <span class="field-help">광고주 등록 시트에 생성된 Ads Manager 계정명과 맞춰 주세요.</span>
               </div>
               <div class="field">
-                <label class="required" for="brn">BRN / 사업자등록번호</label>
-                <input id="brn" name="brn" placeholder="123-45-67890" required />
-                <span class="field-help">VAT 판정에 사용합니다. 한국 사업자등록번호/세금ID 제공 시 0%, 미제공 시 10% 기준입니다.</span>
-              </div>
-              <div class="field full">
-                <label class="required" for="advertiser-homepage-url">advertiser 공식 홈페이지 URL</label>
-                <input id="advertiser-homepage-url" name="advertiserHomepageUrl" type="url" placeholder="https://example.com" required />
-                <span class="field-help">OpenAI 정책 리뷰용입니다. 개별 소재 랜딩 URL과 별도로 공식 홈페이지를 입력해 주세요.</span>
+                <label class="required" for="submitter-name">제출자명</label>
+                <input id="submitter-name" name="submitterName" required />
               </div>
               <div class="field">
-                <label>청구 통화</label>
-                <div class="readonly-pill">KRW 고정</div>
-                <span class="field-warning">계정 생성 후 변경 불가</span>
-              </div>
-              <div class="field">
-                <label>시간대</label>
-                <div class="readonly-pill">Asia/Seoul 고정</div>
-                <span class="field-warning">계정 생성 후 변경 불가</span>
-              </div>
-              <div class="field">
-                <label class="required" for="invoice-email">인보이스 수신 이메일</label>
-                <input id="invoice-email" name="invoiceEmail" type="email" placeholder="invoice@example.com" required />
-              </div>
-              <div class="field">
-                <label class="required" for="contact-name">광고주 담당자명</label>
-                <input id="contact-name" name="contactName" required />
-              </div>
-              <div class="field">
-                <label class="required" for="contact-phone">연락처</label>
-                <input id="contact-phone" name="contactPhone" required />
-              </div>
-              <div class="field">
-                <label class="required" for="contact-email">이메일</label>
-                <input id="contact-email" name="contactEmail" type="email" required />
+                <label class="required" for="submitter-email">제출자 이메일</label>
+                <input id="submitter-email" name="submitterEmail" type="email" required />
               </div>
               <div class="field">
                 <label class="required" for="sales-owner">케이티나스미디어 영업담당자</label>
                 <input id="sales-owner" name="salesOwner" required />
               </div>
+              <div class="field">
+                <label>이미지 처리 방식</label>
+                <div class="readonly-pill">직접 이미지 URL 또는 파일 첨부</div>
+                <span class="field-help">Ads Manager 업로드 파일에는 최종적으로 공개 직접 이미지 URL(image_link)이 들어갑니다.</span>
+              </div>
               <div class="field full">
                 <label for="intake-notes">비고</label>
-                <textarea id="intake-notes" name="notes" placeholder="추가 요청사항이나 세팅 참고사항을 입력하세요."></textarea>
+                <textarea id="intake-notes" name="notes" placeholder="소재 검수 메모, 기존 캠페인에 추가 여부, 업로드 주의사항 등을 입력하세요."></textarea>
               </div>
             </div>
             </div>
@@ -3554,6 +3578,12 @@
                             <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
                             <span class="field-help">image_link · 정사각형, 최소 640×640 ~ 최대 1200×1200, PNG/JPG, 공개 직접 접근 링크</span>
                           </div>
+                          <div class="field full">
+                            <label>이미지 파일 첨부</label>
+                            <input class="ad-image-file" type="file" accept="image/png,image/jpeg" />
+                            <span class="field-help">파일 첨부 시 Supabase Storage 설정이 있으면 공개 이미지 URL을 생성해 image_link에 자동 입력합니다. 저장소 미설정 시 직접 이미지 URL을 입력해 주세요.</span>
+                            <span class="image-upload-status" aria-live="polite"></span>
+                          </div>
                         </div>
                         </div>
                       </article>
@@ -3570,19 +3600,22 @@
           <section class="form-card" data-collapsible>
             <div class="form-card-header with-toggle">
               <div>
-                <h2>준비상태 체크</h2>
-                <p>집행 전 준비 여부만 기록합니다.</p>
+                <h2>업로드 산출물</h2>
+                <p>입력한 내용을 구글 시트에 누적하거나 Ads Manager 업로드용 .xlsx 파일로 내려받을 수 있습니다.</p>
               </div>
               <button class="collapse-toggle" type="button" aria-expanded="true">접기</button>
             </div>
             <div class="collapsible-body form-card-body">
-              <div class="checkbox-grid">
-                <label class="check-chip"><input type="checkbox" name="adsManagerReady" /> Ads Manager 계정 생성 완료</label>
-                <label class="check-chip"><input type="checkbox" name="paymentReady" /> 결제수단 등록 완료</label>
-                <label class="check-chip"><input type="checkbox" name="crawlerReady" /> 랜딩 URL 크롤러 허용 점검 완료</label>
-                <label class="check-chip"><input type="checkbox" name="faviconReady" /> 파비콘 준비 완료</label>
+              <div class="export-options">
+                <div class="export-card">
+                  <strong>구글 시트 기록</strong>
+                  <p>campaigns / adgroups / ads / ops_meta 탭에 접수번호와 함께 누적합니다.</p>
+                </div>
+                <div class="export-card">
+                  <strong>Ads Manager 업로드용 .xlsx</strong>
+                  <p>공식 워크북 컬럼명 그대로 campaigns / adgroups / ads 3개 시트를 생성합니다.</p>
+                </div>
               </div>
-              <p class="field-help">카드 정보는 수집하지 않습니다. 준비 여부만 체크해 주세요.</p>
             </div>
           </section>
 
@@ -3594,7 +3627,8 @@
 
           <div class="input-band">
             <div class="controls">
-              <button class="primary" id="intake-submit" type="submit">접수 제출</button>
+              <button class="secondary" id="intake-workbook-download" type="button">업로드용 .xlsx 생성</button>
+              <button class="primary" id="intake-submit" type="submit">구글 시트에 기록</button>
               <span class="form-status" id="intake-status" aria-live="polite"></span>
             </div>
           </div>
@@ -4057,7 +4091,7 @@ Allow: /</pre>
                     </div>
                     <ul class="slide-list">
                       <li>하나의 웹사이트에는 공통 픽셀 스크립트를 먼저 설치하고, 각 전환 지점에는 이벤트 호출 코드를 추가합니다.</li>
-                      <li>캠페인 연결까지 완료해야 리포팅·최적화에 전환 이벤트를 활용할 수 있습니다.</li>
+                      <li>이벤트를 캠페인에 연결해야 리포팅·최적화에 전환 이벤트를 활용할 수 있습니다.</li>
                     </ul>
                     <p class="pixel-source-note">
                       참고:
@@ -4202,6 +4236,18 @@ Allow: /</pre>
                       <span>공통 픽셀 init 이후, 해당 페이지 로드 시점 또는 콘텐츠 노출 시점에 호출합니다.</span>
                     </div>
                   </div>
+                  <pre class="crawler-code pixel-code compact">oaiq("measure", "page_viewed", {
+  type: "contents"
+});
+
+oaiq("measure", "contents_viewed", {
+  type: "contents",
+  contents: [{
+    id: "landing_page",
+    name: "Summer landing",
+    content_type: "page"
+  }]
+});</pre>
                   <div class="pixel-screen-grid">
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame compact">
@@ -4273,6 +4319,8 @@ oaiq("measure", "order_created", {
   type: "contents",
   amount: 59000,
   currency: "KRW"
+}, {
+  event_id: "order_12345"
 });</pre>
                     <p class="pixel-mini-note">구매 금액을 넣을 때는 amount와 currency를 함께 전달합니다. 구매 완료, 문의 완료, 예약 완료처럼 실제 성과가 확정되는 시점에 호출해 주세요.</p>
                   </div>

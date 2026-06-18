@@ -2,7 +2,7 @@
 
 나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부와 파비콘 규격을 1차 셀프 체크할 수 있는 경량 PoC입니다.
 
-첫 화면(`/`)은 `광고 Q&A`입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `집행 의뢰 접수`, `광고주 안내 자료`, `캠페인 세팅 가이드`를 사용할 수 있습니다.
+첫 화면(`/`)은 `광고 Q&A`입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 안내 자료`, `캠페인 세팅 가이드`, `픽셀 설치 가이드`를 사용할 수 있습니다. `소재 업로드` 탭은 운영 방향 재정의 중이라 메인 화면에서 비활성화되어 있으며, 초안은 `/creative-upload-draft`에서 별도로 검증합니다.
 
 ## 광고 Q&A
 
@@ -68,20 +68,20 @@ Invoke-RestMethod -Method Post `
   -Body '{"urls":["https://example.com/favicon.png","TBD"]}'
 ```
 
-## 집행 의뢰 접수 폼
+## 소재 업로드 초안
 
-`집행 의뢰 접수` 탭 또는 `/intake`는 광고 계정 생성과 캠페인 세팅에 필요한 정보를 구글 시트로 접수합니다.
+`소재 업로드` 메인 탭은 현재 비활성화되어 있습니다. 운영 중인 사용자가 잘못 접수하지 않도록 숨겨두고, 개편안은 `/creative-upload-draft` 별도 페이지에서 먼저 검증합니다.
 
-- OpenAI 공식 워크북 구조에 맞춰 `campaigns`, `adgroups`, `ads` 3개 탭에 업로드용 컬럼을 기록하고, 운영팀 추가 항목은 `ops_meta` 탭에 분리 기록합니다.
+- 신규 광고주 부킹/정산 정보는 별도 트래커에서 관리하고, 이 페이지는 OpenAI Ads Manager 벌크 업로드용 캠페인·광고그룹·광고 소재 정보를 수집합니다.
+- OpenAI 공식 워크북 구조에 맞춰 `campaigns`, `adgroups`, `ads` 3개 시트용 `.xlsx` 파일을 생성합니다.
+- 광고주가 작성한 공식 워크북 `.xlsx`를 업로드하면 `campaigns`, `adgroups`, `ads` 시트와 필수 컬럼을 먼저 검수할 수 있습니다.
 - 한 광고주 접수 안에서 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.
-- 시트에는 접수번호를 공통 키로 넣고, `campaigns`에는 캠페인 수만큼, `adgroups`에는 광고그룹 수만큼, `ads`에는 소재 수만큼 행이 추가됩니다.
-- 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 접수 폼은 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다.
-- 청구 통화는 `KRW`, 시간대는 `Asia/Seoul`로 고정 표시합니다.
+- 구글 시트 기록을 사용할 경우 접수번호를 공통 키로 넣고, `campaigns`에는 캠페인 수만큼, `adgroups`에는 광고그룹 수만큼, `ads`에는 소재 수만큼 행이 추가됩니다.
+- 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 초안 페이지는 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다.
 - 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정되고, 소재 글자수 상한은 제목 30자 / 설명 60자로 전환됩니다.
-- OpenAI 직접 CBT는 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
-- 예산 기준은 경고만 표시하고 제출을 막지 않습니다.
-- 카드 정보는 수집하지 않고 준비 여부만 체크합니다.
-- 제출 성공 시 `KT-OAI-YYYYMMDD-NNN` 형식의 접수번호와 KST 타임스탬프를 반환합니다.
+- OpenAI 직접 업로드는 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
+- 이미지 파일 첨부는 Supabase Storage가 설정된 경우 공개 이미지 URL로 업로드하고, 미설정 상태에서는 직접 이미지 URL 입력을 안내합니다.
+- 구글 시트 제출 성공 시 `KT-OAI-YYYYMMDD-NNN` 형식의 접수번호와 KST 타임스탬프를 반환합니다.
 
 서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body는 `secret` + `data` 구조로 맞춥니다. Apps Script 웹앱은 `secret` 값을 Script Properties의 `SHEETS_SHARED_SECRET`와 비교해 검증합니다. 예시 코드는 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs)에 있으며, Apps Script의 Script Properties에 `SHEETS_SHARED_SECRET` 값을 등록한 뒤 새 버전으로 배포합니다.
 
@@ -188,7 +188,10 @@ Apps Script로 전달되는 최종 body:
 - 크롤러 체크 API: `POST /check`
 - 파비콘 체크 API: `POST /check-favicon`
 - RAG 챗 API: `POST /chat`
-- 집행 의뢰 접수 API: `POST /intake`
+- 소재 업로드 초안 페이지: `GET /creative-upload-draft`
+- 소재 업로드 API: `POST /intake`
+- 업로드용 워크북 생성 API: `POST /intake/workbook`
+- 워크북 검수 API: `POST /intake/inspect-workbook`
 - 광고주 안내 자료 페이지: `GET /slides`
 
 공식 가이드 허브: <https://help.openai.com/ko-kr/collections/20001223-chatgpt-ads>
@@ -310,10 +313,12 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `SUPABASE_URL`
 - `SUPABASE_DB_URL`
 - `SUPABASE_SCHEMA`
+- `SUPABASE_SERVICE_ROLE_KEY` (선택, `/creative-upload-draft` 이미지 파일 첨부를 Supabase Storage에 저장할 때 사용)
+- `SUPABASE_STORAGE_BUCKET` (선택, 기본 `openai-ad-assets`)
 - `RAG_CONFIG_PATH`
 - `EMBEDDING_BATCH_SIZE`
 - `INGEST_TOKEN` (선택, 배포 후 보호된 `/admin/reindex`를 호출할 때 사용)
-- `GOOGLE_SHEETS_WEBHOOK_URL` (집행 의뢰 접수용 Apps Script 웹앱 URL)
+- `GOOGLE_SHEETS_WEBHOOK_URL` (소재 업로드/워크북 기록용 Apps Script 웹앱 URL)
 - `SHEETS_SHARED_SECRET` (Apps Script와 동일한 공유 토큰)
 - `ADMIN_PASSWORD` (선택, `/admin` 관리자 페이지 비밀번호. 미설정 시 기본값 `nas2026@`)
 

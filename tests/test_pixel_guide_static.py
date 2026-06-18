@@ -31,10 +31,10 @@ class PixelGuideStaticTests(unittest.TestCase):
         for phrase in required:
             self.assertIn(phrase, html)
 
-    def test_pixel_guide_has_six_pages_and_platform_steps(self) -> None:
+    def test_pixel_guide_has_pages_and_platform_steps(self) -> None:
         html = pixel_guide_html()
 
-        self.assertEqual(html.count('class="slide-card'), 6)
+        self.assertEqual(html.count('class="slide-card'), 7)
         required = [
             "OpenAI Ads Measurement Pixel",
             "웹 페이지뷰·전환·이벤트 측정 설정",
