@@ -170,6 +170,7 @@ function nowKst_() {
 function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads) {
   const properties = PropertiesService.getScriptProperties();
   const recipient = properties.getProperty("NOTIFY_TO") || "openai@nasmedia.co.kr";
+  const sheetUrl = properties.getProperty("INTAKE_SHEET_URL") || "https://docs.google.com/spreadsheets/d/1OvzkaxDXtCRBZZHOs8_gNJjqA093XNKlZTJdQfLxVII/edit?gid=1219574566#gid=1219574566";
   const sender = getMailSender_();
   const configuredCc = (properties.getProperty("NOTIFY_CC") || "")
     .split(",")
@@ -194,13 +195,17 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
     "",
     "캠페인 목록:",
     ...campaigns.map((campaign) => `- ${campaign.campaign_name || ""} / ${campaign.objective || ""} / ${campaign.budget_max || ""}`),
+    "",
+    `구글 시트 바로가기: ${sheetUrl}`,
   ].join("\n");
+  const htmlBody = buildNotificationHtml_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads, sender, sheetUrl);
 
   try {
     const quotaRemaining = MailApp.getRemainingDailyQuota();
     const options = {
       name: "OpenAI Ads 접수 알림",
       replyTo: ops.sales_owner_email || recipient,
+      htmlBody,
     };
     if (ccList.length) {
       options.cc = ccList.join(",");
@@ -212,6 +217,121 @@ function notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads
     Logger.log(`MailApp.sendEmail failed: ${message}`);
     return { sent: false, error: message, sender, recipient, cc: ccList.join(","), quotaRemaining: null };
   }
+}
+
+function buildNotificationHtml_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads, sender, sheetUrl) {
+  const campaignRows = campaigns.map((campaign, index) => `
+    <tr>
+      <td style="padding:12px 10px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px;">${index + 1}</td>
+      <td style="padding:12px 10px;border-top:1px solid #e5e7eb;color:#111827;font-size:14px;font-weight:700;">${escapeHtml_(campaign.campaign_name)}</td>
+      <td style="padding:12px 10px;border-top:1px solid #e5e7eb;color:#111827;font-size:14px;">${formatObjective_(campaign.objective)}</td>
+      <td style="padding:12px 10px;border-top:1px solid #e5e7eb;color:#111827;font-size:14px;text-align:right;">${formatBudget_(campaign.budget_max)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <div style="margin:0;padding:0;background:#f5f6f8;font-family:Arial,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#111827;">
+      <div style="max-width:720px;margin:0 auto;padding:28px 16px;">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(17,24,39,0.08);">
+          <div style="padding:24px 28px 20px;border-left:6px solid #ed1c24;">
+            <div style="font-size:13px;color:#ed1c24;font-weight:800;letter-spacing:.02em;">OpenAI Ads 접수 알림</div>
+            <h1 style="margin:8px 0 6px;font-size:24px;line-height:1.35;color:#111827;">광고 소재 업로드 요청이 접수되었습니다</h1>
+            <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.6;">구글 시트에 기록이 완료되었습니다. 캠페인명, 광고그룹명, 소재 URL을 확인해 주세요.</p>
+          </div>
+
+          <div style="padding:0 28px 24px;">
+            <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:14px;padding:16px 18px;margin:0 0 18px;">
+              <div style="font-size:12px;color:#991b1b;font-weight:800;margin-bottom:4px;">접수번호</div>
+              <div style="font-size:22px;line-height:1.35;color:#111827;font-weight:800;">${escapeHtml_(receiptNumber)}</div>
+              <div style="font-size:13px;color:#6b7280;margin-top:6px;">${escapeHtml_(submittedAtKst)} KST</div>
+            </div>
+
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 18px;">
+              <tr>
+                ${summaryCard_("캠페인", campaigns.length)}
+                ${summaryCard_("광고그룹", adgroups.length)}
+                ${summaryCard_("소재", ads.length)}
+              </tr>
+            </table>
+
+            <div style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;margin-bottom:18px;">
+              ${infoRow_("광고주명", ops.advertiser_name)}
+              ${infoRow_("브랜드명", ops.brand_name || "-")}
+              ${infoRow_("담당자", `${ops.sales_owner || "-"} / ${ops.sales_owner_email || "-"}`)}
+              ${infoRow_("소속", `${ops.owner_headquarters || "-"} / ${ops.owner_office || "-"} / ${ops.owner_team || "-"}`)}
+            </div>
+
+            <h2 style="margin:0 0 10px;font-size:16px;color:#111827;">캠페인 목록</h2>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+              <thead>
+                <tr style="background:#111827;">
+                  <th align="left" style="padding:11px 10px;color:#ffffff;font-size:12px;">#</th>
+                  <th align="left" style="padding:11px 10px;color:#ffffff;font-size:12px;">캠페인명</th>
+                  <th align="left" style="padding:11px 10px;color:#ffffff;font-size:12px;">목표</th>
+                  <th align="right" style="padding:11px 10px;color:#ffffff;font-size:12px;">예산</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${campaignRows || `<tr><td colspan="4" style="padding:14px;color:#6b7280;font-size:14px;">캠페인 정보가 없습니다.</td></tr>`}
+              </tbody>
+            </table>
+
+            <div style="margin-top:18px;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;color:#4b5563;font-size:13px;line-height:1.65;">
+              발송 실행 계정: ${escapeHtml_(sender || "확인 불가")}<br>
+              문의: 케이티나스미디어 미디어채널실 / openai@nasmedia.co.kr
+            </div>
+
+            <div style="margin-top:18px;text-align:left;">
+              <a href="${escapeHtml_(sheetUrl)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:12px;padding:12px 18px;font-size:14px;font-weight:800;">구글 시트 바로가기</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function summaryCard_(label, value) {
+  return `
+    <td style="width:33.333%;padding:0 6px 0 0;">
+      <div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#ffffff;">
+        <div style="font-size:12px;color:#6b7280;font-weight:700;">${escapeHtml_(label)}</div>
+        <div style="font-size:24px;color:#111827;font-weight:900;line-height:1.2;margin-top:4px;">${escapeHtml_(value)}</div>
+      </div>
+    </td>
+  `;
+}
+
+function infoRow_(label, value) {
+  return `
+    <div style="display:block;padding:12px 16px;border-top:1px solid #e5e7eb;">
+      <span style="display:inline-block;width:120px;color:#6b7280;font-size:13px;font-weight:800;">${escapeHtml_(label)}</span>
+      <span style="color:#111827;font-size:14px;font-weight:600;">${escapeHtml_(value || "-")}</span>
+    </div>
+  `;
+}
+
+function formatObjective_(objective) {
+  const normalized = String(objective || "").toLowerCase();
+  if (normalized === "views") return "Views = CPM";
+  if (normalized === "clicks") return "Clicks = CPC";
+  return escapeHtml_(objective || "-");
+}
+
+function formatBudget_(value) {
+  const raw = String(value || "").replace(/[^\d.-]/g, "");
+  const number = Number(raw);
+  if (!raw || Number.isNaN(number)) return escapeHtml_(value || "-");
+  return `${number.toLocaleString("ko-KR")}원`;
+}
+
+function escapeHtml_(value) {
+  return String(value === null || value === undefined ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function getMailSender_() {
