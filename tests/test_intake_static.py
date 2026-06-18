@@ -98,10 +98,11 @@ class IntakeFormStaticTests(unittest.TestCase):
         required = [
             "OpenAI 광고 소재 업로드 시트 생성",
             "DRAFT · 메인 탭 비활성 상태로 작업 중",
-            "공식 벌크 워크북 검수",
-            "업로드용 .xlsx 생성",
+            "워크북 파일 불러오기",
+            "Ads Manager 업로드용 XLSX 다운로드",
             "/intake/workbook",
             "/intake/inspect-workbook",
+            "populateFromWorkbook",
             "collapse-toggle",
             "campaign-body",
             "adgroup-body",
@@ -136,7 +137,8 @@ class IntakeFormStaticTests(unittest.TestCase):
             "pendingSubmissionPayload",
             "openReviewModal(payload())",
             "submitReviewedPayload",
-            "구글 시트에 기록하고 있습니다.",
+            "구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.",
+            "openai@nasmedia.co.kr 알림 발송",
         ]
         for phrase in required:
             self.assertIn(phrase, html)

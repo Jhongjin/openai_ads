@@ -296,6 +296,9 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(summary["sheets"]["campaigns"]["rows"], 1)
         self.assertEqual(summary["sheets"]["adgroups"]["rows"], 1)
         self.assertEqual(summary["sheets"]["ads"]["rows"], 2)
+        self.assertEqual(summary["data"]["campaigns"][0]["campaign_name"], "ChatGPT_Ads_Test")
+        self.assertEqual(summary["data"]["adgroups"][0]["adgroup_name"], "test_group")
+        self.assertEqual(summary["data"]["ads"][0]["title"], "건강한 저녁 준비")
 
     def test_inspect_workbook_warns_when_only_template_samples_exist(self) -> None:
         from io import BytesIO

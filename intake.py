@@ -452,6 +452,17 @@ def _json_array(value: Any, *, label: str, row_number: int, errors: list[str]) -
     return parsed
 
 
+def _json_array_quiet(value: Any) -> list[Any]:
+    text = _cell_text(value)
+    if not text:
+        return []
+    try:
+        parsed = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
 def _normalise_choice(value: Any) -> str:
     return _cell_text(value).lower()
 
@@ -558,6 +569,40 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             "guide_rows": guide_rows,
             "missing_columns": missing,
         }
+
+    summary["data"] = {
+        "campaigns": [
+            {
+                "campaign_name": _cell_text(row.get("campaign_name")),
+                "budget_max": _cell_text(row.get("budget_max")),
+                "budget_type": _normalise_choice(row.get("budget_type")) or "lifetime",
+                "launch_date": _cell_text(row.get("launch_date")),
+                "end_date": _cell_text(row.get("end_date")),
+                "objective": _normalise_objective(row.get("objective")),
+                "target_countries": _json_array_quiet(row.get("target_countries")),
+            }
+            for row in parsed_rows["campaigns"]
+        ],
+        "adgroups": [
+            {
+                "campaign_name": _cell_text(row.get("campaign_name")),
+                "adgroup_name": _cell_text(row.get("adgroup_name")),
+                "max_bid": _cell_text(row.get("max_bid")),
+                "keywords": _json_array_quiet(row.get("keywords")),
+            }
+            for row in parsed_rows["adgroups"]
+        ],
+        "ads": [
+            {
+                "adgroup_name": _cell_text(row.get("adgroup_name")),
+                "title": _cell_text(row.get("title")),
+                "copy": _cell_text(row.get("copy")),
+                "link": _cell_text(row.get("link")),
+                "image_link": _cell_text(row.get("image_link")),
+            }
+            for row in parsed_rows["ads"]
+        ],
+    }
 
     campaign_objectives: dict[str, str] = {}
     for row in parsed_rows["campaigns"]:

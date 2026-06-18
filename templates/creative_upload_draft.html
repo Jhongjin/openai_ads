@@ -296,6 +296,25 @@
         font-size: 14px;
       }
 
+      .bulk-result strong {
+        color: var(--ink);
+      }
+
+      .bulk-result ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .bulk-result.success {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+      }
+
+      .bulk-result.error {
+        border-color: #fecaca;
+        background: #fff1f2;
+      }
+
       .campaign-list {
         display: grid;
         gap: 18px;
@@ -452,6 +471,18 @@
         backdrop-filter: blur(10px);
       }
 
+      .action-copy {
+        flex: 1 1 360px;
+        min-width: 240px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .action-copy strong {
+        color: var(--ink);
+      }
+
       .honeypot {
         position: absolute;
         left: -9999px;
@@ -599,8 +630,8 @@
       <section class="card">
         <div class="card-header">
           <div>
-            <h2>공식 벌크 워크북 검수</h2>
-            <p class="note">광고주가 작성한 `.xlsx`를 올리면 campaigns / adgroups / ads 시트와 필수 컬럼을 먼저 확인합니다.</p>
+            <h2>워크북 파일 불러오기</h2>
+            <p class="note">광고주가 작성한 공식 워크북(.xlsx)을 업로드하면 campaigns / adgroups / ads 값을 검사하고, 오류가 없을 때 아래 입력폼에 자동으로 채웁니다.</p>
           </div>
         </div>
         <div class="grid">
@@ -610,7 +641,7 @@
             <span class="help">공식 템플릿 컬럼 기준: campaigns / adgroups / ads</span>
           </div>
         </div>
-        <div class="bulk-result" id="bulk-result">아직 파일을 업로드하지 않았습니다.</div>
+        <div class="bulk-result" id="bulk-result">파일을 업로드하면 워크북 내용을 검사한 뒤, 통과한 값만 아래 폼으로 불러옵니다.</div>
       </section>
 
       <form id="creative-form" novalidate>
@@ -834,8 +865,12 @@
         <input id="form-started-at" type="hidden" name="formStartedAt" />
 
         <div class="footer-actions">
-          <button class="primary" id="download-workbook" type="button">업로드용 .xlsx 생성</button>
-          <button id="submit-sheet" type="submit">구글 시트에 기록</button>
+          <button class="primary" id="download-workbook" type="button">Ads Manager 업로드용 XLSX 다운로드</button>
+          <button id="submit-sheet" type="submit">구글 시트 기록 및 알림 발송</button>
+          <div class="action-copy">
+            <strong>XLSX 다운로드</strong>는 현재 입력값으로 OpenAI Ads Manager 벌크 업로드용 워크북을 생성합니다.
+            <strong>구글 시트 기록</strong>은 내부 시트에 저장하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
+          </div>
           <span class="status" id="form-status" aria-live="polite"></span>
         </div>
       </form>
@@ -847,13 +882,13 @@
           <div>
             <p class="eyebrow">제출 전 확인</p>
             <h2 id="review-title">구글 시트 기록 내용을 확인해 주세요</h2>
-            <p class="note">확인 후 제출을 누를 때만 구글 시트로 전송됩니다.</p>
+            <p class="note">확인 후 제출을 누를 때만 구글 시트로 전송되고 openai@nasmedia.co.kr 담당자에게 알림 메일이 발송됩니다.</p>
           </div>
           <span class="draft-badge">초안 페이지</span>
         </header>
         <div class="review-body" id="review-body"></div>
         <footer>
-          <span class="help">캠페인명·광고그룹명·랜딩/이미지 URL 형식을 한 번 더 확인해 주세요.</span>
+          <span class="help">캠페인명·광고그룹명·랜딩/이미지 URL 형식을 한 번 더 확인해 주세요. 제출 후 담당자에게 알림이 발송됩니다.</span>
           <div class="toolbar">
             <button type="button" id="review-cancel">수정하기</button>
             <button type="button" class="primary" id="review-confirm">확인 후 제출</button>
@@ -865,6 +900,7 @@
     <script>
       const form = document.querySelector("#creative-form");
       const campaignList = document.querySelector("#campaign-list");
+      const campaignTemplate = campaignList.querySelector(":scope > [data-campaign]").cloneNode(true);
       const structureOverview = document.querySelector("#structure-overview");
       const statusEl = document.querySelector("#form-status");
       const bulkInput = document.querySelector("#bulk-workbook");
@@ -941,6 +977,12 @@
         return container.querySelector(`${selector}:checked`)?.value || "";
       }
 
+      function setRadioValue(container, selector, value) {
+        container.querySelectorAll(selector).forEach((input) => {
+          input.checked = input.value === value;
+        });
+      }
+
       function splitKeywords(value) {
         return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
       }
@@ -1004,11 +1046,15 @@
       }
 
       function isolateRadios(campaign, index) {
+        const budgetValue = checkedValue(campaign, ".budget-type") || "lifetime";
+        const objectiveValue = checkedValue(campaign, ".campaign-objective") || "views";
         campaign.querySelectorAll(".budget-type").forEach((input) => {
           input.name = `budget_type_${index}`;
+          input.checked = input.value === budgetValue;
         });
         campaign.querySelectorAll(".campaign-objective").forEach((input) => {
           input.name = `objective_${index}`;
+          input.checked = input.value === objectiveValue;
         });
       }
 
@@ -1118,12 +1164,31 @@
         if (first) adItems(first).slice(1).forEach((item) => item.remove());
       }
 
-      function addCampaign() {
-        const template = campaignItems()[0];
-        const clone = template.cloneNode(true);
+      function cleanCampaignTemplate() {
+        const clone = campaignTemplate.cloneNode(true);
         trimToOneAdgroup(clone);
         resetInputs(clone);
         clearCollapsedState(clone);
+        return clone;
+      }
+
+      function cleanAdgroupTemplate() {
+        const clone = campaignTemplate.querySelector("[data-adgroup]").cloneNode(true);
+        adItems(clone).slice(1).forEach((item) => item.remove());
+        resetInputs(clone);
+        clearCollapsedState(clone);
+        return clone;
+      }
+
+      function cleanAdTemplate() {
+        const clone = campaignTemplate.querySelector("[data-ad]").cloneNode(true);
+        resetInputs(clone);
+        clearCollapsedState(clone);
+        return clone;
+      }
+
+      function addCampaign() {
+        const clone = cleanCampaignTemplate();
         campaignList.append(clone);
         syncState();
         clone.querySelector(".campaign-name").focus();
@@ -1131,10 +1196,7 @@
 
       function addAdgroup(campaign) {
         const list = campaign.querySelector(".adgroup-list");
-        const clone = list.querySelector("[data-adgroup]").cloneNode(true);
-        adItems(clone).slice(1).forEach((item) => item.remove());
-        resetInputs(clone);
-        clearCollapsedState(clone);
+        const clone = cleanAdgroupTemplate();
         list.append(clone);
         syncState();
         clone.querySelector(".adgroup-name").focus();
@@ -1142,9 +1204,7 @@
 
       function addAd(adgroup) {
         const list = adgroup.querySelector(".ad-list");
-        const clone = list.querySelector("[data-ad]").cloneNode(true);
-        resetInputs(clone);
-        clearCollapsedState(clone);
+        const clone = cleanAdTemplate();
         list.append(clone);
         syncState();
         clone.querySelector(".ad-title").focus();
@@ -1390,7 +1450,7 @@
         if (!pendingSubmissionPayload) return;
         reviewConfirm.disabled = true;
         closeReviewModal();
-        setStatus("구글 시트에 기록하고 있습니다.");
+        setStatus("구글 시트에 기록하고 담당자 알림 메일을 발송하고 있습니다.");
         const response = await fetch("/intake", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1401,7 +1461,7 @@
           setStatus(`기록 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
           return;
         }
-        setStatus(`기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST`, "success");
+        setStatus(`기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST · openai@nasmedia.co.kr 알림 발송`, "success");
         pendingSubmissionPayload = null;
         startedAt.value = String(Date.now());
       }
@@ -1420,7 +1480,7 @@
       async function downloadWorkbook() {
         setStatus("");
         if (!validateForm()) return;
-        setStatus("업로드용 xlsx를 생성하고 있습니다.");
+        setStatus("Ads Manager 업로드용 XLSX를 생성하고 있습니다.");
         const response = await fetch("/intake/workbook", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1433,7 +1493,7 @@
         }
         const blob = await response.blob();
         downloadBlob(blob, `openai_ads_bulk_upload_${new Date().toISOString().slice(0, 10)}.xlsx`);
-        setStatus("xlsx 파일을 생성했습니다.", "success");
+        setStatus("Ads Manager에 직접 업로드할 XLSX 파일을 다운로드했습니다.", "success");
       }
 
       async function submitSheet(event) {
@@ -1443,18 +1503,54 @@
         openReviewModal(payload());
       }
 
-      async function inspectWorkbook(file) {
-        if (!file) return;
-        bulkResult.textContent = "워크북을 검사하고 있습니다.";
-        const data = new FormData();
-        data.append("file", file);
-        const response = await fetch("/intake/inspect-workbook", { method: "POST", body: data });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          bulkResult.textContent = `검수 실패 — ${serverErrorMessage(body.detail || response.statusText)}`;
-          return;
-        }
-        const lines = Object.entries(body.sheets).map(([name, item]) => {
+      function populateFromWorkbook(workbookData) {
+        const campaigns = workbookData?.campaigns || [];
+        const adgroups = workbookData?.adgroups || [];
+        const ads = workbookData?.ads || [];
+        if (!campaigns.length) return;
+
+        campaignList.innerHTML = "";
+        campaigns.forEach((campaignData) => {
+          const campaign = cleanCampaignTemplate();
+          campaign.querySelector(".campaign-name").value = campaignData.campaign_name || "";
+          campaign.querySelector(".budget-max").value = campaignData.budget_max || "";
+          setRadioValue(campaign, ".budget-type", campaignData.budget_type || "lifetime");
+          setRadioValue(campaign, ".campaign-objective", campaignData.objective || "views");
+          campaign.querySelector(".launch-date").value = campaignData.launch_date || "";
+          campaign.querySelector(".end-date").value = campaignData.end_date || "";
+          const countries = Array.isArray(campaignData.target_countries) ? campaignData.target_countries : [];
+          campaign.querySelector(".target-countries").value = countries[0] || "";
+
+          const groupList = campaign.querySelector(".adgroup-list");
+          groupList.innerHTML = "";
+          const relatedGroups = adgroups.filter((group) => group.campaign_name === campaignData.campaign_name);
+          (relatedGroups.length ? relatedGroups : [{}]).forEach((groupData) => {
+            const adgroup = cleanAdgroupTemplate();
+            adgroup.querySelector(".adgroup-name").value = groupData.adgroup_name || "";
+            adgroup.querySelector(".max-bid").value = groupData.max_bid || "";
+            adgroup.querySelector(".keywords").value = Array.isArray(groupData.keywords) ? groupData.keywords.join(", ") : "";
+
+            const adList = adgroup.querySelector(".ad-list");
+            adList.innerHTML = "";
+            const relatedAds = ads.filter((ad) => ad.adgroup_name === groupData.adgroup_name);
+            (relatedAds.length ? relatedAds : [{}]).forEach((adData) => {
+              const ad = cleanAdTemplate();
+              ad.querySelector(".ad-title").value = adData.title || "";
+              ad.querySelector(".ad-copy").value = adData.copy || "";
+              ad.querySelector(".ad-link").value = adData.link || "";
+              ad.querySelector(".ad-image-link").value = adData.image_link || "";
+              adList.append(ad);
+            });
+            groupList.append(adgroup);
+          });
+          campaignList.append(campaign);
+        });
+        syncState();
+        campaignList.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+
+      function renderWorkbookInspectResult(body, imported) {
+        const lines = Object.entries(body.sheets || {}).map(([name, item]) => {
           const missing = item.missing_columns?.length ? ` / 누락: ${item.missing_columns.join(", ")}` : "";
           const skipped = [];
           if (item.sample_rows) skipped.push(`샘플 제외 ${item.sample_rows}개`);
@@ -1462,9 +1558,38 @@
           const skippedText = skipped.length ? ` (${skipped.join(", ")})` : "";
           return `${name}: 실제 데이터 행 ${item.rows}개${skippedText}${missing}`;
         });
-        const errors = body.errors?.length ? "\n" + body.errors.join("\n") : "";
-        const warnings = body.warnings?.length ? "\n" + body.warnings.join("\n") : "";
-        bulkResult.textContent = `${body.ok ? "검수 통과" : "확인 필요"}\n${lines.join("\n")}${errors}${warnings}`;
+        const errors = (body.errors || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const warnings = (body.warnings || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const summary = imported
+          ? "불러오기 완료 — 아래 입력값을 확인한 뒤 XLSX 다운로드 또는 구글 시트 기록을 진행하세요."
+          : body.ok
+            ? "검수 통과 — 워크북 값을 아래 입력폼으로 불러올 수 있습니다."
+            : "확인 필요 — 아래 오류를 먼저 수정해 주세요.";
+        bulkResult.className = `bulk-result ${body.ok ? "success" : "error"}`;
+        bulkResult.innerHTML = `
+          <strong>${summary}</strong>
+          <ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+          ${errors ? `<p class="help"><strong>오류</strong></p><ul>${errors}</ul>` : ""}
+          ${warnings ? `<p class="help"><strong>참고</strong></p><ul>${warnings}</ul>` : ""}
+        `;
+      }
+
+      async function inspectWorkbook(file) {
+        if (!file) return;
+        bulkResult.className = "bulk-result";
+        bulkResult.textContent = "워크북을 검사하고 있습니다.";
+        const data = new FormData();
+        data.append("file", file);
+        const response = await fetch("/intake/inspect-workbook", { method: "POST", body: data });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          bulkResult.className = "bulk-result error";
+          bulkResult.textContent = `검수 실패 — ${serverErrorMessage(body.detail || response.statusText)}`;
+          return;
+        }
+        const imported = Boolean(body.ok && body.data);
+        if (imported) populateFromWorkbook(body.data);
+        renderWorkbookInspectResult(body, imported);
       }
 
       document.querySelector("#add-campaign").addEventListener("click", addCampaign);

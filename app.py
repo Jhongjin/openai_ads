@@ -89,6 +89,7 @@ class WorkbookInspectResponse(BaseModel):
     sheets: dict[str, Any]
     errors: list[str]
     warnings: list[str] = Field(default_factory=list)
+    data: dict[str, Any] | None = None
 
 
 class ImageUploadResponse(BaseModel):
