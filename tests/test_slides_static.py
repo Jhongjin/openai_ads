@@ -24,6 +24,11 @@ class AdvertiserSlidesStaticTests(unittest.TestCase):
         self.assertIn('const LAST_UPDATED = "2026-06-17"', full_html)
         self.assertIn("ChatGPT광고_집행준비안내_케이티나스미디어_", full_html)
         self.assertIn("window.print()", full_html)
+        self.assertIn('data-guide-text="advertiser.hero.title"', full_html)
+        self.assertIn('data-guide-image-key="campaign_step1"', full_html)
+        self.assertIn('data-guide-image-key="pixel_step7_gtm_workspace"', full_html)
+        self.assertIn("loadGuideSlideContent", full_html)
+        self.assertIn("/api/guide-slides", full_html)
 
     def test_advertiser_slides_hide_internal_terms(self) -> None:
         html = slides_panel_html()

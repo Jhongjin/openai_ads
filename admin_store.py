@@ -44,8 +44,140 @@ DEFAULT_NOTICE: dict[str, Any] = {
     "enabled": True,
 }
 
+DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
+    "updated_at": "2026-06-17",
+    "items": [
+        {
+            "key": "advertiser.hero.title",
+            "deck": "advertiser",
+            "label": "광고주 안내자료 표지 제목",
+            "default": "ChatGPT 광고 집행 준비 안내",
+            "value": "ChatGPT 광고 집행 준비 안내",
+            "multiline": False,
+        },
+        {
+            "key": "advertiser.hero.subtitle",
+            "deck": "advertiser",
+            "label": "광고주 안내자료 표지 부제",
+            "default": "광고주님께서 준비해주실 항목",
+            "value": "광고주님께서 준비해주실 항목",
+            "multiline": False,
+        },
+        {
+            "key": "advertiser.material.title",
+            "deck": "advertiser",
+            "label": "소재 준비물 슬라이드 제목",
+            "default": "광고 소재 준비물",
+            "value": "광고 소재 준비물",
+            "multiline": False,
+        },
+        {
+            "key": "advertiser.material.image",
+            "deck": "advertiser",
+            "label": "이미지 준비 기준",
+            "default": "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것",
+            "value": "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것",
+            "multiline": True,
+        },
+        {
+            "key": "advertiser.condition.minimum",
+            "deck": "advertiser",
+            "label": "최소 집행 약정 공개 문구",
+            "default": "400만원 / 상세 조건은 영업 담당 안내",
+            "value": "400만원 / 상세 조건은 영업 담당 안내",
+            "multiline": False,
+        },
+        {
+            "key": "advertiser.footer.contact",
+            "deck": "advertiser",
+            "label": "광고주 안내자료 문의처",
+            "default": "문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+            "value": "문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+            "multiline": False,
+        },
+        {
+            "key": "setup.hero.title",
+            "deck": "setup",
+            "label": "캠페인 세팅 가이드 표지 제목",
+            "default": "광고 캠페인 세팅 가이드",
+            "value": "광고 캠페인 세팅 가이드",
+            "multiline": False,
+        },
+        {
+            "key": "setup.step1.title",
+            "deck": "setup",
+            "label": "캠페인 만들기 슬라이드 제목",
+            "default": "캠페인 만들기",
+            "value": "캠페인 만들기",
+            "multiline": False,
+        },
+        {
+            "key": "setup.step2.title",
+            "deck": "setup",
+            "label": "광고그룹 만들기 슬라이드 제목",
+            "default": "광고그룹 만들기",
+            "value": "광고그룹 만들기",
+            "multiline": False,
+        },
+        {
+            "key": "setup.step3.title",
+            "deck": "setup",
+            "label": "광고 만들기 슬라이드 제목",
+            "default": "광고 만들기",
+            "value": "광고 만들기",
+            "multiline": False,
+        },
+        {
+            "key": "pixel.hero.title",
+            "deck": "pixel",
+            "label": "픽셀 설치 가이드 표지 제목",
+            "default": "픽셀 설치 가이드",
+            "value": "픽셀 설치 가이드",
+            "multiline": False,
+        },
+        {
+            "key": "pixel.head.title",
+            "deck": "pixel",
+            "label": "공통 설치 코드 슬라이드 제목",
+            "default": "웹사이트 head에 설치",
+            "value": "웹사이트 head에 설치",
+            "multiline": False,
+        },
+        {
+            "key": "pixel.gtm.title",
+            "deck": "pixel",
+            "label": "GTM 슬라이드 제목",
+            "default": "GTM 삽입 방법",
+            "value": "GTM 삽입 방법",
+            "multiline": False,
+        },
+        {
+            "key": "pixel.footer.support",
+            "deck": "pixel",
+            "label": "픽셀 지원 문의 문구",
+            "default": "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr",
+            "value": "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr",
+            "multiline": False,
+        },
+    ],
+    "images": [
+        {"key": "campaign_step1", "deck": "setup", "label": "캠페인 만들기 화면", "default": "/images/guide/campaign_step1.png", "value": "/images/guide/campaign_step1.png"},
+        {"key": "campaign_step2", "deck": "setup", "label": "광고그룹 만들기 화면", "default": "/images/guide/campaign_step2.png", "value": "/images/guide/campaign_step2.png"},
+        {"key": "campaign_step3", "deck": "setup", "label": "광고 만들기 화면", "default": "/images/guide/campaign_step3.png", "value": "/images/guide/campaign_step3.png"},
+        {"key": "campaign_preview", "deck": "setup", "label": "광고 소재 미리보기", "default": "/images/guide/campaign_preview.png", "value": "/images/guide/campaign_preview.png"},
+        {"key": "pixel_step1_conversion_home", "deck": "pixel", "label": "전환 데이터 소스 탭", "default": "/images/guide/pixel_step1_conversion_home.png", "value": "/images/guide/pixel_step1_conversion_home.png"},
+        {"key": "pixel_step2_create_source", "deck": "pixel", "label": "새 데이터 소스 모달", "default": "/images/guide/pixel_step2_create_source.png", "value": "/images/guide/pixel_step2_create_source.png"},
+        {"key": "pixel_step3_setup_code", "deck": "pixel", "label": "픽셀 설정 코드", "default": "/images/guide/pixel_step3_setup_code.png", "value": "/images/guide/pixel_step3_setup_code.png"},
+        {"key": "pixel_step4_create_event", "deck": "pixel", "label": "전환 이벤트 만들기", "default": "/images/guide/pixel_step4_create_event.png", "value": "/images/guide/pixel_step4_create_event.png"},
+        {"key": "pixel_step5_event_code", "deck": "pixel", "label": "이벤트 코드", "default": "/images/guide/pixel_step5_event_code.png", "value": "/images/guide/pixel_step5_event_code.png"},
+        {"key": "pixel_step6_event_list", "deck": "pixel", "label": "전환 이벤트 목록", "default": "/images/guide/pixel_step6_event_list.png", "value": "/images/guide/pixel_step6_event_list.png"},
+        {"key": "pixel_step7_gtm_workspace", "deck": "pixel", "label": "GTM 작업공간", "default": "/images/guide/pixel_step7_gtm_workspace.png", "value": "/images/guide/pixel_step7_gtm_workspace.png"},
+    ],
+}
+
 
 _memory_notice = DEFAULT_NOTICE.copy()
+_memory_slide_content = json.loads(json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False))
 _memory_visits: dict[str, dict[str, Any]] = {}
 _memory_visit_days: dict[str, int] = {}
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
@@ -270,6 +402,16 @@ def _ensure_tables() -> None:
             )
             cur.execute(
                 f"""
+                CREATE TABLE IF NOT EXISTS {schema}.admin_slide_content (
+                    id text PRIMARY KEY,
+                    updated_at text NOT NULL,
+                    content jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    updated_at_utc timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
                 CREATE TABLE IF NOT EXISTS {schema}.page_visits (
                     page text PRIMARY KEY,
                     page_label text NOT NULL,
@@ -363,6 +505,19 @@ def _ensure_tables() -> None:
                 WHERE id = 'main' AND COALESCE(body_html, '') = ''
                 """,
                 (DEFAULT_NOTICE["body_html"],),
+            )
+            cur.execute(
+                f"""
+                INSERT INTO {schema}.admin_slide_content
+                    (id, updated_at, content)
+                VALUES
+                    ('main', %s, %s::jsonb)
+                ON CONFLICT (id) DO NOTHING
+                """,
+                (
+                    DEFAULT_SLIDE_CONTENT["updated_at"],
+                    json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False),
+                ),
             )
     _db_ready = True
 
@@ -459,6 +614,114 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
         return {**notice, **_storage_info("supabase")}
     except Exception as exc:
         return {**notice, **_storage_info("memory", str(exc))}
+
+
+def _clean_slide_text(value: Any, *, multiline: bool = False, fallback: str = "") -> str:
+    text = str(value if value is not None else fallback).strip()
+    if multiline:
+        text = re.sub(r"\r\n?", "\n", text)
+        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
+        return "\n".join(line for line in lines if line)[:1200] or fallback
+    return re.sub(r"\s+", " ", text)[:300] or fallback
+
+
+def _clean_slide_image_url(value: Any, fallback: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    if text.startswith("/images/") or re.match(r"^https?://[^\s]+$", text, re.I):
+        return text[:500]
+    return fallback
+
+
+def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    source = payload or {}
+    base = json.loads(json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False))
+    incoming_items = {
+        str(item.get("key") or ""): item
+        for item in source.get("items", [])
+        if isinstance(item, dict)
+    }
+    incoming_images = {
+        str(item.get("key") or ""): item
+        for item in source.get("images", [])
+        if isinstance(item, dict)
+    }
+
+    for item in base["items"]:
+        incoming = incoming_items.get(item["key"], {})
+        item["value"] = _clean_slide_text(
+            incoming.get("value", item.get("value")),
+            multiline=bool(item.get("multiline")),
+            fallback=item["default"],
+        )
+    for item in base["images"]:
+        incoming = incoming_images.get(item["key"], {})
+        item["value"] = _clean_slide_image_url(incoming.get("value", item.get("value")), item["default"])
+        item["alt"] = _clean_slide_text(incoming.get("alt", item.get("alt", item["label"])), fallback=item["label"])
+        item["caption"] = _clean_slide_text(
+            incoming.get("caption", item.get("caption", item["label"])),
+            fallback=item["label"],
+        )
+
+    base["updated_at"] = _clean_slide_text(source.get("updated_at"), fallback=_today_kst())
+    return base
+
+
+def get_slide_content() -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    SELECT content, updated_at
+                    FROM {schema}.admin_slide_content
+                    WHERE id = 'main'
+                    """
+                )
+                row = cur.fetchone()
+        if not row:
+            return {**_merged_slide_content(DEFAULT_SLIDE_CONTENT), **_storage_info("memory")}
+        content, updated_at = row
+        merged = _merged_slide_content(content or {})
+        merged["updated_at"] = str(updated_at or merged["updated_at"])
+        return {**merged, **_storage_info("supabase")}
+    except Exception as exc:
+        return {**_merged_slide_content(_memory_slide_content), **_storage_info("memory", str(exc))}
+
+
+def save_slide_content(payload: dict[str, Any]) -> dict[str, Any]:
+    content = _merged_slide_content({**payload, "updated_at": _today_kst()})
+
+    global _memory_slide_content
+    _memory_slide_content = json.loads(json.dumps(content, ensure_ascii=False))
+
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.admin_slide_content
+                        (id, updated_at, content, updated_at_utc)
+                    VALUES
+                        ('main', %s, %s::jsonb, now())
+                    ON CONFLICT (id) DO UPDATE SET
+                        updated_at = EXCLUDED.updated_at,
+                        content = EXCLUDED.content,
+                        updated_at_utc = now()
+                    """,
+                    (
+                        content["updated_at"],
+                        json.dumps(content, ensure_ascii=False),
+                    ),
+                )
+        return {**content, **_storage_info("supabase")}
+    except Exception as exc:
+        return {**content, **_storage_info("memory", str(exc))}
 
 
 def record_page_visit(page: str, page_label: str) -> dict[str, Any]:

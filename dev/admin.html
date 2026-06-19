@@ -1414,48 +1414,6 @@
         overflow: visible;
       }
 
-      .slide-editor-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        justify-content: space-between;
-        margin: 14px 0;
-      }
-
-      .slide-editor-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 14px;
-      }
-
-      .slide-edit-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        background: #fbfcff;
-        padding: 14px;
-      }
-
-      .slide-edit-card h3 {
-        margin: 0 0 4px;
-        font-size: 15px;
-      }
-
-      .slide-edit-card small {
-        display: block;
-        margin-bottom: 10px;
-        color: var(--muted);
-        font-weight: 800;
-      }
-
-      .slide-edit-card textarea {
-        min-height: 92px;
-      }
-
-      .slide-edit-card.image-card {
-        background: #fff;
-      }
-
       [hidden] {
         display: none !important;
       }
@@ -1571,10 +1529,6 @@
         .mail-detail {
           position: static;
         }
-
-        .slide-editor-grid {
-          grid-template-columns: 1fr;
-        }
       }
 
       @media (max-width: 900px) {
@@ -1636,6 +1590,107 @@
           position: static;
         }
       }
+      /* DEV redesign layer: admin-console density with calmer surfaces. */
+      :root {
+        --kt-red: #d71920;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8e0ec;
+        --panel: #ffffff;
+        --soft: #f4f7fb;
+      }
+
+      body {
+        background:
+          linear-gradient(180deg, #eef3f8 0, #f7f9fc 320px, #f6f8fb 100%);
+        color: var(--ink);
+      }
+
+      main {
+        width: min(1480px, calc(100% - 32px));
+      }
+
+      .topbar,
+      .card,
+      .admin-nav,
+      .metric,
+      .chart-shell,
+      .ads-key-manager {
+        border-color: #d8e0ec;
+        border-radius: 10px;
+        box-shadow: 0 14px 34px rgb(15 23 42 / 7%);
+      }
+
+      .admin-shell {
+        grid-template-columns: 254px minmax(0, 1fr);
+      }
+
+      .admin-nav {
+        background: rgb(255 255 255 / 94%);
+        backdrop-filter: blur(12px);
+      }
+
+      .admin-nav-item {
+        border-radius: 8px;
+        min-height: 58px;
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .admin-nav-item:hover {
+        transform: translateX(2px);
+        background: #f6f8fb;
+        border-color: #d8e0ec;
+      }
+
+      .admin-nav-item.active {
+        border-color: #fecaca;
+        border-left-color: var(--kt-red);
+        background: #fff5f5;
+      }
+
+      input,
+      textarea,
+      select,
+      .notice-editor,
+      .readonly-value {
+        border-radius: 8px;
+        border-color: #cfd8e5;
+        box-shadow: inset 0 1px 0 rgb(16 24 40 / 3%);
+      }
+
+      button,
+      .home-link,
+      .admin-tool-link,
+      .ads-doc-links a {
+        border-radius: 8px;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      button:hover,
+      .home-link:hover,
+      .admin-tool-link:hover,
+      .ads-doc-links a:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
+        text-decoration: none;
+      }
+
+      .chart-shell {
+        background:
+          linear-gradient(#fff, #fff) padding-box,
+          linear-gradient(135deg, rgb(215 25 32 / 24%), rgb(37 99 235 / 18%)) border-box;
+      }
+
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      th {
+        background: #f2f5fa;
+        color: #344054;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -1667,10 +1722,6 @@
           <button class="admin-nav-item active" data-admin-page="notice" type="button">
             <span>공지 작성</span>
             <small>팝업 문구·가이드 링크</small>
-          </button>
-          <button class="admin-nav-item" data-admin-page="slides" type="button">
-            <span>안내자료 관리</span>
-            <small>슬라이드 문구·이미지</small>
           </button>
           <button class="admin-nav-item" data-admin-page="analytics" type="button">
             <span>애널리틱스</span>
@@ -1794,34 +1845,6 @@
             <button class="secondary" id="reload-notice" type="button">다시 불러오기</button>
             <span class="status" id="notice-status"></span>
           </div>
-        </div>
-
-        <div class="card section admin-page" data-admin-page-panel="slides">
-          <h2>안내자료 슬라이드 관리</h2>
-          <p class="help">
-            광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드에서 자주 바뀌는 문구와 캡처 이미지를 수정합니다.
-            저장하면 공개 페이지와 PDF 출력 화면에 반영됩니다.
-          </p>
-          <div class="slide-editor-toolbar">
-            <div class="ads-doc-links" aria-label="안내자료 바로가기">
-              <a href="/#slides" target="_blank" rel="noopener">광고주 안내자료</a>
-              <a href="/#setupGuide" target="_blank" rel="noopener">캠페인 세팅 가이드</a>
-              <a href="/#pixelGuide" target="_blank" rel="noopener">픽셀 설치 가이드</a>
-            </div>
-            <div class="actions" style="margin:0;">
-              <button class="danger" id="save-slide-content" type="button">안내자료 저장</button>
-              <button class="secondary" id="reload-slide-content" type="button">다시 불러오기</button>
-              <span class="status" id="slide-content-status"></span>
-            </div>
-          </div>
-          <div class="summary-card">
-            <strong>편집 원칙</strong>
-            <p>광고주에게 보이는 문구는 짧게 유지하고, 금액·정책 변경 가능성은 하단 주석이나 담당자 안내로 분리합니다. 이미지 URL은 `/images/guide/...` 또는 `https://` 직접 이미지 URL만 사용합니다.</p>
-          </div>
-          <h3>문구</h3>
-          <div class="slide-editor-grid" id="slide-text-editor"></div>
-          <h3 style="margin-top:18px;">이미지와 캡션</h3>
-          <div class="slide-editor-grid" id="slide-image-editor"></div>
         </div>
 
         <div class="card section admin-page" data-admin-page-panel="analytics">
@@ -2225,7 +2248,6 @@
       const loginStatus = document.querySelector("#login-status");
       const noticeStatus = document.querySelector("#notice-status");
       const analyticsStatus = document.querySelector("#analytics-status");
-      const slideContentStatus = document.querySelector("#slide-content-status");
       const officialChangeStatus = document.querySelector("#official-change-status");
       const mailReviewStatus = document.querySelector("#mail-review-status");
       const adsDashboardStatus = document.querySelector("#ads-dashboard-status");
@@ -2235,7 +2257,6 @@
       let selectedMailHash = "";
       let adsDashboardData = null;
       let adsApiKeys = [];
-      let slideContentData = null;
       let noticeQuill = null;
       let visitChart = null;
       let officialPage = 1;
@@ -2466,94 +2487,6 @@
         });
         fillNoticeForm(notice);
         setStatus(noticeStatus, "공지 팝업이 저장되었습니다.", notice.storage === "supabase" ? "ok" : "error");
-      }
-
-      function deckLabel(deck) {
-        return {
-          advertiser: "광고주 안내자료",
-          setup: "캠페인 세팅 가이드",
-          pixel: "픽셀 설치 가이드",
-        }[deck] || deck || "공통";
-      }
-
-      function renderSlideContentEditors(data) {
-        slideContentData = data || { items: [], images: [] };
-        const textRoot = document.querySelector("#slide-text-editor");
-        const imageRoot = document.querySelector("#slide-image-editor");
-        textRoot.innerHTML = "";
-        imageRoot.innerHTML = "";
-
-        (slideContentData.items || []).forEach((item) => {
-          const card = document.createElement("article");
-          card.className = "slide-edit-card";
-          const control = item.multiline
-            ? `<textarea data-slide-text="${escapeHtml(item.key)}">${escapeHtml(item.value || "")}</textarea>`
-            : `<input data-slide-text="${escapeHtml(item.key)}" type="text" value="${escapeHtml(item.value || "")}" />`;
-          card.innerHTML = `
-            <h3>${escapeHtml(item.label)}</h3>
-            <small>${escapeHtml(deckLabel(item.deck))} · ${escapeHtml(item.key)}</small>
-            ${control}
-          `;
-          textRoot.append(card);
-        });
-
-        (slideContentData.images || []).forEach((item) => {
-          const card = document.createElement("article");
-          card.className = "slide-edit-card image-card";
-          card.innerHTML = `
-            <h3>${escapeHtml(item.label)}</h3>
-            <small>${escapeHtml(deckLabel(item.deck))} · ${escapeHtml(item.key)}</small>
-            <label>이미지 URL<input data-slide-image="${escapeHtml(item.key)}" data-field="value" type="url" value="${escapeHtml(item.value || "")}" /></label>
-            <label>대체 텍스트<input data-slide-image="${escapeHtml(item.key)}" data-field="alt" type="text" value="${escapeHtml(item.alt || item.label || "")}" /></label>
-            <label>캡션<input data-slide-image="${escapeHtml(item.key)}" data-field="caption" type="text" value="${escapeHtml(item.caption || item.label || "")}" /></label>
-          `;
-          imageRoot.append(card);
-        });
-      }
-
-      function readSlideContentForm() {
-        const textValues = new Map(
-          Array.from(document.querySelectorAll("[data-slide-text]")).map((input) => [
-            input.dataset.slideText,
-            input.value,
-          ]),
-        );
-        const imageValues = new Map();
-        document.querySelectorAll("[data-slide-image]").forEach((input) => {
-          const key = input.dataset.slideImage;
-          const current = imageValues.get(key) || { key };
-          current[input.dataset.field] = input.value;
-          imageValues.set(key, current);
-        });
-        return {
-          items: (slideContentData?.items || []).map((item) => ({
-            key: item.key,
-            value: textValues.get(item.key) ?? item.value ?? "",
-          })),
-          images: (slideContentData?.images || []).map((item) => ({
-            key: item.key,
-            value: imageValues.get(item.key)?.value ?? item.value ?? "",
-            alt: imageValues.get(item.key)?.alt ?? item.alt ?? "",
-            caption: imageValues.get(item.key)?.caption ?? item.caption ?? "",
-          })),
-        };
-      }
-
-      async function loadSlideContent() {
-        setStatus(slideContentStatus, "안내자료 설정을 불러오는 중...");
-        const data = await adminFetch("/api/admin/guide-slides");
-        renderSlideContentEditors(data);
-        setStatus(slideContentStatus, "안내자료 설정을 불러왔습니다.", data.storage === "supabase" ? "ok" : "error");
-      }
-
-      async function saveSlideContent() {
-        setStatus(slideContentStatus, "저장 중...");
-        const data = await adminFetch("/api/admin/guide-slides", {
-          method: "POST",
-          body: JSON.stringify(readSlideContentForm()),
-        });
-        renderSlideContentEditors(data);
-        setStatus(slideContentStatus, "안내자료 설정이 저장되었습니다.", data.storage === "supabase" ? "ok" : "error");
       }
 
       function isTrackedEvent(item) {
@@ -3258,7 +3191,6 @@
         setStatus(loginStatus, "확인 중...");
         try {
           await loadNotice();
-          await loadSlideContent();
           await loadAnalytics();
           await loadOfficialChanges();
           await loadMailReview();
@@ -3290,12 +3222,6 @@
       });
       document.querySelector("#reload-notice").addEventListener("click", () => {
         loadNotice().catch((error) => setStatus(noticeStatus, error.message, "error"));
-      });
-      document.querySelector("#save-slide-content").addEventListener("click", () => {
-        saveSlideContent().catch((error) => setStatus(slideContentStatus, error.message, "error"));
-      });
-      document.querySelector("#reload-slide-content").addEventListener("click", () => {
-        loadSlideContent().catch((error) => setStatus(slideContentStatus, error.message, "error"));
       });
       document.querySelector("#refresh-analytics").addEventListener("click", () => {
         loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));

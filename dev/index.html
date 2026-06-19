@@ -3639,6 +3639,139 @@
           line-height: 1.25;
         }
       }
+      /* DEV redesign layer: denser Tabler-style shell with shadcn-like controls. */
+      :root {
+        --kt-red: #d71920;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8e0ec;
+        --panel: #ffffff;
+        --soft: #f4f7fb;
+        --surface-tint: #eef3f8;
+        --focus: #2563eb;
+      }
+
+      body {
+        background:
+          linear-gradient(180deg, #eef3f8 0, #f7f9fc 360px, #f6f8fb 100%);
+        color: var(--ink);
+      }
+
+      .app {
+        width: min(1500px, calc(100% - 32px));
+        margin: 18px auto 56px;
+      }
+
+      .shell,
+      .panel,
+      .input-band,
+      .slide-card,
+      .notice-modal-card {
+        border-color: #d8e0ec;
+        border-radius: 10px;
+        box-shadow: 0 14px 34px rgb(15 23 42 / 7%);
+      }
+
+      .hero {
+        border: 1px solid #d8e0ec;
+        border-left: 6px solid var(--kt-red);
+        border-radius: 12px;
+        background:
+          linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 92%)),
+          radial-gradient(circle at 86% 16%, rgb(215 25 32 / 12%), transparent 32%);
+        padding: 24px 28px;
+      }
+
+      .hero h1 {
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      .tabs {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        background: rgb(255 255 255 / 92%);
+        padding: 8px;
+        box-shadow: 0 10px 24px rgb(15 23 42 / 7%);
+        backdrop-filter: blur(12px);
+      }
+
+      .tab,
+      button,
+      .button-like {
+        border-radius: 8px;
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+      }
+
+      .tab:hover,
+      button:hover,
+      .button-like:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
+      }
+
+      .tab[aria-selected="true"],
+      .primary,
+      button.primary {
+        background: #172033;
+        border-color: #172033;
+        color: #fff;
+      }
+
+      input,
+      select,
+      textarea {
+        border-color: #cfd8e5;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: inset 0 1px 0 rgb(16 24 40 / 3%);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus,
+      button:focus-visible,
+      .tab:focus-visible {
+        outline: 3px solid rgb(37 99 235 / 18%);
+        outline-offset: 2px;
+        border-color: var(--focus);
+      }
+
+      .source-chip,
+      .slide-pill,
+      .badge {
+        border-radius: 6px;
+      }
+
+      .slide-deck {
+        gap: 18px;
+      }
+
+      .slide-card {
+        background:
+          linear-gradient(#fff, #fff) padding-box,
+          linear-gradient(135deg, rgb(215 25 32 / 28%), rgb(37 99 235 / 14%)) border-box;
+      }
+
+      .review-modal,
+      .modal-card {
+        border-radius: 12px;
+      }
+
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      th {
+        background: #f2f5fa;
+        color: #344054;
+        font-size: 12px;
+        letter-spacing: 0;
+      }
     </style>
   </head>
   <body>
@@ -4392,8 +4525,8 @@
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">OpenAI ChatGPT Ads 베타 기준</p>
-                <h2 class="slide-title" data-guide-text="advertiser.hero.title">ChatGPT 광고 집행 준비 안내</h2>
-                <p class="slide-subtitle" data-guide-text="advertiser.hero.subtitle">광고주님께서 준비해주실 항목</p>
+                <h2 class="slide-title">ChatGPT 광고 집행 준비 안내</h2>
+                <p class="slide-subtitle">광고주님께서 준비해주실 항목</p>
               </div>
               <div class="slide-footer">
                 <span>케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr · OpenAI ChatGPT Ads 베타 기준</span>
@@ -4405,7 +4538,7 @@
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">01 · 광고 소재</p>
-                <h2 class="slide-section-title" data-guide-text="advertiser.material.title">광고 소재 준비물</h2>
+                <h2 class="slide-section-title">광고 소재 준비물</h2>
                 <div class="slide-grid">
                   <div class="slide-item">
                     <strong>브랜드명</strong>
@@ -4436,7 +4569,7 @@
                   </div>
                   <div class="slide-item">
                     <strong>이미지</strong>
-                    <span data-guide-text="advertiser.material.image">PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것</span>
+                    <span>PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것</span>
                   </div>
                   <div class="slide-item split">
                     <strong>랜딩 URL</strong>
@@ -4513,7 +4646,7 @@ Allow: /</pre>
                 <div class="slide-grid">
                   <div class="slide-item">
                     <strong>최소 집행 약정</strong>
-                    <span data-guide-text="advertiser.condition.minimum">400만원 / 상세 조건은 영업 담당 안내</span>
+                    <span>400만원 / 상세 조건은 영업 담당 안내</span>
                   </div>
                   <div class="slide-item">
                     <strong>과금 방식</strong>
@@ -4556,7 +4689,7 @@ Allow: /</pre>
                 </div>
               </div>
               <div>
-                <p class="slide-callout" data-guide-text="advertiser.footer.contact">문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</p>
+                <p class="slide-callout">문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</p>
                 <div class="slide-footer">
                   <span>OpenAI ChatGPT Ads 베타 기준으로 정책·수치가 변동될 수 있습니다.</span>
                   <span class="slide-page-number">5/5</span>
@@ -4584,7 +4717,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">Ads Manager 세팅 프로세스</p>
-                <h2 class="slide-title" data-guide-text="setup.hero.title">광고 캠페인 세팅 가이드</h2>
+                <h2 class="slide-title">광고 캠페인 세팅 가이드</h2>
                 <p class="slide-subtitle">캠페인 → 광고그룹 → 광고 생성 프로세스</p>
                 <p class="guide-channel-note">
                   광고 관리자 URL:
@@ -4630,7 +4763,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 1 · 캠페인</p>
-                <h2 class="slide-section-title" data-guide-text="setup.step1.title">캠페인 만들기</h2>
+                <h2 class="slide-section-title">캠페인 만들기</h2>
                 <div class="guide-two-column">
                   <div class="guide-field-table">
                     <div class="guide-field-row"><strong>캠페인 이름</strong><span>필수 · 최소 3자 이상 입력(자유롭게 설정)</span></div>
@@ -4643,7 +4776,7 @@ Allow: /</pre>
                   <div>
                     <figure>
                       <div class="guide-image-frame">
-                        <img data-guide-image data-guide-image-key="campaign_step1" data-src="/images/guide/campaign_step1.png" alt="캠페인 만들기 화면" />
+                        <img data-guide-image data-src="/images/guide/campaign_step1.png" alt="캠페인 만들기 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4667,7 +4800,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 2 · 광고그룹</p>
-                <h2 class="slide-section-title" data-guide-text="setup.step2.title">광고그룹 만들기</h2>
+                <h2 class="slide-section-title">광고그룹 만들기</h2>
                 <div class="guide-two-column">
                   <div class="guide-field-table">
                     <div class="guide-field-row"><strong>광고그룹 이름</strong><span>필수 · 최소 3자 이상 입력(자유롭게 설정)</span></div>
@@ -4678,7 +4811,7 @@ Allow: /</pre>
                   <div>
                     <figure>
                       <div class="guide-image-frame">
-                        <img data-guide-image data-guide-image-key="campaign_step2" data-src="/images/guide/campaign_step2.png" alt="광고그룹 만들기 화면" />
+                        <img data-guide-image data-src="/images/guide/campaign_step2.png" alt="광고그룹 만들기 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4702,7 +4835,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 3 · 광고</p>
-                <h2 class="slide-section-title" data-guide-text="setup.step3.title">광고 만들기</h2>
+                <h2 class="slide-section-title">광고 만들기</h2>
                 <div class="guide-two-column">
                   <div class="guide-field-table">
                     <div class="guide-field-row"><strong>광고 이름</strong><span>필수 · 최소 3자 이상 입력(자유롭게 설정)</span></div>
@@ -4714,7 +4847,7 @@ Allow: /</pre>
                   <div>
                     <figure>
                       <div class="guide-image-frame">
-                        <img data-guide-image data-guide-image-key="campaign_step3" data-src="/images/guide/campaign_step3.png" alt="광고 만들기 화면" />
+                        <img data-guide-image data-src="/images/guide/campaign_step3.png" alt="광고 만들기 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4754,7 +4887,7 @@ Allow: /</pre>
                   <div>
                     <figure>
                       <div class="guide-image-frame">
-                        <img data-guide-image data-guide-image-key="campaign_preview" data-src="/images/guide/campaign_preview.png" alt="광고 소재 미리보기" />
+                        <img data-guide-image data-src="/images/guide/campaign_preview.png" alt="광고 소재 미리보기" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4794,7 +4927,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">OpenAI Ads Measurement Pixel</p>
-                <h2 class="slide-title" data-guide-text="pixel.hero.title">픽셀 설치 가이드</h2>
+                <h2 class="slide-title">픽셀 설치 가이드</h2>
                 <p class="slide-subtitle">웹 페이지뷰·전환·이벤트 측정 설정</p>
                 <p class="guide-channel-note">
                   본 문서는 광고주 웹사이트에 설치하는 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID와 전환 이벤트명은 광고 계정에서 발급된 값으로 교체해 주세요.
@@ -4846,7 +4979,7 @@ Allow: /</pre>
                   </div>
                   <figure>
                     <div class="guide-image-frame pixel-screen-frame wide">
-                      <img data-guide-image data-guide-image-key="pixel_step1_conversion_home" data-src="/images/guide/pixel_step1_conversion_home.png" alt="전환 데이터 소스 탭 화면" />
+                      <img data-guide-image data-src="/images/guide/pixel_step1_conversion_home.png" alt="전환 데이터 소스 탭 화면" />
                       <div class="guide-placeholder">
                         <div>
                           <strong>캡처 이미지 삽입 위치</strong>
@@ -4882,7 +5015,7 @@ Allow: /</pre>
                   <div class="pixel-screen-grid">
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame compact">
-                        <img data-guide-image data-guide-image-key="pixel_step2_create_source" data-src="/images/guide/pixel_step2_create_source.png" alt="새 데이터 소스 만들기 모달" />
+                        <img data-guide-image data-src="/images/guide/pixel_step2_create_source.png" alt="새 데이터 소스 만들기 모달" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4894,7 +5027,7 @@ Allow: /</pre>
                     </figure>
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame compact">
-                        <img data-guide-image data-guide-image-key="pixel_step3_setup_code" data-src="/images/guide/pixel_step3_setup_code.png" alt="픽셀 설정 코드와 픽셀 ID 화면" />
+                        <img data-guide-image data-src="/images/guide/pixel_step3_setup_code.png" alt="픽셀 설정 코드와 픽셀 ID 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -4917,7 +5050,7 @@ Allow: /</pre>
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 2 · 공통 설치 코드</p>
-                <h2 class="slide-section-title" data-guide-text="pixel.head.title">웹사이트 head에 설치</h2>
+                <h2 class="slide-section-title">웹사이트 head에 설치</h2>
                 <div class="guide-two-column">
                   <div>
                     <div class="guide-field-table">
@@ -4995,7 +5128,7 @@ oaiq("measure", "contents_viewed", {
                   <div class="pixel-screen-grid">
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame compact">
-                        <img data-guide-image data-guide-image-key="pixel_step4_create_event" data-src="/images/guide/pixel_step4_create_event.png" alt="페이지 조회 전환 이벤트 만들기 화면" />
+                        <img data-guide-image data-src="/images/guide/pixel_step4_create_event.png" alt="페이지 조회 전환 이벤트 만들기 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -5007,7 +5140,7 @@ oaiq("measure", "contents_viewed", {
                     </figure>
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame compact">
-                        <img data-guide-image data-guide-image-key="pixel_step5_event_code" data-src="/images/guide/pixel_step5_event_code.png" alt="페이지 조회 이벤트 코드 화면" />
+                        <img data-guide-image data-src="/images/guide/pixel_step5_event_code.png" alt="페이지 조회 이벤트 코드 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -5094,7 +5227,7 @@ oaiq("measure", "order_created", {
                   <div class="pixel-screen-stack">
                     <figure>
                       <div class="guide-image-frame pixel-screen-frame wide">
-                        <img data-guide-image data-guide-image-key="pixel_step6_event_list" data-src="/images/guide/pixel_step6_event_list.png" alt="생성된 전환 이벤트 목록 화면" />
+                        <img data-guide-image data-src="/images/guide/pixel_step6_event_list.png" alt="생성된 전환 이벤트 목록 화면" />
                         <div class="guide-placeholder">
                           <div>
                             <strong>캡처 이미지 삽입 위치</strong>
@@ -5120,7 +5253,7 @@ oaiq("measure", "order_created", {
               <span class="slide-update">최종 업데이트: <span class="slide-update-date"></span></span>
               <div>
                 <p class="slide-kicker">STEP 4 · GTM 가이드</p>
-                <h2 class="slide-section-title" data-guide-text="pixel.gtm.title">GTM 삽입 방법</h2>
+                <h2 class="slide-section-title">GTM 삽입 방법</h2>
                 <div class="guide-two-column">
                   <div>
                     <div class="guide-field-table">
@@ -5133,7 +5266,7 @@ oaiq("measure", "order_created", {
                   </div>
                   <figure>
                     <div class="guide-image-frame pixel-screen-frame wide">
-                      <img data-guide-image data-guide-image-key="pixel_step7_gtm_workspace" data-src="/images/guide/pixel_step7_gtm_workspace.png" alt="Google Tag Manager 작업공간 화면" />
+                      <img data-guide-image data-src="/images/guide/pixel_step7_gtm_workspace.png" alt="Google Tag Manager 작업공간 화면" />
                       <div class="guide-placeholder">
                         <div>
                           <strong>캡처 이미지 삽입 위치</strong>
@@ -5167,7 +5300,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
                 </div>
               </div>
               <div class="slide-footer">
-                <span data-guide-text="pixel.footer.support">나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr</span>
+                <span>나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr</span>
                 <span class="slide-page-number">8/8</span>
               </div>
             </section>
@@ -7294,39 +7427,6 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         });
       }
 
-      function applyGuideSlideContent(content) {
-        const textItems = new Map((content?.items || []).map((item) => [item.key, item.value]));
-        document.querySelectorAll("[data-guide-text]").forEach((element) => {
-          const value = textItems.get(element.dataset.guideText);
-          if (typeof value === "string" && value.trim()) {
-            element.textContent = value;
-          }
-        });
-
-        const imageItems = new Map((content?.images || []).map((item) => [item.key, item]));
-        document.querySelectorAll("[data-guide-image-key]").forEach((image) => {
-          const item = imageItems.get(image.dataset.guideImageKey);
-          if (!item) return;
-          if (item.value) image.dataset.src = item.value;
-          if (item.alt) image.alt = item.alt;
-          const figure = image.closest("figure");
-          const caption = figure?.querySelector("figcaption");
-          if (caption && item.caption) caption.textContent = item.caption;
-        });
-      }
-
-      async function loadGuideSlideContent() {
-        const response = await fetch("/api/guide-slides", { cache: "no-store" });
-        if (!response.ok) return;
-        const content = await response.json();
-        applyGuideSlideContent(content);
-        if (content.updated_at) {
-          document.querySelectorAll(".slide-update-date").forEach((item) => {
-            item.textContent = content.updated_at;
-          });
-        }
-      }
-
       function printDocument(printClass, filename) {
         const previousTitle = document.title;
         document.body.classList.add(printClass);
@@ -7447,7 +7547,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       document.querySelectorAll(".slide-update-date").forEach((item) => {
         item.textContent = LAST_UPDATED;
       });
-      loadGuideSlideContent().finally(hydrateGuideImages);
+      hydrateGuideImages();
       initEntryNotice();
       trackPageVisit(document.querySelector(".tab.active")?.dataset.tab || "chat");
       slidesPrintButton.addEventListener("click", () => {

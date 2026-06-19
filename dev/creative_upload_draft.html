@@ -1,0 +1,2027 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAI 광고 소재 접수</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ed1c24'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='white'%3EOA%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      @import url("https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
+      :root {
+        --brand: #ed1c24;
+        --brand-dark: #b5121b;
+        --blue: #0f62fe;
+        --green: #008a5b;
+        --ink: #111827;
+        --muted: #5f6b7a;
+        --line: #d9dee7;
+        --soft: #f6f8fb;
+        --panel: #ffffff;
+        --shadow: 0 14px 36px rgb(17 24 39 / 8%);
+        --radius: 8px;
+        --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+          BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI",
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f6f9;
+        color: var(--ink);
+        font-family: var(--font-sans);
+        font-feature-settings: "kern";
+        line-height: 1.55;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      a {
+        color: var(--blue);
+      }
+
+      .page {
+        width: min(1520px, calc(100% - 48px));
+        margin: 32px auto 72px;
+      }
+
+      .hero,
+      .card,
+      .campaign,
+      .adgroup,
+      .ad {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: end;
+        padding: 28px 32px;
+        border-left: 6px solid var(--brand);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: 34px;
+        line-height: 1.22;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      h3 {
+        font-size: 16px;
+      }
+
+      .note {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .draft-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #fecdd3;
+        border-radius: 999px;
+        background: #fff1f2;
+        color: #9f1239;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        margin-top: 18px;
+        padding: 24px;
+      }
+
+      .card-header {
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label,
+      .group-label {
+        color: #111827;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .required::after {
+        content: " *";
+        color: var(--brand);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        padding: 12px 14px;
+        min-height: 46px;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: 2px solid rgb(237 28 36 / 18%);
+        border-color: var(--brand);
+      }
+
+      input[readonly] {
+        background: #f8fafc;
+        color: #4b5563;
+        border-style: dashed;
+      }
+
+      .workbook-file-native {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .workbook-file-picker {
+        display: grid;
+        min-height: 52px;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 7px 8px 7px 10px;
+        box-shadow: 0 1px 0 rgb(16 24 40 / 3%);
+        cursor: pointer;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          background 160ms ease;
+      }
+
+      .workbook-file-picker:hover {
+        border-color: #98a2b3;
+        background: #fbfcfe;
+        box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+      }
+
+      .field:focus-within .workbook-file-picker {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgb(237 28 36 / 14%);
+      }
+
+      .workbook-file-icon {
+        display: inline-flex;
+        width: 44px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #bbf7d0;
+        border-radius: 7px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .workbook-file-copy {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .workbook-file-name {
+        overflow: hidden;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 850;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workbook-file-meta {
+        overflow: hidden;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workbook-file-action {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d0d5dd;
+        border-radius: 7px;
+        background: #f8fafc;
+        color: #344054;
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .workbook-file-picker.has-file {
+        border-color: #a7f3d0;
+        background: #f7fffb;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .help {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .warning {
+        border-left: 5px solid var(--brand);
+        background: #fff5f5;
+        padding: 14px 16px;
+        color: #3f3f46;
+      }
+
+      .rule-panel {
+        display: grid;
+        gap: 16px;
+        margin-top: 18px;
+        border: 1px solid #d9dee7;
+        border-left: 6px solid #111827;
+        border-radius: var(--radius);
+        background: #ffffff;
+        padding: 22px 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .rule-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .rule-column {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+      }
+
+      .rule-column h3 {
+        color: #111827;
+      }
+
+      .rule-column ul {
+        margin: 0;
+        padding-left: 18px;
+        color: #475569;
+        font-size: 13px;
+      }
+
+      .rule-column li + li {
+        margin-top: 6px;
+      }
+
+      .radio-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .chip input {
+        width: auto;
+        min-height: auto;
+        accent-color: var(--brand);
+      }
+
+      .button,
+      button {
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        min-height: 42px;
+        padding: 10px 16px;
+        font-weight: 850;
+        cursor: pointer;
+      }
+
+      .primary {
+        border-color: #111827;
+        background: #111827;
+        color: #fff;
+      }
+
+      .danger {
+        border-color: transparent;
+        background: transparent;
+        color: var(--brand-dark);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.56;
+      }
+
+      .status {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status.success {
+        color: #047857;
+      }
+
+      .status.error {
+        color: #b91c1c;
+      }
+
+      .status.warning {
+        color: #b45309;
+      }
+
+      .bulk-result {
+        margin-top: 12px;
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 14px;
+        color: #334155;
+        font-size: 14px;
+      }
+
+      .bulk-result strong {
+        color: var(--ink);
+      }
+
+      .bulk-result ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .bulk-result.success {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+      }
+
+      .bulk-result.error {
+        border-color: #fecaca;
+        background: #fff1f2;
+      }
+
+      .campaign-list {
+        display: grid;
+        gap: 18px;
+      }
+
+      .structure-overview {
+        display: grid;
+        gap: 10px;
+        margin: 16px 0 18px;
+        border: 1px solid #dbe2ee;
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px 16px;
+        box-shadow: 0 8px 20px rgb(15 23 42 / 3%);
+      }
+
+      .structure-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .structure-kpi {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        margin-right: 8px;
+        padding-right: 14px;
+        border-right: 1px solid #d6dce7;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 850;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .structure-kpi:last-child {
+        margin-right: 0;
+        border-right: 0;
+      }
+
+      .structure-chip {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        border: 1px solid #d8e0ec;
+        border-left: 3px solid var(--chip-tone, var(--brand));
+        border-radius: 6px;
+        background: #fff;
+        padding: 0 11px;
+        color: #243041;
+        font-size: 12px;
+        font-weight: 850;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .structure-chip:hover {
+        border-color: #c8d1de;
+        border-left-color: var(--chip-tone, var(--brand));
+        background: #f8fafc;
+      }
+
+      .campaign {
+        --tone: var(--brand);
+        --tone-bg: #fff4f4;
+        border-left: 6px solid var(--tone);
+        background: linear-gradient(90deg, var(--tone-bg), #fff 26%);
+        padding: 22px;
+      }
+
+      .campaign-header,
+      .nested-header,
+      .adgroup-header,
+      .ad-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .campaign-header .toolbar,
+      .adgroup-header .toolbar,
+      .ad-header .toolbar {
+        flex-wrap: nowrap;
+        gap: 8px;
+      }
+
+      .collapse-toggle {
+        min-height: 36px;
+        padding: 8px 12px;
+        border-color: #d6dce7;
+        background: #fff;
+        color: #243041;
+        font-size: 13px;
+      }
+
+      .campaign.is-collapsed > .campaign-body,
+      .adgroup.is-collapsed > .adgroup-body,
+      .ad.is-collapsed > .ad-body {
+        display: none;
+      }
+
+      .campaign-header strong,
+      .adgroup-header strong,
+      .ad-header strong {
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .campaign-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        border: 0;
+        border-left: 3px solid var(--tone);
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: inset 0 0 0 1px #e0e6ef;
+        color: #172033;
+        padding: 0 11px;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .nested {
+        margin-top: 22px;
+        padding-top: 22px;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .adgroup-list,
+      .ad-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .adgroup-list,
+      .ad-list {
+        margin-left: 12px;
+      }
+
+      .adgroup,
+      .ad {
+        box-shadow: none;
+        padding: 18px;
+      }
+
+      .ad {
+        border-left: 4px solid var(--brand);
+        background: #fff;
+      }
+
+      .counter {
+        color: #374151;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .footer-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgb(255 255 255 / 94%);
+        padding: 14px;
+        backdrop-filter: blur(10px);
+      }
+
+      .action-copy {
+        flex: 1 1 360px;
+        min-width: 240px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .action-copy strong {
+        color: var(--ink);
+      }
+
+      .honeypot {
+        position: absolute;
+        left: -9999px;
+      }
+
+      .review-overlay[hidden] {
+        display: none;
+      }
+
+      .review-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(15 23 42 / 58%);
+        padding: 24px;
+      }
+
+      .review-modal {
+        width: min(980px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 28px 80px rgb(15 23 42 / 24%);
+      }
+
+      .review-modal header,
+      .review-modal footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+        padding: 22px 24px;
+      }
+
+      .review-modal header {
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .review-modal footer {
+        border-top: 1px solid #e5e7eb;
+        background: #f8fafc;
+      }
+
+      .review-body {
+        display: grid;
+        gap: 14px;
+        padding: 20px 24px 24px;
+      }
+
+      .review-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .review-stat,
+      .review-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+      }
+
+      .review-stat b {
+        display: block;
+        color: #111827;
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      .review-stat span,
+      .review-section p {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .review-section {
+        display: grid;
+        gap: 10px;
+      }
+
+      .review-section h3 {
+        margin: 0;
+      }
+
+      .review-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .review-table th,
+      .review-table td {
+        border-top: 1px solid #edf1f7;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .review-table th {
+        color: #475569;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      @media (max-width: 860px) {
+        .page {
+          width: min(100% - 24px, 760px);
+          margin-top: 18px;
+        }
+
+        .hero,
+        .grid,
+        .rule-grid,
+        .review-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .card-header,
+        .nested-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .card-header > button,
+        .nested-header > button {
+          width: 100%;
+        }
+
+        .adgroup-list,
+        .ad-list {
+          margin-left: 0;
+        }
+
+        .workbook-file-picker {
+          grid-template-columns: 40px minmax(0, 1fr);
+        }
+
+        .workbook-file-icon {
+          width: 40px;
+        }
+
+        .workbook-file-action {
+          display: none;
+        }
+      }
+      /* DEV redesign layer: production-workbench polish without changing form behavior. */
+      :root {
+        --brand: #d71920;
+        --brand-dark: #9f171d;
+        --blue: #2563eb;
+        --green: #047857;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8e0ec;
+        --soft: #f4f7fb;
+        --panel: #ffffff;
+        --shadow: 0 14px 34px rgb(15 23 42 / 7%);
+      }
+
+      body {
+        background:
+          linear-gradient(180deg, #eef3f8 0, #f8fafc 360px, #f6f8fb 100%);
+      }
+
+      .page {
+        width: min(1500px, calc(100% - 32px));
+        margin-top: 20px;
+      }
+
+      .hero,
+      .card,
+      .campaign,
+      .rule-panel,
+      .footer-actions {
+        border-color: #d8e0ec;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        background:
+          linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 92%)),
+          radial-gradient(circle at 88% 10%, rgb(215 25 32 / 12%), transparent 32%);
+      }
+
+      .rule-panel {
+        border-left-color: #172033;
+      }
+
+      .campaign {
+        background: linear-gradient(90deg, var(--tone-bg), #fff 22%);
+      }
+
+      input,
+      select,
+      textarea,
+      .workbook-file-picker {
+        border-radius: 8px;
+        border-color: #cfd8e5;
+        box-shadow: inset 0 1px 0 rgb(16 24 40 / 3%);
+      }
+
+      button,
+      .button,
+      .chip,
+      .structure-chip,
+      .campaign-pill {
+        border-radius: 8px;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      button:hover,
+      .button:hover,
+      .structure-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus,
+      button:focus-visible {
+        outline: 3px solid rgb(37 99 235 / 18%);
+        outline-offset: 2px;
+        border-color: var(--blue);
+      }
+
+      .primary,
+      button.primary {
+        background: #172033;
+        border-color: #172033;
+      }
+
+      .review-modal {
+        border-radius: 12px;
+      }
+
+      th {
+        background: #f2f5fa;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">내부 운영용 · 벌크 업로드 준비</p>
+          <h1>OpenAI Ads Manager 업로드 워크북 작성</h1>
+          <p class="note">
+            광고주 등록/정산 정보는 별도 트래커에서 관리하고, 이 페이지는 Ads Manager 벌크 업로드에 필요한
+            캠페인·광고그룹·광고 소재 정보를 수집합니다.
+          </p>
+        </div>
+        <span class="draft-badge">운영용 입력 페이지</span>
+      </header>
+
+      <section class="rule-panel" aria-labelledby="rule-title">
+        <div>
+          <p class="eyebrow">재오픈 전 draft 기준</p>
+          <h2 id="rule-title">수동 세팅 기준과 벌크 업로드 기준을 분리해 확인합니다</h2>
+        </div>
+        <div class="rule-grid">
+          <div class="rule-column">
+            <h3>수동 세팅 기준 필수 입력</h3>
+            <ul>
+              <li>시작일, 종료일, 예산 유형, 캠페인 목표는 내부 검토와 Ads Manager 수동 세팅을 위해 모두 입력합니다.</li>
+              <li>Clicks(CPC)는 광고그룹별 max_bid를 KRW 기준으로 입력하고, Views(CPM)는 max_bid를 비웁니다.</li>
+              <li>캠페인명, 광고그룹명, 소재명은 영문/숫자/공백/하이픈/언더스코어만 사용합니다.</li>
+            </ul>
+          </div>
+          <div class="rule-column">
+            <h3>벌크 업로드 기준 주의사항</h3>
+            <ul>
+              <li>다운로드 파일은 campaigns / adgroups / ads 시트로 생성됩니다.</li>
+              <li>한국 집행은 target_countries를 빈칸(NULL)으로 두는 것을 기본값으로 사용합니다.</li>
+              <li>업로드 후 Ads Manager에서 국가, 스케줄, 입찰, 소재 URL 반영값을 항목별로 다시 확인합니다.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>워크북 파일 불러오기</h2>
+            <p class="note">광고주가 작성한 공식 워크북(.xlsx)을 업로드하면 campaigns / adgroups / ads 값을 검사하고, 오류가 없을 때 아래 입력폼에 자동으로 채웁니다.</p>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="field full">
+            <label for="bulk-workbook">워크북 파일</label>
+            <input
+              class="workbook-file-native"
+              id="bulk-workbook"
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
+            <label class="workbook-file-picker" for="bulk-workbook">
+              <span class="workbook-file-icon" aria-hidden="true">XLSX</span>
+              <span class="workbook-file-copy">
+                <span class="workbook-file-name" id="bulk-workbook-file-name">워크북 파일을 선택하세요</span>
+                <span class="workbook-file-meta">campaigns / adgroups / ads 시트 자동 불러오기</span>
+              </span>
+              <span class="workbook-file-action" aria-hidden="true">파일 선택</span>
+            </label>
+            <span class="help">공식 템플릿 컬럼 기준: campaigns / adgroups / ads</span>
+          </div>
+        </div>
+        <div class="bulk-result" id="bulk-result">파일을 업로드하면 워크북 내용을 검사한 뒤, 통과한 값만 아래 폼으로 불러옵니다.</div>
+      </section>
+
+      <form id="creative-form" novalidate>
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>기본 정보</h2>
+              <p class="note">업로드 파일에는 들어가지 않는 내부 식별 정보입니다.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label class="required" for="advertiser-name">광고주명</label>
+              <input id="advertiser-name" name="advertiserName" required />
+            </div>
+            <div class="field">
+              <label for="ads-manager-account">브랜드명</label>
+              <input id="ads-manager-account" name="adsManagerAccount" />
+            </div>
+            <div class="field">
+              <label class="required" for="sales-owner">담당자명</label>
+              <input id="sales-owner" name="salesOwner" required />
+            </div>
+            <div class="field">
+              <label class="required" for="sales-owner-email">담당자 이메일</label>
+              <input id="sales-owner-email" name="salesOwnerEmail" type="email" required />
+            </div>
+            <div class="field">
+              <label class="required" for="owner-headquarters">본부</label>
+              <input id="owner-headquarters" name="ownerHeadquarters" required />
+            </div>
+            <div class="field">
+              <label class="required" for="owner-office">실</label>
+              <input id="owner-office" name="ownerOffice" required />
+            </div>
+            <div class="field">
+              <label class="required" for="owner-team">팀</label>
+              <input id="owner-team" name="ownerTeam" required />
+            </div>
+            <div class="field full">
+              <label for="notes">비고</label>
+              <textarea id="notes" name="notes" placeholder="기존 캠페인에 소재만 추가, 특정 광고그룹만 수정 등 참고사항을 입력하세요."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>캠페인 · 광고그룹 · 소재 정보</h2>
+              <p class="note">캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 입력할 수 있습니다.</p>
+            </div>
+            <button type="button" id="add-campaign">캠페인 추가</button>
+          </div>
+          <p class="warning">
+            예산 안내: 최소 집행 약정과 상세 조건은 영업 기준을 따릅니다. 일예산 최소 KRW 25,000은 시스템 표기값이며 실무상 더 높게 설정을 권장합니다.
+          </p>
+          <div class="structure-overview" id="structure-overview" aria-live="polite"></div>
+          <div class="campaign-list" id="campaign-list">
+            <article class="campaign" data-campaign>
+              <div class="campaign-header">
+                <span class="campaign-pill">캠페인 1</span>
+                <div class="toolbar">
+                  <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                  <button type="button" class="danger remove-campaign" hidden>캠페인 삭제</button>
+                </div>
+              </div>
+              <div class="campaign-body">
+                <div class="grid">
+                  <div class="field">
+                    <label class="required">캠페인명</label>
+                    <input class="campaign-name" required />
+                    <span class="help">campaign_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
+                  </div>
+                  <div class="field">
+                    <label class="required">예산 금액</label>
+                    <input class="budget-max" type="number" min="1" step="1" placeholder="4000000" required />
+                  </div>
+                  <div class="field">
+                    <span class="group-label required">예산 유형</span>
+                    <div class="radio-row">
+                      <label class="chip"><input class="budget-type" type="radio" value="lifetime" checked /> 총예산(lifetime)</label>
+                      <label class="chip"><input class="budget-type" type="radio" value="daily" /> 일예산(daily)</label>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <span class="group-label required">캠페인 목표</span>
+                    <div class="radio-row">
+                      <label class="chip"><input class="campaign-objective" type="radio" value="views" checked /> Views = CPM</label>
+                      <label class="chip"><input class="campaign-objective objective-clicks" type="radio" value="clicks" /> Clicks = CPC</label>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="required">시작일</label>
+                    <input class="launch-date" type="date" required />
+                    <span class="help">수동 세팅 기준 필수 · campaigns launch_date</span>
+                  </div>
+                  <div class="field">
+                    <label class="required">종료일</label>
+                    <input class="end-date" type="date" required />
+                    <span class="help">수동 세팅 기준 필수 · campaigns end_date</span>
+                  </div>
+                  <div class="field">
+                    <label>국가</label>
+                    <select class="target-countries">
+                      <option value="" selected>비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
+                      <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
+                      <option value="US">미국(US)</option>
+                      <option value="JP">일본(JP)</option>
+                    </select>
+                    <span class="help">한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
+                  </div>
+                </div>
+
+                <div class="nested">
+                  <div class="nested-header">
+                    <div>
+                      <h3>광고그룹 정보</h3>
+                      <p class="note">adgroups 시트에 광고그룹 수만큼 행이 추가됩니다.</p>
+                    </div>
+                    <button type="button" class="add-adgroup">광고그룹 추가</button>
+                  </div>
+                  <div class="adgroup-list">
+                    <article class="adgroup" data-adgroup>
+                      <div class="adgroup-header">
+                        <h3>광고그룹 1-1</h3>
+                        <div class="toolbar">
+                          <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                          <button type="button" class="danger remove-adgroup" hidden>광고그룹 삭제</button>
+                        </div>
+                      </div>
+                      <div class="adgroup-body">
+                        <div class="grid">
+                          <div class="field">
+                            <label>campaign_name</label>
+                            <input class="campaign-name-mirror" readonly />
+                          </div>
+                          <div class="field">
+                            <label class="required">광고그룹명</label>
+                            <input class="adgroup-name" required />
+                            <span class="help">adgroup_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용. 소재 연결을 위해 접수 내 중복 불가</span>
+                          </div>
+                          <div class="field">
+                            <label class="max-bid-label">최대 입찰가</label>
+                            <input class="max-bid" type="number" min="1" step="1" placeholder="선택 입력" />
+                            <span class="help max-bid-help">Clicks(CPC) 캠페인에서만 최대 CPC를 입력합니다. Views(CPM) 캠페인은 비워야 합니다.</span>
+                          </div>
+                          <div class="field">
+                            <label>키워드</label>
+                            <input class="keywords" placeholder="키워드1, 키워드2" />
+                          </div>
+                        </div>
+
+                        <div class="nested">
+                          <div class="nested-header">
+                            <div>
+                              <h3>소재 정보</h3>
+                              <p class="note">ads 시트에 소재 수만큼 행이 추가됩니다.</p>
+                            </div>
+                            <button type="button" class="add-ad">소재 추가</button>
+                          </div>
+                          <div class="ad-list">
+                            <article class="ad" data-ad>
+                              <div class="ad-header">
+                                <h3>소재 1-1-1</h3>
+                                <div class="toolbar">
+                                  <button type="button" class="collapse-toggle" aria-expanded="true">접기</button>
+                                  <button type="button" class="danger remove-ad" hidden>소재 삭제</button>
+                                </div>
+                              </div>
+                              <div class="ad-body">
+                                <div class="grid">
+                                  <div class="field">
+                                    <label>adgroup_name</label>
+                                    <input class="adgroup-name-mirror" readonly />
+                                  </div>
+                                  <div class="field">
+                                    <label class="required">소재명</label>
+                                    <input class="ad-name" required />
+                                    <span class="help">ad_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
+                                  </div>
+                                  <div class="field">
+                                    <label class="required">광고 제목</label>
+                                    <input class="ad-title" maxlength="24" required />
+                                    <span class="counter" data-counter-for="title">0 / 24자 · 권장 16~18자</span>
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">광고 설명</label>
+                                    <input class="ad-copy" maxlength="48" required />
+                                    <span class="counter" data-counter-for="copy">0 / 48자 · 권장 32~36자</span>
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">랜딩 URL</label>
+                                    <input class="ad-link" type="url" placeholder="https://example.com/landing?utm_source=openai" required />
+                                  </div>
+                                  <div class="field full">
+                                    <label class="required">이미지 URL</label>
+                                    <input class="ad-image-link" type="url" placeholder="https://example.com/image.jpg" required />
+                                    <span class="help">http:// 또는 https://로 시작하는 URL 형식 필수. 최종 소재용 공개 이미지 URL인지 별도 확인해 주세요.</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div class="honeypot" aria-hidden="true">
+          <label for="company-homepage">회사 홈페이지</label>
+          <input id="company-homepage" name="honeypot" tabindex="-1" autocomplete="off" />
+        </div>
+        <input id="form-started-at" type="hidden" name="formStartedAt" />
+
+        <div class="footer-actions">
+          <button class="primary" id="download-workbook" type="button">Ads Manager용 .xlsx 다운로드</button>
+          <button id="submit-sheet" type="submit">구글 시트 저장 후 알림 보내기</button>
+          <div class="action-copy">
+            <strong>XLSX 다운로드</strong>는 현재 입력값으로 OpenAI Ads Manager 벌크 업로드용 워크북을 생성합니다.
+            다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다. 업로드 후 Ads Manager에서 국가, 스케줄, 입찰, 소재 URL 등 반영값을 항목별로 반드시 확인하세요.
+            <strong>구글 시트 저장</strong>은 내부 시트에 저장하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
+          </div>
+          <span class="status" id="form-status" aria-live="polite"></span>
+        </div>
+      </form>
+    </main>
+
+    <div class="review-overlay" id="review-overlay" role="dialog" aria-modal="true" aria-labelledby="review-title" hidden>
+      <section class="review-modal" tabindex="-1">
+        <header>
+          <div>
+            <p class="eyebrow">제출 전 확인</p>
+            <h2 id="review-title">구글 시트에 저장할 내용을 확인해 주세요</h2>
+            <p class="note">아래 내용을 저장하면 내부 구글 시트에 기록되고 openai@nasmedia.co.kr 담당자에게 알림 메일이 발송됩니다.</p>
+          </div>
+          <span class="draft-badge">담당자 검토</span>
+        </header>
+        <div class="review-body" id="review-body"></div>
+        <footer>
+          <span class="help">캠페인명·광고그룹명·랜딩/이미지 URL 형식을 한 번 더 확인해 주세요. 제출 후 담당자에게 알림이 발송됩니다.</span>
+          <div class="toolbar">
+            <button type="button" id="review-cancel">수정하기</button>
+            <button type="button" class="primary" id="review-confirm">저장하고 알림 보내기</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+    <script>
+      const form = document.querySelector("#creative-form");
+      const campaignList = document.querySelector("#campaign-list");
+      const campaignTemplate = campaignList.querySelector(":scope > [data-campaign]").cloneNode(true);
+      const structureOverview = document.querySelector("#structure-overview");
+      const statusEl = document.querySelector("#form-status");
+      const bulkInput = document.querySelector("#bulk-workbook");
+      const bulkFileName = document.querySelector("#bulk-workbook-file-name");
+      const bulkResult = document.querySelector("#bulk-result");
+      const startedAt = document.querySelector("#form-started-at");
+      const reviewOverlay = document.querySelector("#review-overlay");
+      const reviewModal = reviewOverlay.querySelector(".review-modal");
+      const reviewBody = document.querySelector("#review-body");
+      const reviewCancel = document.querySelector("#review-cancel");
+      const reviewConfirm = document.querySelector("#review-confirm");
+      let pendingSubmissionPayload = null;
+      const tones = [
+        { color: "#ed1c24", bg: "#fff4f4" },
+        { color: "#0f62fe", bg: "#f2f7ff" },
+        { color: "#008a5b", bg: "#f1fbf6" },
+        { color: "#8a3ffc", bg: "#f7f2ff" },
+      ];
+      const workbookDownloadNotice =
+        "다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다. 업로드 후 Ads Manager에서 국가, 스케줄, 입찰, 소재 URL 등 반영값을 항목별로 반드시 확인하세요.";
+
+      startedAt.value = String(Date.now());
+
+      function setStatus(message, type = "") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`.trim();
+      }
+
+      function selected(name) {
+        return form.querySelector(`input[name="${name}"]:checked`)?.value || "";
+      }
+
+      function campaignItems() {
+        return [...campaignList.querySelectorAll(":scope > [data-campaign]")];
+      }
+
+      function adgroupItems(campaign) {
+        return [...campaign.querySelectorAll(":scope .adgroup-list > [data-adgroup]")];
+      }
+
+      function adItems(adgroup) {
+        return [...adgroup.querySelectorAll(":scope .ad-list > [data-ad]")];
+      }
+
+      function collapseButtonFor(item) {
+        return (
+          item.querySelector(":scope > .campaign-header .collapse-toggle") ||
+          item.querySelector(":scope > .adgroup-header .collapse-toggle") ||
+          item.querySelector(":scope > .ad-header .collapse-toggle")
+        );
+      }
+
+      function setCollapseButtonState(item) {
+        const button = collapseButtonFor(item);
+        if (!button) return;
+        const expanded = !item.classList.contains("is-collapsed");
+        button.textContent = expanded ? "접기" : "펼치기";
+        button.setAttribute("aria-expanded", String(expanded));
+      }
+
+      function expandInvalidAncestors(control) {
+        [control.closest("[data-ad]"), control.closest("[data-adgroup]"), control.closest("[data-campaign]")]
+          .filter(Boolean)
+          .forEach((item) => {
+            item.classList.remove("is-collapsed");
+            setCollapseButtonState(item);
+          });
+      }
+
+      function clearCollapsedState(container) {
+        container.classList.remove("is-collapsed");
+        container.querySelectorAll(".is-collapsed").forEach((item) => item.classList.remove("is-collapsed"));
+        container.querySelectorAll("[data-campaign], [data-adgroup], [data-ad]").forEach(setCollapseButtonState);
+      }
+
+      function checkedValue(container, selector) {
+        return container.querySelector(`${selector}:checked`)?.value || "";
+      }
+
+      function setRadioValue(container, selector, value) {
+        container.querySelectorAll(selector).forEach((input) => {
+          input.checked = input.value === value;
+        });
+      }
+
+      function splitKeywords(value) {
+        return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+      }
+
+      function optionalNumber(value) {
+        const text = String(value || "").trim();
+        return text ? Number(text) : null;
+      }
+
+      function isSafeWorkbookName(value) {
+        return /^(?=.*[0-9A-Za-z])[0-9A-Za-z _-]+$/.test(String(value || "").trim());
+      }
+
+      function selectedTargetCountries(campaign) {
+        const value = campaign.querySelector(".target-countries")?.value.trim();
+        return value ? [value] : [];
+      }
+
+      function isHttpUrl(value) {
+        const text = String(value || "").trim();
+        if (/\s/.test(text)) return false;
+        try {
+          const parsed = new URL(text);
+          const hostname = parsed.hostname || "";
+          return (
+            (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+            Boolean(hostname) &&
+            !hostname.startsWith(".") &&
+            !hostname.endsWith(".") &&
+            !hostname.includes("..") &&
+            /^[A-Za-z0-9.-]+$/.test(hostname)
+          );
+        } catch {
+          return false;
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function objectiveLabel(value) {
+        return value === "clicks" ? "Clicks = CPC" : "Views = CPM";
+      }
+
+      function budgetTypeLabel(value) {
+        return value === "daily" ? "일예산(daily)" : "총예산(lifetime)";
+      }
+
+      function countryLabel(values) {
+        return values?.length ? values.join(", ") : "빈칸(NULL) · 플랫폼 기본";
+      }
+
+      function limits() {
+        return { title: 24, copy: 48, titleHelp: "권장 16~18자", copyHelp: "권장 32~36자" };
+      }
+
+      function isolateRadios(campaign, index) {
+        const budgetValue = checkedValue(campaign, ".budget-type") || "lifetime";
+        const objectiveValue = checkedValue(campaign, ".campaign-objective") || "views";
+        campaign.querySelectorAll(".budget-type").forEach((input) => {
+          input.name = `budget_type_${index}`;
+          input.checked = input.value === budgetValue;
+        });
+        campaign.querySelectorAll(".campaign-objective").forEach((input) => {
+          input.name = `objective_${index}`;
+          input.checked = input.value === objectiveValue;
+        });
+      }
+
+      function resetInputs(container) {
+        container.querySelectorAll("input, textarea").forEach((input) => {
+          if (input.type === "radio") {
+            input.checked = input.value === "views" || input.value === "lifetime";
+          } else if (input.type === "file") {
+            input.value = "";
+          } else if (input.readOnly) {
+            input.value = "";
+          } else {
+            input.value = "";
+          }
+        });
+      }
+
+      function updateCounters(ad) {
+        const currentLimits = limits();
+        const title = ad.querySelector(".ad-title");
+        const copy = ad.querySelector(".ad-copy");
+        const titleCounter = ad.querySelector('[data-counter-for="title"]');
+        const copyCounter = ad.querySelector('[data-counter-for="copy"]');
+        title.maxLength = currentLimits.title;
+        copy.maxLength = currentLimits.copy;
+        if (title.value.length > currentLimits.title) title.value = title.value.slice(0, currentLimits.title);
+        if (copy.value.length > currentLimits.copy) copy.value = copy.value.slice(0, currentLimits.copy);
+        titleCounter.textContent = `${title.value.length} / ${currentLimits.title}자 · ${currentLimits.titleHelp}`;
+        copyCounter.textContent = `${copy.value.length} / ${currentLimits.copy}자 · ${currentLimits.copyHelp}`;
+      }
+
+      function syncState() {
+        campaignItems().forEach((campaign, campaignIndex) => {
+          const campaignNumber = campaignIndex + 1;
+          const tone = tones[campaignIndex % tones.length];
+          campaign.style.setProperty("--tone", tone.color);
+          campaign.style.setProperty("--tone-bg", tone.bg);
+          campaign.querySelector(".remove-campaign").hidden = campaignItems().length === 1;
+          setCollapseButtonState(campaign);
+          isolateRadios(campaign, campaignNumber);
+          const campaignName = campaign.querySelector(".campaign-name").value.trim();
+          adgroupItems(campaign).forEach((adgroup, adgroupIndex) => {
+            const adgroupNumber = adgroupIndex + 1;
+            adgroup.querySelector(".remove-adgroup").hidden = adgroupItems(campaign).length === 1;
+            setCollapseButtonState(adgroup);
+            const adgroupName = adgroup.querySelector(".adgroup-name").value.trim();
+            adgroup.querySelector(".campaign-name-mirror").value = campaignName;
+            const maxBidInput = adgroup.querySelector(".max-bid");
+            const maxBidHelp = adgroup.querySelector(".max-bid-help");
+            const maxBidLabel = adgroup.querySelector(".max-bid-label");
+            const objective = checkedValue(campaign, ".campaign-objective") || "views";
+            if (objective === "views") {
+              maxBidInput.value = "";
+              maxBidInput.disabled = true;
+              maxBidInput.required = false;
+              maxBidInput.placeholder = "Views(CPM)는 빈칸";
+              maxBidLabel?.classList.remove("required");
+              if (maxBidHelp) maxBidHelp.textContent = "Views(CPM) 캠페인은 max_bid를 비워야 합니다. OpenAI 업로더에서 입력값이 있으면 오류 처리됩니다.";
+            } else {
+              maxBidInput.disabled = false;
+              maxBidInput.required = true;
+              maxBidInput.placeholder = "KRW 기준 예: 1200";
+              maxBidLabel?.classList.add("required");
+              if (maxBidHelp) maxBidHelp.textContent = "Clicks(CPC) 캠페인은 max_bid가 필수입니다. KRW 기준 최대 CPC를 입력하세요.";
+            }
+            adItems(adgroup).forEach((ad, adIndex) => {
+              const adNumber = adIndex + 1;
+              ad.querySelector(".remove-ad").hidden = adItems(adgroup).length === 1;
+              setCollapseButtonState(ad);
+              const adName = ad.querySelector(".ad-name").value.trim();
+              ad.querySelector(".ad-header h3").innerHTML = `<strong>소재 ${campaignNumber}-${adgroupNumber}-${adNumber}</strong>${adName ? ` · ${escapeHtml(adName)}` : ""}`;
+              ad.querySelector(".adgroup-name-mirror").value = adgroupName;
+              updateCounters(ad);
+            });
+            const adCount = adItems(adgroup).length;
+            adgroup.querySelector(".adgroup-header h3").innerHTML = `<strong>광고그룹 ${campaignNumber}-${adgroupNumber}</strong>${adgroupName ? ` · ${escapeHtml(adgroupName)}` : ""} · 소재 ${adCount}개`;
+          });
+          const adgroupCount = adgroupItems(campaign).length;
+          const adCount = adgroupItems(campaign).reduce((sum, adgroup) => sum + adItems(adgroup).length, 0);
+          const objective = objectiveLabel(checkedValue(campaign, ".campaign-objective") || "views");
+          campaign.querySelector(".campaign-pill").textContent = `캠페인 ${campaignNumber}${campaignName ? ` · ${campaignName}` : ""} · ${objective} · 광고그룹 ${adgroupCount}개 · 소재 ${adCount}개`;
+        });
+        updateStructureOverview();
+      }
+
+      function updateStructureOverview() {
+        const campaigns = campaignItems();
+        const adgroupCount = campaigns.reduce((sum, campaign) => sum + adgroupItems(campaign).length, 0);
+        const adCount = campaigns.reduce((sum, campaign) => (
+          sum + adgroupItems(campaign).reduce((inner, adgroup) => inner + adItems(adgroup).length, 0)
+        ), 0);
+        const chips = campaigns.map((campaign, index) => {
+          const tone = tones[index % tones.length].color;
+          const name = campaign.querySelector(".campaign-name").value.trim() || `캠페인 ${index + 1}`;
+          const groups = adgroupItems(campaign).length;
+          const ads = adgroupItems(campaign).reduce((sum, adgroup) => sum + adItems(adgroup).length, 0);
+          return `<button type="button" class="structure-chip" style="--chip-tone:${tone}" data-jump-campaign="${index}">${escapeHtml(name)} · 그룹 ${groups} · 소재 ${ads}</button>`;
+        }).join("");
+        structureOverview.innerHTML = `
+          <div class="structure-summary">
+            <span class="structure-kpi">캠페인 ${campaigns.length}개</span>
+            <span class="structure-kpi">광고그룹 ${adgroupCount}개</span>
+            <span class="structure-kpi">소재 ${adCount}개</span>
+          </div>
+          <div class="structure-summary">${chips}</div>
+        `;
+      }
+
+      function trimToOneAdgroup(campaign) {
+        adgroupItems(campaign).slice(1).forEach((item) => item.remove());
+        const first = adgroupItems(campaign)[0];
+        if (first) adItems(first).slice(1).forEach((item) => item.remove());
+      }
+
+      function cleanCampaignTemplate() {
+        const clone = campaignTemplate.cloneNode(true);
+        trimToOneAdgroup(clone);
+        resetInputs(clone);
+        clearCollapsedState(clone);
+        return clone;
+      }
+
+      function cleanAdgroupTemplate() {
+        const clone = campaignTemplate.querySelector("[data-adgroup]").cloneNode(true);
+        adItems(clone).slice(1).forEach((item) => item.remove());
+        resetInputs(clone);
+        clearCollapsedState(clone);
+        return clone;
+      }
+
+      function cleanAdTemplate() {
+        const clone = campaignTemplate.querySelector("[data-ad]").cloneNode(true);
+        resetInputs(clone);
+        clearCollapsedState(clone);
+        return clone;
+      }
+
+      function addCampaign() {
+        const clone = cleanCampaignTemplate();
+        campaignList.append(clone);
+        syncState();
+        clone.querySelector(".campaign-name").focus();
+      }
+
+      function addAdgroup(campaign) {
+        const list = campaign.querySelector(".adgroup-list");
+        const clone = cleanAdgroupTemplate();
+        list.append(clone);
+        syncState();
+        clone.querySelector(".adgroup-name").focus();
+      }
+
+      function addAd(adgroup) {
+        const list = adgroup.querySelector(".ad-list");
+        const clone = cleanAdTemplate();
+        list.append(clone);
+        syncState();
+        clone.querySelector(".ad-name").focus();
+      }
+
+      function focusInvalid(control, message) {
+        setStatus(message, "error");
+        expandInvalidAncestors(control);
+        control.scrollIntoView({ block: "center", behavior: "smooth" });
+        window.setTimeout(() => {
+          control.focus({ preventScroll: true });
+          control.reportValidity?.();
+        }, 160);
+      }
+
+      function validateForm() {
+        syncState();
+        const invalid = [...form.querySelectorAll("input, select, textarea")].find((input) => {
+          if (input.type === "hidden" || input.type === "file") return false;
+          return !input.checkValidity();
+        });
+        if (invalid) {
+          const label = invalid.closest(".field")?.querySelector("label, .group-label")?.textContent?.replace("*", "").trim() || "필수 항목";
+          focusInvalid(invalid, `${label}을 입력하거나 형식을 확인해 주세요.`);
+          return false;
+        }
+        const campaignNames = new Set();
+        const adgroupNames = new Set();
+        const adNames = new Set();
+        for (const campaign of campaignItems()) {
+          const campaignNameInput = campaign.querySelector(".campaign-name");
+          const campaignName = campaignNameInput.value.trim();
+          const objective = checkedValue(campaign, ".campaign-objective") || "views";
+          if (!isSafeWorkbookName(campaignName)) {
+            focusInvalid(campaignNameInput, "캠페인명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+            return false;
+          }
+          const targetCountry = campaign.querySelector(".target-countries")?.value.trim();
+          if (targetCountry === "KR") {
+            focusInvalid(campaign.querySelector(".target-countries"), "현재 OpenAI Ads Manager 벌크 업로드에서 KR target_countries 오류가 확인되었습니다. 한국 집행은 국가를 빈칸으로 두세요.");
+            return false;
+          }
+          if (campaignNames.has(campaignName)) {
+            focusInvalid(campaignNameInput, `캠페인명 "${campaignName}"이 중복되었습니다.`);
+            return false;
+          }
+          campaignNames.add(campaignName);
+          const launch = campaign.querySelector(".launch-date").value;
+          const end = campaign.querySelector(".end-date").value;
+          if (launch && end && end < launch) {
+            focusInvalid(campaign.querySelector(".end-date"), `"${campaignName}" 캠페인의 종료일은 시작일 이후여야 합니다.`);
+            return false;
+          }
+          for (const adgroup of adgroupItems(campaign)) {
+            const adgroupNameInput = adgroup.querySelector(".adgroup-name");
+            const adgroupName = adgroupNameInput.value.trim();
+            if (!isSafeWorkbookName(adgroupName)) {
+              focusInvalid(adgroupNameInput, "광고그룹명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+              return false;
+            }
+            if (adgroupNames.has(adgroupName)) {
+              focusInvalid(adgroupNameInput, `광고그룹명 "${adgroupName}"이 중복되었습니다.`);
+              return false;
+            }
+            const maxBidInput = adgroup.querySelector(".max-bid");
+            if (objective === "clicks" && !maxBidInput.value.trim()) {
+              focusInvalid(maxBidInput, "Clicks(CPC) 캠페인은 광고그룹별 max_bid를 KRW 기준으로 입력해야 합니다.");
+              return false;
+            }
+            if (objective === "views" && maxBidInput.value.trim()) {
+              focusInvalid(maxBidInput, "Views(CPM) 캠페인은 max_bid를 비워야 합니다.");
+              return false;
+            }
+            for (const ad of adItems(adgroup)) {
+              const adNameInput = ad.querySelector(".ad-name");
+              const adName = adNameInput.value.trim();
+              if (!isSafeWorkbookName(adName)) {
+                focusInvalid(adNameInput, "소재명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+                return false;
+              }
+              if (adNames.has(adName)) {
+                focusInvalid(adNameInput, `소재명 "${adName}"이 중복되었습니다.`);
+                return false;
+              }
+              adNames.add(adName);
+              const linkInput = ad.querySelector(".ad-link");
+              if (!isHttpUrl(linkInput.value)) {
+                focusInvalid(linkInput, "랜딩 URL은 http:// 또는 https://로 시작하는 정상 URL 형식이어야 합니다.");
+                return false;
+              }
+              const imageInput = ad.querySelector(".ad-image-link");
+              if (!isHttpUrl(imageInput.value)) {
+                focusInvalid(imageInput, "이미지 URL은 http:// 또는 https://로 시작하는 정상 URL 형식이어야 합니다.");
+                return false;
+              }
+            }
+            adgroupNames.add(adgroupName);
+          }
+        }
+        return true;
+      }
+
+      function campaignPayload(campaign) {
+        return {
+          campaign_name: campaign.querySelector(".campaign-name").value.trim(),
+          budget_max: Number(campaign.querySelector(".budget-max").value),
+          budget_type: checkedValue(campaign, ".budget-type") || "lifetime",
+          launch_date: campaign.querySelector(".launch-date").value || null,
+          end_date: campaign.querySelector(".end-date").value || null,
+          objective: checkedValue(campaign, ".campaign-objective"),
+          target_countries: selectedTargetCountries(campaign),
+        };
+      }
+
+      function adgroupPayload(adgroup) {
+        return {
+          campaign_name: adgroup.querySelector(".campaign-name-mirror").value.trim(),
+          adgroup_name: adgroup.querySelector(".adgroup-name").value.trim(),
+          max_bid: optionalNumber(adgroup.querySelector(".max-bid").value),
+          keywords: splitKeywords(adgroup.querySelector(".keywords").value),
+        };
+      }
+
+      function adPayloads(adgroup) {
+        const adgroupName = adgroup.querySelector(".adgroup-name").value.trim();
+        return adItems(adgroup).map((ad) => ({
+          adgroup_name: adgroupName,
+          ad_name: ad.querySelector(".ad-name").value.trim(),
+          title: ad.querySelector(".ad-title").value.trim(),
+          copy: ad.querySelector(".ad-copy").value.trim(),
+          link: ad.querySelector(".ad-link").value.trim(),
+          image_link: ad.querySelector(".ad-image-link").value.trim(),
+        }));
+      }
+
+      function payload() {
+        const data = new FormData(form);
+        return {
+          opsMeta: {
+            advertiserName: data.get("advertiserName")?.trim(),
+            adsManagerAccount: data.get("adsManagerAccount")?.trim(),
+            salesOwner: data.get("salesOwner")?.trim(),
+            salesOwnerEmail: data.get("salesOwnerEmail")?.trim(),
+            ownerHeadquarters: data.get("ownerHeadquarters")?.trim(),
+            ownerOffice: data.get("ownerOffice")?.trim(),
+            ownerTeam: data.get("ownerTeam")?.trim(),
+            notes: data.get("notes")?.trim(),
+            honeypot: data.get("honeypot") || "",
+            formStartedAt: Number(data.get("formStartedAt")),
+          },
+          campaigns: campaignItems().map((campaign) => ({
+            campaign: campaignPayload(campaign),
+            adgroups: adgroupItems(campaign).map((adgroup) => ({
+              adgroup: adgroupPayload(adgroup),
+              ads: adPayloads(adgroup),
+            })),
+          })),
+        };
+      }
+
+      function serverErrorMessage(detail) {
+        if (Array.isArray(detail)) return detail.map((item) => item.msg || String(item)).join(" / ");
+        return detail || "요청을 처리하지 못했습니다.";
+      }
+
+      function payloadCounts(currentPayload) {
+        const campaigns = currentPayload.campaigns || [];
+        const adgroups = campaigns.reduce((sum, campaign) => sum + campaign.adgroups.length, 0);
+        const ads = campaigns.reduce((sum, campaign) => (
+          sum + campaign.adgroups.reduce((inner, adgroup) => inner + adgroup.ads.length, 0)
+        ), 0);
+        return { campaigns: campaigns.length, adgroups, ads };
+      }
+
+      function renderReview(currentPayload) {
+        const counts = payloadCounts(currentPayload);
+        const campaignRows = currentPayload.campaigns.map((item, index) => {
+          const adCount = item.adgroups.reduce((sum, adgroup) => sum + adgroup.ads.length, 0);
+          const campaign = item.campaign;
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(campaign.campaign_name)}</td>
+              <td>${objectiveLabel(campaign.objective)}</td>
+              <td>${budgetTypeLabel(campaign.budget_type)} · ${Number(campaign.budget_max).toLocaleString("ko-KR")}</td>
+              <td>${escapeHtml(countryLabel(campaign.target_countries))}</td>
+              <td>광고그룹 ${item.adgroups.length}개 · 소재 ${adCount}개</td>
+            </tr>
+          `;
+        }).join("");
+        const adgroupRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.map((group) => `
+            <tr>
+              <td>${escapeHtml(group.adgroup.campaign_name)}</td>
+              <td>${escapeHtml(group.adgroup.adgroup_name)}</td>
+              <td>${group.adgroup.max_bid ? Number(group.adgroup.max_bid).toLocaleString("ko-KR") : "빈칸"}</td>
+              <td>${group.ads.length}개</td>
+            </tr>
+          `)
+        )).join("");
+        const adRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.flatMap((group) => group.ads.map((ad) => `
+            <tr>
+              <td>${escapeHtml(ad.adgroup_name)}</td>
+              <td>${escapeHtml(ad.ad_name)}</td>
+              <td>${escapeHtml(ad.title)}</td>
+              <td>${escapeHtml(ad.copy)}</td>
+              <td>${escapeHtml(ad.link)}</td>
+              <td>${escapeHtml(ad.image_link)}</td>
+            </tr>
+          `))
+        )).join("");
+        reviewBody.innerHTML = `
+          <div class="review-grid">
+            <div class="review-stat"><b>${counts.campaigns}</b><span>캠페인</span></div>
+            <div class="review-stat"><b>${counts.adgroups}</b><span>광고그룹</span></div>
+            <div class="review-stat"><b>${counts.ads}</b><span>소재</span></div>
+            <div class="review-stat"><b>${escapeHtml(currentPayload.opsMeta.salesOwner)}</b><span>담당자</span></div>
+          </div>
+          <section class="review-section">
+            <h3>기본 정보</h3>
+            <p>
+              광고주 ${escapeHtml(currentPayload.opsMeta.advertiserName)}
+              ${currentPayload.opsMeta.adsManagerAccount ? ` · 브랜드 ${escapeHtml(currentPayload.opsMeta.adsManagerAccount)}` : ""}
+              · 담당자 ${escapeHtml(currentPayload.opsMeta.salesOwner)} / ${escapeHtml(currentPayload.opsMeta.salesOwnerEmail)}
+              · 소속 ${escapeHtml(currentPayload.opsMeta.ownerHeadquarters)} / ${escapeHtml(currentPayload.opsMeta.ownerOffice)} / ${escapeHtml(currentPayload.opsMeta.ownerTeam)}
+            </p>
+          </section>
+          <section class="review-section">
+            <h3>캠페인 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>#</th><th>캠페인명</th><th>목표</th><th>예산</th><th>국가</th><th>구조</th></tr></thead>
+              <tbody>${campaignRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>광고그룹 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>campaign_name</th><th>adgroup_name</th><th>max_bid</th><th>소재 수</th></tr></thead>
+              <tbody>${adgroupRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>소재 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>adgroup_name</th><th>ad_name</th><th>title</th><th>copy</th><th>link</th><th>image_link</th></tr></thead>
+              <tbody>${adRows}</tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      function openReviewModal(currentPayload) {
+        pendingSubmissionPayload = currentPayload;
+        renderReview(currentPayload);
+        reviewConfirm.disabled = false;
+        reviewOverlay.hidden = false;
+        reviewModal.focus();
+      }
+
+      function closeReviewModal() {
+        reviewOverlay.hidden = true;
+      }
+
+      async function submitReviewedPayload() {
+        if (!pendingSubmissionPayload) return;
+        reviewConfirm.disabled = true;
+        closeReviewModal();
+        setStatus("구글 시트에 저장하고 담당자 알림 메일을 발송하고 있습니다.");
+        const response = await fetch("/intake", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pendingSubmissionPayload),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setStatus(`기록 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
+          return;
+        }
+        const mailTargets = [
+          body.mail_sender ? `From ${body.mail_sender}` : "",
+          body.mail_recipient ? `To ${body.mail_recipient}` : "",
+          body.mail_cc ? `CC ${body.mail_cc}` : "",
+        ].filter(Boolean).join(" / ");
+        const quotaNote = Number.isInteger(body.mail_quota_remaining)
+          ? ` · 남은 메일 쿼터 ${body.mail_quota_remaining}`
+          : "";
+        let mailNotice = "";
+        let statusType = "success";
+        if (body.mail_sent === true) {
+          mailNotice = ` · 메일 발송 요청 완료${mailTargets ? `(${mailTargets})` : ""}${quotaNote}`;
+        } else if (body.mail_sent === false) {
+          statusType = "warning";
+          mailNotice = ` · 메일 발송 실패${body.mail_error ? `: ${body.mail_error}` : ""}`;
+        }
+        setStatus(
+          `기록 완료: ${body.receipt_number} · ${body.submitted_at_kst} KST${mailNotice}`,
+          statusType,
+        );
+        pendingSubmissionPayload = null;
+        startedAt.value = String(Date.now());
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function downloadWorkbook() {
+        setStatus("");
+        if (!validateForm()) return;
+        setStatus("Ads Manager용 .xlsx를 생성하고 있습니다.");
+        const response = await fetch("/intake/workbook", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload()),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          setStatus(`xlsx 생성 실패 — ${serverErrorMessage(body.detail || response.statusText)}`, "error");
+          return;
+        }
+        const blob = await response.blob();
+        downloadBlob(blob, `openai_ads_bulk_upload_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        setStatus(workbookDownloadNotice, "success");
+      }
+
+      async function submitSheet(event) {
+        event.preventDefault();
+        setStatus("");
+        if (!validateForm()) return;
+        openReviewModal(payload());
+      }
+
+      function populateFromWorkbook(workbookData) {
+        const campaigns = workbookData?.campaigns || [];
+        const adgroups = workbookData?.adgroups || [];
+        const ads = workbookData?.ads || [];
+        if (!campaigns.length) return;
+
+        campaignList.innerHTML = "";
+        campaigns.forEach((campaignData) => {
+          const campaign = cleanCampaignTemplate();
+          campaign.querySelector(".campaign-name").value = campaignData.campaign_name || "";
+          campaign.querySelector(".budget-max").value = campaignData.budget_max || "";
+          setRadioValue(campaign, ".budget-type", campaignData.budget_type || "lifetime");
+          setRadioValue(campaign, ".campaign-objective", campaignData.objective || "views");
+          campaign.querySelector(".launch-date").value = campaignData.launch_date || "";
+          campaign.querySelector(".end-date").value = campaignData.end_date || "";
+          const countries = Array.isArray(campaignData.target_countries) ? campaignData.target_countries : [];
+          campaign.querySelector(".target-countries").value = countries[0] || "";
+
+          const groupList = campaign.querySelector(".adgroup-list");
+          groupList.innerHTML = "";
+          const relatedGroups = adgroups.filter((group) => group.campaign_name === campaignData.campaign_name);
+          (relatedGroups.length ? relatedGroups : [{}]).forEach((groupData) => {
+            const adgroup = cleanAdgroupTemplate();
+            adgroup.querySelector(".adgroup-name").value = groupData.adgroup_name || "";
+            adgroup.querySelector(".max-bid").value = groupData.max_bid || "";
+            adgroup.querySelector(".keywords").value = Array.isArray(groupData.keywords) ? groupData.keywords.join(", ") : "";
+
+            const adList = adgroup.querySelector(".ad-list");
+            adList.innerHTML = "";
+            const relatedAds = ads.filter((ad) => ad.adgroup_name === groupData.adgroup_name);
+            (relatedAds.length ? relatedAds : [{}]).forEach((adData) => {
+              const ad = cleanAdTemplate();
+              ad.querySelector(".ad-name").value = adData.ad_name || "";
+              ad.querySelector(".ad-title").value = adData.title || "";
+              ad.querySelector(".ad-copy").value = adData.copy || "";
+              ad.querySelector(".ad-link").value = adData.link || "";
+              ad.querySelector(".ad-image-link").value = adData.image_link || "";
+              adList.append(ad);
+            });
+            groupList.append(adgroup);
+          });
+          campaignList.append(campaign);
+        });
+        syncState();
+        campaignList.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+
+      function renderWorkbookInspectResult(body, imported) {
+        const lines = Object.entries(body.sheets || {}).map(([name, item]) => {
+          const missing = item.missing_columns?.length ? ` / 누락: ${item.missing_columns.join(", ")}` : "";
+          const skipped = [];
+          if (item.sample_rows) skipped.push(`샘플 제외 ${item.sample_rows}개`);
+          if (item.guide_rows) skipped.push(`가이드 제외 ${item.guide_rows}개`);
+          const skippedText = skipped.length ? ` (${skipped.join(", ")})` : "";
+          return `${name}: 실제 데이터 행 ${item.rows}개${skippedText}${missing}`;
+        });
+        const errors = (body.errors || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const warnings = (body.warnings || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const summary = imported
+          ? "불러오기 완료 — 아래 입력값을 확인한 뒤 XLSX 다운로드 또는 구글 시트 저장을 진행하세요."
+          : body.ok
+            ? "검수 통과 — 워크북 값을 아래 입력폼으로 불러올 수 있습니다."
+            : "확인 필요 — 아래 오류를 먼저 수정해 주세요.";
+        bulkResult.className = `bulk-result ${body.ok ? "success" : "error"}`;
+        bulkResult.innerHTML = `
+          <strong>${summary}</strong>
+          <ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+          ${errors ? `<p class="help"><strong>오류</strong></p><ul>${errors}</ul>` : ""}
+          ${warnings ? `<p class="help"><strong>참고</strong></p><ul>${warnings}</ul>` : ""}
+        `;
+      }
+
+      async function inspectWorkbook(file) {
+        if (!file) return;
+        bulkResult.className = "bulk-result";
+        bulkResult.textContent = "워크북을 검사하고 있습니다.";
+        const data = new FormData();
+        data.append("file", file);
+        const response = await fetch("/intake/inspect-workbook", { method: "POST", body: data });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          bulkResult.className = "bulk-result error";
+          bulkResult.textContent = `검수 실패 — ${serverErrorMessage(body.detail || response.statusText)}`;
+          return;
+        }
+        const imported = Boolean(body.ok && body.data);
+        if (imported) populateFromWorkbook(body.data);
+        renderWorkbookInspectResult(body, imported);
+      }
+
+      document.querySelector("#add-campaign").addEventListener("click", addCampaign);
+      document.querySelector("#download-workbook").addEventListener("click", downloadWorkbook);
+      form.addEventListener("submit", submitSheet);
+      form.addEventListener("input", syncState);
+      form.addEventListener("change", (event) => {
+        if (event.target.matches(".campaign-objective")) syncState();
+      });
+      campaignList.addEventListener("click", (event) => {
+        const collapseToggle = event.target.closest(".collapse-toggle");
+        if (collapseToggle) {
+          const item = collapseToggle.closest("[data-ad], [data-adgroup], [data-campaign]");
+          if (item) {
+            item.classList.toggle("is-collapsed");
+            setCollapseButtonState(item);
+          }
+          return;
+        }
+        const addGroup = event.target.closest(".add-adgroup");
+        if (addGroup) return addAdgroup(addGroup.closest("[data-campaign]"));
+        const addAdButton = event.target.closest(".add-ad");
+        if (addAdButton) return addAd(addAdButton.closest("[data-adgroup]"));
+        const removeCampaign = event.target.closest(".remove-campaign");
+        if (removeCampaign) {
+          removeCampaign.closest("[data-campaign]").remove();
+          return syncState();
+        }
+        const removeAdgroup = event.target.closest(".remove-adgroup");
+        if (removeAdgroup) {
+          removeAdgroup.closest("[data-adgroup]").remove();
+          return syncState();
+        }
+        const removeAd = event.target.closest(".remove-ad");
+        if (removeAd) {
+          removeAd.closest("[data-ad]").remove();
+          return syncState();
+        }
+      });
+      structureOverview.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-jump-campaign]");
+        if (!chip) return;
+        const index = Number(chip.dataset.jumpCampaign);
+        const target = campaignItems()[index];
+        if (target) {
+          target.classList.remove("is-collapsed");
+          setCollapseButtonState(target);
+        }
+        target?.scrollIntoView({ block: "start", behavior: "smooth" });
+      });
+      reviewCancel.addEventListener("click", closeReviewModal);
+      reviewConfirm.addEventListener("click", submitReviewedPayload);
+      function updateWorkbookFileDisplay(input, target, fallbackText) {
+        if (!input || !target) return;
+        const file = input.files?.[0];
+        target.textContent = file?.name || fallbackText;
+        target.closest(".workbook-file-picker")?.classList.toggle("has-file", Boolean(file));
+      }
+      bulkInput.addEventListener("change", () => {
+        updateWorkbookFileDisplay(bulkInput, bulkFileName, "워크북 파일을 선택하세요");
+        inspectWorkbook(bulkInput.files?.[0]);
+      });
+      syncState();
+    </script>
+  </body>
+</html>

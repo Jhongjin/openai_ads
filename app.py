@@ -115,6 +115,18 @@ class NoticeConfigRequest(BaseModel):
     enabled: bool = True
 
 
+class SlideContentItemRequest(BaseModel):
+    key: str = Field(..., min_length=1, max_length=120)
+    value: str = Field(default="", max_length=1200)
+    alt: str | None = Field(default="", max_length=300)
+    caption: str | None = Field(default="", max_length=300)
+
+
+class SlideContentRequest(BaseModel):
+    items: list[SlideContentItemRequest] = Field(default_factory=list, max_length=80)
+    images: list[SlideContentItemRequest] = Field(default_factory=list, max_length=40)
+
+
 class MailReviewUpdateRequest(BaseModel):
     duplicate_hash: str = Field(..., min_length=8, max_length=128)
     review_status: str = Field(..., min_length=1, max_length=40)
@@ -208,6 +220,21 @@ def admin_page() -> FileResponse:
     return FileResponse(project_root() / "templates" / "admin.html")
 
 
+@app.get("/dev", include_in_schema=False)
+def dev_index_page() -> FileResponse:
+    return FileResponse(project_root() / "dev" / "index.html")
+
+
+@app.get("/dev/admin", include_in_schema=False)
+def dev_admin_page() -> FileResponse:
+    return FileResponse(project_root() / "dev" / "admin.html")
+
+
+@app.get("/dev/creative-upload-draft", include_in_schema=False)
+def dev_creative_upload_draft_page() -> FileResponse:
+    return FileResponse(project_root() / "dev" / "creative_upload_draft.html")
+
+
 @app.get("/api/notice", include_in_schema=False)
 def public_notice() -> dict[str, Any]:
     from admin_store import get_notice_config
@@ -239,6 +266,29 @@ def update_admin_notice(request: Request, notice: NoticeConfigRequest) -> dict[s
 
     _require_admin(request)
     return save_notice_config(notice.model_dump())
+
+
+@app.get("/api/guide-slides", include_in_schema=False)
+def public_guide_slides() -> dict[str, Any]:
+    from admin_store import get_slide_content
+
+    return get_slide_content()
+
+
+@app.get("/api/admin/guide-slides", include_in_schema=False)
+def admin_guide_slides(request: Request) -> dict[str, Any]:
+    from admin_store import get_slide_content
+
+    _require_admin(request)
+    return get_slide_content()
+
+
+@app.post("/api/admin/guide-slides", include_in_schema=False)
+def update_admin_guide_slides(request: Request, slides: SlideContentRequest) -> dict[str, Any]:
+    from admin_store import save_slide_content
+
+    _require_admin(request)
+    return save_slide_content(slides.model_dump())
 
 
 @app.get("/api/admin/analytics", include_in_schema=False)

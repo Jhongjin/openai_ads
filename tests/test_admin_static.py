@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class AdminStaticTests(unittest.TestCase):
     def test_notice_editor_and_visit_chart_present(self) -> None:
         html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        app_py = (ROOT / "app.py").read_text(encoding="utf-8")
+        admin_store = (ROOT / "admin_store.py").read_text(encoding="utf-8")
 
         required = [
             'id="notice-editor"',
@@ -23,9 +25,21 @@ class AdminStaticTests(unittest.TestCase):
             'id="notice-preview"',
             'id="notice-preview-body"',
             "renderNoticePreview",
+            "안내자료 슬라이드 관리",
+            'data-admin-page="slides"',
+            'id="slide-text-editor"',
+            'id="slide-image-editor"',
+            "loadSlideContent",
+            "saveSlideContent",
+            "/api/admin/guide-slides",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
+
+        self.assertIn('"/api/guide-slides"', app_py)
+        self.assertIn('"/api/admin/guide-slides"', app_py)
+        self.assertIn("DEFAULT_SLIDE_CONTENT", admin_store)
+        self.assertIn("admin_slide_content", admin_store)
 
         self.assertNotIn('id="notice-bullets"', html)
         self.assertNotIn('id="storage-badge"', html)
