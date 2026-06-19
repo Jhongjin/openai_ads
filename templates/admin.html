@@ -114,6 +114,8 @@
       }
 
       .card {
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--panel);
@@ -127,6 +129,7 @@
       }
 
       .section {
+        min-width: 0;
         padding: 24px;
       }
 
@@ -199,10 +202,13 @@
 
       .admin-pages {
         min-width: 0;
+        max-width: 100%;
       }
 
       .admin-page {
         display: none;
+        min-width: 0;
+        max-width: 100%;
       }
 
       .admin-page:not(.active) {
@@ -212,6 +218,11 @@
       .admin-page.active {
         display: grid;
         gap: 18px;
+      }
+
+      .admin-page.active > * {
+        min-width: 0;
+        max-width: 100%;
       }
 
       h2 {
@@ -1012,14 +1023,44 @@
 
       .mail-review-grid {
         display: grid;
-        grid-template-columns: minmax(660px, 1.35fr) minmax(430px, 0.65fr);
-        gap: 18px;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+        gap: 14px;
         align-items: start;
+        min-width: 0;
+        max-width: 100%;
       }
 
       .mail-table-wrap {
+        min-width: 0;
+        max-width: 100%;
         overflow-x: auto;
         border-radius: 10px;
+      }
+
+      .mail-table {
+        table-layout: fixed;
+        min-width: 0;
+      }
+
+      .mail-table th,
+      .mail-table td {
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .mail-table th:nth-child(1),
+      .mail-table td:nth-child(1) {
+        width: 92px;
+      }
+
+      .mail-table th:nth-child(2),
+      .mail-table td:nth-child(2) {
+        width: 38%;
+      }
+
+      .mail-table th:nth-child(4),
+      .mail-table td:nth-child(4) {
+        width: 74px;
       }
 
       .mail-table button {
@@ -1121,27 +1162,41 @@
         display: block;
         margin-bottom: 4px;
         font-weight: 900;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
       }
 
       .mail-meta {
         color: var(--muted);
         font-size: 12px;
         line-height: 1.45;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .mail-link {
+        overflow-wrap: anywhere;
+        word-break: break-all;
       }
 
       .mail-detail {
         position: sticky;
         top: 16px;
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid #dbe3ef;
         border-radius: 10px;
         background: #fbfcff;
         padding: 16px;
+        overflow: hidden;
       }
 
       .mail-detail h3 {
         margin: 0 0 8px;
         font-size: 18px;
         line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
       }
 
       .mail-detail-empty {
@@ -1156,6 +1211,7 @@
       }
 
       .mail-body-preview {
+        max-width: 100%;
         max-height: 220px;
         overflow: auto;
         border: 1px solid #e2e8f0;
@@ -1163,6 +1219,8 @@
         background: #fff;
         padding: 12px;
         white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
         color: #344054;
         font-size: 13px;
         line-height: 1.55;
@@ -1183,6 +1241,8 @@
       }
 
       .mail-review-note {
+        width: 100%;
+        max-width: 100%;
         border-left: 4px solid #155eef;
         background: #eff6ff;
         padding: 12px 14px;
@@ -1190,6 +1250,7 @@
         font-size: 13px;
         font-weight: 800;
         line-height: 1.5;
+        overflow-wrap: anywhere;
       }
 
       .sync-schedule {
@@ -1206,6 +1267,7 @@
         color: #054f31;
         font-size: 13px;
         line-height: 1.45;
+        max-width: 100%;
       }
 
       .sync-schedule strong {
@@ -1229,10 +1291,11 @@
 
       .sync-schedule em {
         flex: 1 1 260px;
-        min-width: 240px;
+        min-width: 0;
         color: #067647;
         font-style: normal;
         font-weight: 750;
+        overflow-wrap: anywhere;
       }
 
       .filter-strip {
@@ -1298,6 +1361,12 @@
         display: block;
         margin-bottom: 5px;
         font-size: 13px;
+      }
+
+      .summary-card p {
+        margin: 0;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
       }
 
       .chart-shell {
@@ -1450,6 +1519,16 @@
 
       .hidden {
         display: none !important;
+      }
+
+      @media (max-width: 1180px) {
+        .mail-review-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .mail-detail {
+          position: static;
+        }
       }
 
       @media (max-width: 900px) {
