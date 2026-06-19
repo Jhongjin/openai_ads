@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenAI Ads 관리자</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
     <style>
+      @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
       :root {
         --kt-red: #ed1c24;
         --ink: #111827;
@@ -548,6 +551,29 @@
         padding: 16px;
       }
 
+      details.ads-key-manager {
+        display: block;
+      }
+
+      details.ads-key-manager:not([open]) {
+        padding-bottom: 16px;
+      }
+
+      details.ads-key-manager summary {
+        cursor: pointer;
+        list-style: none;
+      }
+
+      details.ads-key-manager summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .ads-key-manager-body {
+        display: grid;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
       .ads-key-manager-head {
         display: flex;
         align-items: start;
@@ -945,6 +971,48 @@
         line-height: 1.5;
       }
 
+      .filter-strip {
+        display: grid;
+        grid-template-columns: minmax(150px, 180px) minmax(120px, 150px) 1fr auto auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+      }
+
+      .filter-strip label {
+        margin: 0;
+      }
+
+      .filter-strip .help {
+        margin: 0;
+        align-self: center;
+      }
+
+      .pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .summary-card {
+        margin-top: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 12px;
+      }
+
+      .summary-card strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+      }
+
       .chart-shell {
         margin: 14px 0 16px;
         border: 1px solid #e2e8f0;
@@ -982,8 +1050,50 @@
       .visit-chart {
         display: block;
         width: 100%;
-        height: 190px;
+        height: 280px;
+        min-height: 280px;
         overflow: visible;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .ql-toolbar.ql-snow {
+        border: 0;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 10px 10px 0 0;
+        background: #fbfcff;
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+      }
+
+      .ql-container.ql-snow {
+        min-height: 240px;
+        border: 0;
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+        font-size: 15px;
+      }
+
+      .ql-editor {
+        min-height: 220px;
+        line-height: 1.65;
+      }
+
+      .ql-editor ul,
+      .ql-editor ol {
+        padding-left: 1.4em;
       }
 
       .metric {
@@ -1255,7 +1365,7 @@
               <strong>전체 방문 추이</strong>
               <span id="chart-caption">최근 방문 데이터를 불러오는 중</span>
             </div>
-            <svg class="visit-chart" id="visit-chart" viewBox="0 0 640 190" role="img" aria-label="전체 방문 추이"></svg>
+            <div class="visit-chart" id="visit-chart" role="img" aria-label="전체 방문 추이"></div>
           </div>
           <div style="margin-top: 14px; overflow-x: auto;">
             <table>
@@ -1331,8 +1441,8 @@
             <button class="secondary" id="refresh-ads-dashboard" type="button">성과 새로고침</button>
             <span class="status" id="ads-dashboard-status"></span>
           </div>
-          <div class="ads-key-manager">
-            <div class="ads-key-manager-head">
+          <details class="ads-key-manager">
+            <summary class="ads-key-manager-head">
               <div>
                 <h3>광고주별 API 키 관리</h3>
                 <p class="help">
@@ -1340,45 +1450,47 @@
                 </p>
               </div>
               <span class="status" id="ads-api-key-status"></span>
+            </summary>
+            <div class="ads-key-manager-body">
+              <div class="ads-key-form">
+                <label>
+                  광고주명
+                  <input id="ads-key-advertiser" type="text" placeholder="예: Puradakchicken(푸라닭)" />
+                </label>
+                <label>
+                  Ads API key
+                  <input id="ads-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+                </label>
+                <label>
+                  Conversion API key
+                  <input id="ads-conversion-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+                </label>
+                <label class="check-label">
+                  <input id="ads-key-enabled" type="checkbox" checked />
+                  사용
+                </label>
+                <button class="secondary" id="save-ads-api-key" type="button">키 저장</button>
+              </div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>광고주</th>
+                      <th>Ads API key</th>
+                      <th>Conversion API key</th>
+                      <th>상태</th>
+                      <th>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-api-key-body">
+                    <tr>
+                      <td colspan="5">등록된 광고주별 키를 불러오는 중입니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="ads-key-form">
-              <label>
-                광고주명
-                <input id="ads-key-advertiser" type="text" placeholder="예: Puradakchicken(푸라닭)" />
-              </label>
-              <label>
-                Ads API key
-                <input id="ads-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
-              </label>
-              <label>
-                Conversion API key
-                <input id="ads-conversion-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
-              </label>
-              <label class="check-label">
-                <input id="ads-key-enabled" type="checkbox" checked />
-                사용
-              </label>
-              <button class="secondary" id="save-ads-api-key" type="button">키 저장</button>
-            </div>
-            <div class="mail-table-wrap">
-              <table class="ads-table">
-                <thead>
-                  <tr>
-                    <th>광고주</th>
-                    <th>Ads API key</th>
-                    <th>Conversion API key</th>
-                    <th>상태</th>
-                    <th>관리</th>
-                  </tr>
-                </thead>
-                <tbody id="ads-api-key-body">
-                  <tr>
-                    <td colspan="5">등록된 광고주별 키를 불러오는 중입니다.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          </details>
           <div class="ads-kpi-grid">
             <div class="ads-kpi">
               <span>노출</span>
@@ -1491,8 +1603,25 @@
             운영 원칙: OpenAI Help Center/Developers 문서는 하루 2회 확인하고, 동일 문서는 건너뜁니다.
             아래 목록은 변경이 감지된 문서의 감사 로그이며 메일 검토함과 달리 별도 승인 없이 RAG에 반영됩니다.
           </div>
-          <div class="review-toolbar" style="margin-top: 16px;">
-            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 표시됩니다.</div>
+          <div class="filter-strip" style="margin-top: 16px;">
+            <label>
+              감지일
+              <input id="official-date-filter" type="date" />
+            </label>
+            <label>
+              언어
+              <select id="official-lang-filter">
+                <option value="all">전체</option>
+                <option value="ko">KO</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 10개씩 표시됩니다.</div>
+            <div class="pager">
+              <button class="secondary" id="official-prev" type="button">이전</button>
+              <span id="official-page-info">1 / 1</span>
+              <button class="secondary" id="official-next" type="button">다음</button>
+            </div>
             <div class="actions" style="margin: 0;">
               <button class="secondary" id="refresh-official-changes" type="button">변경 로그 새로고침</button>
               <span class="status" id="official-change-status"></span>
@@ -1523,11 +1652,11 @@
           <h2>OpenAI 담당자 메일 검토함</h2>
           <p class="help">
             Daum IMAP에서 수집된 관련 메일을 검토합니다. 원문은 시트에 영구 보존하고,
-            관리자가 승인 요약을 작성한 행만 다음 자동 동기화 때 RAG에 반영됩니다.
+            관리자가 RAG 반영 문장을 확정한 행만 다음 자동 동기화 때 RAG에 반영됩니다.
           </p>
           <div class="mail-review-note">
             운영 원칙: 모든 수집 메일을 곧바로 RAG에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
-            승인 요약으로 확정 문장만 남겨야 하며, 이전 내용이 바뀐 경우 대체 해시나 검토 메모를 남겨 주세요.
+            AI 주요 요약을 먼저 검토한 뒤, 확정해도 되는 문장만 RAG 반영 문장으로 남겨 주세요.
           </div>
           <div class="summary-grid" style="margin-top: 16px;">
             <div class="metric">
@@ -1587,6 +1716,8 @@
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
     <script>
       const loginCard = document.querySelector("#login-card");
       const adminPanel = document.querySelector("#admin-panel");
@@ -1606,6 +1737,10 @@
       let selectedMailHash = "";
       let adsDashboardData = null;
       let adsApiKeys = [];
+      let noticeQuill = null;
+      let visitChart = null;
+      let officialPage = 1;
+      const officialPageSize = 10;
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -1627,8 +1762,13 @@
           button.classList.toggle("active", button.dataset.adminPage === target);
         });
         adminPages.forEach((panel) => {
-          panel.classList.toggle("active", panel.dataset.adminPagePanel === target);
+          const isActive = panel.dataset.adminPagePanel === target;
+          panel.classList.toggle("active", isActive);
+          panel.hidden = !isActive;
         });
+        if (target === "analytics" && visitChart) {
+          window.setTimeout(() => visitChart.resize(), 60);
+        }
         window.localStorage.setItem("openaiAdsAdminPage", target);
       }
 
@@ -1667,17 +1807,82 @@
       }
 
       function editorTextLines() {
-        return fields.editor.innerText
+        return getNoticeText()
           .split(/\r?\n/)
           .map((line) => line.trim())
           .filter(Boolean)
           .slice(0, 20);
       }
 
+      function initNoticeEditor() {
+        if (!fields.editor || noticeQuill || !window.Quill) return;
+        noticeQuill = new Quill("#notice-editor", {
+          theme: "snow",
+          placeholder: "공지 내용을 입력해 주세요.",
+          modules: {
+            toolbar: false,
+          },
+        });
+        noticeQuill.on("text-change", renderNoticePreview);
+      }
+
+      function getNoticeHtml() {
+        return noticeQuill ? noticeQuill.root.innerHTML : fields.editor.innerHTML;
+      }
+
+      function getNoticeText() {
+        return noticeQuill ? noticeQuill.getText() : fields.editor.innerText;
+      }
+
+      function setNoticeHtml(html) {
+        if (noticeQuill) {
+          noticeQuill.root.innerHTML = html || "";
+        } else {
+          fields.editor.innerHTML = html || "";
+        }
+      }
+
+      function insertNoticeEmoji(emoji) {
+        if (noticeQuill) {
+          const range = noticeQuill.getSelection(true) || { index: noticeQuill.getLength(), length: 0 };
+          noticeQuill.insertText(range.index, emoji);
+          noticeQuill.setSelection(range.index + emoji.length, 0);
+        } else {
+          fields.editor.focus();
+          document.execCommand("insertText", false, emoji);
+        }
+        renderNoticePreview();
+      }
+
+      function runNoticeCommand(command) {
+        if (noticeQuill) {
+          const range = noticeQuill.getSelection(true) || { index: 0, length: 0 };
+          const format = noticeQuill.getFormat(range);
+          if (command === "bold" || command === "italic" || command === "underline") {
+            noticeQuill.format(command, !format[command]);
+          } else if (command === "insertUnorderedList") {
+            noticeQuill.format("list", format.list === "bullet" ? false : "bullet");
+          } else if (command === "insertOrderedList") {
+            noticeQuill.format("list", format.list === "ordered" ? false : "ordered");
+          } else if (command === "createLink") {
+            const url = window.prompt("링크 URL을 입력해 주세요.");
+            if (url) noticeQuill.format("link", url);
+          } else if (command === "removeFormat") {
+            noticeQuill.removeFormat(0, noticeQuill.getLength());
+          }
+        } else if (command === "createLink") {
+          const url = window.prompt("링크 URL을 입력해 주세요.");
+          if (url) document.execCommand(command, false, url);
+        } else {
+          document.execCommand(command, false, null);
+        }
+        renderNoticePreview();
+      }
+
       function fillNoticeForm(notice) {
         fields.title.value = notice.title || "";
         fields.updatedAt.textContent = notice.updated_at || "저장 시 자동 반영";
-        fields.editor.innerHTML = notice.body_html || bulletsToHtml(notice.bullets || []);
+        setNoticeHtml(notice.body_html || bulletsToHtml(notice.bullets || []));
         fields.sourceLabel.value = notice.source_label || "";
         fields.sourceUrl.value = notice.source_url || "";
         fields.enabled.checked = notice.enabled !== false;
@@ -1689,7 +1894,7 @@
         const updatedText = fields.updatedAt.textContent.trim();
         previewFields.updated.textContent =
           updatedText && updatedText !== "저장 시 자동 반영" ? `최종 업데이트: ${updatedText}` : "저장 전 미리보기";
-        previewFields.body.innerHTML = fields.editor.innerHTML.trim() || "<p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>";
+        previewFields.body.innerHTML = getNoticeHtml().trim() || "<p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>";
         const label = fields.sourceLabel.value.trim();
         const url = fields.sourceUrl.value.trim();
         if (url) {
@@ -1706,7 +1911,7 @@
       function readNoticeForm() {
         return {
           title: fields.title.value.trim(),
-          body_html: fields.editor.innerHTML.trim(),
+          body_html: getNoticeHtml().trim(),
           bullets: editorTextLines(),
           source_label: fields.sourceLabel.value.trim(),
           source_url: fields.sourceUrl.value.trim(),
@@ -1774,7 +1979,7 @@
       function normalizeVisitSeries(series, days = 30) {
         const values = new Map(
           (series || []).map((item) => [
-            String(item.visit_date || item.day || "").slice(0, 10),
+            String(item.visit_date || item.date || item.day || "").slice(0, 10),
             Number(item.total_count || item.count || 0),
           ]),
         );
@@ -1790,101 +1995,58 @@
       }
 
       function renderVisitChart(series) {
-        const svg = document.querySelector("#visit-chart");
+        const element = document.querySelector("#visit-chart");
         const caption = document.querySelector("#chart-caption");
-        svg.innerHTML = "";
         const points = normalizeVisitSeries(series, 30);
         if (!points.some((item) => item.count > 0)) {
           caption.textContent = "표시할 방문 데이터가 없습니다";
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("x", "320");
-          text.setAttribute("y", "96");
-          text.setAttribute("text-anchor", "middle");
-          text.setAttribute("fill", "#667085");
-          text.setAttribute("font-size", "14");
-          text.textContent = "아직 방문 데이터가 없습니다";
-          svg.appendChild(text);
+          if (visitChart) {
+            visitChart.dispose();
+            visitChart = null;
+          }
+          element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#667085;font-weight:800;">아직 방문 데이터가 없습니다</div>';
           return;
         }
 
-        const max = Math.max(1, ...points.map((item) => item.count));
-        const chart = { width: 640, height: 190, top: 14, right: 12, bottom: 34, left: 38 };
-        const plotWidth = chart.width - chart.left - chart.right;
-        const plotHeight = chart.height - chart.top - chart.bottom;
-        const barWidth = Math.min(14, Math.max(5, plotWidth / Math.max(points.length * 2.8, 18)));
-        const xForIndex = (index) =>
-          points.length > 1 ? chart.left + (plotWidth / (points.length - 1)) * index : chart.left + plotWidth / 2;
         caption.textContent = `최근 ${points.length}일 기준`;
-
-        [0, 0.5, 1].forEach((ratio) => {
-          const y = chart.top + plotHeight - plotHeight * ratio;
-          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.setAttribute("x1", String(chart.left));
-          line.setAttribute("x2", String(chart.width - chart.right));
-          line.setAttribute("y1", String(y));
-          line.setAttribute("y2", String(y));
-          line.setAttribute("stroke", "#e5e7eb");
-          svg.appendChild(line);
-        });
-
-        const pathData = points.map((item, index) => {
-          const x = xForIndex(index);
-          const y = chart.top + plotHeight - (item.count / max) * plotHeight;
-          return `${index ? "L" : "M"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-        }).join(" ");
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", pathData);
-        path.setAttribute("fill", "none");
-        path.setAttribute("stroke", "#ed1c24");
-        path.setAttribute("stroke-width", "3");
-        path.setAttribute("stroke-linecap", "round");
-        path.setAttribute("stroke-linejoin", "round");
-        svg.appendChild(path);
-
-        points.forEach((item, index) => {
-          const height = Math.max(2, (item.count / max) * plotHeight);
-          const x = xForIndex(index);
-          const y = chart.top + plotHeight - height;
-          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          rect.setAttribute("x", String(x - barWidth / 2));
-          rect.setAttribute("y", String(y));
-          rect.setAttribute("width", String(barWidth));
-          rect.setAttribute("height", String(height));
-          rect.setAttribute("rx", "5");
-          rect.setAttribute("fill", "#fee2e2");
-          rect.setAttribute("stroke", "#ed1c24");
-          rect.setAttribute("opacity", "0.95");
-          svg.appendChild(rect);
-
-          const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          dot.setAttribute("cx", String(x));
-          dot.setAttribute("cy", String(y));
-          dot.setAttribute("r", "4");
-          dot.setAttribute("fill", "#ed1c24");
-          dot.setAttribute("stroke", "#fff");
-          dot.setAttribute("stroke-width", "2");
-          svg.appendChild(dot);
-
-          const value = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          value.setAttribute("x", String(x));
-          value.setAttribute("y", String(Math.max(12, y - 6)));
-          value.setAttribute("text-anchor", "middle");
-          value.setAttribute("fill", "#344054");
-          value.setAttribute("font-size", "11");
-          value.setAttribute("font-weight", "800");
-          value.textContent = item.count.toLocaleString("ko-KR");
-          svg.appendChild(value);
-
-          if (index === 0 || index === points.length - 1 || points.length <= 7 || index % 3 === 0) {
-            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            label.setAttribute("x", String(x));
-            label.setAttribute("y", String(chart.height - 10));
-            label.setAttribute("text-anchor", "middle");
-            label.setAttribute("fill", "#667085");
-            label.setAttribute("font-size", "10");
-            label.textContent = String(item.date || "").slice(5);
-            svg.appendChild(label);
-          }
+        element.innerHTML = "";
+        if (!window.echarts) {
+          element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#667085;font-weight:800;">차트 라이브러리를 불러오지 못했습니다</div>';
+          return;
+        }
+        if (!visitChart) visitChart = window.echarts.init(element);
+        visitChart.setOption({
+          color: ["#ed1c24"],
+          grid: { left: 42, right: 18, top: 30, bottom: 38 },
+          tooltip: {
+            trigger: "axis",
+            valueFormatter: (value) => Number(value || 0).toLocaleString("ko-KR"),
+          },
+          xAxis: {
+            type: "category",
+            boundaryGap: false,
+            data: points.map((item) => item.date.slice(5)),
+            axisTick: { show: false },
+            axisLine: { lineStyle: { color: "#e2e8f0" } },
+            axisLabel: { color: "#667085", fontFamily: "Pretendard Variable, Pretendard, sans-serif" },
+          },
+          yAxis: {
+            type: "value",
+            minInterval: 1,
+            splitLine: { lineStyle: { color: "#edf2f7" } },
+            axisLabel: { color: "#667085", fontFamily: "Pretendard Variable, Pretendard, sans-serif" },
+          },
+          series: [
+            {
+              name: "방문",
+              type: "line",
+              smooth: true,
+              symbolSize: 8,
+              data: points.map((item) => item.count),
+              lineStyle: { width: 3 },
+              areaStyle: { color: "rgba(237, 28, 36, 0.12)" },
+            },
+          ],
         });
       }
 
@@ -2200,14 +2362,36 @@
         return date.toLocaleString("ko-KR");
       }
 
-      function renderOfficialChanges(items) {
+      function filteredOfficialChanges(items = officialChanges) {
+        const dateFilter = document.querySelector("#official-date-filter")?.value || "";
+        const langFilter = document.querySelector("#official-lang-filter")?.value || "all";
+        return (items || []).filter((item) => {
+          const detectedDate = String(item.detected_at || "").slice(0, 10);
+          const lang = String(item.lang || "").toLowerCase();
+          if (dateFilter && detectedDate !== dateFilter) return false;
+          if (langFilter !== "all" && lang !== langFilter) return false;
+          return true;
+        });
+      }
+
+      function renderOfficialChanges(items = officialChanges) {
         const body = document.querySelector("#official-change-body");
+        const pageInfo = document.querySelector("#official-page-info");
+        const prevButton = document.querySelector("#official-prev");
+        const nextButton = document.querySelector("#official-next");
+        const filtered = filteredOfficialChanges(items);
+        const totalPages = Math.max(1, Math.ceil(filtered.length / officialPageSize));
+        officialPage = Math.min(Math.max(1, officialPage), totalPages);
+        const pageItems = filtered.slice((officialPage - 1) * officialPageSize, officialPage * officialPageSize);
+        if (pageInfo) pageInfo.textContent = `${officialPage} / ${totalPages}`;
+        if (prevButton) prevButton.disabled = officialPage <= 1;
+        if (nextButton) nextButton.disabled = officialPage >= totalPages;
         body.innerHTML = "";
-        if (!items.length) {
+        if (!filtered.length) {
           body.innerHTML = '<tr><td colspan="6">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
           return;
         }
-        items.forEach((item) => {
+        pageItems.forEach((item) => {
           const type = item.change_type === "new" ? "new" : "updated";
           const updatedAt = item.current_source_updated_at || "-";
           const previousAt = item.previous_source_updated_at || "";
@@ -2223,7 +2407,7 @@
               <span class="mail-subject"><a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener">${escapeHtml(item.title || "Untitled")}</a></span>
               <div class="mail-meta">article ${escapeHtml(item.article_id || "-")} · ${escapeHtml(hashText)}</div>
             </td>
-            <td>${escapeHtml(item.summary || "요약 대기")}</td>
+            <td>${escapeHtml(item.summary || "AI 요약 대기 - 공식 원문 링크에서 변경 내용을 확인해 주세요.")}</td>
             <td>${escapeHtml(previousAt ? `${previousAt} → ${updatedAt}` : updatedAt)}</td>
           `;
           body.appendChild(tr);
@@ -2274,6 +2458,10 @@
         return String(row.review_status || row.status || "needs_review").trim() || "needs_review";
       }
 
+      function mailKeySummary(row) {
+        return row.key_summary || row.ai_summary || row.body_summary || row.approved_summary || row.body_text || "";
+      }
+
       function renderMailStats(stats = {}) {
         document.querySelector("#mail-metric-needs").textContent = Number(stats.needs_review || 0).toLocaleString("ko-KR");
         document.querySelector("#mail-metric-approved").textContent = Number(stats.approved_for_rag || 0).toLocaleString("ko-KR");
@@ -2297,7 +2485,7 @@
               <span class="mail-subject">${escapeHtml(shortText(row.subject, 92))}</span>
               <div class="mail-meta">${escapeHtml(row.received_at || "-")}<br>${escapeHtml(row.from_name || row.from_email || "-")} · ${escapeHtml(row.from_email || "-")}</div>
             </td>
-            <td>${escapeHtml(shortText(row.approved_summary || row.body_summary || row.body_text, 160))}</td>
+            <td>${escapeHtml(shortText(mailKeySummary(row), 160))}</td>
             <td><button type="button" data-mail-hash="${escapeHtml(row.duplicate_hash)}">검토</button></td>
           `;
           body.appendChild(tr);
@@ -2323,6 +2511,7 @@
         const status = rowStatus(row);
         const defaultTitle = row.approved_title || row.subject || "";
         const defaultSummary = row.approved_summary || row.body_summary || "";
+        const aiSummary = mailKeySummary(row);
         detail.innerHTML = `
           <span class="mail-status-chip ${status}">${statusLabel(status)}</span>
           <h3>${escapeHtml(row.subject || "(제목 없음)")}</h3>
@@ -2332,6 +2521,10 @@
             태그 ${escapeHtml(row.tags || "-")}<br>
             해시 ${escapeHtml(row.duplicate_hash || "-")}
           </div>
+          <div class="summary-card">
+            <strong>AI 주요 요약</strong>
+            <p>${escapeHtml(aiSummary || "아직 요약된 주요 사항이 없습니다. 원문을 확인해 주세요.")}</p>
+          </div>
           <div class="mail-body-preview" style="margin-top: 12px;">${escapeHtml(row.body_text || row.body_summary || "(본문 없음)")}</div>
           <div class="mail-approval-box">
             <label>
@@ -2339,8 +2532,8 @@
               <input id="mail-approved-title" type="text" value="${escapeHtml(defaultTitle)}" />
             </label>
             <label>
-              승인 요약
-              <textarea id="mail-approved-summary" placeholder="RAG에 반영할 확정 문장만 정리해 주세요.">${escapeHtml(defaultSummary)}</textarea>
+              RAG 반영 문장
+              <textarea id="mail-approved-summary" placeholder="관리자가 확정해도 되는 문장만 정리해 주세요.">${escapeHtml(defaultSummary)}</textarea>
             </label>
             <label>
               검토 메모
@@ -2349,10 +2542,6 @@
             <label>
               승인자
               <input id="mail-approved-by" type="text" value="${escapeHtml(row.approved_by || "관리자")}" />
-            </label>
-            <label>
-              대체할 이전 중복 해시
-              <input id="mail-supersedes-hash" type="text" value="${escapeHtml(row.supersedes_duplicate_hash || "")}" />
             </label>
           </div>
           <div class="actions">
@@ -2379,7 +2568,7 @@
           approved_summary: document.querySelector("#mail-approved-summary")?.value || "",
           review_note: document.querySelector("#mail-review-note")?.value || "",
           approved_by: document.querySelector("#mail-approved-by")?.value || "관리자",
-          supersedes_duplicate_hash: document.querySelector("#mail-supersedes-hash")?.value || "",
+          supersedes_duplicate_hash: "",
         };
       }
 
@@ -2438,6 +2627,10 @@
       adminNavButtons.forEach((button) => {
         button.addEventListener("click", () => activateAdminPage(button.dataset.adminPage || "notice"));
       });
+      document.querySelectorAll("[data-admin-page-panel]").forEach((panel) => {
+        panel.hidden = !panel.classList.contains("active");
+      });
+      initNoticeEditor();
       passwordInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") login();
       });
@@ -2477,7 +2670,24 @@
         }
       });
       document.querySelector("#refresh-official-changes").addEventListener("click", () => {
+        officialPage = 1;
         loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-date-filter").addEventListener("change", () => {
+        officialPage = 1;
+        renderOfficialChanges();
+      });
+      document.querySelector("#official-lang-filter").addEventListener("change", () => {
+        officialPage = 1;
+        renderOfficialChanges();
+      });
+      document.querySelector("#official-prev").addEventListener("click", () => {
+        officialPage = Math.max(1, officialPage - 1);
+        renderOfficialChanges();
+      });
+      document.querySelector("#official-next").addEventListener("click", () => {
+        officialPage += 1;
+        renderOfficialChanges();
       });
       document.querySelector("#refresh-mail-review").addEventListener("click", () => {
         loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));
@@ -2490,22 +2700,12 @@
         button.addEventListener("click", () => {
           const command = button.dataset.command;
           const emoji = button.dataset.emoji;
-          fields.editor.focus();
           if (emoji) {
-            document.execCommand("insertText", false, emoji);
-            renderNoticePreview();
+            insertNoticeEmoji(emoji);
             return;
           }
           if (!command) return;
-          if (command === "createLink") {
-            const url = window.prompt("링크 URL을 입력해 주세요. http:// 또는 https://로 시작해야 합니다.");
-            if (!url || !/^https?:\/\//i.test(url)) return;
-            document.execCommand(command, false, url);
-            renderNoticePreview();
-            return;
-          }
-          document.execCommand(command, false, null);
-          renderNoticePreview();
+          runNoticeCommand(command);
         });
       });
       [fields.title, fields.editor, fields.sourceLabel, fields.sourceUrl].forEach((element) => {
