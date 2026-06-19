@@ -108,6 +108,7 @@ class ImageUploadResponse(BaseModel):
 class NoticeConfigRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=120)
     body_html: str | None = Field(default=None, max_length=8000)
+    modal_background: str | None = Field(default="#ffffff", max_length=20)
     bullets: list[str] = Field(default_factory=list, max_length=20)
     source_label: str = Field(..., min_length=1, max_length=200)
     source_url: str = Field(..., min_length=1, max_length=300)

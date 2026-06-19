@@ -202,6 +202,36 @@
         font-weight: 850;
       }
 
+      .notice-modal-content h2 {
+        margin: 4px 0 12px;
+        color: #0f172a;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: 0;
+      }
+
+      .notice-modal-content blockquote {
+        margin: 12px 0;
+        border-left: 4px solid var(--brand);
+        background: #fff7f7;
+        padding: 11px 13px;
+        color: #344054;
+        font-weight: 750;
+      }
+
+      .notice-modal-content .ql-size-small {
+        font-size: 13px;
+      }
+
+      .notice-modal-content .ql-size-large {
+        font-size: 18px;
+      }
+
+      .notice-modal-content .ql-size-huge {
+        font-size: 24px;
+        line-height: 1.35;
+      }
+
       .notice-modal-actions {
         display: flex;
         flex-wrap: wrap;
@@ -5244,6 +5274,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       const defaultEntryNotice = {
         title: "📢 OpenAI 광고 집행 의뢰 안내",
         updated_at: LAST_UPDATED,
+        modal_background: "#ffffff",
         body_html: `
           <ul>
             <li><strong>글자수</strong> — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자</li>
@@ -5420,6 +5451,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       function renderEntryNotice(notice) {
         const config = { ...defaultEntryNotice, ...(notice || {}) };
         entryNotice.dataset.enabled = config.enabled === false ? "false" : "true";
+        entryNoticeDialog.style.background = config.modal_background || defaultEntryNotice.modal_background;
         entryNoticeTitle.textContent = config.title || defaultEntryNotice.title;
         entryNoticeDate.textContent = config.updated_at || LAST_UPDATED;
         const noticeBodyHtml = config.body_html || "";

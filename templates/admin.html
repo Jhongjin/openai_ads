@@ -298,7 +298,8 @@
         padding: 10px;
       }
 
-      .editor-toolbar button {
+      .editor-toolbar button,
+      .editor-control {
         min-height: 36px;
         border: 1px solid #d5deea;
         border-radius: 9px;
@@ -311,10 +312,39 @@
         transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
       }
 
-      .editor-toolbar button:hover {
+      .editor-toolbar button:hover,
+      .editor-control:hover {
         border-color: #98a8bd;
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgb(16 24 40 / 7%);
+      }
+
+      .editor-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: max-content;
+      }
+
+      .editor-control input[type="color"] {
+        width: 28px;
+        height: 26px;
+        min-height: auto;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .editor-control select {
+        min-height: 28px;
+        border: 0;
+        background: transparent;
+        color: #172033;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+        outline: none;
       }
 
       .notice-editor {
@@ -380,6 +410,22 @@
         font-weight: 750;
       }
 
+      .notice-editor .ql-editor .ql-size-small,
+      .notice-preview-body .ql-size-small {
+        font-size: 13px;
+      }
+
+      .notice-editor .ql-editor .ql-size-large,
+      .notice-preview-body .ql-size-large {
+        font-size: 18px;
+      }
+
+      .notice-editor .ql-editor .ql-size-huge,
+      .notice-preview-body .ql-size-huge {
+        font-size: 24px;
+        line-height: 1.35;
+      }
+
       .notice-preview-wrap {
         margin: 18px 0 14px;
       }
@@ -434,6 +480,23 @@
         margin: 0 0 10px;
       }
 
+      .notice-preview-body h2 {
+        margin: 4px 0 12px;
+        color: #0f172a;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: 0;
+      }
+
+      .notice-preview-body blockquote {
+        margin: 12px 0;
+        border-left: 4px solid var(--kt-red);
+        background: #fff7f7;
+        padding: 11px 13px;
+        color: #344054;
+        font-weight: 750;
+      }
+
       .notice-preview-source {
         display: inline-flex;
         margin-top: 12px;
@@ -444,6 +507,16 @@
 
       .notice-preview-source[hidden] {
         display: none;
+      }
+
+      .mail-link {
+        color: #155eef;
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .mail-link:hover {
+        text-decoration: underline;
       }
 
       .check-label {
@@ -1462,6 +1535,10 @@
             <div class="field-label">업데이트일</div>
             <div class="readonly-value" id="notice-updated">저장 시 자동 반영</div>
           </div>
+          <label>
+            공지창 배경색
+            <input id="notice-modal-bg" type="color" value="#ffffff" aria-label="공지창 배경색" />
+          </label>
           <div class="field-label">공지 내용</div>
           <p class="editor-helper">
             팝업 본문에 노출될 실제 문구입니다. 핵심 문장만 짧게 쓰고, 굵게/목록/링크/이모지를 넣은 뒤
@@ -1476,6 +1553,23 @@
               <button type="button" data-command="insertUnorderedList">목록</button>
               <button type="button" data-command="insertOrderedList">번호 목록</button>
               <button type="button" data-command="createLink">링크</button>
+              <label class="editor-control">
+                글자색
+                <input type="color" data-format="color" value="#101827" aria-label="글자색" />
+              </label>
+              <label class="editor-control">
+                글 배경
+                <input type="color" data-format="background" value="#fff1f1" aria-label="글 배경색" />
+              </label>
+              <label class="editor-control">
+                글자크기
+                <select data-format="size" aria-label="글자크기">
+                  <option value="">기본</option>
+                  <option value="small">작게</option>
+                  <option value="large">크게</option>
+                  <option value="huge">매우 크게</option>
+                </select>
+              </label>
               <button type="button" data-emoji="📢">📢</button>
               <button type="button" data-emoji="✅">✅</button>
               <button type="button" data-emoji="⚠️">⚠️</button>
@@ -1940,11 +2034,13 @@
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
         editor: document.querySelector("#notice-editor"),
+        modalBg: document.querySelector("#notice-modal-bg"),
         sourceLabel: document.querySelector("#notice-source-label"),
         sourceUrl: document.querySelector("#notice-source-url"),
         enabled: document.querySelector("#notice-enabled"),
       };
       const previewFields = {
+        card: document.querySelector("#notice-preview"),
         title: document.querySelector("#notice-preview-title"),
         updated: document.querySelector("#notice-preview-updated"),
         body: document.querySelector("#notice-preview-body"),
@@ -2017,6 +2113,7 @@
           modules: {
             toolbar: false,
           },
+          formats: ["bold", "italic", "underline", "header", "blockquote", "list", "link", "color", "background", "size"],
         });
         noticeQuill.on("text-change", renderNoticePreview);
       }
@@ -2082,10 +2179,29 @@
         renderNoticePreview();
       }
 
+      function applyNoticeFormat(format, value) {
+        if (!format) return;
+        if (noticeQuill) {
+          noticeQuill.format(format, value || false);
+        } else {
+          fields.editor.focus();
+          if (format === "color") {
+            document.execCommand("foreColor", false, value);
+          } else if (format === "background") {
+            document.execCommand("hiliteColor", false, value);
+          } else if (format === "size") {
+            const legacySize = value === "small" ? "2" : value === "large" ? "5" : value === "huge" ? "6" : "3";
+            document.execCommand("fontSize", false, legacySize);
+          }
+        }
+        renderNoticePreview();
+      }
+
       function fillNoticeForm(notice) {
         fields.title.value = notice.title || "";
         fields.updatedAt.textContent = notice.updated_at || "저장 시 자동 반영";
         setNoticeHtml(notice.body_html || bulletsToHtml(notice.bullets || []));
+        fields.modalBg.value = notice.modal_background || "#ffffff";
         fields.sourceLabel.value = notice.source_label || "";
         fields.sourceUrl.value = notice.source_url || "";
         fields.enabled.checked = notice.enabled !== false;
@@ -2093,6 +2209,7 @@
       }
 
       function renderNoticePreview() {
+        if (previewFields.card) previewFields.card.style.background = fields.modalBg?.value || "#fffafa";
         previewFields.title.textContent = fields.title.value.trim() || "OpenAI 광고 집행 의뢰 안내";
         const updatedText = fields.updatedAt.textContent.trim();
         previewFields.updated.textContent =
@@ -2115,6 +2232,7 @@
         return {
           title: fields.title.value.trim(),
           body_html: getNoticeHtml().trim(),
+          modal_background: fields.modalBg?.value || "#ffffff",
           bullets: editorTextLines(),
           source_label: fields.sourceLabel.value.trim(),
           source_url: fields.sourceUrl.value.trim(),
@@ -2671,6 +2789,17 @@
         })[char]);
       }
 
+      function isEmailAddress(value) {
+        return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(String(value || "").trim());
+      }
+
+      function mailtoLink(value, label) {
+        const email = String(value || "").trim();
+        const text = label || email || "-";
+        if (!isEmailAddress(email)) return escapeHtml(text);
+        return `<a class="mail-link" href="mailto:${escapeHtml(email)}">${escapeHtml(text)}</a>`;
+      }
+
       function shortText(value, limit = 140) {
         const text = String(value || "").replace(/\s+/g, " ").trim();
         if (text.length <= limit) return text || "-";
@@ -2706,7 +2835,7 @@
             <td><span class="mail-status-chip ${status}">${statusLabel(status)}</span></td>
             <td>
               <span class="mail-subject">${escapeHtml(shortText(row.subject, 92))}</span>
-              <div class="mail-meta">${escapeHtml(row.received_at || "-")}<br>${escapeHtml(row.from_name || row.from_email || "-")} · ${escapeHtml(row.from_email || "-")}</div>
+              <div class="mail-meta">${escapeHtml(row.received_at || "-")}<br>${escapeHtml(row.from_name || row.from_email || "-")} · ${mailtoLink(row.from_email)}</div>
             </td>
             <td>${escapeHtml(shortText(mailKeySummary(row), 160))}</td>
             <td><button type="button" data-mail-hash="${escapeHtml(row.duplicate_hash)}">검토</button></td>
@@ -2740,7 +2869,7 @@
           <h3>${escapeHtml(row.subject || "(제목 없음)")}</h3>
           <div class="mail-meta">
             수신 ${escapeHtml(row.received_at || "-")}<br>
-            발신 ${escapeHtml(row.from_name || "-")} &lt;${escapeHtml(row.from_email || "-")}&gt;<br>
+            발신 ${escapeHtml(row.from_name || "-")} &lt;${mailtoLink(row.from_email)}&gt;<br>
             태그 ${escapeHtml(row.tags || "-")}<br>
             해시 ${escapeHtml(row.duplicate_hash || "-")}
           </div>
@@ -2931,7 +3060,11 @@
           runNoticeCommand(command);
         });
       });
-      [fields.title, fields.editor, fields.sourceLabel, fields.sourceUrl].forEach((element) => {
+      document.querySelectorAll("[data-format]").forEach((control) => {
+        const eventName = control.tagName === "SELECT" ? "change" : "input";
+        control.addEventListener(eventName, () => applyNoticeFormat(control.dataset.format, control.value));
+      });
+      [fields.title, fields.editor, fields.modalBg, fields.sourceLabel, fields.sourceUrl].filter(Boolean).forEach((element) => {
         element.addEventListener("input", renderNoticePreview);
       });
 

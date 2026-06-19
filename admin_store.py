@@ -38,6 +38,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
   <li><strong>문의</strong> — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</li>
 </ul>
 """.strip(),
+    "modal_background": "#ffffff",
     "source_label": "OpenAI Ads Guide 기준으로 하루 2회 최신 정보를 자동 확인·업데이트합니다.",
     "source_url": "https://help.openai.com/en/collections/20001223-chatgpt-ads",
     "enabled": True,
@@ -63,9 +64,48 @@ MAIL_REVIEW_STATUSES = {
     "superseded": "이전 내용 대체",
 }
 
+_SAFE_STYLE_NAMES = {"color", "background-color", "font-size"}
+_SAFE_CLASSES = {"ql-size-small", "ql-size-large", "ql-size-huge"}
+_HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{3,8}$")
+_RGB_COLOR_RE = re.compile(
+    r"^rgba?\(\s*(?:25[0-5]|2[0-4]\d|1?\d?\d)\s*,\s*"
+    r"(?:25[0-5]|2[0-4]\d|1?\d?\d)\s*,\s*"
+    r"(?:25[0-5]|2[0-4]\d|1?\d?\d)"
+    r"(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$"
+)
+_FONT_SIZE_RE = re.compile(r"^(?:1[0-9]|2[0-8])px$")
+
+
+def _is_safe_css_color(value: str) -> bool:
+    stripped = str(value or "").strip()
+    return bool(_HEX_COLOR_RE.match(stripped) or _RGB_COLOR_RE.match(stripped))
+
+
+def _sanitize_inline_style(value: str | None) -> str:
+    safe: list[str] = []
+    for item in str(value or "").split(";"):
+        if ":" not in item:
+            continue
+        name, raw = item.split(":", 1)
+        name = name.strip().lower()
+        raw = raw.strip()
+        if name not in _SAFE_STYLE_NAMES:
+            continue
+        if name in {"color", "background-color"} and not _is_safe_css_color(raw):
+            continue
+        if name == "font-size" and not _FONT_SIZE_RE.match(raw):
+            continue
+        safe.append(f"{name}: {raw}")
+    return "; ".join(safe)
+
+
+def _sanitize_hex_color(value: Any, fallback: str = "#ffffff") -> str:
+    raw = str(value or "").strip()
+    return raw if _HEX_COLOR_RE.match(raw) else fallback
+
 
 class _NoticeHtmlSanitizer(HTMLParser):
-    _allowed_tags = {"p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a"}
+    _allowed_tags = {"p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "span", "h2", "blockquote"}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=False)
@@ -78,18 +118,30 @@ class _NoticeHtmlSanitizer(HTMLParser):
         if tag == "br":
             self.parts.append("<br>")
             return
+        safe_attrs: list[str] = []
+        for name, value in attrs:
+            attr_name = name.lower()
+            if attr_name == "class" and value:
+                classes = [item for item in str(value).split() if item in _SAFE_CLASSES]
+                if classes:
+                    safe_attrs.append(f'class="{html_escape(" ".join(classes), quote=True)}"')
+            elif attr_name == "style" and value:
+                style = _sanitize_inline_style(value)
+                if style:
+                    safe_attrs.append(f'style="{html_escape(style, quote=True)}"')
+        attr_text = (" " + " ".join(safe_attrs)) if safe_attrs else ""
         if tag == "a":
             href = ""
             for name, value in attrs:
-                if name.lower() == "href" and value and re.match(r"^https?://", value.strip(), re.I):
+                if name.lower() == "href" and value and re.match(r"^(https?://|mailto:)", value.strip(), re.I):
                     href = html_escape(value.strip(), quote=True)
                     break
             if href:
-                self.parts.append(f'<a href="{href}" target="_blank" rel="noreferrer">')
+                self.parts.append(f'<a href="{href}" target="_blank" rel="noreferrer"{attr_text}>')
             else:
-                self.parts.append("<a>")
+                self.parts.append(f"<a{attr_text}>")
             return
-        self.parts.append(f"<{tag}>")
+        self.parts.append(f"<{tag}{attr_text}>")
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
@@ -204,6 +256,7 @@ def _ensure_tables() -> None:
                     updated_at text NOT NULL,
                     bullets jsonb NOT NULL DEFAULT '[]'::jsonb,
                     body_html text NOT NULL DEFAULT '',
+                    modal_background text NOT NULL DEFAULT '#ffffff',
                     source_label text NOT NULL,
                     source_url text NOT NULL,
                     enabled boolean NOT NULL DEFAULT true,
@@ -212,6 +265,9 @@ def _ensure_tables() -> None:
                 """
             )
             cur.execute(f"ALTER TABLE {schema}.admin_notice ADD COLUMN IF NOT EXISTS body_html text NOT NULL DEFAULT ''")
+            cur.execute(
+                f"ALTER TABLE {schema}.admin_notice ADD COLUMN IF NOT EXISTS modal_background text NOT NULL DEFAULT '#ffffff'"
+            )
             cur.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {schema}.page_visits (
@@ -284,9 +340,9 @@ def _ensure_tables() -> None:
             cur.execute(
                 f"""
                 INSERT INTO {schema}.admin_notice
-                    (id, title, updated_at, bullets, body_html, source_label, source_url, enabled)
+                    (id, title, updated_at, bullets, body_html, modal_background, source_label, source_url, enabled)
                 VALUES
-                    ('main', %s, %s, %s::jsonb, %s, %s, %s, %s)
+                    ('main', %s, %s, %s::jsonb, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 (
@@ -294,6 +350,7 @@ def _ensure_tables() -> None:
                     DEFAULT_NOTICE["updated_at"],
                     json.dumps(DEFAULT_NOTICE["bullets"], ensure_ascii=False),
                     DEFAULT_NOTICE["body_html"],
+                    DEFAULT_NOTICE["modal_background"],
                     DEFAULT_NOTICE["source_label"],
                     DEFAULT_NOTICE["source_url"],
                     DEFAULT_NOTICE["enabled"],
@@ -318,7 +375,7 @@ def get_notice_config() -> dict[str, Any]:
             with conn.cursor() as cur:
                 cur.execute(
                     f"""
-                    SELECT title, updated_at, bullets, body_html, source_label, source_url, enabled
+                    SELECT title, updated_at, bullets, body_html, modal_background, source_label, source_url, enabled
                     FROM {schema}.admin_notice
                     WHERE id = 'main'
                     """
@@ -326,12 +383,13 @@ def get_notice_config() -> dict[str, Any]:
                 row = cur.fetchone()
         if not row:
             return {**DEFAULT_NOTICE, **_storage_info("memory")}
-        title, updated_at, bullets, body_html, source_label, source_url, enabled = row
+        title, updated_at, bullets, body_html, modal_background, source_label, source_url, enabled = row
         return {
             "title": title,
             "updated_at": updated_at,
             "bullets": bullets or [],
             "body_html": body_html or _bullets_to_html(bullets or []),
+            "modal_background": modal_background or DEFAULT_NOTICE["modal_background"],
             "source_label": source_label,
             "source_url": source_url,
             "enabled": bool(enabled),
@@ -348,6 +406,7 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
         if str(item).strip()
     ]
     body_html = _sanitize_notice_html(str(payload.get("body_html") or ""))
+    modal_background = _sanitize_hex_color(payload.get("modal_background"), DEFAULT_NOTICE["modal_background"])
     if not bullets:
         bullets = _html_to_lines(body_html) or list(DEFAULT_NOTICE["bullets"])
     notice = {
@@ -355,6 +414,7 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
         "updated_at": _today_kst(),
         "bullets": bullets,
         "body_html": body_html,
+        "modal_background": modal_background,
         "source_label": str(payload.get("source_label") or DEFAULT_NOTICE["source_label"]).strip(),
         "source_url": str(payload.get("source_url") or DEFAULT_NOTICE["source_url"]).strip(),
         "enabled": bool(payload.get("enabled", True)),
@@ -371,14 +431,15 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
                 cur.execute(
                     f"""
                     INSERT INTO {schema}.admin_notice
-                        (id, title, updated_at, bullets, body_html, source_label, source_url, enabled, updated_at_utc)
+                        (id, title, updated_at, bullets, body_html, modal_background, source_label, source_url, enabled, updated_at_utc)
                     VALUES
-                        ('main', %s, %s, %s::jsonb, %s, %s, %s, %s, now())
+                        ('main', %s, %s, %s::jsonb, %s, %s, %s, %s, %s, now())
                     ON CONFLICT (id) DO UPDATE SET
                         title = EXCLUDED.title,
                         updated_at = EXCLUDED.updated_at,
                         bullets = EXCLUDED.bullets,
                         body_html = EXCLUDED.body_html,
+                        modal_background = EXCLUDED.modal_background,
                         source_label = EXCLUDED.source_label,
                         source_url = EXCLUDED.source_url,
                         enabled = EXCLUDED.enabled,
@@ -389,6 +450,7 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
                         notice["updated_at"],
                         json.dumps(notice["bullets"], ensure_ascii=False),
                         notice["body_html"],
+                        notice["modal_background"],
                         notice["source_label"],
                         notice["source_url"],
                         notice["enabled"],
