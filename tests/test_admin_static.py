@@ -79,6 +79,24 @@ class AdminStaticTests(unittest.TestCase):
         self.assertIn("record_official_guide_change", db_py)
         self.assertIn("record_official_guide_change", ingestion_py)
 
+    def test_ads_api_dashboard_is_admin_only_ui(self) -> None:
+        html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        app_py = (ROOT / "app.py").read_text(encoding="utf-8")
+
+        for phrase in [
+            "Ads API 성과 대시보드",
+            'id="ads-dashboard-status"',
+            'id="ads-campaign-body"',
+            'id="ads-detail-card"',
+            "loadAdsDashboard",
+            "/api/admin/ads-dashboard",
+            "OPENAI_ADS_API_KEY",
+        ]:
+            self.assertIn(phrase, html)
+
+        self.assertIn('"/api/admin/ads-dashboard"', app_py)
+        self.assertNotIn('href="/ads-api"', html)
+
 
 if __name__ == "__main__":
     unittest.main()

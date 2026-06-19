@@ -2,7 +2,7 @@
 
 나스미디어 영업팀이 ChatGPT 광고 상품 관련 질문을 확인하고, 광고주 랜딩 URL의 OpenAI 광고 크롤러 접근 가능 여부와 파비콘 규격을 1차 셀프 체크할 수 있는 경량 PoC입니다.
 
-첫 화면(`/`)은 `광고 Q&A`입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 안내 자료`, `캠페인 세팅 가이드`, `픽셀 설치 가이드`를 사용할 수 있습니다. `소재 업로드` 탭은 운영 방향 재정의 중이라 메인 화면에서 비활성화되어 있으며, 초안은 `/creative-upload-draft`에서 별도로 검증합니다. OpenAI Ads API 운영 검토 초안은 `/ads-api-draft`에 별도 페이지로 두고 메인 메뉴에는 노출하지 않습니다.
+첫 화면(`/`)은 `광고 Q&A`입니다. 같은 페이지의 탭에서 `랜딩 URL 검사`, `파비콘 검사`, `광고주 안내 자료`, `캠페인 세팅 가이드`, `픽셀 설치 가이드`를 사용할 수 있습니다. `소재 업로드` 탭은 운영 방향 재정의 중이라 메인 화면에서 비활성화되어 있으며, 초안은 `/creative-upload-draft`에서 별도로 검증합니다. OpenAI Ads API 성과 대시보드는 관리자 페이지(`/admin`)에서만 확인하며, `/ads-api-draft`는 내부 검토 초안으로 메인 메뉴에는 노출하지 않습니다.
 
 ## 광고 Q&A
 
@@ -92,13 +92,15 @@ Invoke-RestMethod -Method Post `
 
 여러 캠페인을 한 번에 접수하려면 Apps Script도 최신 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs) 버전이어야 합니다. 구버전처럼 `data.campaign` 한 건만 기록하거나 `adgroups`의 `campaign_name`을 첫 캠페인명으로 덮어쓰면, CPC/CPM 캠페인이 시트에서 섞여 보입니다. Apps Script 편집기에 최신 코드를 붙여넣은 뒤 `배포 > 배포 관리 > 수정 > 새 버전 > 배포`를 반드시 실행하세요.
 
-## OpenAI Ads API 운영 검토 초안
+## 관리자 Ads API 성과 대시보드
 
-`/ads-api-draft`는 OpenAI Developers 공식 Ads API 문서를 기준으로 운영·관리자가 API로 가져올 수 있는 데이터와 아직 API 범위로 단정하면 안 되는 항목을 정리한 별도 검토 페이지입니다. 메인 메뉴에는 노출하지 않으며, 대시보드/자동화 설계 전 검토용으로 사용합니다.
+`/admin`의 Ads API 성과 대시보드는 OpenAI Ads Insights API를 호출해 계정 전체와 캠페인 성과를 조회합니다. 캠페인 행에서 `광고그룹`을 누르면 광고그룹 단위, 광고그룹 행에서 `소재`를 누르면 소재 단위 지표까지 내려볼 수 있습니다. 공개 메뉴에는 노출하지 않습니다.
 
-- Insights API 기준으로 노출, 클릭, 비용, CTR, CPC, CPM 같은 성과 지표 조회 가능성을 정리합니다.
-- Campaigns, Ad Groups, Ads, Files API로 캠페인·광고그룹·광고·이미지 파일 운영 자동화 가능 범위를 분리합니다.
-- 인보이스, VAT, 결제수단, Account Spend Cap 승인처럼 공식 Ads API 문서에서 확인되지 않는 업무는 운영 프로세스로 남겨둡니다.
+- 환경변수 `OPENAI_ADS_API_KEY`가 설정되어야 조회됩니다.
+- `OPENAI_ADS_API_BASE_URL`은 기본값 `https://api.ads.openai.com`을 사용합니다.
+- 조회 지표: impressions, clicks, spend, CTR, CPC, CPM.
+- 공식 참고: <https://developers.openai.com/ads/api-overview>, <https://developers.openai.com/ads/api-reference/insights>.
+- `/ads-api-draft`는 API 범위 확인용 정적 초안으로 남겨두되 운영 화면에서는 사용하지 않습니다.
 
 Apps Script로 전달되는 최종 body:
 
@@ -323,6 +325,8 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `OPENAI_CHAT_MODEL`
 - `OPENAI_EMBEDDING_MODEL`
 - `OPENAI_EMBEDDING_DIMENSIONS`
+- `OPENAI_ADS_API_KEY` (선택, `/admin` Ads API 성과 대시보드용)
+- `OPENAI_ADS_API_BASE_URL` (선택, 기본 `https://api.ads.openai.com`)
 - `SUPABASE_URL`
 - `SUPABASE_DB_URL`
 - `SUPABASE_SCHEMA`

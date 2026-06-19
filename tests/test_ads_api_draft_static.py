@@ -17,13 +17,13 @@ class AdsApiDraftStaticTests(unittest.TestCase):
 
         response = client.get("/ads-api")
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("OpenAI Ads API 성과 대시보드 준비", response.text)
-        self.assertIn("공식 문서 기반 · 권한 확인 필요", response.text)
-        self.assertIn("관리자 페이지로 돌아가기", response.text)
+        self.assertEqual(response.status_code, 404)
 
         legacy_response = client.get("/ads-api-draft")
         self.assertEqual(legacy_response.status_code, 200)
+        self.assertIn("OpenAI Ads API 성과 대시보드 준비", legacy_response.text)
+        self.assertIn("공식 문서 기반 · 권한 확인 필요", legacy_response.text)
+        self.assertIn("관리자 페이지로 돌아가기", legacy_response.text)
 
     def test_ads_api_draft_keeps_ops_scope_and_sources(self) -> None:
         html = (ROOT / "templates" / "ads_api_draft.html").read_text(encoding="utf-8")
@@ -66,9 +66,12 @@ class AdsApiDraftStaticTests(unittest.TestCase):
         self.assertIn('.tab-group[data-group="docs"]::before', html)
         self.assertIn('grid-template-columns: repeat(3, minmax(0, 1fr));', html)
 
-        self.assertIn('href="/ads-api"', admin_html)
-        self.assertIn("Ads API 성과 대시보드 준비", admin_html)
-        self.assertIn('"apiOps": "Ads API 성과 대시보드 준비"', app_py)
+        self.assertNotIn('href="/ads-api"', admin_html)
+        self.assertIn("Ads API 성과 대시보드", admin_html)
+        self.assertIn('id="ads-dashboard-status"', admin_html)
+        self.assertIn("/api/admin/ads-dashboard", admin_html)
+        self.assertNotIn('"apiOps":', app_py)
+        self.assertIn('"/api/admin/ads-dashboard"', app_py)
 
 
 if __name__ == "__main__":

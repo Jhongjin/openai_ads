@@ -138,7 +138,6 @@ PAGE_LABELS = {
     "slides": "광고주 안내 자료",
     "setupGuide": "캠페인 세팅 가이드",
     "pixelGuide": "픽셀 설치 가이드",
-    "apiOps": "Ads API 성과 대시보드 준비",
 }
 
 
@@ -191,11 +190,6 @@ def ads_api_draft_page() -> FileResponse:
     return FileResponse(project_root() / "templates" / "ads_api_draft.html")
 
 
-@app.get("/ads-api", include_in_schema=False)
-def ads_api_page() -> FileResponse:
-    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
-
-
 @app.get("/slides", include_in_schema=False)
 def slides_page() -> FileResponse:
     return _index_file()
@@ -244,6 +238,23 @@ def admin_analytics(request: Request) -> dict[str, Any]:
 
     _require_admin(request)
     return get_visit_analytics()
+
+
+@app.get("/api/admin/ads-dashboard", include_in_schema=False)
+async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
+    from rag_chatbot.ads_api import fetch_ads_dashboard
+
+    _require_admin(request)
+    start_date = str(request.query_params.get("start_date") or "") or None
+    end_date = str(request.query_params.get("end_date") or "") or None
+    detail_scope = str(request.query_params.get("detail_scope") or "") or None
+    detail_id = str(request.query_params.get("detail_id") or "") or None
+    return await fetch_ads_dashboard(
+        start_date=start_date,
+        end_date=end_date,
+        detail_scope=detail_scope,
+        detail_id=detail_id,
+    )
 
 
 @app.get("/api/admin/official-changes", include_in_schema=False)

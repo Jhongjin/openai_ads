@@ -405,6 +405,179 @@
         line-height: 1.5;
       }
 
+      .ads-dashboard-card {
+        display: grid;
+        gap: 16px;
+      }
+
+      .ads-dashboard-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .ads-doc-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .ads-doc-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        border-radius: 7px;
+        background: #fff;
+        padding: 0 10px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .ads-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+      }
+
+      .ads-controls label {
+        width: 180px;
+        margin: 0;
+      }
+
+      .ads-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .ads-kpi {
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .ads-kpi span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .ads-kpi strong {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink);
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .ads-dashboard-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .ads-table-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .ads-table-title h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .ads-table button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        color: #344054;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .ads-status-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #d8dee9;
+        background: #f8fafc;
+        padding: 0 8px;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .ads-status-pill.active,
+      .ads-status-pill.enabled,
+      .ads-status-pill.approved {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .ads-status-pill.paused,
+      .ads-status-pill.pending {
+        border-color: #fedf89;
+        background: #fffaeb;
+        color: #b54708;
+      }
+
+      .ads-status-pill.rejected,
+      .ads-status-pill.archived,
+      .ads-status-pill.deleted {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #b42318;
+      }
+
+      .ads-detail-card {
+        position: sticky;
+        top: 16px;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 16px;
+      }
+
+      .ads-detail-card h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .ads-detail-card p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ads-config-note {
+        border-left: 4px solid #b42318;
+        background: #fef2f2;
+        padding: 12px 14px;
+        color: #991b1b;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
       .span-full {
         grid-column: 1 / -1;
       }
@@ -737,6 +910,25 @@
           grid-template-columns: 1fr;
         }
 
+        .ads-dashboard-head,
+        .ads-dashboard-layout {
+          display: block;
+        }
+
+        .ads-doc-links,
+        .ads-controls {
+          margin-top: 12px;
+        }
+
+        .ads-kpi-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ads-detail-card {
+          position: static;
+          margin-top: 16px;
+        }
+
         .mail-detail {
           position: static;
         }
@@ -875,14 +1067,112 @@
             </table>
           </div>
           <p class="status" id="analytics-status"></p>
-          <div class="admin-tool-card">
+        </div>
+
+        <div class="card section span-full ads-dashboard-card">
+          <div class="ads-dashboard-head">
             <div>
-              <strong>Ads API 성과 대시보드 준비</strong>
-              <p>
-                공개 탭에서는 숨기고 관리자 영역에서만 공식 Ads API 기반 성과 대시보드 설계 자료를 확인합니다.
+              <h2>Ads API 성과 대시보드</h2>
+              <p class="help">
+                OpenAI Ads Insights API로 계정·캠페인·광고그룹·광고 성과를 조회합니다.
+                API 키는 서버 환경변수에만 저장하며 관리자 화면에서만 호출합니다.
               </p>
             </div>
-            <a class="admin-tool-link" href="/ads-api">검토 페이지 열기</a>
+            <div class="ads-doc-links" aria-label="OpenAI Ads API 공식 문서">
+              <a href="https://developers.openai.com/ads/api-overview" target="_blank" rel="noopener">API 개요</a>
+              <a href="https://developers.openai.com/ads/api-reference/insights" target="_blank" rel="noopener">Insights 문서</a>
+            </div>
+          </div>
+          <div class="ads-config-note hidden" id="ads-dashboard-setup"></div>
+          <div class="ads-controls">
+            <label>
+              시작일
+              <input id="ads-start-date" type="date" />
+            </label>
+            <label>
+              종료일
+              <input id="ads-end-date" type="date" />
+            </label>
+            <button class="secondary" id="refresh-ads-dashboard" type="button">성과 새로고침</button>
+            <span class="status" id="ads-dashboard-status"></span>
+          </div>
+          <div class="ads-kpi-grid">
+            <div class="ads-kpi">
+              <span>노출</span>
+              <strong id="ads-kpi-impressions">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>클릭</span>
+              <strong id="ads-kpi-clicks">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>소진액</span>
+              <strong id="ads-kpi-spend">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CTR</span>
+              <strong id="ads-kpi-ctr">0.00%</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPC</span>
+              <strong id="ads-kpi-cpc">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPM</span>
+              <strong id="ads-kpi-cpm">0원</strong>
+            </div>
+          </div>
+          <div class="ads-dashboard-layout">
+            <div>
+              <div class="ads-table-title">
+                <h3>캠페인 현황</h3>
+                <span class="status" id="ads-campaign-count"></span>
+              </div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>캠페인</th>
+                      <th>상태</th>
+                      <th>노출</th>
+                      <th>클릭</th>
+                      <th>소진액</th>
+                      <th>CTR</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-campaign-body">
+                    <tr>
+                      <td colspan="7">성과 데이터를 불러오는 중입니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <aside class="ads-detail-card" id="ads-detail-card">
+              <h3>상세 성과</h3>
+              <p>캠페인의 상세 버튼을 누르면 광고그룹 성과가 표시됩니다. 광고그룹 상세를 누르면 소재별 수치를 확인합니다.</p>
+              <div id="ads-detail-summary"></div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>항목</th>
+                      <th>상태</th>
+                      <th>노출</th>
+                      <th>클릭</th>
+                      <th>소진액</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-detail-body">
+                    <tr>
+                      <td colspan="6">아직 선택된 항목이 없습니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </aside>
           </div>
         </div>
 
@@ -1000,9 +1290,11 @@
       const analyticsStatus = document.querySelector("#analytics-status");
       const officialChangeStatus = document.querySelector("#official-change-status");
       const mailReviewStatus = document.querySelector("#mail-review-status");
+      const adsDashboardStatus = document.querySelector("#ads-dashboard-status");
       let officialChanges = [];
       let mailReviewRows = [];
       let selectedMailHash = "";
+      let adsDashboardData = null;
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -1256,6 +1548,168 @@
         if (data.storage_error) setStatus(analyticsStatus, `DB 저장소 대신 임시 저장소 사용 중: ${data.storage_error}`, "error");
       }
 
+      function formatMetricNumber(value) {
+        return Number(value || 0).toLocaleString("ko-KR");
+      }
+
+      function formatMoney(value) {
+        return `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
+      }
+
+      function formatRate(value) {
+        const number = Number(value || 0);
+        const percent = Math.abs(number) <= 1 ? number * 100 : number;
+        return `${percent.toFixed(2)}%`;
+      }
+
+      function adsStatusPill(value) {
+        const label = String(value || "상태 미확인").trim();
+        const className = label.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") || "unknown";
+        return `<span class="ads-status-pill ${escapeHtml(className)}">${escapeHtml(label)}</span>`;
+      }
+
+      function isoDateWithOffset(daysOffset) {
+        const date = new Date();
+        date.setDate(date.getDate() + daysOffset);
+        return date.toISOString().slice(0, 10);
+      }
+
+      function setDefaultAdsDates() {
+        const startInput = document.querySelector("#ads-start-date");
+        const endInput = document.querySelector("#ads-end-date");
+        if (!startInput.value) startInput.value = isoDateWithOffset(-7);
+        if (!endInput.value) endInput.value = isoDateWithOffset(0);
+      }
+
+      function renderAdsKpis(summary = {}) {
+        document.querySelector("#ads-kpi-impressions").textContent = formatMetricNumber(summary.impressions);
+        document.querySelector("#ads-kpi-clicks").textContent = formatMetricNumber(summary.clicks);
+        document.querySelector("#ads-kpi-spend").textContent = formatMoney(summary.spend);
+        document.querySelector("#ads-kpi-ctr").textContent = formatRate(summary.ctr);
+        document.querySelector("#ads-kpi-cpc").textContent = formatMoney(summary.cpc);
+        document.querySelector("#ads-kpi-cpm").textContent = formatMoney(summary.cpm);
+      }
+
+      function renderAdsCampaignRows(rows = []) {
+        const body = document.querySelector("#ads-campaign-body");
+        const count = document.querySelector("#ads-campaign-count");
+        count.textContent = `${formatMetricNumber(rows.length)}개 캠페인`;
+        body.innerHTML = "";
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="7">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
+          return;
+        }
+        rows.forEach((row) => {
+          const disabled = row.id ? "" : "disabled";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span style="color:#667085">${escapeHtml(row.id || "id 없음")}</span></td>
+            <td>${adsStatusPill(row.status)}</td>
+            <td>${formatMetricNumber(row.impressions)}</td>
+            <td>${formatMetricNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td><button type="button" data-ads-detail-scope="campaign" data-ads-detail-id="${escapeHtml(row.id || "")}" ${disabled}>광고그룹</button></td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-ads-detail-scope]").forEach((button) => {
+          button.addEventListener("click", () => {
+            loadAdsDashboard(button.dataset.adsDetailScope || "", button.dataset.adsDetailId || "").catch((error) =>
+              setStatus(adsDashboardStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function renderAdsDetail(detail) {
+        const summary = document.querySelector("#ads-detail-summary");
+        const body = document.querySelector("#ads-detail-body");
+        summary.innerHTML = "";
+        body.innerHTML = "";
+        if (!detail || !Array.isArray(detail.rows)) {
+          body.innerHTML = '<tr><td colspan="6">아직 선택된 항목이 없습니다.</td></tr>';
+          return;
+        }
+        const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
+        const total = detail.total || {};
+        summary.innerHTML = `
+          <div class="summary-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 12px;">
+            <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatMetricNumber(detail.rows.length)}</strong></div>
+            <div class="metric"><span>클릭</span><strong>${formatMetricNumber(total.clicks)}</strong></div>
+            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+          </div>
+        `;
+        if (!detail.rows.length) {
+          body.innerHTML = `<tr><td colspan="6">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
+          return;
+        }
+        detail.rows.forEach((row) => {
+          const canDrillDown = detail.aggregation_level === "ad_group" && row.id;
+          const action = canDrillDown
+            ? `<button type="button" data-ads-detail-scope="ad_group" data-ads-detail-id="${escapeHtml(row.id)}">소재</button>`
+            : "-";
+          const secondary = detail.aggregation_level === "ad"
+            ? `${escapeHtml(row.ad_group_name || "")}<br>${escapeHtml(row.review_status || "")}`
+            : escapeHtml(row.id || "id 없음");
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span style="color:#667085">${secondary}</span></td>
+            <td>${adsStatusPill(row.status || row.review_status)}</td>
+            <td>${formatMetricNumber(row.impressions)}</td>
+            <td>${formatMetricNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${action}</td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-ads-detail-scope]").forEach((button) => {
+          button.addEventListener("click", () => {
+            loadAdsDashboard(button.dataset.adsDetailScope || "", button.dataset.adsDetailId || "").catch((error) =>
+              setStatus(adsDashboardStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function renderAdsDashboard(data) {
+        adsDashboardData = data;
+        const setup = document.querySelector("#ads-dashboard-setup");
+        if (!data.ok) {
+          renderAdsKpis({});
+          renderAdsCampaignRows([]);
+          renderAdsDetail(null);
+          setup.classList.remove("hidden");
+          setup.textContent = data.configured === false
+            ? "OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 이 영역에서 실시간 성과를 조회할 수 있습니다."
+            : `${data.error || "Ads API 조회에 실패했습니다."}${data.detail ? ` · ${data.detail}` : ""}`;
+          setStatus(adsDashboardStatus, data.configured === false ? "API 키 대기 중" : "조회 실패", "error");
+          return;
+        }
+        setup.classList.add("hidden");
+        setup.textContent = "";
+        renderAdsKpis(data.campaign_total || data.account || {});
+        renderAdsCampaignRows(data.campaigns || []);
+        renderAdsDetail(data.detail || null);
+        const range = data.range || {};
+        setStatus(adsDashboardStatus, `${range.start_date || ""} ~ ${range.end_date || ""} 성과를 갱신했습니다.`, "ok");
+      }
+
+      async function loadAdsDashboard(detailScope = "", detailId = "") {
+        setDefaultAdsDates();
+        setStatus(adsDashboardStatus, "Ads API 성과를 불러오는 중...");
+        const params = new URLSearchParams({
+          start_date: document.querySelector("#ads-start-date").value,
+          end_date: document.querySelector("#ads-end-date").value,
+        });
+        if (detailScope && detailId) {
+          params.set("detail_scope", detailScope);
+          params.set("detail_id", detailId);
+        }
+        const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
+        renderAdsDashboard(data);
+      }
+
       function changeTypeLabel(type) {
         return type === "new" ? "신규" : "변경";
       }
@@ -1492,6 +1946,7 @@
           loginCard.classList.add("hidden");
           adminPanel.classList.remove("hidden");
           setStatus(loginStatus, "");
+          loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
         } catch (error) {
           setStatus(loginStatus, error.message, "error");
         }
@@ -1509,6 +1964,9 @@
       });
       document.querySelector("#refresh-analytics").addEventListener("click", () => {
         loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-ads-dashboard").addEventListener("click", () => {
+        loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
       });
       document.querySelector("#refresh-official-changes").addEventListener("click", () => {
         loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));
