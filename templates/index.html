@@ -3688,7 +3688,14 @@
             <span class="tab-icon">ICO</span>
             <span>파비콘 검사</span>
           </button>
-          <button class="tab" data-tab="intake" type="button">
+          <button
+            class="tab"
+            data-tab="intake"
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="소재 업로드 도구는 현재 비활성화되어 있습니다."
+          >
             <span class="tab-icon">IN</span>
             <span>소재 업로드</span>
           </button>
@@ -4476,7 +4483,7 @@ Allow: /</pre>
                 <div class="slide-grid">
                   <div class="slide-item">
                     <strong>최소 집행 약정</strong>
-                    <span>400만원 / 상세 조건은 영업 담당 안내</span>
+                    <span>별도 문의</span>
                   </div>
                   <div class="slide-item">
                     <strong>과금 방식</strong>
@@ -5223,6 +5230,7 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         setupGuide: "캠페인 세팅 가이드",
         pixelGuide: "픽셀 설치 가이드",
       };
+      const disabledTabs = new Set(["intake"]);
       const notices = {
         chat: document.querySelector("#chat-notice"),
         crawler: document.querySelector("#crawler-notice"),
@@ -5281,6 +5289,10 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       }
 
       function activateTab(target) {
+        if (disabledTabs.has(target)) {
+          activateTab("chat");
+          return;
+        }
         tabs.forEach((item) => item.classList.toggle("active", item.dataset.tab === target));
         Object.entries(panels).forEach(([key, panel]) => {
           panel.classList.toggle("active", key === target);
@@ -5293,7 +5305,10 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
 
       tabs.forEach((tab) => {
         if (!tab.dataset.tab) return;
-        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+        tab.addEventListener("click", () => {
+          if (tab.disabled || tab.getAttribute("aria-disabled") === "true") return;
+          activateTab(tab.dataset.tab);
+        });
       });
 
       const urlsInput = document.querySelector("#urls");
