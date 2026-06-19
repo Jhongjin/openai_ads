@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenAI Ads 관리자</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css"
+    />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
     <style>
       @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css");
@@ -51,7 +56,7 @@
       }
 
       main {
-        width: min(1180px, calc(100% - 32px));
+        width: min(1360px, calc(100% - 32px));
         margin: 0 auto;
         padding: 28px 0 48px;
       }
@@ -133,8 +138,8 @@
 
       .admin-shell {
         display: grid;
-        grid-template-columns: 228px minmax(0, 1fr);
-        gap: 18px;
+        grid-template-columns: 238px minmax(0, 1fr);
+        gap: 20px;
         align-items: start;
       }
 
@@ -206,7 +211,7 @@
 
       .admin-page.active {
         display: grid;
-        gap: 16px;
+        gap: 18px;
       }
 
       h2 {
@@ -277,38 +282,63 @@
 
       .editor-shell {
         margin-bottom: 14px;
-        border: 1px solid #cfd6df;
-        border-radius: 10px;
+        border: 1px solid #ccd6e3;
+        border-radius: 12px;
         overflow: hidden;
         background: #fff;
+        box-shadow: 0 12px 32px rgb(16 24 40 / 5%);
       }
 
       .editor-toolbar {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 7px;
         border-bottom: 1px solid #e2e8f0;
-        background: #f8fafc;
-        padding: 8px;
+        background: linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
+        padding: 10px;
       }
 
       .editor-toolbar button {
-        min-height: 34px;
-        border: 1px solid #d8dee9;
-        border-radius: 7px;
+        min-height: 36px;
+        border: 1px solid #d5deea;
+        border-radius: 9px;
         background: #fff;
-        padding: 0 10px;
-        color: #344054;
+        padding: 0 12px;
+        color: #172033;
         font-size: 13px;
         font-weight: 900;
+        box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+        transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+      }
+
+      .editor-toolbar button:hover {
+        border-color: #98a8bd;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgb(16 24 40 / 7%);
       }
 
       .notice-editor {
-        min-height: 210px;
+        min-height: 260px;
         border: 0;
         border-radius: 0;
-        padding: 14px 16px;
+        padding: 18px 20px;
         overflow: auto;
+        color: #101827;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .notice-editor:empty::before {
+        content: "공지 내용을 입력해 주세요. 굵게, 목록, 링크, 이모지를 넣고 아래 미리보기에서 확인할 수 있습니다.";
+        color: #98a2b3;
+        font-style: normal;
+      }
+
+      .editor-helper {
+        margin: 0 0 10px;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.55;
       }
 
       .notice-editor ul,
@@ -323,6 +353,31 @@
 
       .notice-editor a {
         color: #155eef;
+      }
+
+      .notice-editor .ql-editor {
+        min-height: 260px;
+        padding: 0;
+        color: #101827;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .notice-editor .ql-editor h2 {
+        margin: 4px 0 12px;
+        color: #0f172a;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: 0;
+      }
+
+      .notice-editor .ql-editor blockquote {
+        margin: 12px 0;
+        border-left: 4px solid var(--kt-red);
+        background: #fff7f7;
+        padding: 11px 13px;
+        color: #344054;
+        font-weight: 750;
       }
 
       .notice-preview-wrap {
@@ -543,12 +598,11 @@
       }
 
       .ads-key-manager {
-        display: grid;
-        gap: 14px;
         border: 1px solid #dbe3ef;
-        border-radius: 10px;
-        background: #fff;
-        padding: 16px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+        padding: 18px;
+        box-shadow: 0 10px 26px rgb(16 24 40 / 4%);
       }
 
       details.ads-key-manager {
@@ -556,7 +610,7 @@
       }
 
       details.ads-key-manager:not([open]) {
-        padding-bottom: 16px;
+        padding-bottom: 18px;
       }
 
       details.ads-key-manager summary {
@@ -576,7 +630,7 @@
 
       .ads-key-manager-head {
         display: flex;
-        align-items: start;
+        align-items: center;
         justify-content: space-between;
         gap: 12px;
       }
@@ -588,6 +642,36 @@
 
       .ads-key-manager-head .help {
         margin: 0;
+      }
+
+      .ads-key-summary-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .details-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        border: 1px solid #d8dee9;
+        border-radius: 999px;
+        background: #fff;
+        padding: 0 12px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      details.ads-key-manager .details-toggle-label::before {
+        content: "키 관리 펼치기";
+      }
+
+      details.ads-key-manager[open] .details-toggle-label::before {
+        content: "키 관리 접기";
       }
 
       .ads-key-form {
@@ -666,9 +750,13 @@
 
       .ads-dashboard-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
-        gap: 16px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
         align-items: start;
+      }
+
+      .ads-dashboard-layout > div {
+        min-width: 0;
       }
 
       .ads-table-title {
@@ -731,12 +819,13 @@
       }
 
       .ads-detail-card {
-        position: sticky;
-        top: 16px;
+        position: static;
         border: 1px solid #dbe3ef;
-        border-radius: 10px;
-        background: #fbfcff;
-        padding: 16px;
+        border-radius: 12px;
+        background: #fff;
+        padding: 18px;
+        width: 100%;
+        box-shadow: 0 10px 24px rgb(16 24 40 / 4%);
       }
 
       .ads-detail-card h3 {
@@ -759,6 +848,25 @@
         font-size: 13px;
         font-weight: 800;
         line-height: 1.5;
+      }
+
+      .ads-dashboard-layout .mail-table-wrap {
+        min-height: 320px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .ads-detail-card .mail-table-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      .ads-table th,
+      .ads-table td {
+        padding: 13px 14px;
+        vertical-align: middle;
       }
 
       .span-full {
@@ -792,13 +900,14 @@
 
       .mail-review-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
-        gap: 16px;
+        grid-template-columns: minmax(660px, 1.35fr) minmax(430px, 0.65fr);
+        gap: 18px;
         align-items: start;
       }
 
       .mail-table-wrap {
         overflow-x: auto;
+        border-radius: 10px;
       }
 
       .mail-table button {
@@ -971,25 +1080,91 @@
         line-height: 1.5;
       }
 
+      .sync-schedule {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        border: 1px solid #d1fadf;
+        border-left: 4px solid #12b76a;
+        border-radius: 10px;
+        background: #f6fef9;
+        padding: 12px 14px;
+        color: #054f31;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .sync-schedule strong {
+        margin-right: 4px;
+        font-weight: 900;
+      }
+
+      .sync-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        border: 1px solid #a6f4c5;
+        border-radius: 999px;
+        background: #fff;
+        padding: 0 9px;
+        color: #067647;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .sync-schedule em {
+        flex: 1 1 260px;
+        min-width: 240px;
+        color: #067647;
+        font-style: normal;
+        font-weight: 750;
+      }
+
       .filter-strip {
-        display: grid;
-        grid-template-columns: minmax(150px, 180px) minmax(120px, 150px) 1fr auto auto;
-        gap: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
         align-items: end;
         margin-top: 16px;
         padding: 14px;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border-radius: 12px;
         background: #fbfcff;
       }
 
       .filter-strip label {
+        flex: 0 0 180px;
         margin: 0;
       }
 
       .filter-strip .help {
+        flex: 1 0 100%;
+        order: -1;
+        min-width: 0;
         margin: 0;
         align-self: center;
+        border-left: 4px solid #155eef;
+        border-radius: 9px;
+        background: #eff6ff;
+        padding: 10px 12px;
+        color: #1849a9;
+        font-weight: 850;
+        line-height: 1.55;
+        white-space: normal;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+
+      .filter-strip .pager {
+        flex: 0 0 auto;
+      }
+
+      .filter-strip > .actions {
+        flex: 0 0 auto;
+        margin-left: auto !important;
       }
 
       .pager {
@@ -1016,9 +1191,12 @@
       .chart-shell {
         margin: 14px 0 16px;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background: #fff;
-        padding: 14px;
+        border-radius: 12px;
+        background:
+          linear-gradient(#fff, #fff) padding-box,
+          linear-gradient(135deg, rgba(237, 28, 36, .28), rgba(21, 94, 239, .16)) border-box;
+        padding: 16px;
+        box-shadow: 0 10px 24px rgb(16 24 40 / 4%);
       }
 
       .analytics-subsection {
@@ -1050,8 +1228,8 @@
       .visit-chart {
         display: block;
         width: 100%;
-        height: 280px;
-        min-height: 280px;
+        height: 320px;
+        min-height: 320px;
         overflow: visible;
       }
 
@@ -1285,10 +1463,16 @@
             <div class="readonly-value" id="notice-updated">저장 시 자동 반영</div>
           </div>
           <div class="field-label">공지 내용</div>
+          <p class="editor-helper">
+            팝업 본문에 노출될 실제 문구입니다. 핵심 문장만 짧게 쓰고, 굵게/목록/링크/이모지를 넣은 뒤
+            아래 미리보기에서 최종 노출 형태를 확인해 주세요.
+          </p>
           <div class="editor-shell">
             <div class="editor-toolbar" aria-label="공지 서식 도구">
               <button type="button" data-command="bold">굵게</button>
               <button type="button" data-command="italic">기울임</button>
+              <button type="button" data-command="header">소제목</button>
+              <button type="button" data-command="blockquote">강조문</button>
               <button type="button" data-command="insertUnorderedList">목록</button>
               <button type="button" data-command="insertOrderedList">번호 목록</button>
               <button type="button" data-command="createLink">링크</button>
@@ -1449,7 +1633,10 @@
                   광고주별 Ads API 키와 Conversion API 키를 저장합니다. 저장된 키는 화면에 원문으로 표시하지 않습니다.
                 </p>
               </div>
-              <span class="status" id="ads-api-key-status"></span>
+              <span class="ads-key-summary-actions">
+                <span class="status" id="ads-api-key-status"></span>
+                <span class="details-toggle-label" aria-hidden="true"></span>
+              </span>
             </summary>
             <div class="ads-key-manager-body">
               <div class="ads-key-form">
@@ -1658,6 +1845,14 @@
             운영 원칙: 모든 수집 메일을 곧바로 RAG에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
             AI 주요 요약을 먼저 검토한 뒤, 확정해도 되는 문장만 RAG 반영 문장으로 남겨 주세요.
           </div>
+          <div class="sync-schedule" aria-label="메일 자동 수집 시간">
+            <strong>메일 자동 수집</strong>
+            <span class="sync-pill">KST 09:00</span>
+            <span class="sync-pill">KST 14:00</span>
+            <span class="sync-pill">KST 18:00</span>
+            <span class="sync-pill">KST 23:00</span>
+            <em>Daum IMAP 수집 후 Google Sheet에 누적하며, 관리자 승인 항목만 RAG에 반영합니다.</em>
+          </div>
           <div class="summary-grid" style="margin-top: 16px;">
             <div class="metric">
               <span>검토 필요</span>
@@ -1860,6 +2055,10 @@
           const format = noticeQuill.getFormat(range);
           if (command === "bold" || command === "italic" || command === "underline") {
             noticeQuill.format(command, !format[command]);
+          } else if (command === "header") {
+            noticeQuill.format("header", format.header === 2 ? false : 2);
+          } else if (command === "blockquote") {
+            noticeQuill.format("blockquote", !format.blockquote);
           } else if (command === "insertUnorderedList") {
             noticeQuill.format("list", format.list === "bullet" ? false : "bullet");
           } else if (command === "insertOrderedList") {
@@ -1873,6 +2072,10 @@
         } else if (command === "createLink") {
           const url = window.prompt("링크 URL을 입력해 주세요.");
           if (url) document.execCommand(command, false, url);
+        } else if (command === "header") {
+          document.execCommand("formatBlock", false, "h3");
+        } else if (command === "blockquote") {
+          document.execCommand("formatBlock", false, "blockquote");
         } else {
           document.execCommand(command, false, null);
         }
@@ -2015,11 +2218,28 @@
           return;
         }
         if (!visitChart) visitChart = window.echarts.init(element);
+        const areaGradient = window.echarts.graphic
+          ? new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(237, 28, 36, 0.24)" },
+              { offset: 1, color: "rgba(237, 28, 36, 0.02)" },
+            ])
+          : "rgba(237, 28, 36, 0.12)";
         visitChart.setOption({
           color: ["#ed1c24"],
           grid: { left: 42, right: 18, top: 30, bottom: 38 },
           tooltip: {
             trigger: "axis",
+            axisPointer: {
+              type: "line",
+              lineStyle: { color: "#98a2b3", width: 1, type: "dashed" },
+            },
+            backgroundColor: "#101828",
+            borderWidth: 0,
+            textStyle: {
+              color: "#fff",
+              fontFamily: "Pretendard Variable, Pretendard, sans-serif",
+              fontWeight: 800,
+            },
             valueFormatter: (value) => Number(value || 0).toLocaleString("ko-KR"),
           },
           xAxis: {
@@ -2041,10 +2261,13 @@
               name: "방문",
               type: "line",
               smooth: true,
+              showSymbol: points.length <= 14,
+              symbol: "circle",
               symbolSize: 8,
               data: points.map((item) => item.count),
               lineStyle: { width: 3 },
-              areaStyle: { color: "rgba(237, 28, 36, 0.12)" },
+              emphasis: { focus: "series" },
+              areaStyle: { color: areaGradient },
             },
           ],
         });
