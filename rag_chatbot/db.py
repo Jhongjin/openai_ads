@@ -151,6 +151,44 @@ def ensure_database(settings: RuntimeSettings | None = None) -> None:
                 "on {}.documents (article_id, lang)"
             ).format(sql.Identifier(schema))
         )
+        conn.execute(
+            sql.SQL(
+                """
+                create table if not exists {}.official_guide_changes (
+                    id bigserial primary key,
+                    source_identity text not null,
+                    article_id text,
+                    lang text,
+                    title text not null,
+                    source_url text not null,
+                    change_type text not null,
+                    previous_hash text,
+                    current_hash text not null,
+                    previous_source_updated_at date,
+                    current_source_updated_at date,
+                    detected_at timestamptz not null default now(),
+                    summary text not null default '',
+                    metadata jsonb not null default '{{}}'::jsonb,
+                    constraint official_guide_changes_type_check
+                        check (change_type in ('new', 'updated')),
+                    constraint official_guide_changes_identity_hash_unique
+                        unique (source_identity, current_hash)
+                )
+                """
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "create index if not exists official_guide_changes_detected_idx "
+                "on {}.official_guide_changes (detected_at desc)"
+            ).format(sql.Identifier(schema))
+        )
+        conn.execute(
+            sql.SQL(
+                "create index if not exists official_guide_changes_article_lang_idx "
+                "on {}.official_guide_changes (article_id, lang)"
+            ).format(sql.Identifier(schema))
+        )
 
 
 def reset_collection(collection_name: str, settings: RuntimeSettings | None = None) -> None:
@@ -189,6 +227,101 @@ def source_hash_exists(
             (collection_name, source_identity, content_hash),
         )
         return cursor.fetchone() is not None
+
+
+def fetch_official_source_snapshot(
+    *,
+    source_identity: str,
+    settings: RuntimeSettings | None = None,
+) -> dict[str, Any] | None:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    with db_connection(settings, row_factory=dict_row) as conn:
+        cursor = conn.execute(
+            sql.SQL(
+                """
+                select
+                    source_url,
+                    title,
+                    lang,
+                    article_id,
+                    content_hash,
+                    source_updated_at,
+                    metadata
+                from {}.documents
+                where collection = 'official'
+                  and metadata->>'source_identity' = %s
+                order by chunk_index asc
+                limit 1
+                """
+            ).format(sql.Identifier(schema)),
+            (source_identity,),
+        )
+        row = cursor.fetchone()
+    return dict(row) if row else None
+
+
+def record_official_guide_change(
+    *,
+    document: Document,
+    previous: dict[str, Any] | None,
+    settings: RuntimeSettings | None = None,
+) -> bool:
+    settings = settings or load_settings()
+    schema = _validate_schema_name(settings.supabase_schema)
+    metadata = dict(document.metadata)
+    source_identity = str(metadata.get("source_identity") or "")
+    current_hash = str(metadata.get("content_hash") or "")
+    if not source_identity or not current_hash:
+        return False
+
+    change_type = "updated" if previous else "new"
+    summary = (
+        "OpenAI 공식 문서 내용이 변경되어 official 컬렉션에 재인덱싱되었습니다. 원문을 열어 변경 내용을 확인해 주세요."
+        if previous
+        else "새 OpenAI 공식 문서가 수집되어 official 컬렉션에 인덱싱되었습니다."
+    )
+    previous_hash = previous.get("content_hash") if previous else None
+    previous_updated_at = previous.get("source_updated_at") if previous else None
+
+    with db_connection(settings) as conn:
+        cursor = conn.execute(
+            sql.SQL(
+                """
+                insert into {}.official_guide_changes (
+                    source_identity,
+                    article_id,
+                    lang,
+                    title,
+                    source_url,
+                    change_type,
+                    previous_hash,
+                    current_hash,
+                    previous_source_updated_at,
+                    current_source_updated_at,
+                    summary,
+                    metadata
+                )
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                on conflict (source_identity, current_hash) do nothing
+                """
+            ).format(sql.Identifier(schema)),
+            (
+                source_identity,
+                metadata.get("article_id") or None,
+                metadata.get("lang") or None,
+                str(metadata.get("title") or "Untitled"),
+                str(metadata.get("source_url") or ""),
+                change_type,
+                previous_hash,
+                current_hash,
+                previous_updated_at,
+                metadata.get("source_updated_at") or None,
+                summary,
+                Jsonb(metadata),
+            ),
+        )
+        return int(cursor.rowcount or 0) > 0
 
 
 def delete_source_documents(

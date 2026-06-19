@@ -405,6 +405,216 @@
         line-height: 1.5;
       }
 
+      .span-full {
+        grid-column: 1 / -1;
+      }
+
+      .review-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .review-toolbar label {
+        min-width: 220px;
+        margin: 0;
+      }
+
+      select {
+        min-height: 44px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 12px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 750;
+      }
+
+      .mail-review-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .mail-table-wrap {
+        overflow-x: auto;
+      }
+
+      .mail-table button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        color: #344054;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .mail-status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #d8dee9;
+        background: #f8fafc;
+        padding: 0 8px;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .mail-status-chip.needs_review {
+        border-color: #fedf89;
+        background: #fffaeb;
+        color: #b54708;
+      }
+
+      .mail-status-chip.approved_for_rag {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .mail-status-chip.rejected,
+      .mail-status-chip.superseded {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #b42318;
+      }
+
+      .mail-status-chip.hold {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #155eef;
+      }
+
+      .change-log-note {
+        border-left: 4px solid #047857;
+        background: #ecfdf3;
+        padding: 12px 14px;
+        color: #047857;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .change-type-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #cfd6df;
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .change-type-chip.new {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .change-type-chip.updated {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #155eef;
+      }
+
+      .language-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 24px;
+        border-radius: 6px;
+        background: #111827;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .mail-subject {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 900;
+      }
+
+      .mail-meta {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .mail-detail {
+        position: sticky;
+        top: 16px;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 16px;
+      }
+
+      .mail-detail h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        line-height: 1.35;
+      }
+
+      .mail-detail-empty {
+        display: grid;
+        min-height: 260px;
+        place-items: center;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        color: var(--muted);
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .mail-body-preview {
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+        white-space: pre-wrap;
+        color: #344054;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .mail-approval-box {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .mail-approval-box label {
+        margin-bottom: 0;
+      }
+
+      .mail-approval-box textarea {
+        min-height: 120px;
+      }
+
+      .mail-review-note {
+        border-left: 4px solid #155eef;
+        background: #eff6ff;
+        padding: 12px 14px;
+        color: #1d4ed8;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
       .chart-shell {
         margin: 14px 0 16px;
         border: 1px solid #e2e8f0;
@@ -521,6 +731,14 @@
 
         .admin-tool-card {
           grid-template-columns: 1fr;
+        }
+
+        .mail-review-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .mail-detail {
+          position: static;
         }
       }
     </style>
@@ -667,6 +885,108 @@
             <a class="admin-tool-link" href="/ads-api">검토 페이지 열기</a>
           </div>
         </div>
+
+        <div class="card section span-full">
+          <h2>OpenAI 공식 가이드 변경 로그</h2>
+          <p class="help">
+            GitHub Actions 재인덱싱에서 새로 발견되거나 내용 해시가 바뀐 공식 문서만 기록합니다.
+            공식 가이드 변경분은 official 컬렉션에 자동 반영됩니다.
+          </p>
+          <div class="change-log-note">
+            운영 원칙: OpenAI Help Center/Developers 문서는 하루 2회 확인하고, 동일 문서는 건너뜁니다.
+            아래 목록은 변경이 감지된 문서의 감사 로그이며 메일 검토함과 달리 별도 승인 없이 RAG에 반영됩니다.
+          </div>
+          <div class="review-toolbar" style="margin-top: 16px;">
+            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 표시됩니다.</div>
+            <div class="actions" style="margin: 0;">
+              <button class="secondary" id="refresh-official-changes" type="button">변경 로그 새로고침</button>
+              <span class="status" id="official-change-status"></span>
+            </div>
+          </div>
+          <div class="mail-table-wrap">
+            <table class="mail-table">
+              <thead>
+                <tr>
+                  <th>감지일</th>
+                  <th>유형</th>
+                  <th>언어</th>
+                  <th>문서</th>
+                  <th>업데이트일</th>
+                </tr>
+              </thead>
+              <tbody id="official-change-body">
+                <tr>
+                  <td colspan="5">공식 가이드 변경 로그를 불러오는 중입니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card section span-full">
+          <h2>OpenAI 담당자 메일 검토함</h2>
+          <p class="help">
+            Daum IMAP에서 수집된 관련 메일을 검토합니다. 원문은 시트에 영구 보존하고,
+            관리자가 승인 요약을 작성한 행만 다음 자동 동기화 때 RAG에 반영됩니다.
+          </p>
+          <div class="mail-review-note">
+            운영 원칙: 모든 수집 메일을 곧바로 RAG에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
+            승인 요약으로 확정 문장만 남겨야 하며, 이전 내용이 바뀐 경우 대체 해시나 검토 메모를 남겨 주세요.
+          </div>
+          <div class="summary-grid" style="margin-top: 16px;">
+            <div class="metric">
+              <span>검토 필요</span>
+              <strong id="mail-metric-needs">0</strong>
+            </div>
+            <div class="metric">
+              <span>RAG 승인</span>
+              <strong id="mail-metric-approved">0</strong>
+            </div>
+            <div class="metric">
+              <span>전체 수집</span>
+              <strong id="mail-metric-total">0</strong>
+            </div>
+          </div>
+          <div class="review-toolbar">
+            <label>
+              검토 상태
+              <select id="mail-review-filter">
+                <option value="all">전체 보기</option>
+                <option value="needs_review">검토 필요</option>
+                <option value="approved_for_rag">RAG 반영 승인</option>
+                <option value="hold">보류</option>
+                <option value="rejected">제외</option>
+                <option value="superseded">이전 내용 대체</option>
+              </select>
+            </label>
+            <div class="actions" style="margin: 0;">
+              <button class="secondary" id="refresh-mail-review" type="button">메일 목록 새로고침</button>
+              <span class="status" id="mail-review-status"></span>
+            </div>
+          </div>
+          <div class="mail-review-grid">
+            <div class="mail-table-wrap">
+              <table class="mail-table">
+                <thead>
+                  <tr>
+                    <th>상태</th>
+                    <th>메일</th>
+                    <th>요약</th>
+                    <th>작업</th>
+                  </tr>
+                </thead>
+                <tbody id="mail-review-body">
+                  <tr>
+                    <td colspan="4">메일 검토 목록을 불러오는 중입니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <aside class="mail-detail" id="mail-detail">
+              <div class="mail-detail-empty">왼쪽 목록에서 검토할 메일을 선택해 주세요.</div>
+            </aside>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -678,6 +998,11 @@
       const loginStatus = document.querySelector("#login-status");
       const noticeStatus = document.querySelector("#notice-status");
       const analyticsStatus = document.querySelector("#analytics-status");
+      const officialChangeStatus = document.querySelector("#official-change-status");
+      const mailReviewStatus = document.querySelector("#mail-review-status");
+      let officialChanges = [];
+      let mailReviewRows = [];
+      let selectedMailHash = "";
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -931,11 +1256,238 @@
         if (data.storage_error) setStatus(analyticsStatus, `DB 저장소 대신 임시 저장소 사용 중: ${data.storage_error}`, "error");
       }
 
+      function changeTypeLabel(type) {
+        return type === "new" ? "신규" : "변경";
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString("ko-KR");
+      }
+
+      function renderOfficialChanges(items) {
+        const body = document.querySelector("#official-change-body");
+        body.innerHTML = "";
+        if (!items.length) {
+          body.innerHTML = '<tr><td colspan="5">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
+          return;
+        }
+        items.forEach((item) => {
+          const type = item.change_type === "new" ? "new" : "updated";
+          const updatedAt = item.current_source_updated_at || "-";
+          const previousAt = item.previous_source_updated_at || "";
+          const hashText = item.previous_hash
+            ? `${String(item.previous_hash).slice(0, 10)} → ${String(item.current_hash || "").slice(0, 10)}`
+            : String(item.current_hash || "").slice(0, 10);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(formatDateTime(item.detected_at))}</td>
+            <td><span class="change-type-chip ${type}">${changeTypeLabel(type)}</span></td>
+            <td><span class="language-chip">${escapeHtml(item.lang || "-")}</span></td>
+            <td>
+              <span class="mail-subject"><a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener">${escapeHtml(item.title || "Untitled")}</a></span>
+              <div class="mail-meta">${escapeHtml(item.summary || "")}<br>article ${escapeHtml(item.article_id || "-")} · ${escapeHtml(hashText)}</div>
+            </td>
+            <td>${escapeHtml(previousAt ? `${previousAt} → ${updatedAt}` : updatedAt)}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      async function loadOfficialChanges() {
+        setStatus(officialChangeStatus, "공식 변경 로그를 불러오는 중...");
+        const data = await adminFetch("/api/admin/official-changes?limit=80");
+        if (!data.ok) {
+          officialChanges = [];
+          renderOfficialChanges([]);
+          throw new Error(data.error || "공식 변경 로그를 불러오지 못했습니다.");
+        }
+        officialChanges = data.items || [];
+        renderOfficialChanges(officialChanges);
+        setStatus(officialChangeStatus, "공식 변경 로그를 갱신했습니다.", "ok");
+      }
+
+      function statusLabel(status) {
+        const labels = {
+          needs_review: "검토 필요",
+          approved_for_rag: "RAG 승인",
+          hold: "보류",
+          rejected: "제외",
+          superseded: "대체됨",
+        };
+        return labels[status] || status || "검토 필요";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[char]);
+      }
+
+      function shortText(value, limit = 140) {
+        const text = String(value || "").replace(/\s+/g, " ").trim();
+        if (text.length <= limit) return text || "-";
+        return `${text.slice(0, limit - 1)}…`;
+      }
+
+      function rowStatus(row) {
+        return String(row.review_status || row.status || "needs_review").trim() || "needs_review";
+      }
+
+      function renderMailStats(stats = {}) {
+        document.querySelector("#mail-metric-needs").textContent = Number(stats.needs_review || 0).toLocaleString("ko-KR");
+        document.querySelector("#mail-metric-approved").textContent = Number(stats.approved_for_rag || 0).toLocaleString("ko-KR");
+        document.querySelector("#mail-metric-total").textContent = Number(stats.total || 0).toLocaleString("ko-KR");
+      }
+
+      function renderMailRows(rows) {
+        const body = document.querySelector("#mail-review-body");
+        body.innerHTML = "";
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="4">조건에 맞는 메일이 없습니다.</td></tr>';
+          renderMailDetail(null);
+          return;
+        }
+        rows.forEach((row) => {
+          const status = rowStatus(row);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><span class="mail-status-chip ${status}">${statusLabel(status)}</span></td>
+            <td>
+              <span class="mail-subject">${escapeHtml(shortText(row.subject, 92))}</span>
+              <div class="mail-meta">${escapeHtml(row.received_at || "-")}<br>${escapeHtml(row.from_name || row.from_email || "-")} · ${escapeHtml(row.from_email || "-")}</div>
+            </td>
+            <td>${escapeHtml(shortText(row.approved_summary || row.body_summary || row.body_text, 160))}</td>
+            <td><button type="button" data-mail-hash="${escapeHtml(row.duplicate_hash)}">검토</button></td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-mail-hash]").forEach((button) => {
+          button.addEventListener("click", () => {
+            selectedMailHash = button.dataset.mailHash || "";
+            renderMailDetail(mailReviewRows.find((row) => row.duplicate_hash === selectedMailHash) || null);
+          });
+        });
+        if (!selectedMailHash || !rows.some((row) => row.duplicate_hash === selectedMailHash)) {
+          selectedMailHash = rows[0].duplicate_hash || "";
+          renderMailDetail(rows[0]);
+        }
+      }
+
+      function renderMailDetail(row) {
+        const detail = document.querySelector("#mail-detail");
+        if (!row) {
+          detail.innerHTML = '<div class="mail-detail-empty">왼쪽 목록에서 검토할 메일을 선택해 주세요.</div>';
+          return;
+        }
+        const status = rowStatus(row);
+        const defaultTitle = row.approved_title || row.subject || "";
+        const defaultSummary = row.approved_summary || row.body_summary || "";
+        detail.innerHTML = `
+          <span class="mail-status-chip ${status}">${statusLabel(status)}</span>
+          <h3>${escapeHtml(row.subject || "(제목 없음)")}</h3>
+          <div class="mail-meta">
+            수신 ${escapeHtml(row.received_at || "-")}<br>
+            발신 ${escapeHtml(row.from_name || "-")} &lt;${escapeHtml(row.from_email || "-")}&gt;<br>
+            태그 ${escapeHtml(row.tags || "-")}<br>
+            해시 ${escapeHtml(row.duplicate_hash || "-")}
+          </div>
+          <div class="mail-body-preview" style="margin-top: 12px;">${escapeHtml(row.body_text || row.body_summary || "(본문 없음)")}</div>
+          <div class="mail-approval-box">
+            <label>
+              승인 제목
+              <input id="mail-approved-title" type="text" value="${escapeHtml(defaultTitle)}" />
+            </label>
+            <label>
+              승인 요약
+              <textarea id="mail-approved-summary" placeholder="RAG에 반영할 확정 문장만 정리해 주세요.">${escapeHtml(defaultSummary)}</textarea>
+            </label>
+            <label>
+              검토 메모
+              <textarea id="mail-review-note" placeholder="보류/제외 사유, 이전 내용 대체 여부 등을 남깁니다.">${escapeHtml(row.review_note || "")}</textarea>
+            </label>
+            <label>
+              승인자
+              <input id="mail-approved-by" type="text" value="${escapeHtml(row.approved_by || "관리자")}" />
+            </label>
+            <label>
+              대체할 이전 중복 해시
+              <input id="mail-supersedes-hash" type="text" value="${escapeHtml(row.supersedes_duplicate_hash || "")}" />
+            </label>
+          </div>
+          <div class="actions">
+            <button class="danger" type="button" data-review-action="approved_for_rag">승인하여 RAG 반영</button>
+            <button class="secondary" type="button" data-review-action="hold">보류</button>
+            <button class="secondary" type="button" data-review-action="rejected">제외</button>
+            <button class="secondary" type="button" data-review-action="superseded">이전 내용 대체 처리</button>
+          </div>
+        `;
+        detail.querySelectorAll("[data-review-action]").forEach((button) => {
+          button.addEventListener("click", () => {
+            saveMailReview(button.dataset.reviewAction || "needs_review").catch((error) =>
+              setStatus(mailReviewStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function readMailDetail(status) {
+        return {
+          duplicate_hash: selectedMailHash,
+          review_status: status,
+          approved_title: document.querySelector("#mail-approved-title")?.value || "",
+          approved_summary: document.querySelector("#mail-approved-summary")?.value || "",
+          review_note: document.querySelector("#mail-review-note")?.value || "",
+          approved_by: document.querySelector("#mail-approved-by")?.value || "관리자",
+          supersedes_duplicate_hash: document.querySelector("#mail-supersedes-hash")?.value || "",
+        };
+      }
+
+      async function loadMailReview() {
+        const filter = document.querySelector("#mail-review-filter").value || "all";
+        setStatus(mailReviewStatus, "메일 검토 목록을 불러오는 중...");
+        const data = await adminFetch(`/api/admin/mail-review?status=${encodeURIComponent(filter)}&limit=100`);
+        if (!data.ok) {
+          renderMailStats(data.stats || {});
+          mailReviewRows = [];
+          renderMailRows([]);
+          throw new Error(data.error || "메일 검토 목록을 불러오지 못했습니다.");
+        }
+        mailReviewRows = data.rows || [];
+        renderMailStats(data.stats || {});
+        renderMailRows(mailReviewRows);
+        setStatus(mailReviewStatus, "메일 검토 목록을 갱신했습니다.", "ok");
+      }
+
+      async function saveMailReview(status) {
+        const payload = readMailDetail(status);
+        if (!payload.duplicate_hash) throw new Error("검토할 메일을 먼저 선택해 주세요.");
+        if (status === "approved_for_rag" && !payload.approved_summary.trim()) {
+          throw new Error("RAG 반영 승인에는 승인 요약이 필요합니다.");
+        }
+        setStatus(mailReviewStatus, "검토 상태를 저장하는 중...");
+        const data = await adminFetch("/api/admin/mail-review/update", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (!data.ok) throw new Error(data.error || "검토 상태 저장에 실패했습니다.");
+        setStatus(mailReviewStatus, "검토 상태를 저장했습니다. 다음 자동 동기화 때 승인 요약이 RAG에 반영됩니다.", "ok");
+        await loadMailReview();
+      }
+
       async function login() {
         setStatus(loginStatus, "확인 중...");
         try {
           await loadNotice();
           await loadAnalytics();
+          await loadOfficialChanges();
+          await loadMailReview();
           window.sessionStorage.setItem("openaiAdsAdminPassword", passwordInput.value);
           loginCard.classList.add("hidden");
           adminPanel.classList.remove("hidden");
@@ -957,6 +1509,16 @@
       });
       document.querySelector("#refresh-analytics").addEventListener("click", () => {
         loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-official-changes").addEventListener("click", () => {
+        loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-mail-review").addEventListener("click", () => {
+        loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));
+      });
+      document.querySelector("#mail-review-filter").addEventListener("change", () => {
+        selectedMailHash = "";
+        loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));
       });
       document.querySelectorAll(".editor-toolbar button").forEach((button) => {
         button.addEventListener("click", () => {

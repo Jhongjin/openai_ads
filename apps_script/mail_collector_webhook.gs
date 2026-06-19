@@ -42,6 +42,12 @@ function doPost(e) {
     if (payload.action === "approved_for_rag") {
       return jsonResponse_(approvedRows_(sheet));
     }
+    if (payload.action === "review_list") {
+      return jsonResponse_(reviewList_(sheet, payload));
+    }
+    if (payload.action === "review_update") {
+      return jsonResponse_(reviewUpdate_(sheet, payload));
+    }
 
     const rows = normalizeRows_((payload.data && payload.data.rows) || payload.rows);
     const existingHashes = existingHashSet_(sheet);
@@ -141,19 +147,132 @@ function approvedRows_(sheet) {
   };
 }
 
+function reviewList_(sheet, payload) {
+  const statusFilter = String(payload.status || "").trim().toLowerCase();
+  const limit = Math.max(1, Math.min(Number(payload.limit || 100), 300));
+  const rows = objectRows_(sheet).reverse();
+  const filtered = rows
+    .filter((row) => {
+      if (!statusFilter || statusFilter === "all") return true;
+      const status = String(row.review_status || row.status || "").trim().toLowerCase();
+      return status === statusFilter;
+    })
+    .slice(0, limit)
+    .map(safeReviewRow_);
+
+  return {
+    ok: true,
+    rows: filtered,
+    stats: reviewStats_(rows),
+  };
+}
+
+function reviewUpdate_(sheet, payload) {
+  const duplicateHash = String(payload.duplicate_hash || "").trim();
+  if (!duplicateHash) {
+    return { ok: false, error: "duplicate_hash is required" };
+  }
+
+  const headers = headerRow_(sheet);
+  const hashColumn = headers.indexOf("duplicate_hash") + 1;
+  if (hashColumn < 1) {
+    return { ok: false, error: "duplicate_hash column not found" };
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return { ok: false, error: "no rows" };
+  }
+
+  const hashes = sheet.getRange(2, hashColumn, lastRow - 1, 1).getValues();
+  let targetRow = -1;
+  for (let index = 0; index < hashes.length; index += 1) {
+    if (String(hashes[index][0] || "").trim() === duplicateHash) {
+      targetRow = index + 2;
+      break;
+    }
+  }
+  if (targetRow < 0) {
+    return { ok: false, error: "target row not found" };
+  }
+
+  const reviewStatus = String(payload.review_status || "needs_review").trim();
+  const approvedSummary = String(payload.approved_summary || "").trim();
+  if (reviewStatus === "approved_for_rag" && !approvedSummary) {
+    return { ok: false, error: "approved_summary is required for approved_for_rag" };
+  }
+
+  const updates = {
+    review_status: reviewStatus,
+    status: reviewStatus,
+    review_note: String(payload.review_note || "").trim(),
+    approved_title: String(payload.approved_title || "").trim(),
+    approved_summary: approvedSummary,
+    approved_by: String(payload.approved_by || "").trim(),
+    approved_at: reviewStatus === "approved_for_rag" ? nowKst_() : String(payload.approved_at || "").trim(),
+    supersedes_duplicate_hash: String(payload.supersedes_duplicate_hash || "").trim(),
+  };
+
+  Object.keys(updates).forEach((key) => {
+    const column = headers.indexOf(key) + 1;
+    if (column > 0) {
+      sheet.getRange(targetRow, column).setValue(updates[key]);
+    }
+  });
+
+  const row = objectRows_(sheet).find((item) => Number(item.__row_number) === targetRow);
+  return {
+    ok: true,
+    row: safeReviewRow_(row || {}),
+    stats: reviewStats_(objectRows_(sheet)),
+  };
+}
+
+function reviewStats_(rows) {
+  const stats = {
+    total: rows.length,
+    needs_review: 0,
+    approved_for_rag: 0,
+    hold: 0,
+    rejected: 0,
+    superseded: 0,
+  };
+  rows.forEach((row) => {
+    const status = String(row.review_status || row.status || "needs_review").trim() || "needs_review";
+    stats[status] = Number(stats[status] || 0) + 1;
+  });
+  return stats;
+}
+
+function safeReviewRow_(row) {
+  const result = {};
+  MAIL_SHEET_HEADERS.forEach((header) => {
+    result[header] = clamp_(row[header], header === "body_text" || header === "attachment_text" ? 5000 : 1000);
+  });
+  result.row_number = row.__row_number || "";
+  return result;
+}
+
 function objectRows_(sheet) {
   const lastRow = sheet.getLastRow();
   const lastColumn = sheet.getLastColumn();
   if (lastRow < 2 || lastColumn < 1) return [];
-  const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map((header) => String(header || ""));
+  const headers = headerRow_(sheet);
   const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
-  return values.map((row) => {
+  return values.map((row, rowIndex) => {
     const item = {};
     headers.forEach((header, index) => {
       if (header) item[header] = row[index];
     });
+    item.__row_number = rowIndex + 2;
     return item;
   });
+}
+
+function headerRow_(sheet) {
+  const lastColumn = sheet.getLastColumn();
+  if (lastColumn < 1) return [];
+  return sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map((header) => String(header || ""));
 }
 
 function normalizeRows_(rows) {
@@ -165,4 +284,14 @@ function jsonResponse_(body) {
   const output = ContentService.createTextOutput(JSON.stringify(body));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+function nowKst_() {
+  return Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+}
+
+function clamp_(value, limit) {
+  const text = value == null ? "" : String(value);
+  if (text.length <= limit) return text;
+  return text.slice(0, Math.max(0, limit - 16)) + "\n...[truncated]";
 }

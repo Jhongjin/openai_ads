@@ -114,6 +114,16 @@ class NoticeConfigRequest(BaseModel):
     enabled: bool = True
 
 
+class MailReviewUpdateRequest(BaseModel):
+    duplicate_hash: str = Field(..., min_length=8, max_length=128)
+    review_status: str = Field(..., min_length=1, max_length=40)
+    review_note: str | None = Field(default="", max_length=2000)
+    approved_title: str | None = Field(default="", max_length=300)
+    approved_summary: str | None = Field(default="", max_length=8000)
+    approved_by: str | None = Field(default="", max_length=80)
+    supersedes_duplicate_hash: str | None = Field(default="", max_length=128)
+
+
 class VisitRequest(BaseModel):
     page: str = Field(..., min_length=1, max_length=80)
     label: str | None = Field(default=None, max_length=120)
@@ -234,6 +244,42 @@ def admin_analytics(request: Request) -> dict[str, Any]:
 
     _require_admin(request)
     return get_visit_analytics()
+
+
+@app.get("/api/admin/official-changes", include_in_schema=False)
+def admin_official_changes(request: Request) -> dict[str, Any]:
+    from admin_store import list_official_guide_changes
+
+    _require_admin(request)
+    try:
+        limit = int(str(request.query_params.get("limit") or "80"))
+    except ValueError:
+        limit = 80
+    return list_official_guide_changes(limit=limit)
+
+
+@app.get("/api/admin/mail-review", include_in_schema=False)
+def admin_mail_review(request: Request) -> dict[str, Any]:
+    from admin_store import list_mail_review_rows
+
+    _require_admin(request)
+    status_filter = str(request.query_params.get("status") or "")
+    try:
+        limit = int(str(request.query_params.get("limit") or "100"))
+    except ValueError:
+        limit = 100
+    return list_mail_review_rows(status_filter=status_filter, limit=limit)
+
+
+@app.post("/api/admin/mail-review/update", include_in_schema=False)
+def admin_update_mail_review(request: Request, update: MailReviewUpdateRequest) -> dict[str, Any]:
+    from admin_store import update_mail_review_row
+
+    _require_admin(request)
+    try:
+        return update_mail_review_row(update.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/chat", response_model=ChatResponse)

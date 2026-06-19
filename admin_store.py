@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from html import escape as html_escape
 from html import unescape as html_unescape
@@ -8,7 +9,9 @@ from html.parser import HTMLParser
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import httpx
 import psycopg
+from psycopg.rows import dict_row
 
 from rag_chatbot.config import load_settings
 
@@ -45,6 +48,15 @@ _memory_notice = DEFAULT_NOTICE.copy()
 _memory_visits: dict[str, dict[str, Any]] = {}
 _memory_visit_days: dict[str, int] = {}
 _db_ready = False
+
+
+MAIL_REVIEW_STATUSES = {
+    "needs_review": "검토 필요",
+    "approved_for_rag": "RAG 반영 승인",
+    "hold": "보류",
+    "rejected": "제외",
+    "superseded": "이전 내용 대체",
+}
 
 
 class _NoticeHtmlSanitizer(HTMLParser):
@@ -111,6 +123,12 @@ def _today_kst() -> str:
     return datetime.now(KST).date().isoformat()
 
 
+def _iso_value(value: Any) -> str:
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value or "")
+
+
 def _quote_ident(value: str) -> str:
     if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", value):
         raise ValueError("Invalid Supabase schema name.")
@@ -129,6 +147,35 @@ def _connect():
     if not settings.supabase_db_url:
         raise RuntimeError("SUPABASE_DB_URL is not configured.")
     return psycopg.connect(settings.supabase_db_url)
+
+
+def _mail_webhook_config() -> tuple[str, str]:
+    webhook_url = os.getenv("MAIL_COLLECTOR_SHEETS_WEBHOOK_URL", "").strip()
+    webhook_secret = (
+        os.getenv("MAIL_COLLECTOR_SHEETS_SHARED_SECRET")
+        or os.getenv("SHEETS_SHARED_SECRET")
+        or ""
+    ).strip()
+    if not webhook_url or not webhook_secret:
+        raise RuntimeError(
+            "MAIL_COLLECTOR_SHEETS_WEBHOOK_URL/MAIL_COLLECTOR_SHEETS_SHARED_SECRET is not configured."
+        )
+    return webhook_url, webhook_secret
+
+
+def _post_mail_webhook(payload: dict[str, Any]) -> dict[str, Any]:
+    webhook_url, webhook_secret = _mail_webhook_config()
+    response = httpx.post(
+        webhook_url,
+        json={"secret": webhook_secret, **payload},
+        timeout=30,
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise RuntimeError("메일 검토 시트 응답 형식이 올바르지 않습니다.")
+    return data
 
 
 def _schema() -> str:
@@ -179,6 +226,42 @@ def _ensure_tables() -> None:
                     total_count bigint NOT NULL DEFAULT 0,
                     updated_at timestamptz NOT NULL DEFAULT now()
                 )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.official_guide_changes (
+                    id bigserial PRIMARY KEY,
+                    source_identity text NOT NULL,
+                    article_id text,
+                    lang text,
+                    title text NOT NULL,
+                    source_url text NOT NULL,
+                    change_type text NOT NULL,
+                    previous_hash text,
+                    current_hash text NOT NULL,
+                    previous_source_updated_at date,
+                    current_source_updated_at date,
+                    detected_at timestamptz NOT NULL DEFAULT now(),
+                    summary text NOT NULL DEFAULT '',
+                    metadata jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    CONSTRAINT official_guide_changes_type_check
+                        CHECK (change_type IN ('new', 'updated')),
+                    CONSTRAINT official_guide_changes_identity_hash_unique
+                        UNIQUE (source_identity, current_hash)
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS official_guide_changes_detected_idx
+                ON {schema}.official_guide_changes (detected_at DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS official_guide_changes_article_lang_idx
+                ON {schema}.official_guide_changes (article_id, lang)
                 """
             )
             cur.execute(
@@ -421,3 +504,118 @@ def get_visit_analytics() -> dict[str, Any]:
             for date, count in sorted(_memory_visit_days.items())
         ]
         return {"items": items, "series": series, **_storage_info("memory", str(exc))}
+
+
+def list_official_guide_changes(*, limit: int = 80) -> dict[str, Any]:
+    limit = max(1, min(int(limit or 80), 300))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT
+                        id,
+                        source_identity,
+                        article_id,
+                        lang,
+                        title,
+                        source_url,
+                        change_type,
+                        previous_hash,
+                        current_hash,
+                        previous_source_updated_at,
+                        current_source_updated_at,
+                        detected_at,
+                        summary
+                    FROM {schema}.official_guide_changes
+                    ORDER BY detected_at DESC, id DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+                rows = cur.fetchall()
+        items = []
+        for row in rows:
+            items.append(
+                {
+                    "id": row["id"],
+                    "source_identity": row["source_identity"],
+                    "article_id": row["article_id"] or "",
+                    "lang": (row["lang"] or "").upper(),
+                    "title": row["title"],
+                    "source_url": row["source_url"],
+                    "change_type": row["change_type"],
+                    "previous_hash": row["previous_hash"] or "",
+                    "current_hash": row["current_hash"],
+                    "previous_source_updated_at": _iso_value(row["previous_source_updated_at"]),
+                    "current_source_updated_at": _iso_value(row["current_source_updated_at"]),
+                    "detected_at": _iso_value(row["detected_at"]),
+                    "summary": row["summary"] or "",
+                }
+            )
+        return {
+            "ok": True,
+            "items": items,
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "items": [],
+            "error": str(exc),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def list_mail_review_rows(*, status_filter: str = "", limit: int = 100) -> dict[str, Any]:
+    status_filter = (status_filter or "").strip()
+    if status_filter and status_filter not in MAIL_REVIEW_STATUSES and status_filter != "all":
+        status_filter = ""
+    limit = max(1, min(int(limit or 100), 300))
+
+    try:
+        payload = _post_mail_webhook(
+            {
+                "action": "review_list",
+                "status": status_filter,
+                "limit": limit,
+            }
+        )
+        payload.setdefault("statusLabels", MAIL_REVIEW_STATUSES)
+        return payload
+    except Exception as exc:
+        return {
+            "ok": False,
+            "rows": [],
+            "stats": {},
+            "statusLabels": MAIL_REVIEW_STATUSES,
+            "error": str(exc),
+        }
+
+
+def update_mail_review_row(payload: dict[str, Any]) -> dict[str, Any]:
+    duplicate_hash = str(payload.get("duplicate_hash") or "").strip()
+    review_status = str(payload.get("review_status") or "").strip()
+    if not duplicate_hash:
+        raise ValueError("duplicate_hash가 필요합니다.")
+    if review_status not in MAIL_REVIEW_STATUSES:
+        raise ValueError("지원하지 않는 검토 상태입니다.")
+
+    clean_payload = {
+        "action": "review_update",
+        "duplicate_hash": duplicate_hash,
+        "review_status": review_status,
+        "review_note": str(payload.get("review_note") or "").strip()[:2000],
+        "approved_title": str(payload.get("approved_title") or "").strip()[:300],
+        "approved_summary": str(payload.get("approved_summary") or "").strip()[:8000],
+        "approved_by": str(payload.get("approved_by") or "").strip()[:80],
+        "supersedes_duplicate_hash": str(payload.get("supersedes_duplicate_hash") or "").strip()[:128],
+    }
+    if review_status == "approved_for_rag" and not clean_payload["approved_summary"]:
+        raise ValueError("RAG 반영 승인에는 승인 요약이 필요합니다.")
+
+    response = _post_mail_webhook(clean_payload)
+    response.setdefault("statusLabels", MAIL_REVIEW_STATUSES)
+    return response

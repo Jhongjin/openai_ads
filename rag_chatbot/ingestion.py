@@ -23,7 +23,9 @@ from .db import (
     delete_source_documents,
     delete_source_identity_prefix,
     ensure_database,
+    fetch_official_source_snapshot,
     insert_documents,
+    record_official_guide_change,
     reset_collection,
     source_hash_exists,
 )
@@ -203,7 +205,20 @@ def _changed_official_documents(documents: list[Document]) -> tuple[list[Documen
         ):
             unchanged += 1
             continue
+        previous = (
+            fetch_official_source_snapshot(
+                source_identity=source_identity,
+                settings=settings,
+            )
+            if source_identity
+            else None
+        )
         if source_identity:
+            record_official_guide_change(
+                document=document,
+                previous=previous,
+                settings=settings,
+            )
             delete_source_documents(
                 collection_name="official",
                 source_identity=source_identity,
