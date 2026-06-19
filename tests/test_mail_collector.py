@@ -9,6 +9,7 @@ from rag_chatbot.mail_collector import (
     MailDiagnostics,
     MailCollectorSettings,
     _imap_utf7_encode,
+    _raw_message_from_fetch,
     parse_message,
     render_approved_mail_markdown,
     record_message_diagnostics,
@@ -118,6 +119,19 @@ class MailCollectorTests(unittest.TestCase):
 
         self.assertTrue(encoded.startswith("RAG_&"))
         self.assertTrue(encoded.endswith("-"))
+
+    def test_raw_message_from_fetch_handles_daum_variants(self) -> None:
+        raw = b"From: sender@example.com\r\nSubject: Test\r\n\r\nBody"
+
+        self.assertEqual(
+            _raw_message_from_fetch([(b"1 (RFC822 {42}", raw), b")"]),
+            raw,
+        )
+        self.assertEqual(
+            _raw_message_from_fetch([[b"ignored", (b"nested", raw)]]),
+            raw,
+        )
+        self.assertEqual(_raw_message_from_fetch([raw]), raw)
 
     def test_safe_header_diagnostics_count_matches_without_body_or_subject(self) -> None:
         diagnostics = MailDiagnostics()

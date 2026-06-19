@@ -525,10 +525,22 @@ def _split_email_list(value: str | None, default: tuple[str, ...]) -> tuple[str,
     return normalized or default
 
 
-def _raw_message_from_fetch(fetched: list) -> bytes | None:
-    for item in fetched:
-        if isinstance(item, tuple) and len(item) >= 2 and isinstance(item[1], bytes):
-            return item[1]
+def _raw_message_from_fetch(fetched: object) -> bytes | None:
+    if isinstance(fetched, bytes):
+        if b"\r\n" in fetched and b":" in fetched[:1000]:
+            return fetched
+        return None
+    if isinstance(fetched, tuple):
+        for item in fetched:
+            raw = _raw_message_from_fetch(item)
+            if raw:
+                return raw
+        return None
+    if isinstance(fetched, list):
+        for item in fetched:
+            raw = _raw_message_from_fetch(item)
+            if raw:
+                return raw
     return None
 
 

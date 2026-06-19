@@ -3,8 +3,9 @@ name: Collect OpenAI Manager Mail
 on:
   workflow_dispatch:
   schedule:
-    # KST 09:15 and 21:15, shortly after the official Help Center crawl.
-    - cron: "15 0,12 * * *"
+    # KST 09:00, 14:00, 18:00, and 23:00.
+    # GitHub Actions cron is evaluated in UTC.
+    - cron: "0 0,5,9,14 * * *"
 
 jobs:
   collect:
