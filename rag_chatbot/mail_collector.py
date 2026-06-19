@@ -220,13 +220,8 @@ def collect_matching_messages(
         collected: list[CollectedMail] = []
         for uid_bytes in selected_uids:
             uid = uid_bytes.decode("ascii", errors="ignore")
-            status, fetched = client.uid("fetch", uid_bytes, "(RFC822)")
-            if status != "OK":
-                if diagnostics:
-                    diagnostics.fetch_failures += 1
-                continue
-            raw = _raw_message_from_fetch(fetched)
-            if not raw:
+            raw = _fetch_message_bytes(client, uid_bytes)
+            if raw is None:
                 if diagnostics:
                     diagnostics.empty_fetches += 1
                 continue
@@ -246,6 +241,17 @@ def collect_matching_messages(
             client.logout()
         except Exception:
             pass
+
+
+def _fetch_message_bytes(client: imaplib.IMAP4, uid_bytes: bytes) -> bytes | None:
+    for query in ("(BODY.PEEK[])", "(RFC822)", "(BODY[])"):
+        status, fetched = client.uid("fetch", uid_bytes, query)
+        if status != "OK":
+            continue
+        raw = _raw_message_from_fetch(fetched)
+        if raw:
+            return raw
+    return None
 
 
 def record_message_diagnostics(

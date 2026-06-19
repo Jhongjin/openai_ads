@@ -8,6 +8,7 @@ from rag_chatbot.mail_collector import (
     DEFAULT_TARGET_SENDERS,
     MailDiagnostics,
     MailCollectorSettings,
+    _fetch_message_bytes,
     _imap_utf7_encode,
     _raw_message_from_fetch,
     parse_message,
@@ -132,6 +133,24 @@ class MailCollectorTests(unittest.TestCase):
             raw,
         )
         self.assertEqual(_raw_message_from_fetch([raw]), raw)
+
+    def test_fetch_message_bytes_prefers_body_peek_and_falls_back(self) -> None:
+        raw = b"From: sender@example.com\r\nSubject: Test\r\n\r\nBody"
+
+        class FakeClient:
+            def __init__(self) -> None:
+                self.queries: list[str] = []
+
+            def uid(self, command: str, uid_bytes: bytes, query: str):
+                self.queries.append(query)
+                if query == "(BODY.PEEK[])":
+                    return "OK", [b"no literal"]
+                return "OK", [(b"1 (RFC822 {42}", raw), b")"]
+
+        client = FakeClient()
+
+        self.assertEqual(_fetch_message_bytes(client, b"101"), raw)
+        self.assertEqual(client.queries, ["(BODY.PEEK[])", "(RFC822)"])
 
     def test_safe_header_diagnostics_count_matches_without_body_or_subject(self) -> None:
         diagnostics = MailDiagnostics()
