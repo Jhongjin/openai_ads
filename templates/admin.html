@@ -450,6 +450,10 @@
         color: #047857;
       }
 
+      .status.warning {
+        color: #b45309;
+      }
+
       .summary-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2154,6 +2158,14 @@
         renderAdsDetail(data.detail || null);
         const range = data.range || {};
         const advertiser = data.advertiser_name ? ` · ${data.advertiser_name}` : "";
+        if (data.warning) {
+          setStatus(
+            adsDashboardStatus,
+            `${range.start_date || ""} ~ ${range.end_date || ""} 기본 성과를 갱신했습니다${advertiser} · ${data.warning}`,
+            "warning",
+          );
+          return;
+        }
         const conversionNote = data.conversion_metrics_available === false
           ? " · 전환 필드는 현재 API 응답에서 제공되지 않아 비워 두었습니다."
           : "";

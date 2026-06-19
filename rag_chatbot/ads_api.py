@@ -340,8 +340,24 @@ AD_GROUP_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(AD_GROUP_FIELDS, "ad_
 AD_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(AD_FIELDS, "ad")
 
 
+CONVERSION_INSIGHTS_DISABLED_MESSAGE = "conversions in insights are not enabled"
+CONVERSION_METRICS_WARNING = (
+    "이 광고 계정은 전환 인사이트가 아직 활성화되지 않아 전환수·전환값·CPA·ROAS는 제외하고 표시합니다."
+)
+
+
 def _is_field_error(exc: httpx.HTTPStatusError) -> bool:
     return exc.response is not None and exc.response.status_code in {400, 422}
+
+
+def _is_conversion_insights_disabled_error(exc: httpx.HTTPStatusError) -> bool:
+    if exc.response is None or exc.response.status_code != 403:
+        return False
+    return CONVERSION_INSIGHTS_DISABLED_MESSAGE in exc.response.text.lower()
+
+
+def _is_conversion_metric_error(exc: httpx.HTTPStatusError) -> bool:
+    return _is_field_error(exc) or _is_conversion_insights_disabled_error(exc)
 
 
 async def fetch_ads_dashboard(
@@ -372,6 +388,7 @@ async def fetch_ads_dashboard(
 
     try:
         conversion_metrics_available = True
+        warning = ""
         try:
             account_payload, campaign_payload = await _fetch_account_and_campaigns(
                 client,
@@ -380,9 +397,10 @@ async def fetch_ads_dashboard(
                 include_conversions=True,
             )
         except httpx.HTTPStatusError as exc:
-            if not _is_field_error(exc):
+            if not _is_conversion_metric_error(exc):
                 raise
             conversion_metrics_available = False
+            warning = CONVERSION_METRICS_WARNING
             account_payload, campaign_payload = await _fetch_account_and_campaigns(
                 client,
                 start_date,
@@ -405,6 +423,7 @@ async def fetch_ads_dashboard(
             )
             if detail.get("conversion_metrics_available") is False:
                 conversion_metrics_available = False
+                warning = warning or CONVERSION_METRICS_WARNING
 
         return {
             "ok": True,
@@ -412,6 +431,7 @@ async def fetch_ads_dashboard(
             "advertiser_name": advertiser_name or "",
             "key_source": "advertiser" if api_key else "environment",
             "conversion_metrics_available": conversion_metrics_available,
+            "warning": warning,
             "range": {"start_date": start_date, "end_date": end_date, "timezone": TIMEZONE},
             "account": account_summary,
             "campaigns": campaign_rows,
@@ -500,7 +520,7 @@ async def _fetch_detail(
             limit=200,
         )
     except httpx.HTTPStatusError as exc:
-        if not include_conversions or not _is_field_error(exc):
+        if not include_conversions or not _is_conversion_metric_error(exc):
             raise
         conversion_metrics_available = False
         payload = await client.insights(
