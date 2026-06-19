@@ -1407,16 +1407,17 @@
       }
 
       .slide-card.ad-material-slide .slide-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 8px;
       }
 
       .slide-card.ad-material-slide .slide-item {
+        grid-column: span 2;
         padding: 9px 11px;
       }
 
-      .slide-card.ad-material-slide .slide-item.wide {
-        grid-column: span 2;
+      .slide-card.ad-material-slide .slide-item.split {
+        grid-column: span 3;
       }
 
       .slide-card.ad-material-slide .slide-item strong {
@@ -3289,6 +3290,11 @@
           grid-template-columns: 1fr;
         }
 
+        .slide-card.ad-material-slide .slide-item,
+        .slide-card.ad-material-slide .slide-item.split {
+          grid-column: auto;
+        }
+
         .guide-field-row {
           grid-template-columns: 1fr;
         }
@@ -3430,6 +3436,7 @@
         }
 
         .slide-card.ad-material-slide .slide-grid {
+          grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
           gap: 2.4mm;
         }
 
@@ -4394,13 +4401,13 @@
                     <strong>이미지</strong>
                     <span>PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것</span>
                   </div>
-                  <div class="slide-item">
-                    <strong>컨텍스트 힌트(선택)</strong>
-                    <span>광고그룹 단위 참고 키워드·주제. 소재 업로드 탭의 “키워드”에 입력하며 매칭 보조용입니다.</span>
-                  </div>
-                  <div class="slide-item wide">
+                  <div class="slide-item split">
                     <strong>랜딩 URL</strong>
                     <span>유효·접근 가능, 광고 내용과 관련성 높은 페이지(자사몰/외부몰 제품 페이지 가능)</span>
+                  </div>
+                  <div class="slide-item split">
+                    <strong>컨텍스트 힌트(선택)</strong>
+                    <span>광고그룹 단위 참고 키워드·주제. 소재 업로드 탭의 “키워드”에 입력하며 매칭 보조용입니다.</span>
                   </div>
                 </div>
                 <div class="copy-guide">
