@@ -291,44 +291,73 @@
 
       .editor-toolbar {
         display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
+        flex-direction: column;
+        gap: 10px;
         border-bottom: 1px solid #e2e8f0;
-        background: linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
-        padding: 10px;
+        background: #f8fafc;
+        padding: 12px;
+      }
+
+      .toolbar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+
+      .toolbar-group::before {
+        content: attr(data-label);
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .02em;
+        margin-right: 2px;
+        white-space: nowrap;
       }
 
       .editor-toolbar button,
       .editor-control {
-        min-height: 36px;
-        border: 1px solid #d5deea;
-        border-radius: 9px;
+        min-height: 32px;
+        height: 32px;
+        border: 1px solid #d7e0ec;
+        border-radius: 7px;
         background: #fff;
-        padding: 0 12px;
+        padding: 0 10px;
         color: #172033;
         font-size: 13px;
         font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
-        transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+        transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
       }
 
       .editor-toolbar button:hover,
       .editor-control:hover {
-        border-color: #98a8bd;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgb(16 24 40 / 7%);
+        border-color: #94a3b8;
+        background: #f8fafc;
+        box-shadow: 0 4px 12px rgb(16 24 40 / 6%);
       }
 
       .editor-control {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
+        gap: 6px;
         min-width: max-content;
+        color: #334155;
       }
 
       .editor-control input[type="color"] {
-        width: 28px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
         min-height: auto;
         border: 0;
         padding: 0;
@@ -337,7 +366,7 @@
       }
 
       .editor-control select {
-        min-height: 28px;
+        min-height: 26px;
         border: 0;
         background: transparent;
         color: #172033;
@@ -345,6 +374,16 @@
         font: inherit;
         font-weight: 900;
         outline: none;
+      }
+
+      .editor-icon-button {
+        width: 32px;
+        padding: 0;
+        font-size: 14px;
+      }
+
+      .editor-clear-button {
+        color: #475569;
       }
 
       .notice-editor {
@@ -1535,10 +1574,6 @@
             <div class="field-label">업데이트일</div>
             <div class="readonly-value" id="notice-updated">저장 시 자동 반영</div>
           </div>
-          <label>
-            공지창 배경색
-            <input id="notice-modal-bg" type="color" value="#ffffff" aria-label="공지창 배경색" />
-          </label>
           <div class="field-label">공지 내용</div>
           <p class="editor-helper">
             팝업 본문에 노출될 실제 문구입니다. 핵심 문장만 짧게 쓰고, 굵게/목록/링크/이모지를 넣은 뒤
@@ -1546,35 +1581,51 @@
           </p>
           <div class="editor-shell">
             <div class="editor-toolbar" aria-label="공지 서식 도구">
-              <button type="button" data-command="bold">굵게</button>
-              <button type="button" data-command="italic">기울임</button>
-              <button type="button" data-command="header">소제목</button>
-              <button type="button" data-command="blockquote">강조문</button>
-              <button type="button" data-command="insertUnorderedList">목록</button>
-              <button type="button" data-command="insertOrderedList">번호 목록</button>
-              <button type="button" data-command="createLink">링크</button>
-              <label class="editor-control">
-                글자색
-                <input type="color" data-format="color" value="#101827" aria-label="글자색" />
-              </label>
-              <label class="editor-control">
-                글 배경
-                <input type="color" data-format="background" value="#fff1f1" aria-label="글 배경색" />
-              </label>
-              <label class="editor-control">
-                글자크기
-                <select data-format="size" aria-label="글자크기">
-                  <option value="">기본</option>
-                  <option value="small">작게</option>
-                  <option value="large">크게</option>
-                  <option value="huge">매우 크게</option>
-                </select>
-              </label>
-              <button type="button" data-emoji="📢">📢</button>
-              <button type="button" data-emoji="✅">✅</button>
-              <button type="button" data-emoji="⚠️">⚠️</button>
-              <button type="button" data-emoji="🔗">🔗</button>
-              <button type="button" data-command="removeFormat">서식 지우기</button>
+              <div class="toolbar-row">
+                <div class="toolbar-group" data-label="텍스트">
+                  <button type="button" data-command="bold">굵게</button>
+                  <button type="button" data-command="italic">기울임</button>
+                  <button type="button" data-command="header">소제목</button>
+                  <button type="button" data-command="blockquote">강조문</button>
+                </div>
+                <div class="toolbar-group" data-label="구조">
+                  <button type="button" data-command="insertUnorderedList">목록</button>
+                  <button type="button" data-command="insertOrderedList">번호 목록</button>
+                  <button type="button" data-command="createLink">링크</button>
+                </div>
+              </div>
+              <div class="toolbar-row">
+                <div class="toolbar-group" data-label="스타일">
+                  <label class="editor-control">
+                    글자색
+                    <input type="color" data-format="color" value="#101827" aria-label="글자색" />
+                  </label>
+                  <label class="editor-control">
+                    글 배경
+                    <input type="color" data-format="background" value="#fff1f1" aria-label="글 배경색" />
+                  </label>
+                  <label class="editor-control">
+                    공지창
+                    <input id="notice-modal-bg" type="color" value="#ffffff" aria-label="공지창 배경색" />
+                  </label>
+                  <label class="editor-control">
+                    글자크기
+                    <select data-format="size" aria-label="글자크기">
+                      <option value="">기본</option>
+                      <option value="small">작게</option>
+                      <option value="large">크게</option>
+                      <option value="huge">매우 크게</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="toolbar-group" data-label="빠른 삽입">
+                  <button type="button" class="editor-icon-button" data-emoji="📢" aria-label="확성기 이모지">📢</button>
+                  <button type="button" class="editor-icon-button" data-emoji="✅" aria-label="체크 이모지">✅</button>
+                  <button type="button" class="editor-icon-button" data-emoji="⚠️" aria-label="주의 이모지">⚠️</button>
+                  <button type="button" class="editor-icon-button" data-emoji="🔗" aria-label="링크 이모지">🔗</button>
+                  <button type="button" class="editor-clear-button" data-command="removeFormat">서식 지우기</button>
+                </div>
+              </div>
             </div>
             <div
               class="notice-editor"
