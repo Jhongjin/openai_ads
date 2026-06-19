@@ -47,6 +47,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
 _memory_notice = DEFAULT_NOTICE.copy()
 _memory_visits: dict[str, dict[str, Any]] = {}
 _memory_visit_days: dict[str, int] = {}
+_memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _db_ready = False
 
 
@@ -262,6 +263,18 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE INDEX IF NOT EXISTS official_guide_changes_article_lang_idx
                 ON {schema}.official_guide_changes (article_id, lang)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.ads_api_keys (
+                    advertiser_name text PRIMARY KEY,
+                    ads_api_key text NOT NULL DEFAULT '',
+                    conversion_api_key text NOT NULL DEFAULT '',
+                    enabled boolean NOT NULL DEFAULT true,
+                    created_at timestamptz NOT NULL DEFAULT now(),
+                    updated_at timestamptz NOT NULL DEFAULT now()
+                )
                 """
             )
             cur.execute(
@@ -504,6 +517,181 @@ def get_visit_analytics() -> dict[str, Any]:
             for date, count in sorted(_memory_visit_days.items())
         ]
         return {"items": items, "series": series, **_storage_info("memory", str(exc))}
+
+
+def _mask_secret(value: str) -> str:
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    if len(value) <= 10:
+        return f"{value[:2]}...{value[-2:]}"
+    return f"{value[:8]}...{value[-4:]}"
+
+
+def _public_ads_api_key_row(row: dict[str, Any]) -> dict[str, Any]:
+    ads_api_key = str(row.get("ads_api_key") or "")
+    conversion_api_key = str(row.get("conversion_api_key") or "")
+    return {
+        "advertiser_name": str(row.get("advertiser_name") or ""),
+        "has_ads_api_key": bool(ads_api_key),
+        "masked_ads_api_key": _mask_secret(ads_api_key),
+        "has_conversion_api_key": bool(conversion_api_key),
+        "masked_conversion_api_key": _mask_secret(conversion_api_key),
+        "enabled": bool(row.get("enabled", True)),
+        "created_at": _iso_value(row.get("created_at")),
+        "updated_at": _iso_value(row.get("updated_at")),
+    }
+
+
+def list_ads_api_keys() -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    FROM {schema}.ads_api_keys
+                    ORDER BY advertiser_name ASC
+                    """
+                )
+                rows = cur.fetchall()
+        return {
+            "ok": True,
+            "items": [_public_ads_api_key_row(dict(row)) for row in rows],
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        return {
+            "ok": True,
+            "items": [
+                _public_ads_api_key_row(row)
+                for row in sorted(_memory_ads_api_keys.values(), key=lambda item: item.get("advertiser_name", ""))
+            ],
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def get_ads_api_key(advertiser_name: str) -> str:
+    advertiser_name = str(advertiser_name or "").strip()
+    if not advertiser_name:
+        return ""
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT ads_api_key
+                    FROM {schema}.ads_api_keys
+                    WHERE advertiser_name = %s AND enabled = true
+                    """,
+                    (advertiser_name,),
+                )
+                row = cur.fetchone()
+        return str(row["ads_api_key"] or "") if row else ""
+    except Exception:
+        row = _memory_ads_api_keys.get(advertiser_name) or {}
+        return str(row.get("ads_api_key") or "") if row.get("enabled", True) else ""
+
+
+def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
+    advertiser_name = str(payload.get("advertiser_name") or "").strip()
+    new_ads_api_key = str(payload.get("ads_api_key") or "").strip()
+    new_conversion_api_key = str(payload.get("conversion_api_key") or "").strip()
+    enabled = bool(payload.get("enabled", True))
+    if not advertiser_name:
+        raise ValueError("광고주명이 필요합니다.")
+
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    FROM {schema}.ads_api_keys
+                    WHERE advertiser_name = %s
+                    """,
+                    (advertiser_name,),
+                )
+                existing = cur.fetchone()
+                ads_api_key = new_ads_api_key or (existing["ads_api_key"] if existing else "")
+                conversion_api_key = new_conversion_api_key or (existing["conversion_api_key"] if existing else "")
+                if not ads_api_key:
+                    raise ValueError("Ads API Key가 필요합니다.")
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.ads_api_keys
+                        (advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at)
+                    VALUES
+                        (%s, %s, %s, %s, COALESCE(%s, now()), now())
+                    ON CONFLICT (advertiser_name) DO UPDATE SET
+                        ads_api_key = EXCLUDED.ads_api_key,
+                        conversion_api_key = EXCLUDED.conversion_api_key,
+                        enabled = EXCLUDED.enabled,
+                        updated_at = now()
+                    RETURNING advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    """,
+                    (
+                        advertiser_name,
+                        ads_api_key,
+                        conversion_api_key,
+                        enabled,
+                        existing["created_at"] if existing else None,
+                    ),
+                )
+                row = cur.fetchone()
+        return {
+            "ok": True,
+            "item": _public_ads_api_key_row(dict(row)),
+            **_storage_info("supabase"),
+        }
+    except ValueError:
+        raise
+    except Exception as exc:
+        existing = _memory_ads_api_keys.get(advertiser_name) or {}
+        ads_api_key = new_ads_api_key or str(existing.get("ads_api_key") or "")
+        conversion_api_key = new_conversion_api_key or str(existing.get("conversion_api_key") or "")
+        if not ads_api_key:
+            raise ValueError("Ads API Key가 필요합니다.") from exc
+        now = datetime.now(KST).isoformat()
+        row = {
+            "advertiser_name": advertiser_name,
+            "ads_api_key": ads_api_key,
+            "conversion_api_key": conversion_api_key,
+            "enabled": enabled,
+            "created_at": existing.get("created_at") or now,
+            "updated_at": now,
+        }
+        _memory_ads_api_keys[advertiser_name] = row
+        return {
+            "ok": True,
+            "item": _public_ads_api_key_row(row),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def delete_ads_api_key(advertiser_name: str) -> dict[str, Any]:
+    advertiser_name = str(advertiser_name or "").strip()
+    if not advertiser_name:
+        raise ValueError("광고주명이 필요합니다.")
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"DELETE FROM {schema}.ads_api_keys WHERE advertiser_name = %s",
+                    (advertiser_name,),
+                )
+        return {"ok": True, **_storage_info("supabase")}
+    except Exception as exc:
+        _memory_ads_api_keys.pop(advertiser_name, None)
+        return {"ok": True, **_storage_info("memory", str(exc))}
 
 
 def list_official_guide_changes(*, limit: int = 80) -> dict[str, Any]:

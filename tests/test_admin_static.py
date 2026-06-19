@@ -86,15 +86,21 @@ class AdminStaticTests(unittest.TestCase):
         for phrase in [
             "Ads API 성과 대시보드",
             'id="ads-dashboard-status"',
+            'id="ads-advertiser-select"',
+            'id="ads-api-key-body"',
             'id="ads-campaign-body"',
             'id="ads-detail-card"',
+            "전환수",
+            "conversion_metrics_available",
             "loadAdsDashboard",
             "/api/admin/ads-dashboard",
+            "/api/admin/ads-api-keys",
             "OPENAI_ADS_API_KEY",
         ]:
             self.assertIn(phrase, html)
 
         self.assertIn('"/api/admin/ads-dashboard"', app_py)
+        self.assertIn('"/api/admin/ads-api-keys"', app_py)
         self.assertNotIn('href="/ads-api"', html)
 
 

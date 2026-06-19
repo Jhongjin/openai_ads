@@ -453,9 +453,84 @@
         margin: 0;
       }
 
+      .ads-advertiser-control {
+        min-width: 220px;
+      }
+
+      .ads-key-manager {
+        display: grid;
+        gap: 14px;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fff;
+        padding: 16px;
+      }
+
+      .ads-key-manager-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .ads-key-manager-head h3 {
+        margin: 0 0 5px;
+        font-size: 16px;
+      }
+
+      .ads-key-manager-head .help {
+        margin: 0;
+      }
+
+      .ads-key-form {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .ads-key-form label {
+        margin: 0;
+      }
+
+      .ads-key-form .check-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .ads-key-form .check-label input {
+        width: auto;
+        min-height: auto;
+      }
+
+      .secret-mask {
+        color: #344054;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-weight: 850;
+      }
+
+      .ads-key-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .ads-key-actions button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        padding: 0 10px;
+        color: #344054;
+        font-size: 12px;
+      }
+
       .ads-kpi-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
       }
 
@@ -924,6 +999,10 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .ads-key-form {
+          grid-template-columns: 1fr;
+        }
+
         .ads-detail-card {
           position: static;
           margin-top: 16px;
@@ -1085,6 +1164,12 @@
           </div>
           <div class="ads-config-note hidden" id="ads-dashboard-setup"></div>
           <div class="ads-controls">
+            <label class="ads-advertiser-control">
+              광고주
+              <select id="ads-advertiser-select">
+                <option value="">공통 환경변수</option>
+              </select>
+            </label>
             <label>
               시작일
               <input id="ads-start-date" type="date" />
@@ -1095,6 +1180,54 @@
             </label>
             <button class="secondary" id="refresh-ads-dashboard" type="button">성과 새로고침</button>
             <span class="status" id="ads-dashboard-status"></span>
+          </div>
+          <div class="ads-key-manager">
+            <div class="ads-key-manager-head">
+              <div>
+                <h3>광고주별 API 키 관리</h3>
+                <p class="help">
+                  광고주별 Ads API 키와 Conversion API 키를 저장합니다. 저장된 키는 화면에 원문으로 표시하지 않습니다.
+                </p>
+              </div>
+              <span class="status" id="ads-api-key-status"></span>
+            </div>
+            <div class="ads-key-form">
+              <label>
+                광고주명
+                <input id="ads-key-advertiser" type="text" placeholder="예: Puradakchicken(푸라닭)" />
+              </label>
+              <label>
+                Ads API key
+                <input id="ads-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+              </label>
+              <label>
+                Conversion API key
+                <input id="ads-conversion-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+              </label>
+              <label class="check-label">
+                <input id="ads-key-enabled" type="checkbox" checked />
+                사용
+              </label>
+              <button class="secondary" id="save-ads-api-key" type="button">키 저장</button>
+            </div>
+            <div class="mail-table-wrap">
+              <table class="ads-table">
+                <thead>
+                  <tr>
+                    <th>광고주</th>
+                    <th>Ads API key</th>
+                    <th>Conversion API key</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="ads-api-key-body">
+                  <tr>
+                    <td colspan="5">등록된 광고주별 키를 불러오는 중입니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
           <div class="ads-kpi-grid">
             <div class="ads-kpi">
@@ -1121,6 +1254,22 @@
               <span>CPM</span>
               <strong id="ads-kpi-cpm">0원</strong>
             </div>
+            <div class="ads-kpi">
+              <span>전환수</span>
+              <strong id="ads-kpi-conversions">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>전환값</span>
+              <strong id="ads-kpi-conversion-value">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPA</span>
+              <strong id="ads-kpi-cpa">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>ROAS</span>
+              <strong id="ads-kpi-roas">-</strong>
+            </div>
           </div>
           <div class="ads-dashboard-layout">
             <div>
@@ -1138,12 +1287,15 @@
                       <th>클릭</th>
                       <th>소진액</th>
                       <th>CTR</th>
+                      <th>전환</th>
+                      <th>CPA</th>
+                      <th>ROAS</th>
                       <th>상세</th>
                     </tr>
                   </thead>
                   <tbody id="ads-campaign-body">
                     <tr>
-                      <td colspan="7">성과 데이터를 불러오는 중입니다.</td>
+                      <td colspan="10">성과 데이터를 불러오는 중입니다.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1162,12 +1314,15 @@
                       <th>노출</th>
                       <th>클릭</th>
                       <th>소진액</th>
+                      <th>전환</th>
+                      <th>CPA</th>
+                      <th>ROAS</th>
                       <th>상세</th>
                     </tr>
                   </thead>
                   <tbody id="ads-detail-body">
                     <tr>
-                      <td colspan="6">아직 선택된 항목이 없습니다.</td>
+                      <td colspan="9">아직 선택된 항목이 없습니다.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1291,10 +1446,12 @@
       const officialChangeStatus = document.querySelector("#official-change-status");
       const mailReviewStatus = document.querySelector("#mail-review-status");
       const adsDashboardStatus = document.querySelector("#ads-dashboard-status");
+      const adsApiKeyStatus = document.querySelector("#ads-api-key-status");
       let officialChanges = [];
       let mailReviewRows = [];
       let selectedMailHash = "";
       let adsDashboardData = null;
+      let adsApiKeys = [];
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -1562,6 +1719,16 @@
         return `${percent.toFixed(2)}%`;
       }
 
+      function formatMultiplier(value) {
+        const number = Number(value || 0);
+        return number ? `${number.toFixed(2)}x` : "-";
+      }
+
+      function conversionMetric(value, formatter = formatMetricNumber) {
+        if (adsDashboardData && adsDashboardData.conversion_metrics_available === false) return "-";
+        return formatter(value);
+      }
+
       function adsStatusPill(value) {
         const label = String(value || "상태 미확인").trim();
         const className = label.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") || "unknown";
@@ -1581,6 +1748,102 @@
         if (!endInput.value) endInput.value = isoDateWithOffset(0);
       }
 
+      function renderAdsApiKeys(data = {}) {
+        adsApiKeys = data.items || [];
+        const select = document.querySelector("#ads-advertiser-select");
+        const previousValue = select.value || "";
+        select.innerHTML = '<option value="">공통 환경변수</option>';
+        adsApiKeys.forEach((item) => {
+          if (!item.enabled || !item.has_ads_api_key) return;
+          const option = document.createElement("option");
+          option.value = item.advertiser_name || "";
+          option.textContent = item.advertiser_name || "이름 없음";
+          select.appendChild(option);
+        });
+        if (Array.from(select.options).some((option) => option.value === previousValue)) {
+          select.value = previousValue;
+        }
+
+        const body = document.querySelector("#ads-api-key-body");
+        body.innerHTML = "";
+        if (!adsApiKeys.length) {
+          body.innerHTML = '<tr><td colspan="5">아직 등록된 광고주별 키가 없습니다.</td></tr>';
+          return;
+        }
+        adsApiKeys.forEach((item) => {
+          const tr = document.createElement("tr");
+          const advertiser = item.advertiser_name || "";
+          const adsKey = item.masked_ads_api_key || (item.has_ads_api_key ? "저장됨" : "-");
+          const conversionKey = item.masked_conversion_api_key || (item.has_conversion_api_key ? "저장됨" : "-");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(advertiser)}</strong></td>
+            <td><span class="secret-mask">${escapeHtml(adsKey)}</span></td>
+            <td><span class="secret-mask">${escapeHtml(conversionKey)}</span></td>
+            <td>${item.enabled ? '<span class="ads-status-pill enabled">사용</span>' : '<span class="ads-status-pill paused">중지</span>'}</td>
+            <td>
+              <div class="ads-key-actions">
+                <button type="button" data-ads-key-select="${escapeHtml(advertiser)}">선택</button>
+                <button type="button" data-ads-key-delete="${escapeHtml(advertiser)}">삭제</button>
+              </div>
+            </td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      function fillAdsKeyForm(advertiserName) {
+        const item = adsApiKeys.find((entry) => entry.advertiser_name === advertiserName);
+        if (!item) return;
+        document.querySelector("#ads-key-advertiser").value = item.advertiser_name || "";
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        document.querySelector("#ads-key-enabled").checked = item.enabled !== false;
+      }
+
+      async function loadAdsApiKeys() {
+        setStatus(adsApiKeyStatus, "API 키 목록을 불러오는 중...");
+        const data = await adminFetch("/api/admin/ads-api-keys");
+        renderAdsApiKeys(data);
+        setStatus(adsApiKeyStatus, "API 키 목록을 갱신했습니다.", "ok");
+      }
+
+      async function saveAdsApiKey() {
+        const advertiserName = document.querySelector("#ads-key-advertiser").value.trim();
+        if (!advertiserName) throw new Error("광고주명을 입력해 주세요.");
+        setStatus(adsApiKeyStatus, "API 키를 저장하는 중...");
+        await adminFetch("/api/admin/ads-api-keys", {
+          method: "POST",
+          body: JSON.stringify({
+            advertiser_name: advertiserName,
+            ads_api_key: document.querySelector("#ads-key-value").value.trim(),
+            conversion_api_key: document.querySelector("#ads-conversion-key-value").value.trim(),
+            enabled: document.querySelector("#ads-key-enabled").checked,
+          }),
+        });
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        await loadAdsApiKeys();
+        const select = document.querySelector("#ads-advertiser-select");
+        if (Array.from(select.options).some((option) => option.value === advertiserName)) {
+          select.value = advertiserName;
+          await loadAdsDashboard();
+        }
+        setStatus(adsApiKeyStatus, "API 키를 저장했습니다.", "ok");
+      }
+
+      async function deleteAdsApiKey(advertiserName) {
+        if (!advertiserName) return;
+        if (!window.confirm(`${advertiserName} API 키를 삭제할까요?`)) return;
+        setStatus(adsApiKeyStatus, "API 키를 삭제하는 중...");
+        await adminFetch(`/api/admin/ads-api-keys/${encodeURIComponent(advertiserName)}`, { method: "DELETE" });
+        document.querySelector("#ads-key-advertiser").value = "";
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        await loadAdsApiKeys();
+        await loadAdsDashboard();
+        setStatus(adsApiKeyStatus, "API 키를 삭제했습니다.", "ok");
+      }
+
       function renderAdsKpis(summary = {}) {
         document.querySelector("#ads-kpi-impressions").textContent = formatMetricNumber(summary.impressions);
         document.querySelector("#ads-kpi-clicks").textContent = formatMetricNumber(summary.clicks);
@@ -1588,6 +1851,10 @@
         document.querySelector("#ads-kpi-ctr").textContent = formatRate(summary.ctr);
         document.querySelector("#ads-kpi-cpc").textContent = formatMoney(summary.cpc);
         document.querySelector("#ads-kpi-cpm").textContent = formatMoney(summary.cpm);
+        document.querySelector("#ads-kpi-conversions").textContent = conversionMetric(summary.conversions);
+        document.querySelector("#ads-kpi-conversion-value").textContent = conversionMetric(summary.conversion_value, formatMoney);
+        document.querySelector("#ads-kpi-cpa").textContent = conversionMetric(summary.cost_per_conversion, formatMoney);
+        document.querySelector("#ads-kpi-roas").textContent = conversionMetric(summary.roas, formatMultiplier);
       }
 
       function renderAdsCampaignRows(rows = []) {
@@ -1596,7 +1863,7 @@
         count.textContent = `${formatMetricNumber(rows.length)}개 캠페인`;
         body.innerHTML = "";
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="7">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
+          body.innerHTML = '<tr><td colspan="10">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
           return;
         }
         rows.forEach((row) => {
@@ -1609,6 +1876,9 @@
             <td>${formatMetricNumber(row.clicks)}</td>
             <td>${formatMoney(row.spend)}</td>
             <td>${formatRate(row.ctr)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
             <td><button type="button" data-ads-detail-scope="campaign" data-ads-detail-id="${escapeHtml(row.id || "")}" ${disabled}>광고그룹</button></td>
           `;
           body.appendChild(tr);
@@ -1628,20 +1898,21 @@
         summary.innerHTML = "";
         body.innerHTML = "";
         if (!detail || !Array.isArray(detail.rows)) {
-          body.innerHTML = '<tr><td colspan="6">아직 선택된 항목이 없습니다.</td></tr>';
+          body.innerHTML = '<tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>';
           return;
         }
         const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
         const total = detail.total || {};
         summary.innerHTML = `
-          <div class="summary-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 12px;">
+          <div class="summary-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 12px;">
             <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatMetricNumber(detail.rows.length)}</strong></div>
             <div class="metric"><span>클릭</span><strong>${formatMetricNumber(total.clicks)}</strong></div>
             <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+            <div class="metric"><span>전환수</span><strong>${conversionMetric(total.conversions)}</strong></div>
           </div>
         `;
         if (!detail.rows.length) {
-          body.innerHTML = `<tr><td colspan="6">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
+          body.innerHTML = `<tr><td colspan="9">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
           return;
         }
         detail.rows.forEach((row) => {
@@ -1659,6 +1930,9 @@
             <td>${formatMetricNumber(row.impressions)}</td>
             <td>${formatMetricNumber(row.clicks)}</td>
             <td>${formatMoney(row.spend)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
             <td>${action}</td>
           `;
           body.appendChild(tr);
@@ -1681,7 +1955,7 @@
           renderAdsDetail(null);
           setup.classList.remove("hidden");
           setup.textContent = data.configured === false
-            ? "OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 이 영역에서 실시간 성과를 조회할 수 있습니다."
+            ? "광고주별 Ads API 키를 등록하거나 OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 이 영역에서 실시간 성과를 조회할 수 있습니다."
             : `${data.error || "Ads API 조회에 실패했습니다."}${data.detail ? ` · ${data.detail}` : ""}`;
           setStatus(adsDashboardStatus, data.configured === false ? "API 키 대기 중" : "조회 실패", "error");
           return;
@@ -1692,7 +1966,11 @@
         renderAdsCampaignRows(data.campaigns || []);
         renderAdsDetail(data.detail || null);
         const range = data.range || {};
-        setStatus(adsDashboardStatus, `${range.start_date || ""} ~ ${range.end_date || ""} 성과를 갱신했습니다.`, "ok");
+        const advertiser = data.advertiser_name ? ` · ${data.advertiser_name}` : "";
+        const conversionNote = data.conversion_metrics_available === false
+          ? " · 전환 필드는 현재 API 응답에서 제공되지 않아 비워 두었습니다."
+          : "";
+        setStatus(adsDashboardStatus, `${range.start_date || ""} ~ ${range.end_date || ""} 성과를 갱신했습니다${advertiser}${conversionNote}`, "ok");
       }
 
       async function loadAdsDashboard(detailScope = "", detailId = "") {
@@ -1702,6 +1980,8 @@
           start_date: document.querySelector("#ads-start-date").value,
           end_date: document.querySelector("#ads-end-date").value,
         });
+        const advertiserName = document.querySelector("#ads-advertiser-select")?.value || "";
+        if (advertiserName) params.set("advertiser_name", advertiserName);
         if (detailScope && detailId) {
           params.set("detail_scope", detailScope);
           params.set("detail_id", detailId);
@@ -1942,6 +2222,7 @@
           await loadAnalytics();
           await loadOfficialChanges();
           await loadMailReview();
+          await loadAdsApiKeys().catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
           window.sessionStorage.setItem("openaiAdsAdminPassword", passwordInput.value);
           loginCard.classList.add("hidden");
           adminPanel.classList.remove("hidden");
@@ -1967,6 +2248,29 @@
       });
       document.querySelector("#refresh-ads-dashboard").addEventListener("click", () => {
         loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+      });
+      document.querySelector("#save-ads-api-key").addEventListener("click", () => {
+        saveAdsApiKey().catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
+      });
+      document.querySelector("#ads-advertiser-select").addEventListener("change", () => {
+        loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+      });
+      document.querySelector("#ads-api-key-body").addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const selectName = button.dataset.adsKeySelect;
+        const deleteName = button.dataset.adsKeyDelete;
+        if (selectName) {
+          fillAdsKeyForm(selectName);
+          const select = document.querySelector("#ads-advertiser-select");
+          if (Array.from(select.options).some((option) => option.value === selectName)) {
+            select.value = selectName;
+            loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+          }
+        }
+        if (deleteName) {
+          deleteAdsApiKey(deleteName).catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
+        }
       });
       document.querySelector("#refresh-official-changes").addEventListener("click", () => {
         loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));

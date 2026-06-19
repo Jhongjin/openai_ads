@@ -20,9 +20,9 @@ class AdsApiSettings:
     base_url: str
 
 
-def load_ads_api_settings() -> AdsApiSettings:
+def load_ads_api_settings(api_key: str | None = None) -> AdsApiSettings:
     return AdsApiSettings(
-        api_key=(os.getenv("OPENAI_ADS_API_KEY") or "").strip(),
+        api_key=(api_key or os.getenv("OPENAI_ADS_API_KEY") or "").strip(),
         base_url=(os.getenv("OPENAI_ADS_API_BASE_URL") or DEFAULT_BASE_URL).strip().rstrip("/"),
     )
 
@@ -79,6 +79,22 @@ def _metric_from_row(row: dict[str, Any], key: str) -> float:
     )
 
 
+def _metric_from_any(row: dict[str, Any], keys: list[str]) -> float:
+    for key in keys:
+        raw = _lookup(
+            row,
+            key,
+            f"metrics.{key}",
+            f"ad_account.{key}",
+            f"campaign.{key}",
+            f"ad_group.{key}",
+            f"ad.{key}",
+        )
+        if raw not in (None, ""):
+            return _as_number(raw)
+    return 0.0
+
+
 def _row_identity(row: dict[str, Any], level: str) -> tuple[str, str]:
     prefix = "ad_group" if level == "ad_group" else level
     resource_id = str(_lookup(row, f"{prefix}.id", f"{prefix}_id", "id") or "")
@@ -104,12 +120,41 @@ def _normalize_row(row: dict[str, Any], level: str) -> dict[str, Any]:
     ctr = _metric_from_row(row, "ctr")
     cpc = _metric_from_row(row, "cpc")
     cpm = _metric_from_row(row, "cpm")
+    conversions = _metric_from_any(
+        row,
+        [
+            "conversions",
+            "conversion_count",
+            "total_conversions",
+            "events",
+            "event_count",
+        ],
+    )
+    conversion_value = _metric_from_any(
+        row,
+        [
+            "conversion_value",
+            "conversions_value",
+            "revenue",
+            "purchase_value",
+            "value",
+        ],
+    )
+    conversion_rate = _metric_from_any(row, ["conversion_rate", "cvr"])
+    cost_per_conversion = _metric_from_any(row, ["cost_per_conversion", "cpa"])
+    roas = _metric_from_any(row, ["roas", "return_on_ad_spend"])
     if not ctr and impressions:
         ctr = clicks / impressions
     if not cpc and clicks:
         cpc = spend / clicks
     if not cpm and impressions:
         cpm = spend / impressions * 1000
+    if not conversion_rate and clicks:
+        conversion_rate = conversions / clicks
+    if not cost_per_conversion and conversions:
+        cost_per_conversion = spend / conversions
+    if not roas and spend:
+        roas = conversion_value / spend
     return {
         "id": resource_id,
         "name": name,
@@ -120,6 +165,11 @@ def _normalize_row(row: dict[str, Any], level: str) -> dict[str, Any]:
         "ctr": round(ctr, 6),
         "cpc": round(cpc, 4),
         "cpm": round(cpm, 4),
+        "conversions": round(conversions, 4),
+        "conversion_value": round(conversion_value, 4),
+        "conversion_rate": round(conversion_rate, 6),
+        "cost_per_conversion": round(cost_per_conversion, 4),
+        "roas": round(roas, 4),
         "status": _row_value(row, level, "status"),
         "review_status": _lookup(row, "ad.review_status", "ad_review_status", "review_status") or "",
         "campaign_id": _lookup(row, "campaign.id", "campaign_id") or "",
@@ -134,6 +184,8 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     impressions = sum(int(row.get("impressions") or 0) for row in rows)
     clicks = sum(int(row.get("clicks") or 0) for row in rows)
     spend = sum(float(row.get("spend") or 0) for row in rows)
+    conversions = sum(float(row.get("conversions") or 0) for row in rows)
+    conversion_value = sum(float(row.get("conversion_value") or 0) for row in rows)
     return {
         "impressions": impressions,
         "clicks": clicks,
@@ -141,6 +193,11 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "ctr": round(clicks / impressions, 6) if impressions else 0,
         "cpc": round(spend / clicks, 4) if clicks else 0,
         "cpm": round(spend / impressions * 1000, 4) if impressions else 0,
+        "conversions": round(conversions, 4),
+        "conversion_value": round(conversion_value, 4),
+        "conversion_rate": round(conversions / clicks, 6) if clicks else 0,
+        "cost_per_conversion": round(spend / conversions, 4) if conversions else 0,
+        "roas": round(conversion_value / spend, 4) if spend else 0,
     }
 
 
@@ -264,19 +321,44 @@ AD_FIELDS = [
 ]
 
 
+CONVERSION_FIELD_SUFFIXES = [
+    "conversions",
+    "conversion_value",
+    "conversion_rate",
+    "cost_per_conversion",
+    "roas",
+]
+
+
+def _with_conversion_fields(fields: list[str], prefix: str) -> list[str]:
+    return [*fields, *[f"{prefix}.{suffix}" for suffix in CONVERSION_FIELD_SUFFIXES]]
+
+
+ACCOUNT_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(ACCOUNT_FIELDS, "ad_account")
+CAMPAIGN_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(CAMPAIGN_FIELDS, "campaign")
+AD_GROUP_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(AD_GROUP_FIELDS, "ad_group")
+AD_FIELDS_WITH_CONVERSIONS = _with_conversion_fields(AD_FIELDS, "ad")
+
+
+def _is_field_error(exc: httpx.HTTPStatusError) -> bool:
+    return exc.response is not None and exc.response.status_code in {400, 422}
+
+
 async def fetch_ads_dashboard(
     *,
     start_date: str | None = None,
     end_date: str | None = None,
     detail_scope: str | None = None,
     detail_id: str | None = None,
+    api_key: str | None = None,
+    advertiser_name: str | None = None,
 ) -> dict[str, Any]:
-    settings = load_ads_api_settings()
+    settings = load_ads_api_settings(api_key=api_key)
     if not settings.api_key:
         return {
             "ok": False,
             "configured": False,
-            "error": "OPENAI_ADS_API_KEY 환경변수가 설정되어 있지 않습니다.",
+            "error": "광고주별 Ads API 키를 등록하거나 OPENAI_ADS_API_KEY 환경변수를 설정해 주세요.",
             "docs": {
                 "overview": "https://developers.openai.com/ads/api-overview",
                 "insights": "https://developers.openai.com/ads/api-reference/insights",
@@ -289,18 +371,47 @@ async def fetch_ads_dashboard(
     client = AdsInsightsClient(settings)
 
     try:
-        account_payload, campaign_payload = await _fetch_account_and_campaigns(client, start_date, end_date)
+        conversion_metrics_available = True
+        try:
+            account_payload, campaign_payload = await _fetch_account_and_campaigns(
+                client,
+                start_date,
+                end_date,
+                include_conversions=True,
+            )
+        except httpx.HTTPStatusError as exc:
+            if not _is_field_error(exc):
+                raise
+            conversion_metrics_available = False
+            account_payload, campaign_payload = await _fetch_account_and_campaigns(
+                client,
+                start_date,
+                end_date,
+                include_conversions=False,
+            )
         account_rows = [_normalize_row(row, "ad_account") for row in account_payload.get("data", [])]
         campaign_rows = [_normalize_row(row, "campaign") for row in campaign_payload.get("data", [])]
         account_summary = account_rows[0] if account_rows else summarize_rows(campaign_rows)
 
         detail = None
         if detail_scope and detail_id:
-            detail = await _fetch_detail(client, start_date, end_date, detail_scope, detail_id)
+            detail = await _fetch_detail(
+                client,
+                start_date,
+                end_date,
+                detail_scope,
+                detail_id,
+                include_conversions=conversion_metrics_available,
+            )
+            if detail.get("conversion_metrics_available") is False:
+                conversion_metrics_available = False
 
         return {
             "ok": True,
             "configured": True,
+            "advertiser_name": advertiser_name or "",
+            "key_source": "advertiser" if api_key else "environment",
+            "conversion_metrics_available": conversion_metrics_available,
             "range": {"start_date": start_date, "end_date": end_date, "timezone": TIMEZONE},
             "account": account_summary,
             "campaigns": campaign_rows,
@@ -331,14 +442,18 @@ async def _fetch_account_and_campaigns(
     client: AdsInsightsClient,
     start_date: str,
     end_date: str,
+    *,
+    include_conversions: bool,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    account_fields = ACCOUNT_FIELDS_WITH_CONVERSIONS if include_conversions else ACCOUNT_FIELDS
+    campaign_fields = CAMPAIGN_FIELDS_WITH_CONVERSIONS if include_conversions else CAMPAIGN_FIELDS
     return await asyncio.gather(
         client.insights(
             scope="ad_account",
             aggregation_level="ad_account",
             start_date=start_date,
             end_date=end_date,
-            fields=ACCOUNT_FIELDS,
+            fields=account_fields,
             limit=1,
         ),
         client.insights(
@@ -346,7 +461,7 @@ async def _fetch_account_and_campaigns(
             aggregation_level="campaign",
             start_date=start_date,
             end_date=end_date,
-            fields=CAMPAIGN_FIELDS,
+            fields=campaign_fields,
             limit=200,
         ),
     )
@@ -358,25 +473,45 @@ async def _fetch_detail(
     end_date: str,
     detail_scope: str,
     detail_id: str,
+    *,
+    include_conversions: bool,
 ) -> dict[str, Any]:
     if detail_scope == "campaign":
         level = "ad_group"
-        fields = AD_GROUP_FIELDS
+        fields = AD_GROUP_FIELDS_WITH_CONVERSIONS if include_conversions else AD_GROUP_FIELDS
+        fallback_fields = AD_GROUP_FIELDS
     elif detail_scope == "ad_group":
         level = "ad"
-        fields = AD_FIELDS
+        fields = AD_FIELDS_WITH_CONVERSIONS if include_conversions else AD_FIELDS
+        fallback_fields = AD_FIELDS
     else:
         level = "ad"
-        fields = AD_FIELDS
-    payload = await client.insights(
-        scope=detail_scope,
-        resource_id=detail_id,
-        aggregation_level=level,
-        start_date=start_date,
-        end_date=end_date,
-        fields=fields,
-        limit=200,
-    )
+        fields = AD_FIELDS_WITH_CONVERSIONS if include_conversions else AD_FIELDS
+        fallback_fields = AD_FIELDS
+    conversion_metrics_available = include_conversions
+    try:
+        payload = await client.insights(
+            scope=detail_scope,
+            resource_id=detail_id,
+            aggregation_level=level,
+            start_date=start_date,
+            end_date=end_date,
+            fields=fields,
+            limit=200,
+        )
+    except httpx.HTTPStatusError as exc:
+        if not include_conversions or not _is_field_error(exc):
+            raise
+        conversion_metrics_available = False
+        payload = await client.insights(
+            scope=detail_scope,
+            resource_id=detail_id,
+            aggregation_level=level,
+            start_date=start_date,
+            end_date=end_date,
+            fields=fallback_fields,
+            limit=200,
+        )
     rows = [_normalize_row(row, level) for row in payload.get("data", [])]
     return {
         "scope": detail_scope,
@@ -384,4 +519,5 @@ async def _fetch_detail(
         "aggregation_level": level,
         "rows": rows,
         "total": summarize_rows(rows),
+        "conversion_metrics_available": conversion_metrics_available,
     }

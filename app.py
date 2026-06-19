@@ -129,6 +129,13 @@ class VisitRequest(BaseModel):
     label: str | None = Field(default=None, max_length=120)
 
 
+class AdsApiKeyRequest(BaseModel):
+    advertiser_name: str = Field(..., min_length=1, max_length=120)
+    ads_api_key: str | None = Field(default="", max_length=500)
+    conversion_api_key: str | None = Field(default="", max_length=500)
+    enabled: bool = True
+
+
 PAGE_LABELS = {
     "root": "메인",
     "chat": "광고 Q&A",
@@ -240,6 +247,36 @@ def admin_analytics(request: Request) -> dict[str, Any]:
     return get_visit_analytics()
 
 
+@app.get("/api/admin/ads-api-keys", include_in_schema=False)
+def admin_ads_api_keys(request: Request) -> dict[str, Any]:
+    from admin_store import list_ads_api_keys
+
+    _require_admin(request)
+    return list_ads_api_keys()
+
+
+@app.post("/api/admin/ads-api-keys", include_in_schema=False)
+def admin_save_ads_api_key(request: Request, payload: AdsApiKeyRequest) -> dict[str, Any]:
+    from admin_store import upsert_ads_api_key
+
+    _require_admin(request)
+    try:
+        return upsert_ads_api_key(payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/admin/ads-api-keys/{advertiser_name}", include_in_schema=False)
+def admin_delete_ads_api_key(advertiser_name: str, request: Request) -> dict[str, Any]:
+    from admin_store import delete_ads_api_key
+
+    _require_admin(request)
+    try:
+        return delete_ads_api_key(advertiser_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/admin/ads-dashboard", include_in_schema=False)
 async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
     from rag_chatbot.ads_api import fetch_ads_dashboard
@@ -249,11 +286,26 @@ async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
     end_date = str(request.query_params.get("end_date") or "") or None
     detail_scope = str(request.query_params.get("detail_scope") or "") or None
     detail_id = str(request.query_params.get("detail_id") or "") or None
+    advertiser_name = str(request.query_params.get("advertiser_name") or "").strip()
+    api_key = None
+    if advertiser_name:
+        from admin_store import get_ads_api_key
+
+        api_key = get_ads_api_key(advertiser_name)
+        if not api_key:
+            return {
+                "ok": False,
+                "configured": False,
+                "advertiser_name": advertiser_name,
+                "error": f"{advertiser_name} Ads API 키가 등록되어 있지 않거나 비활성 상태입니다.",
+            }
     return await fetch_ads_dashboard(
         start_date=start_date,
         end_date=end_date,
         detail_scope=detail_scope,
         detail_id=detail_id,
+        api_key=api_key,
+        advertiser_name=advertiser_name,
     )
 
 
