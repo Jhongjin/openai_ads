@@ -76,16 +76,16 @@ Invoke-RestMethod -Method Post `
 - OpenAI 공식 워크북 구조에 맞춰 `campaigns`, `adgroups`, `ads` 3개 시트용 `.xlsx` 파일을 생성합니다.
 - 광고주가 작성한 공식 워크북 `.xlsx`를 업로드하면 `campaigns`, `adgroups`, `ads` 시트와 필수 컬럼을 먼저 검수할 수 있습니다.
 - 한 광고주 접수 안에서 캠페인 N개, 각 캠페인별 광고그룹 N개, 각 광고그룹별 소재 N개를 등록할 수 있습니다.
-- 공식 템플릿의 `oaitestcmp...`, `oaitestadg...` 행은 샘플 데이터입니다. Ads Manager 업로드와 이 도구의 검수에서는 실제 데이터로 보지 않으므로, 샘플값을 실제 `campaign_name`/`adgroup_name`으로 바꾸거나 샘플 행을 삭제한 뒤 새 행을 입력해야 합니다.
-- `campaign_name`과 `adgroup_name`은 벌크 업로드 오류 방지를 위해 영문, 숫자, 언더스코어(`_`)만 사용합니다. 공식 API 문서에는 세부 정규식이 공개되어 있지 않지만, 워크북에는 `no special characters`로 안내되므로 공백, 한글, 하이픈, 기타 특수문자는 피합니다.
+- 공식 템플릿의 `oaitestcmp...`, `oaitestadg...`, `oaitestad...` 행은 샘플 데이터입니다. Ads Manager 업로드와 이 도구의 검수에서는 실제 데이터로 보지 않으므로, 샘플값을 실제 `campaign_name`/`adgroup_name`/`ad_name`으로 바꾸거나 샘플 행을 삭제한 뒤 새 행을 입력해야 합니다.
+- `campaign_name`, `adgroup_name`, `ad_name`은 벌크 업로드 오류 방지를 위해 영문, 숫자, 공백, 하이픈(`-`), 언더스코어(`_`)만 허용합니다. 점, 슬래시, 괄호, 이모지, 한글 등은 피합니다.
+- 시작일, 종료일, 예산 유형, 캠페인 목표는 수동 세팅 확인을 위해 필수입니다.
 - 한국 집행도 현재 Ads Manager 벌크 업로드에서는 `target_countries`를 빈칸(NULL)으로 둡니다. `["KR"]`을 넣으면 업로드 오류가 확인되며, 빈칸은 업로더 미리보기에서 `ALL_COUNTRIES`로 표시될 수 있습니다.
-- `max_bid`는 `Clicks = CPC` 캠페인에서만 입력합니다. `Views = CPM` 캠페인의 광고그룹은 공식 업로더 기준으로 `max_bid`를 빈칸으로 두어야 하며, 값이 있으면 검수 오류로 표시됩니다.
+- `max_bid`는 `Clicks = CPC` 캠페인에서 필수로 입력합니다. `Views = CPM` 캠페인의 광고그룹은 공식 업로더 기준으로 `max_bid`를 빈칸으로 두어야 하며, 값이 있으면 검수 오류로 표시됩니다.
 - `ads.image_link`는 실제 PNG/JPG 직접 이미지 URL이어야 합니다. 홈페이지나 랜딩 페이지 URL처럼 `text/html`을 반환하는 주소는 OpenAI 업로더에서 이미지 수집 오류가 납니다.
 - 구글 시트 기록을 사용할 경우 접수번호를 공통 키로 넣고, `campaigns`에는 캠페인 수만큼, `adgroups`에는 광고그룹 수만큼, `ads`에는 소재 수만큼 행이 추가됩니다.
-- 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 초안 페이지는 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다.
-- 크리테오 경유 선택 시 캠페인 목표는 CPM(Views)으로 고정되고, 소재 글자수 상한은 제목 30자 / 설명 60자로 전환됩니다.
-- OpenAI 직접 업로드는 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
-- 이미지 파일 첨부는 Supabase Storage가 설정된 경우 공개 이미지 URL로 업로드하고, 미설정 상태에서는 직접 이미지 URL 입력을 안내합니다.
+- 공식 `ads` 탭은 `adgroup_name`으로 소재를 연결하므로, 초안 페이지는 광고그룹명이 한 접수 안에서 중복되지 않도록 검증합니다. `ad_name`도 한 접수 안에서 중복되지 않아야 합니다.
+- 공식 워크북 기준 제목 24자 / 설명 48자 상한을 적용합니다.
+- 현재 draft UI는 이미지 파일 첨부 대신 공개 직접 이미지 URL 입력을 받습니다. `/intake/upload-image`는 숨김 API로 남아 있지만 draft 화면에서는 사용하지 않습니다.
 - 구글 시트 제출 성공 시 `KT-OAI-YYYYMMDD-NNN` 형식의 접수번호와 KST 타임스탬프를 반환합니다.
 
 서버는 `GOOGLE_SHEETS_WEBHOOK_URL`로 JSON을 전달하며, body는 `secret` + `data` 구조로 맞춥니다. Apps Script 웹앱은 `secret` 값을 Script Properties의 `SHEETS_SHARED_SECRET`와 비교해 검증합니다. 예시 코드는 [apps_script/intake_webhook.gs](apps_script/intake_webhook.gs)에 있으며, Apps Script의 Script Properties에 `SHEETS_SHARED_SECRET` 값을 등록한 뒤 새 버전으로 배포합니다.
@@ -108,7 +108,27 @@ Apps Script로 전달되는 최종 body:
 {
     "secret": "환경변수 SHEETS_SHARED_SECRET 값",
     "data": {
-      "campaign": {
+      "campaign": [
+        {
+          "campaign_name": "summer_sale",
+          "budget_max": "5000000",
+          "budget_type": "lifetime",
+          "launch_date": "2026-07-01",
+          "end_date": "2026-07-31",
+          "objective": "views",
+          "target_countries": []
+        },
+        {
+          "campaign_name": "summer_clicks",
+          "budget_max": "3000000",
+          "budget_type": "daily",
+          "launch_date": "2026-07-01",
+          "end_date": "2026-07-31",
+          "objective": "clicks",
+          "target_countries": []
+        }
+      ],
+      "primary_campaign": {
         "campaign_name": "summer_sale",
         "budget_max": "5000000",
         "budget_type": "lifetime",
@@ -142,25 +162,18 @@ Apps Script로 전달되는 최종 body:
         { "campaign_name": "summer_clicks", "adgroup_name": "ag_clicks", "max_bid": "4100", "keywords": ["키워드3"] }
       ],
       "ads": [
-        { "adgroup_name": "ag_main", "title": "여름 특가", "copy": "지금 준비하세요", "link": "https://example.com", "image_link": "https://example.com/img.png" },
-        { "adgroup_name": "ag_main", "title": "두 번째 소재", "copy": "또 다른 메시지", "link": "https://example.com/2", "image_link": "https://example.com/img2.png" },
-        { "adgroup_name": "ag_clicks", "title": "클릭 캠페인", "copy": "클릭을 유도합니다", "link": "https://example.com/click", "image_link": "https://example.com/click.png" }
+        { "adgroup_name": "ag_main", "ad_name": "summer_sale_ad1", "title": "여름 특가", "copy": "지금 준비하세요", "link": "https://example.com", "image_link": "https://example.com/img.png" },
+        { "adgroup_name": "ag_main", "ad_name": "summer_sale_ad2", "title": "두 번째 소재", "copy": "또 다른 메시지", "link": "https://example.com/2", "image_link": "https://example.com/img2.png" },
+        { "adgroup_name": "ag_clicks", "ad_name": "summer_clicks_ad1", "title": "클릭 캠페인", "copy": "클릭을 유도합니다", "link": "https://example.com/click", "image_link": "https://example.com/click.png" }
       ],
       "ops": {
-        "route": "OpenAI 직접 CBT",
         "advertiser_name": "광고주명",
-        "legal_name": "법인 정식 명칭",
-        "brn": "123-45-67890",
-        "homepage": "https://example.com",
-        "invoice_email": "invoice@example.com",
-        "contact_name": "홍길동",
-        "contact_phone": "010-0000-0000",
-        "contact_email": "client@example.com",
+        "brand_name": "브랜드명",
         "sales_owner": "영업담당자명",
-        "ready_ads_manager": true,
-        "ready_payment": true,
-        "ready_crawler": true,
-        "ready_favicon": true,
+        "sales_owner_email": "owner@nasmedia.co.kr",
+        "owner_headquarters": "미디어본부",
+        "owner_office": "미디어채널실",
+        "owner_team": "미디어채널1팀",
         "note": ""
       }
     }
@@ -330,8 +343,8 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `SUPABASE_URL`
 - `SUPABASE_DB_URL`
 - `SUPABASE_SCHEMA`
-- `SUPABASE_SERVICE_ROLE_KEY` (선택, `/creative-upload-draft` 이미지 파일 첨부를 Supabase Storage에 저장할 때 사용)
-- `SUPABASE_STORAGE_BUCKET` (선택, 기본 `openai-ad-assets`)
+- `SUPABASE_SERVICE_ROLE_KEY` (선택, 숨김 `/intake/upload-image` API로 이미지를 Supabase Storage에 저장할 때 사용)
+- `SUPABASE_STORAGE_BUCKET` (선택, 숨김 이미지 업로드 API 기본 `openai-ad-assets`)
 - `RAG_CONFIG_PATH`
 - `EMBEDDING_BATCH_SIZE`
 - `INGEST_TOKEN` (선택, 배포 후 보호된 `/admin/reindex`를 호출할 때 사용)

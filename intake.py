@@ -130,7 +130,7 @@ class OpsMeta(BaseModel):
 class CampaignInfo(BaseModel):
     campaign_name: str
     budget_max: float
-    budget_type: Literal["lifetime", "daily"] = "lifetime"
+    budget_type: Literal["lifetime", "daily"]
     launch_date: date | None = None
     end_date: date | None = None
     objective: Literal["views", "clicks"]
@@ -155,7 +155,17 @@ class CampaignInfo(BaseModel):
         invalid = [value for value in cleaned if not re.fullmatch(r"[A-Z]{2}", value)]
         if invalid:
             raise ValueError("국가는 2자리 ISO 코드로 저장해야 합니다.")
+        if "KR" in cleaned:
+            raise ValueError("현재 한국 집행은 target_countries를 빈칸(NULL)으로 두어야 합니다. KR은 벌크 업로드 오류가 확인되었습니다.")
         return cleaned
+
+    @model_validator(mode="after")
+    def _required_operational_fields(self) -> "CampaignInfo":
+        if self.launch_date is None:
+            raise ValueError("시작일은 수동 세팅과 벌크 업로드 확인을 위해 필수입니다.")
+        if self.end_date is None:
+            raise ValueError("종료일은 수동 세팅과 벌크 업로드 확인을 위해 필수입니다.")
+        return self
 
 
 class AdGroupInfo(BaseModel):
@@ -196,6 +206,7 @@ class AdGroupInfo(BaseModel):
 
 class AdInfo(BaseModel):
     adgroup_name: str = ""
+    ad_name: str
     title: str
     ad_copy: str = Field(..., alias="copy")
     link: str
@@ -205,6 +216,11 @@ class AdInfo(BaseModel):
     @classmethod
     def _clean_adgroup_name(cls, value: str) -> str:
         return _clean_text(value)
+
+    @field_validator("ad_name")
+    @classmethod
+    def _valid_ad_name(cls, value: str) -> str:
+        return _valid_safe_name(value, "소재명")
 
     @field_validator("title", "ad_copy")
     @classmethod
@@ -261,6 +277,7 @@ class IntakeSubmission(BaseModel):
         copy_max = 48
         campaign_names: set[str] = set()
         adgroup_names: set[str] = set()
+        ad_names: set[str] = set()
 
         for campaign_index, campaign_item in enumerate(self.campaigns, start=1):
             campaign = campaign_item.campaign
@@ -277,6 +294,11 @@ class IntakeSubmission(BaseModel):
                         f"캠페인 {campaign_index} / 광고그룹 {group_index}: "
                         "Views(CPM) 캠페인은 max_bid를 비워야 합니다. max_bid는 Clicks(CPC) 캠페인에서만 입력하세요."
                     )
+                if campaign.objective == "clicks" and group_item.adgroup.max_bid is None:
+                    raise ValueError(
+                        f"캠페인 {campaign_index} / 광고그룹 {group_index}: "
+                        "Clicks(CPC) 캠페인은 max_bid를 KRW 기준으로 입력해야 합니다."
+                    )
                 adgroup_name = group_item.adgroup.adgroup_name
                 if adgroup_name in adgroup_names:
                     raise ValueError(f"광고그룹명 '{adgroup_name}'이 중복되었습니다.")
@@ -284,6 +306,9 @@ class IntakeSubmission(BaseModel):
 
                 for ad_index, ad in enumerate(group_item.ads, start=1):
                     label = f"캠페인 {campaign_index} / 광고그룹 {group_index} / 소재 {ad_index}"
+                    if ad.ad_name in ad_names:
+                        raise ValueError(f"소재명 '{ad.ad_name}'이 중복되었습니다.")
+                    ad_names.add(ad.ad_name)
                     if len(ad.title) > title_max:
                         raise ValueError(f"{label}의 광고 제목은 최대 {title_max}자입니다.")
                     if len(ad.ad_copy) > copy_max:
@@ -345,6 +370,7 @@ def build_sheet_payload(
             ads.extend(
                 {
                     "adgroup_name": adgroup_name,
+                    "ad_name": ad.ad_name,
                     "title": ad.title,
                     "copy": ad.ad_copy,
                     "link": ad.link,
@@ -390,7 +416,7 @@ WORKBOOK_COLUMNS = {
         "target_countries",
     ],
     "adgroups": ["campaign_name", "adgroup_name", "max_bid", "keywords"],
-    "ads": ["adgroup_name", "title", "copy", "link", "image_link"],
+    "ads": ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
 }
 
 
@@ -461,9 +487,7 @@ def _normalise_choice(value: Any) -> str:
 
 
 def _normalise_objective(value: Any) -> str:
-    # The template marks objective optional, but Ads Manager treats a blank
-    # objective like the default Views flow for max_bid validation.
-    return _normalise_choice(value) or "views"
+    return _normalise_choice(value)
 
 
 def _to_positive_number(value: Any, *, label: str, row_number: int, errors: list[str]) -> float | None:
@@ -568,7 +592,7 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             {
                 "campaign_name": _cell_text(row.get("campaign_name")),
                 "budget_max": _cell_text(row.get("budget_max")),
-                "budget_type": _normalise_choice(row.get("budget_type")) or "lifetime",
+                "budget_type": _normalise_choice(row.get("budget_type")),
                 "launch_date": _cell_text(row.get("launch_date")),
                 "end_date": _cell_text(row.get("end_date")),
                 "objective": _normalise_objective(row.get("objective")),
@@ -588,6 +612,7 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         "ads": [
             {
                 "adgroup_name": _cell_text(row.get("adgroup_name")),
+                "ad_name": _cell_text(row.get("ad_name")),
                 "title": _cell_text(row.get("title")),
                 "copy": _cell_text(row.get("copy")),
                 "link": _cell_text(row.get("link")),
@@ -604,6 +629,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
         budget_max = _cell_text(row.get("budget_max"))
         objective = _normalise_objective(row.get("objective"))
         budget_type = _normalise_choice(row.get("budget_type"))
+        launch_date = _cell_text(row.get("launch_date"))
+        end_date = _cell_text(row.get("end_date"))
         target_countries = _cell_text(row.get("target_countries"))
 
         if not campaign_name:
@@ -624,9 +651,17 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"campaigns 행 {row_number}: budget_max는 필수입니다.")
         else:
             _to_positive_number(budget_max, label="campaigns budget_max", row_number=row_number, errors=errors)
-        if budget_type and budget_type not in {"lifetime", "daily"}:
+        if not budget_type:
+            errors.append(f"campaigns 행 {row_number}: budget_type은 필수입니다.")
+        elif budget_type not in {"lifetime", "daily"}:
             errors.append(f"campaigns 행 {row_number}: budget_type은 lifetime 또는 daily여야 합니다.")
-        if objective not in {"views", "clicks"}:
+        if not launch_date:
+            errors.append(f"campaigns 행 {row_number}: launch_date는 필수입니다.")
+        if not end_date:
+            errors.append(f"campaigns 행 {row_number}: end_date는 필수입니다.")
+        if not objective:
+            errors.append(f"campaigns 행 {row_number}: objective는 필수입니다.")
+        elif objective not in {"views", "clicks"}:
             errors.append(f"campaigns 행 {row_number}: objective는 views 또는 clicks여야 합니다.")
         if target_countries:
             countries = _json_array(target_countries, label="campaigns target_countries", row_number=row_number, errors=errors)
@@ -680,12 +715,16 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
                 _to_positive_number(max_bid, label="adgroups max_bid", row_number=row_number, errors=errors)
             else:
                 warnings.append(f"adgroups 행 {row_number}: campaign objective를 확인할 수 없어 max_bid 적용 여부를 판단할 수 없습니다.")
+        elif campaign_objective == "clicks":
+            errors.append(f"adgroups 행 {row_number}: Clicks(CPC) 캠페인의 광고그룹은 max_bid를 KRW 기준으로 입력해야 합니다.")
         if keywords:
             _json_array(keywords, label="adgroups keywords", row_number=row_number, errors=errors)
 
+    ad_names: set[str] = set()
     for row in parsed_rows["ads"]:
         row_number = int(row["_row_number"])
         adgroup_name = _cell_text(row.get("adgroup_name"))
+        ad_name = _cell_text(row.get("ad_name"))
         title = _cell_text(row.get("title"))
         copy = _cell_text(row.get("copy"))
         link = _cell_text(row.get("link"))
@@ -695,6 +734,19 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"ads 행 {row_number}: adgroup_name은 필수입니다.")
         elif adgroup_name not in adgroup_campaigns:
             errors.append(f"ads 행 {row_number}: 존재하지 않는 adgroup_name '{adgroup_name}'을 참조합니다.")
+        if not ad_name:
+            errors.append(f"ads 행 {row_number}: ad_name은 필수입니다.")
+        elif _is_template_sample_value(ad_name):
+            errors.append(f"ads 행 {row_number}: 공식 샘플 ad_name(oaitest...)을 실제 소재명으로 바꿔 주세요.")
+        elif not _SAFE_NAME_RE.fullmatch(ad_name):
+            errors.append(
+                f"ads 행 {row_number}: ad_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
+            )
+        elif ad_name in ad_names:
+            errors.append(f"ads 행 {row_number}: ad_name '{ad_name}'이 중복되었습니다.")
+        else:
+            ad_names.add(ad_name)
         if not title:
             errors.append(f"ads 행 {row_number}: title은 필수입니다.")
         elif len(title) > 24:

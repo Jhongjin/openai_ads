@@ -130,13 +130,14 @@ class IntakeFormStaticTests(unittest.TestCase):
         self.assertNotIn('querySelectorAll(":scope > .adgroup-list > [data-adgroup-item]")', html)
         self.assertNotIn('querySelectorAll(":scope > .ad-list > [data-ad-item]")', html)
 
-    def test_intake_tab_is_active(self) -> None:
+    def test_intake_tab_stays_disabled_on_public_page(self) -> None:
         html = index_html()
 
         self.assertIn('data-tab="intake"', html)
         self.assertIn("소재 업로드", html)
-        self.assertNotIn("소재 업로드 도구는 개편 중입니다.", html)
-        self.assertNotIn('aria-disabled="true"', html)
+        self.assertIn('aria-disabled="true"', html)
+        self.assertIn('title="소재 업로드 도구는 현재 비활성화되어 있습니다."', html)
+        self.assertIn('const disabledTabs = new Set(["intake"])', html)
 
     def test_intake_reviews_before_sheet_submit(self) -> None:
         html = index_html()
@@ -178,6 +179,13 @@ class IntakeFormStaticTests(unittest.TestCase):
             "clearCollapsedState",
             "담당자명",
             "담당자 이메일",
+            "수동 세팅 기준 필수 입력",
+            "벌크 업로드 기준 주의사항",
+            "소재명",
+            "ad_name",
+            "workbookDownloadNotice",
+            "다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다.",
+            "Clicks(CPC) 캠페인은 max_bid가 필수입니다.",
         ]
         for phrase in required:
             self.assertIn(phrase, html)

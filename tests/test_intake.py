@@ -46,6 +46,7 @@ def valid_payload() -> dict:
         "ads": [
             {
                 "adgroup_name": "test_group",
+                "ad_name": "test_ad_1",
                 "title": "건강한 저녁 준비",
                 "copy": "빠르게 차리는 균형 잡힌 한 끼",
                 "link": "https://example.com/landing?utm_source=openai",
@@ -53,6 +54,7 @@ def valid_payload() -> dict:
             },
             {
                 "adgroup_name": "test_group",
+                "ad_name": "test_ad_2",
                 "title": "퇴근 후 간편 식사",
                 "copy": "오늘 저녁 고민을 줄여주는 밀키트",
                 "link": "https://example.com/landing-2",
@@ -79,6 +81,7 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(payload["data"]["campaigns"][0]["campaign_name"], "ChatGPT_Ads_Test")
         self.assertEqual(len(payload["data"]["adgroups"]), 1)
         self.assertEqual(len(payload["data"]["ads"]), 2)
+        self.assertEqual(payload["data"]["ads"][0]["ad_name"], "test_ad_1")
         self.assertEqual(payload["data"]["adgroups"][0]["keywords"], ["밀키트", "저녁"])
         self.assertEqual(payload["data"]["adgroups"][0]["max_bid"], "1200")
         self.assertEqual(payload["data"]["ops"]["advertiser_name"], "테스트 광고주")
@@ -122,6 +125,7 @@ class IntakeValidationTests(unittest.TestCase):
                         },
                         "ads": [
                             {
+                                "ad_name": "cpm_ad_1",
                                 "title": "노출 캠페인 소재",
                                 "copy": "브랜드 메시지를 넓게 알립니다",
                                 "link": "https://example.com/cpm",
@@ -150,6 +154,7 @@ class IntakeValidationTests(unittest.TestCase):
                         },
                         "ads": [
                             {
+                                "ad_name": "cpc_ad_1",
                                 "title": "클릭 캠페인 소재",
                                 "copy": "랜딩 페이지 방문을 유도합니다",
                                 "link": "https://example.com/cpc",
@@ -191,6 +196,21 @@ class IntakeValidationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
 
+    def test_rejects_missing_max_bid_for_clicks_campaign(self) -> None:
+        payload = valid_payload()
+        payload["campaign"]["objective"] = "clicks"
+        payload["adgroup"]["max_bid"] = None
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
+    def test_rejects_duplicate_ad_names(self) -> None:
+        payload = valid_payload()
+        payload["ads"][1]["ad_name"] = payload["ads"][0]["ad_name"]
+
+        with self.assertRaises(ValidationError):
+            IntakeSubmission.model_validate(payload)
+
     def test_allows_space_hyphen_and_underscore_in_names(self) -> None:
         payload = valid_payload()
         payload["campaign"]["campaign_name"] = "campaign 1-test_main"
@@ -217,6 +237,14 @@ class IntakeValidationTests(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             IntakeSubmission.model_validate(payload)
+
+    def test_rejects_missing_campaign_operational_required_fields(self) -> None:
+        for field in ("budget_type", "launch_date", "end_date", "objective"):
+            payload = valid_payload()
+            payload["campaign"].pop(field)
+            with self.subTest(field=field):
+                with self.assertRaises(ValidationError):
+                    IntakeSubmission.model_validate(payload)
 
     def test_legacy_criteo_route_no_longer_changes_objective(self) -> None:
         payload = valid_payload()
@@ -296,7 +324,42 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertEqual(summary["sheets"]["ads"]["rows"], 2)
         self.assertEqual(summary["data"]["campaigns"][0]["campaign_name"], "ChatGPT_Ads_Test")
         self.assertEqual(summary["data"]["adgroups"][0]["adgroup_name"], "test_group")
+        self.assertEqual(summary["data"]["ads"][0]["ad_name"], "test_ad_1")
         self.assertEqual(summary["data"]["ads"][0]["title"], "건강한 저녁 준비")
+
+    def test_inspect_workbook_rejects_duplicate_ad_names(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["nasmedia2188", 5000, "lifetime", "2026-06-30", "2026-07-06", "views", ""],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["nasmedia2188", "nasmedia2188_ag1", "", ""],
+            ],
+            "ads": [
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188_ag1", "nasmedia2188_ad1", "첫번째", "소재 설명입니다", "https://example.com/1", "https://example.com/1.png"],
+                ["nasmedia2188_ag1", "nasmedia2188_ad1", "두번째", "소재 설명입니다", "https://example.com/2", "https://example.com/2.png"],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertTrue(any("ad_name 'nasmedia2188_ad1'이 중복" in error for error in summary["errors"]))
 
     def test_inspect_workbook_warns_when_only_template_samples_exist(self) -> None:
         from io import BytesIO
@@ -315,9 +378,10 @@ class IntakeValidationTests(unittest.TestCase):
                 ["oaitestcmp1234567", "oaitestadg9876543", 3, '["test1", "test2"]'],
             ],
             "ads": [
-                ["adgroup_name", "title", "copy", "link", "image_link"],
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
                 [
                     "oaitestadg9876543",
+                    "oaitestad1234567",
                     "My website",
                     "Check out the latest on my website",
                     "https://www.example.com/?utm_source=chat",
@@ -356,8 +420,8 @@ class IntakeValidationTests(unittest.TestCase):
                 ["nasmedia2188", "nasmedia2188_ag1", 3, ""],
             ],
             "ads": [
-                ["adgroup_name", "title", "copy", "link", "image_link"],
-                ["nasmedia2188", "내사이트야", "내사이트라고", "https://example.com", "https://example.com/logo.png"],
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188", "nasmedia2188_ad1", "내사이트야", "내사이트라고", "https://example.com", "https://example.com/logo.png"],
             ],
         }
         for sheet_name, rows in rows_by_sheet.items():
@@ -390,8 +454,8 @@ class IntakeValidationTests(unittest.TestCase):
                 ["nasmedia2188", "nasmedia2188_ag1", "", ""],
             ],
             "ads": [
-                ["adgroup_name", "title", "copy", "link", "image_link"],
-                ["nasmedia2188_ag1", "내사이트야", "내사이트라고", "https://example.com", "https://openads.admate.ai.kr/"],
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188_ag1", "nasmedia2188_ad1", "내사이트야", "내사이트라고", "https://example.com", "https://openads.admate.ai.kr/"],
             ],
         }
         for sheet_name, rows in rows_by_sheet.items():
@@ -424,8 +488,8 @@ class IntakeValidationTests(unittest.TestCase):
                 ["nasmedia2188", "nasmedia2188_ag1", "", ""],
             ],
             "ads": [
-                ["adgroup_name", "title", "copy", "link", "image_link"],
-                ["nasmedia2188_ag1", "내사이트야", "내사이트라고", "openads.admate.ai.kr/", "https://co.kr.."],
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
+                ["nasmedia2188_ag1", "nasmedia2188_ad1", "내사이트야", "내사이트라고", "openads.admate.ai.kr/", "https://co.kr.."],
             ],
         }
         for sheet_name, rows in rows_by_sheet.items():

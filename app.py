@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -194,8 +194,8 @@ def creative_upload_draft_page() -> FileResponse:
 
 
 @app.get("/ads-api-draft", include_in_schema=False)
-def ads_api_draft_page() -> RedirectResponse:
-    return RedirectResponse("/admin", status_code=302)
+def ads_api_draft_page() -> FileResponse:
+    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
 
 
 @app.get("/slides", include_in_schema=False)

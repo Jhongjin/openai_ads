@@ -19,6 +19,7 @@ const SHEET_COLUMNS = {
   ads: [
     { key: "receipt_number", header: "접수번호" },
     { key: "adgroup_name", header: "adgroup_name" },
+    { key: "ad_name", header: "ad_name" },
     { key: "title", header: "title" },
     { key: "copy", header: "copy" },
     { key: "link", header: "link" },
@@ -131,6 +132,19 @@ function ensureSheet_(sheetName, columns) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
   const headers = columns.map((column) => column.header);
+  const existingHeaderCount = sheet.getLastColumn();
+  const existingHeaders = existingHeaderCount
+    ? sheet.getRange(1, 1, 1, existingHeaderCount).getValues()[0].map((value) => String(value || "").trim())
+    : [];
+
+  headers.forEach((header, index) => {
+    if (existingHeaders[index] === header) return;
+    if (existingHeaders.indexOf(header, index + 1) === -1) {
+      sheet.insertColumnBefore(index + 1);
+      existingHeaders.splice(index, 0, header);
+    }
+  });
+
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.setFrozenRows(1);
   if (sheetName === "ops_meta" && sheet.getMaxColumns() > headers.length) {
