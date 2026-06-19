@@ -128,6 +128,80 @@
         gap: 18px;
       }
 
+      .admin-shell {
+        display: grid;
+        grid-template-columns: 228px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .admin-nav {
+        position: sticky;
+        top: 20px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px;
+        box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+      }
+
+      .admin-nav-title {
+        margin: 2px 4px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .admin-nav-item {
+        display: grid;
+        width: 100%;
+        min-height: 62px;
+        justify-items: start;
+        gap: 3px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px 12px;
+        color: #344054;
+        text-align: left;
+      }
+
+      .admin-nav-item + .admin-nav-item {
+        margin-top: 6px;
+      }
+
+      .admin-nav-item span {
+        font-size: 14px;
+        font-weight: 950;
+      }
+
+      .admin-nav-item small {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+
+      .admin-nav-item.active {
+        border-color: #fecaca;
+        border-left: 4px solid var(--kt-red);
+        background: #fff5f5;
+        color: #b42318;
+      }
+
+      .admin-pages {
+        min-width: 0;
+      }
+
+      .admin-page {
+        display: none;
+      }
+
+      .admin-page.active {
+        display: grid;
+        gap: 16px;
+      }
+
       h2 {
         margin: 0 0 14px;
         font-size: 20px;
@@ -871,6 +945,17 @@
         padding: 14px;
       }
 
+      .analytics-subsection {
+        margin-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 16px;
+      }
+
+      .analytics-subsection h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+
       .chart-head {
         display: flex;
         justify-content: space-between;
@@ -961,7 +1046,8 @@
 
       @media (max-width: 900px) {
         .topbar,
-        .grid {
+        .grid,
+        .admin-shell {
           display: block;
         }
 
@@ -971,6 +1057,11 @@
 
         .grid > .card + .card {
           margin-top: 18px;
+        }
+
+        .admin-nav {
+          position: static;
+          margin-bottom: 18px;
         }
 
         .summary-grid {
@@ -1037,11 +1128,35 @@
         </div>
       </section>
 
-      <section class="grid hidden" id="admin-panel">
-        <div class="card section">
+      <section class="admin-shell hidden" id="admin-panel">
+        <nav class="admin-nav" aria-label="관리자 기능">
+          <div class="admin-nav-title">관리자 메뉴</div>
+          <button class="admin-nav-item active" data-admin-page="notice" type="button">
+            <span>공지 작성</span>
+            <small>팝업 문구·가이드 링크</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="analytics" type="button">
+            <span>애널리틱스</span>
+            <small>방문·다운로드 추이</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="ads" type="button">
+            <span>Ads 성과 대시보드</span>
+            <small>API 키·라이브 현황</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="official" type="button">
+            <span>공식 가이드 변경</span>
+            <small>자동 RAG 반영 로그</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="mail" type="button">
+            <span>메일 검토함</span>
+            <small>승인 후 RAG 반영</small>
+          </button>
+        </nav>
+        <div class="admin-pages">
+        <div class="card section admin-page active" data-admin-page-panel="notice">
           <h2>메인 공지 팝업 수정</h2>
           <p class="help">
-            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 굵게, 목록, 링크 정도의 간단한 HTML 서식을 사용할 수 있습니다.
+            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 굵게, 목록, 번호목록, 링크, 이모지를 넣고 저장 전 미리보기로 확인합니다.
           </p>
           <label>
             제목
@@ -1055,8 +1170,14 @@
           <div class="editor-shell">
             <div class="editor-toolbar" aria-label="공지 서식 도구">
               <button type="button" data-command="bold">굵게</button>
+              <button type="button" data-command="italic">기울임</button>
               <button type="button" data-command="insertUnorderedList">목록</button>
+              <button type="button" data-command="insertOrderedList">번호 목록</button>
               <button type="button" data-command="createLink">링크</button>
+              <button type="button" data-emoji="📢">📢</button>
+              <button type="button" data-emoji="✅">✅</button>
+              <button type="button" data-emoji="⚠️">⚠️</button>
+              <button type="button" data-emoji="🔗">🔗</button>
               <button type="button" data-command="removeFormat">서식 지우기</button>
             </div>
             <div
@@ -1099,7 +1220,7 @@
           </div>
         </div>
 
-        <div class="card section">
+        <div class="card section admin-page" data-admin-page-panel="analytics">
           <h2>페이지 방문 애널리틱스</h2>
           <p class="help">
             탭을 열 때마다 페이지별 방문 수가 누적됩니다. 아래 차트와 표에서 전체 추이를 확인할 수 있습니다.
@@ -1145,10 +1266,31 @@
               </tbody>
             </table>
           </div>
+          <div class="analytics-subsection">
+            <h3>다운로드·버튼 이벤트</h3>
+            <p class="help">PDF 저장, 이미지 저장, XLSX 다운로드처럼 운영상 중요한 클릭 이벤트를 별도로 봅니다.</p>
+            <div style="overflow-x: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>이벤트</th>
+                    <th>전체</th>
+                    <th>오늘</th>
+                    <th>마지막 실행</th>
+                  </tr>
+                </thead>
+                <tbody id="download-analytics-body">
+                  <tr>
+                    <td colspan="4">아직 다운로드 이벤트가 없습니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <p class="status" id="analytics-status"></p>
         </div>
 
-        <div class="card section span-full ads-dashboard-card">
+        <div class="card section admin-page ads-dashboard-card" data-admin-page-panel="ads">
           <div class="ads-dashboard-head">
             <div>
               <h2>Ads API 성과 대시보드</h2>
@@ -1331,7 +1473,7 @@
           </div>
         </div>
 
-        <div class="card section span-full">
+        <div class="card section admin-page" data-admin-page-panel="official">
           <h2>OpenAI 공식 가이드 변경 로그</h2>
           <p class="help">
             GitHub Actions 재인덱싱에서 새로 발견되거나 내용 해시가 바뀐 공식 문서만 기록합니다.
@@ -1356,19 +1498,20 @@
                   <th>유형</th>
                   <th>언어</th>
                   <th>문서</th>
+                  <th>주요 요약</th>
                   <th>업데이트일</th>
                 </tr>
               </thead>
               <tbody id="official-change-body">
                 <tr>
-                  <td colspan="5">공식 가이드 변경 로그를 불러오는 중입니다.</td>
+                  <td colspan="6">공식 가이드 변경 로그를 불러오는 중입니다.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div class="card section span-full">
+        <div class="card section admin-page" data-admin-page-panel="mail">
           <h2>OpenAI 담당자 메일 검토함</h2>
           <p class="help">
             Daum IMAP에서 수집된 관련 메일을 검토합니다. 원문은 시트에 영구 보존하고,
@@ -1432,12 +1575,15 @@
             </aside>
           </div>
         </div>
+        </div>
       </section>
     </main>
 
     <script>
       const loginCard = document.querySelector("#login-card");
       const adminPanel = document.querySelector("#admin-panel");
+      const adminNavButtons = Array.from(document.querySelectorAll("[data-admin-page]"));
+      const adminPages = Array.from(document.querySelectorAll("[data-admin-page-panel]"));
       const passwordInput = document.querySelector("#admin-password");
       const loginButton = document.querySelector("#login-button");
       const loginStatus = document.querySelector("#login-status");
@@ -1466,6 +1612,17 @@
         body: document.querySelector("#notice-preview-body"),
         source: document.querySelector("#notice-preview-source"),
       };
+
+      function activateAdminPage(page) {
+        const target = page || "notice";
+        adminNavButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.adminPage === target);
+        });
+        adminPages.forEach((panel) => {
+          panel.classList.toggle("active", panel.dataset.adminPagePanel === target);
+        });
+        window.localStorage.setItem("openaiAdsAdminPage", target);
+      }
 
       function password() {
         return passwordInput.value || window.sessionStorage.getItem("openaiAdsAdminPassword") || "";
@@ -1567,39 +1724,69 @@
         setStatus(noticeStatus, "공지 팝업이 저장되었습니다.", notice.storage === "supabase" ? "ok" : "error");
       }
 
-      function renderAnalytics(data) {
-        const items = data.items || [];
-        const total = items.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
-        const today = items.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
-        document.querySelector("#metric-total").textContent = total.toLocaleString("ko-KR");
-        document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
-        document.querySelector("#metric-pages").textContent = items.length.toLocaleString("ko-KR");
-        renderVisitChart(data.series || []);
+      function isTrackedEvent(item) {
+        const page = String(item.page || "");
+        return page.startsWith("download:") || page.startsWith("action:");
+      }
 
-        const body = document.querySelector("#analytics-body");
+      function renderAnalyticsRows(bodySelector, items, emptyMessage) {
+        const body = document.querySelector(bodySelector);
         body.innerHTML = "";
         if (!items.length) {
-          body.innerHTML = '<tr><td colspan="4">아직 데이터가 없습니다.</td></tr>';
+          body.innerHTML = `<tr><td colspan="4">${emptyMessage}</td></tr>`;
           return;
         }
         items.forEach((item) => {
           const tr = document.createElement("tr");
           const lastSeen = item.last_seen_at ? new Date(item.last_seen_at).toLocaleString("ko-KR") : "-";
           tr.innerHTML = `
-            <td><strong>${item.page_label || item.page}</strong><br><span style="color:#667085">${item.page}</span></td>
+            <td><strong>${escapeHtml(item.page_label || item.page)}</strong><br><span style="color:#667085">${escapeHtml(item.page || "")}</span></td>
             <td>${Number(item.total_count || 0).toLocaleString("ko-KR")}</td>
-            <td>${Number(item.today_count || 0).toLocaleString("ko-KR")}<br><span style="color:#667085">${item.today_date || ""}</span></td>
-            <td>${lastSeen}</td>
+            <td>${Number(item.today_count || 0).toLocaleString("ko-KR")}<br><span style="color:#667085">${escapeHtml(item.today_date || "")}</span></td>
+            <td>${escapeHtml(lastSeen)}</td>
           `;
           body.appendChild(tr);
         });
+      }
+
+      function renderAnalytics(data) {
+        const items = data.items || [];
+        const pageItems = items.filter((item) => !isTrackedEvent(item));
+        const eventItems = items.filter(isTrackedEvent);
+        const total = pageItems.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
+        const today = pageItems.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
+        document.querySelector("#metric-total").textContent = total.toLocaleString("ko-KR");
+        document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
+        document.querySelector("#metric-pages").textContent = pageItems.length.toLocaleString("ko-KR");
+        renderVisitChart(data.series || []);
+        renderAnalyticsRows("#analytics-body", pageItems, "아직 페이지 방문 데이터가 없습니다.");
+        renderAnalyticsRows("#download-analytics-body", eventItems, "아직 다운로드 이벤트가 없습니다.");
+      }
+
+      function normalizeVisitSeries(series, days = 30) {
+        const values = new Map(
+          (series || []).map((item) => [
+            String(item.visit_date || item.day || "").slice(0, 10),
+            Number(item.total_count || item.count || 0),
+          ]),
+        );
+        const points = [];
+        const today = new Date();
+        for (let index = days - 1; index >= 0; index -= 1) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - index);
+          const key = date.toISOString().slice(0, 10);
+          points.push({ date: key, count: values.get(key) || 0 });
+        }
+        return points;
       }
 
       function renderVisitChart(series) {
         const svg = document.querySelector("#visit-chart");
         const caption = document.querySelector("#chart-caption");
         svg.innerHTML = "";
-        if (!series.length) {
+        const points = normalizeVisitSeries(series, 30);
+        if (!points.some((item) => item.count > 0)) {
           caption.textContent = "표시할 방문 데이터가 없습니다";
           const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
           text.setAttribute("x", "320");
@@ -1612,15 +1799,11 @@
           return;
         }
 
-        const points = series.slice(-14).map((item) => ({
-          date: item.visit_date,
-          count: Number(item.total_count || 0),
-        }));
         const max = Math.max(1, ...points.map((item) => item.count));
         const chart = { width: 640, height: 190, top: 14, right: 12, bottom: 34, left: 38 };
         const plotWidth = chart.width - chart.left - chart.right;
         const plotHeight = chart.height - chart.top - chart.bottom;
-        const barWidth = Math.min(28, Math.max(10, plotWidth / Math.max(points.length * 2, 12)));
+        const barWidth = Math.min(14, Math.max(5, plotWidth / Math.max(points.length * 2.8, 18)));
         const xForIndex = (index) =>
           points.length > 1 ? chart.left + (plotWidth / (points.length - 1)) * index : chart.left + plotWidth / 2;
         caption.textContent = `최근 ${points.length}일 기준`;
@@ -2005,7 +2188,7 @@
         const body = document.querySelector("#official-change-body");
         body.innerHTML = "";
         if (!items.length) {
-          body.innerHTML = '<tr><td colspan="5">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
+          body.innerHTML = '<tr><td colspan="6">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
           return;
         }
         items.forEach((item) => {
@@ -2022,8 +2205,9 @@
             <td><span class="language-chip">${escapeHtml(item.lang || "-")}</span></td>
             <td>
               <span class="mail-subject"><a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener">${escapeHtml(item.title || "Untitled")}</a></span>
-              <div class="mail-meta">${escapeHtml(item.summary || "")}<br>article ${escapeHtml(item.article_id || "-")} · ${escapeHtml(hashText)}</div>
+              <div class="mail-meta">article ${escapeHtml(item.article_id || "-")} · ${escapeHtml(hashText)}</div>
             </td>
+            <td>${escapeHtml(item.summary || "요약 대기")}</td>
             <td>${escapeHtml(previousAt ? `${previousAt} → ${updatedAt}` : updatedAt)}</td>
           `;
           body.appendChild(tr);
@@ -2226,6 +2410,7 @@
           window.sessionStorage.setItem("openaiAdsAdminPassword", passwordInput.value);
           loginCard.classList.add("hidden");
           adminPanel.classList.remove("hidden");
+          activateAdminPage(window.localStorage.getItem("openaiAdsAdminPage") || "notice");
           setStatus(loginStatus, "");
           loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
         } catch (error) {
@@ -2234,6 +2419,9 @@
       }
 
       loginButton.addEventListener("click", login);
+      adminNavButtons.forEach((button) => {
+        button.addEventListener("click", () => activateAdminPage(button.dataset.adminPage || "notice"));
+      });
       passwordInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") login();
       });
@@ -2285,7 +2473,14 @@
       document.querySelectorAll(".editor-toolbar button").forEach((button) => {
         button.addEventListener("click", () => {
           const command = button.dataset.command;
+          const emoji = button.dataset.emoji;
           fields.editor.focus();
+          if (emoji) {
+            document.execCommand("insertText", false, emoji);
+            renderNoticePreview();
+            return;
+          }
+          if (!command) return;
           if (command === "createLink") {
             const url = window.prompt("링크 URL을 입력해 주세요. http:// 또는 https://로 시작해야 합니다.");
             if (!url || !/^https?:\/\//i.test(url)) return;

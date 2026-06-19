@@ -5246,9 +5246,9 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         enabled: true,
       };
 
-      function trackPageVisit(pageKey) {
+      function trackPageVisit(pageKey, labelOverride) {
         const page = pageKey || "chat";
-        const payload = JSON.stringify({ page, label: tabLabels[page] || page });
+        const payload = JSON.stringify({ page, label: labelOverride || tabLabels[page] || page });
         try {
           if (navigator.sendBeacon) {
             navigator.sendBeacon("/api/analytics/visit", new Blob([payload], { type: "application/json" }));
@@ -5263,6 +5263,10 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
           body: payload,
           keepalive: true,
         }).catch(() => {});
+      }
+
+      function trackAction(pageKey, label) {
+        trackPageVisit(pageKey, label);
       }
 
       function activateTab(target) {
@@ -7258,15 +7262,33 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         runChat();
       });
       checkButton.addEventListener("click", runCrawlerCheck);
-      downloadButton.addEventListener("click", downloadCrawlerCsv);
-      downloadImageButton.addEventListener("click", downloadCrawlerImage);
+      downloadButton.addEventListener("click", () => {
+        trackAction("download:crawlerCsv", "CSV 다운로드 · 랜딩 URL 검사");
+        downloadCrawlerCsv();
+      });
+      downloadImageButton.addEventListener("click", () => {
+        trackAction("download:crawlerImage", "이미지 저장 · 랜딩 URL 검사");
+        downloadCrawlerImage();
+      });
       faviconCheckButton.addEventListener("click", runFaviconCheck);
-      faviconDownloadButton.addEventListener("click", downloadFaviconCsv);
-      faviconDownloadImageButton.addEventListener("click", downloadFaviconImage);
+      faviconDownloadButton.addEventListener("click", () => {
+        trackAction("download:faviconCsv", "CSV 다운로드 · 파비콘 검사");
+        downloadFaviconCsv();
+      });
+      faviconDownloadImageButton.addEventListener("click", () => {
+        trackAction("download:faviconImage", "이미지 저장 · 파비콘 검사");
+        downloadFaviconImage();
+      });
       checklistCopyButton.addEventListener("click", copyChecklist);
-      checklistDownloadButton.addEventListener("click", downloadChecklistCsv);
+      checklistDownloadButton.addEventListener("click", () => {
+        trackAction("download:checklistCsv", "CSV 다운로드 · 광고주 준비물");
+        downloadChecklistCsv();
+      });
       intakeForm.addEventListener("submit", submitIntake);
-      intakeWorkbookDownloadButton.addEventListener("click", downloadIntakeWorkbook);
+      intakeWorkbookDownloadButton.addEventListener("click", () => {
+        trackAction("download:intakeWorkbook", "XLSX 다운로드 · 소재 업로드");
+        downloadIntakeWorkbook();
+      });
       intakeWorkbookImportButton?.addEventListener("click", () => {
         inspectIntakeWorkbook(intakeWorkbookFileInput?.files?.[0]);
       });
@@ -7338,12 +7360,15 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
       initEntryNotice();
       trackPageVisit(document.querySelector(".tab.active")?.dataset.tab || "chat");
       slidesPrintButton.addEventListener("click", () => {
+        trackAction("download:slidesPdf", "PDF 저장 · 광고주 안내 자료");
         printDocument("print-slides", SLIDES_PDF_FILENAME);
       });
       setupGuidePrintButton.addEventListener("click", () => {
+        trackAction("download:setupGuidePdf", "PDF 저장 · 캠페인 세팅 가이드");
         printDocument("print-guide", SETUP_GUIDE_PDF_FILENAME);
       });
       pixelGuidePrintButton.addEventListener("click", () => {
+        trackAction("download:pixelGuidePdf", "PDF 저장 · 픽셀 설치 가이드");
         printDocument("print-pixel-guide", PIXEL_GUIDE_PDF_FILENAME);
       });
     </script>

@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -193,8 +193,8 @@ def creative_upload_draft_page() -> FileResponse:
 
 
 @app.get("/ads-api-draft", include_in_schema=False)
-def ads_api_draft_page() -> FileResponse:
-    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
+def ads_api_draft_page() -> RedirectResponse:
+    return RedirectResponse("/admin", status_code=302)
 
 
 @app.get("/slides", include_in_schema=False)
@@ -218,8 +218,9 @@ def public_notice() -> dict[str, Any]:
 def analytics_visit(request: VisitRequest) -> dict[str, Any]:
     from admin_store import record_page_visit
 
-    page = request.page if request.page in PAGE_LABELS else "root"
-    label = PAGE_LABELS.get(page, page)
+    raw_page = (request.page or "root").strip()
+    page = raw_page[:80] or "root"
+    label = (request.label or "").strip()[:120] or PAGE_LABELS.get(page, page)
     return record_page_visit(page, label)
 
 

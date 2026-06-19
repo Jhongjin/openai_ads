@@ -51,6 +51,10 @@ _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _db_ready = False
 
 
+def _is_analytics_event(page: str) -> bool:
+    return str(page or "").startswith(("download:", "action:"))
+
+
 MAIL_REVIEW_STATUSES = {
     "needs_review": "검토 필요",
     "approved_for_rag": "RAG 반영 승인",
@@ -399,6 +403,7 @@ def record_page_visit(page: str, page_label: str) -> dict[str, Any]:
     page = (page or "unknown")[:80]
     page_label = (page_label or page)[:120]
     today = _today_kst()
+    is_event = _is_analytics_event(page)
 
     try:
         _ensure_tables()
@@ -426,18 +431,19 @@ def record_page_visit(page: str, page_label: str) -> dict[str, Any]:
                     (page, page_label, today),
                 )
                 row = cur.fetchone()
-                cur.execute(
-                    f"""
-                    INSERT INTO {schema}.page_visit_days
-                        (visit_date, total_count, updated_at)
-                    VALUES
-                        (%s, 1, now())
-                    ON CONFLICT (visit_date) DO UPDATE SET
-                        total_count = {schema}.page_visit_days.total_count + 1,
-                        updated_at = now()
-                    """,
-                    (today,),
-                )
+                if not is_event:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {schema}.page_visit_days
+                            (visit_date, total_count, updated_at)
+                        VALUES
+                            (%s, 1, now())
+                        ON CONFLICT (visit_date) DO UPDATE SET
+                            total_count = {schema}.page_visit_days.total_count + 1,
+                            updated_at = now()
+                        """,
+                        (today,),
+                    )
         return {
             "page": row[0],
             "page_label": row[1],
@@ -464,7 +470,8 @@ def record_page_visit(page: str, page_label: str) -> dict[str, Any]:
         current["today_count"] = current["today_count"] + 1 if current["today_date"] == today else 1
         current["today_date"] = today
         current["last_seen_at"] = datetime.now(KST).isoformat()
-        _memory_visit_days[today] = _memory_visit_days.get(today, 0) + 1
+        if not is_event:
+            _memory_visit_days[today] = _memory_visit_days.get(today, 0) + 1
         return {**current, **_storage_info("memory", str(exc))}
 
 
