@@ -14,6 +14,10 @@ import psycopg
 from psycopg.rows import dict_row
 
 from rag_chatbot.config import load_settings
+from rag_chatbot.official_changes import (
+    is_generic_official_summary,
+    summarize_official_document_change,
+)
 
 
 KST = timezone(timedelta(hours=9))
@@ -489,6 +493,17 @@ def _iso_value(value: Any) -> str:
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return str(value or "")
+
+
+def _clean_date_filter(value: Any) -> str:
+    text = str(value or "").strip()
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", text):
+        return ""
+    try:
+        datetime.strptime(text, "%Y-%m-%d")
+    except ValueError:
+        return ""
+    return text
 
 
 def _quote_ident(value: str) -> str:
@@ -1829,8 +1844,24 @@ def delete_ads_api_key(advertiser_name: str) -> dict[str, Any]:
         return {"ok": True, **_storage_info("memory", str(exc))}
 
 
-def list_official_guide_changes(*, limit: int = 80) -> dict[str, Any]:
-    limit = max(1, min(int(limit or 80), 300))
+def list_official_guide_changes(
+    *,
+    limit: int = 15,
+    start_date: str = "",
+    end_date: str = "",
+) -> dict[str, Any]:
+    limit = max(1, min(int(limit or 15), 15))
+    start_date = _clean_date_filter(start_date)
+    end_date = _clean_date_filter(end_date)
+    filters: list[str] = []
+    params: list[Any] = []
+    if start_date:
+        filters.append("c.detected_at >= %s::date")
+        params.append(start_date)
+    if end_date:
+        filters.append("c.detected_at < (%s::date + interval '1 day')")
+        params.append(end_date)
+    where_sql = f"WHERE {' AND '.join(filters)}" if filters else ""
     try:
         _ensure_tables()
         schema = _schema()
@@ -1838,29 +1869,59 @@ def list_official_guide_changes(*, limit: int = 80) -> dict[str, Any]:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     f"""
+                    DELETE FROM {schema}.official_guide_changes older
+                    USING {schema}.official_guide_changes newer
+                    WHERE older.id < newer.id
+                      AND (
+                        (older.source_url <> '' AND older.source_url = newer.source_url)
+                        OR older.source_identity = newer.source_identity
+                      )
+                    """
+                )
+                cur.execute(
+                    f"""
                     SELECT
-                        id,
-                        source_identity,
-                        article_id,
-                        lang,
-                        title,
-                        source_url,
-                        change_type,
-                        previous_hash,
-                        current_hash,
-                        previous_source_updated_at,
-                        current_source_updated_at,
-                        detected_at,
-                        summary
-                    FROM {schema}.official_guide_changes
-                    ORDER BY detected_at DESC, id DESC
+                        c.id,
+                        c.source_identity,
+                        c.article_id,
+                        c.lang,
+                        c.title,
+                        c.source_url,
+                        c.change_type,
+                        c.previous_hash,
+                        c.current_hash,
+                        c.previous_source_updated_at,
+                        c.current_source_updated_at,
+                        c.detected_at,
+                        c.summary,
+                        (
+                            SELECT d.content
+                            FROM {schema}.documents d
+                            WHERE d.collection = 'official'
+                              AND (
+                                d.metadata->>'source_identity' = c.source_identity
+                                OR d.source_url = c.source_url
+                              )
+                            ORDER BY d.chunk_index ASC
+                            LIMIT 1
+                        ) AS document_content
+                    FROM {schema}.official_guide_changes c
+                    {where_sql}
+                    ORDER BY c.detected_at DESC, c.id DESC
                     LIMIT %s
                     """,
-                    (limit,),
+                    (*params, limit),
                 )
                 rows = cur.fetchall()
         items = []
         for row in rows:
+            summary = row["summary"] or ""
+            if is_generic_official_summary(summary):
+                summary = summarize_official_document_change(
+                    title=row["title"],
+                    content=row.get("document_content") or "",
+                    change_type=row["change_type"],
+                )
             items.append(
                 {
                     "id": row["id"],
@@ -1875,12 +1936,14 @@ def list_official_guide_changes(*, limit: int = 80) -> dict[str, Any]:
                     "previous_source_updated_at": _iso_value(row["previous_source_updated_at"]),
                     "current_source_updated_at": _iso_value(row["current_source_updated_at"]),
                     "detected_at": _iso_value(row["detected_at"]),
-                    "summary": row["summary"] or "",
+                    "summary": summary,
                 }
             )
         return {
             "ok": True,
             "items": items,
+            "limit": limit,
+            "filters": {"start_date": start_date, "end_date": end_date},
             **_storage_info("supabase"),
         }
     except Exception as exc:

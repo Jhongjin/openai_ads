@@ -465,10 +465,14 @@ def admin_official_changes(request: Request) -> dict[str, Any]:
 
     _require_admin(request)
     try:
-        limit = int(str(request.query_params.get("limit") or "80"))
+        limit = int(str(request.query_params.get("limit") or "15"))
     except ValueError:
-        limit = 80
-    return list_official_guide_changes(limit=limit)
+        limit = 15
+    return list_official_guide_changes(
+        limit=limit,
+        start_date=str(request.query_params.get("start_date") or ""),
+        end_date=str(request.query_params.get("end_date") or ""),
+    )
 
 
 @app.get("/api/admin/mail-review", include_in_schema=False)

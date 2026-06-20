@@ -12,6 +12,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from .config import RuntimeSettings, load_settings, require_supabase_db_url
+from .official_changes import summarize_official_document_change
 
 
 _SCHEMA_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -276,15 +277,29 @@ def record_official_guide_change(
         return False
 
     change_type = "updated" if previous else "new"
-    summary = (
-        "OpenAI 공식 문서 내용이 변경되어 official 컬렉션에 재인덱싱되었습니다. 원문을 열어 변경 내용을 확인해 주세요."
-        if previous
-        else "새 OpenAI 공식 문서가 수집되어 official 컬렉션에 인덱싱되었습니다."
+    summary = summarize_official_document_change(
+        title=metadata.get("title") or "Untitled",
+        content=document.page_content,
+        change_type=change_type,
     )
     previous_hash = previous.get("content_hash") if previous else None
     previous_updated_at = previous.get("source_updated_at") if previous else None
 
     with db_connection(settings) as conn:
+        conn.execute(
+            sql.SQL(
+                """
+                delete from {}.official_guide_changes
+                where (%s <> '' and source_url = %s)
+                   or source_identity = %s
+                """
+            ).format(sql.Identifier(schema)),
+            (
+                str(metadata.get("source_url") or ""),
+                str(metadata.get("source_url") or ""),
+                source_identity,
+            ),
+        )
         cursor = conn.execute(
             sql.SQL(
                 """

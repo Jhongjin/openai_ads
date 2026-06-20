@@ -872,6 +872,10 @@ body.dev-console :focus-visible {
   justify-content: space-between;
 }
 
+.official-toolbar {
+  align-items: end;
+}
+
 .list-toolbar label {
   display: grid;
   flex: 1 1 220px;
@@ -936,6 +940,22 @@ body.dev-console :focus-visible {
 
 .table-scroll {
   overflow-x: auto;
+}
+
+.official-log-grid th:nth-child(1),
+.official-log-grid td:nth-child(1) {
+  width: 170px;
+}
+
+.official-log-grid th:nth-child(4),
+.official-log-grid td:nth-child(4) {
+  min-width: 260px;
+}
+
+.official-log-grid th:nth-child(5),
+.official-log-grid td:nth-child(5) {
+  min-width: 420px;
+  line-height: 1.55;
 }
 
 .guide-workspace {

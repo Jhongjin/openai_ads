@@ -87,10 +87,14 @@ class AdminStaticTests(unittest.TestCase):
             self.assertIn(phrase, html)
 
         self.assertIn('"/api/admin/official-changes"', app_py)
+        self.assertIn('request.query_params.get("start_date")', app_py)
+        self.assertIn('request.query_params.get("end_date")', app_py)
         self.assertIn("list_official_guide_changes", admin_store)
+        self.assertIn("summarize_official_document_change", admin_store)
         self.assertIn("official_guide_changes", db_py)
         self.assertIn("fetch_official_source_snapshot", db_py)
         self.assertIn("record_official_guide_change", db_py)
+        self.assertIn("summarize_official_document_change", db_py)
         self.assertIn("record_official_guide_change", ingestion_py)
 
     def test_ads_api_dashboard_is_admin_only_ui(self) -> None:
