@@ -12,9 +12,9 @@ class DevRoutesStaticTests(unittest.TestCase):
         client = TestClient(app)
 
         routes = {
-            "/dev": "OpenAI Ads 운영 워크벤치",
-            "/dev/admin": "OpenAI Ads 운영 관리자 콘솔",
-            "/dev/creative-upload-draft": "소재 접수 및 업로드 워크북 생성",
+            "/dev": "OpenAI Ads 운영 도구",
+            "/dev/admin": "OpenAI Ads 관리자",
+            "/dev/creative-upload-draft": "소재 접수 및 업로드 파일 생성",
         }
         for path, phrase in routes.items():
             with self.subTest(path=path):
@@ -85,7 +85,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("data-question-category", admin)
         self.assertIn("mail-review-table", admin)
         self.assertIn("메일 원문", admin)
-        self.assertIn("RAG 반영안", admin)
+        self.assertIn("지식 반영안", admin)
         self.assertIn("mail-source-text", admin)
         self.assertIn("mail-rag-draft", admin)
         self.assertIn("faqDraftFromMail", admin)
@@ -193,7 +193,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="campaign-intake-list"', admin)
         self.assertIn('id="campaign-intake-search"', admin)
         self.assertIn('id="campaign-intake-status-filter"', admin)
-        self.assertIn("접수 캠페인 운영 보드", admin)
+        self.assertIn("캠페인 접수 현황", admin)
         self.assertIn("renderCampaignIntakeList", admin)
         self.assertIn("loadCampaignIntakes", admin)
         self.assertIn("saveCampaignIntakeOps", admin)
@@ -309,7 +309,7 @@ class DevRoutesStaticTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/css", response.headers.get("content-type", ""))
-        self.assertIn("DEV redesign layer", response.text)
+        self.assertIn("OpenAI Ads console UI layer", response.text)
         self.assertIn("body.dev-console", response.text)
         self.assertIn(".app-frame", response.text)
         self.assertIn(".data-grid", response.text)

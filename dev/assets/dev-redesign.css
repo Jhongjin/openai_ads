@@ -1,18 +1,25 @@
 /*
-  DEV redesign layer
-  This file is no longer a skin over the production templates.
-  It defines a new command-center UI for /dev pages.
+  OpenAI Ads console UI layer.
+  The screens in /dev use this stylesheet before they replace production.
 */
 
+@font-face {
+  font-family: "Pretendard Variable";
+  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/woff2/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --oa-bg: #f4f2ed;
-  --oa-surface: #fffdf8;
+  --oa-bg: #f4f6fa;
+  --oa-surface: #ffffff;
   --oa-surface-strong: #ffffff;
-  --oa-ink: #10151f;
-  --oa-muted: #687084;
-  --oa-subtle: #8a91a2;
-  --oa-line: #d9d3c8;
-  --oa-line-strong: #bfb6a8;
+  --oa-ink: #111827;
+  --oa-muted: #5f6b7a;
+  --oa-subtle: #8b95a5;
+  --oa-line: #d9e1ec;
+  --oa-line-strong: #b8c4d4;
   --oa-red: #d71920;
   --oa-red-dark: #a70f16;
   --oa-teal: #087a75;
@@ -24,8 +31,8 @@
   --oa-graphite-3: #303b50;
   --oa-radius: 8px;
   --oa-radius-sm: 4px;
-  --oa-shadow: 0 24px 70px rgb(20 28 43 / 14%);
-  --oa-shadow-soft: 0 12px 34px rgb(20 28 43 / 9%);
+  --oa-shadow: 0 18px 42px rgb(15 23 42 / 10%);
+  --oa-shadow-soft: 0 8px 20px rgb(15 23 42 / 6%);
   --oa-font:
     "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui,
     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -44,41 +51,18 @@ html {
 body.dev-console {
   min-height: 100dvh;
   margin: 0;
-  background:
-    linear-gradient(90deg, rgb(20 28 43 / 4%) 1px, transparent 1px),
-    linear-gradient(180deg, rgb(20 28 43 / 4%) 1px, transparent 1px),
-    radial-gradient(circle at 16% 12%, rgb(215 25 32 / 13%), transparent 360px),
-    radial-gradient(circle at 88% 8%, rgb(8 122 117 / 13%), transparent 330px),
-    var(--oa-bg);
-  background-size: 28px 28px, 28px 28px, auto, auto, auto;
+  background: linear-gradient(180deg, #f8fafc 0%, var(--oa-bg) 100%);
   color: var(--oa-ink);
   font-family: var(--oa-font);
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
 }
 
-body.dev-console::before {
-  content: "DEV PREVIEW";
-  position: fixed;
-  z-index: 80;
-  right: 18px;
-  bottom: 18px;
-  border: 1px solid rgb(255 255 255 / 18%);
-  border-radius: var(--oa-radius-sm);
-  background: rgb(20 28 43 / 88%);
-  color: #ffffff;
-  padding: 8px 10px;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  box-shadow: 0 14px 32px rgb(0 0 0 / 24%);
-  pointer-events: none;
-}
-
 body.dev-console button,
 body.dev-console input,
 body.dev-console textarea,
-body.dev-console select {
+body.dev-console select,
+body.dev-console table {
   font: inherit;
 }
 
@@ -102,8 +86,8 @@ body.dev-console :focus-visible {
   grid-template-columns: 260px minmax(0, 1fr);
   min-height: calc(100dvh - 40px);
   border: 1px solid var(--oa-line);
-  border-radius: 16px;
-  background: rgb(255 253 248 / 72%);
+  border-radius: 14px;
+  background: #ffffff;
   box-shadow: var(--oa-shadow);
   overflow: hidden;
 }
@@ -212,35 +196,11 @@ body.dev-console :focus-visible {
   font-size: 18px;
 }
 
-.rail-foot {
-  margin-top: auto;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--oa-radius);
-  background: rgb(255 255 255 / 6%);
-  padding: 12px;
-}
-
-.rail-foot strong {
-  display: block;
-  color: #fff;
-  font-size: 13px;
-}
-
-.rail-foot span {
-  display: block;
-  margin-top: 4px;
-  color: #aab3c4;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .stage {
   min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 58%), rgb(255 253 248 / 78%)),
-    var(--oa-bg);
+  background: var(--oa-bg);
 }
 
 .stage-head {
@@ -248,8 +208,9 @@ body.dev-console :focus-visible {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   align-items: end;
-  padding: 28px 32px 20px;
+  padding: 24px 32px 18px;
   border-bottom: 1px solid var(--oa-line);
+  background: #ffffff;
 }
 
 .eyebrow {
@@ -266,8 +227,8 @@ body.dev-console :focus-visible {
   margin: 0;
   color: var(--oa-ink);
   max-width: 980px;
-  font-size: clamp(32px, 4vw, 54px);
-  line-height: 1.04;
+  font-size: clamp(30px, 3vw, 48px);
+  line-height: 1.08;
   font-weight: 950;
   text-wrap: balance;
 }
@@ -311,8 +272,8 @@ body.dev-console :focus-visible {
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius);
   background: var(--oa-surface);
-  padding: 15px;
-  box-shadow: var(--oa-shadow-soft);
+  padding: 13px 14px;
+  box-shadow: none;
 }
 
 .metric span {
@@ -327,7 +288,7 @@ body.dev-console :focus-visible {
   margin-top: 6px;
   color: var(--oa-ink);
   font-family: var(--oa-mono);
-  font-size: clamp(24px, 3vw, 38px);
+  font-size: clamp(23px, 2.5vw, 34px);
   font-weight: 900;
   line-height: 1;
 }
@@ -398,7 +359,7 @@ body.dev-console :focus-visible {
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius);
   background: var(--oa-surface);
-  box-shadow: var(--oa-shadow-soft);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
 .surface-dark {
@@ -494,7 +455,7 @@ body.dev-console :focus-visible {
   padding: 11px 12px;
   font-size: 14px;
   line-height: 1.45;
-  box-shadow: inset 0 1px 0 rgb(20 28 43 / 4%);
+  box-shadow: none;
 }
 
 .textarea {
@@ -511,7 +472,7 @@ body.dev-console :focus-visible {
 }
 
 .control[readonly] {
-  background: #f7f4ee;
+  background: #f8fafc;
   color: var(--oa-muted);
 }
 
@@ -523,7 +484,7 @@ body.dev-console :focus-visible {
   margin-right: 12px;
   border: 1px solid var(--oa-line-strong);
   border-radius: var(--oa-radius-sm);
-  background: #eee8de;
+  background: #f3f6fb;
   color: var(--oa-ink);
   padding: 8px 12px;
   font-weight: 900;
@@ -565,7 +526,7 @@ body.dev-console :focus-visible {
   background: var(--oa-red);
   border-color: var(--oa-red);
   color: #fff;
-  box-shadow: 0 12px 24px rgb(215 25 32 / 22%);
+  box-shadow: 0 8px 18px rgb(215 25 32 / 18%);
 }
 
 .btn-secondary {
@@ -831,7 +792,7 @@ body.dev-console :focus-visible {
 .data-grid th,
 .data-grid td {
   border-bottom: 1px solid var(--oa-line);
-  padding: 11px 12px;
+  padding: 10px 12px;
   text-align: left;
   vertical-align: top;
   font-size: 13px;
@@ -839,12 +800,19 @@ body.dev-console :focus-visible {
 }
 
 .data-grid th {
-  background: #eee8de;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f3f6fb;
   color: #3a4251;
   font-size: 11px;
   font-weight: 950;
   letter-spacing: .06em;
   text-transform: uppercase;
+}
+
+.data-grid tbody tr:hover td {
+  background: #f8fafc;
 }
 
 .data-grid tr:last-child td {

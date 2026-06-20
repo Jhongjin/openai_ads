@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>소재 접수 및 업로드 워크북 생성</title>
+    <title>소재 접수 및 업로드 파일 생성</title>
     <meta
       name="description"
-      content="OpenAI Ads Manager 벌크 업로드용 캠페인, 광고그룹, 소재 워크북을 생성하는 dev preview."
+      content="OpenAI Ads Manager 업로드용 캠페인, 광고그룹, 소재 .xlsx 파일을 생성합니다."
     />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link
@@ -26,10 +26,10 @@
         <aside class="surface surface-dark context-panel">
           <div class="surface-head">
             <div>
-              <p class="eyebrow">Creative Intake</p>
-              <h1 class="page-title" style="color: #fff;">소재 접수 및 업로드 워크북 생성</h1>
+              <p class="eyebrow">소재 접수</p>
+              <h1 class="page-title" style="color: #fff;">소재 접수 및 업로드 파일 생성</h1>
               <p class="surface-copy">
-                수동 세팅에 필요한 운영값을 먼저 수집하고, xlsx 생성 시에는 OpenAI 벌크 업로드 규칙에 맞게 자동 변환합니다.
+                수동 세팅에 필요한 값을 먼저 입력하고, Ads Manager 업로드용 .xlsx 파일은 업로드 규칙에 맞게 자동 생성합니다.
               </p>
             </div>
           </div>
@@ -45,22 +45,22 @@
               <div class="timeline-item">
                 <span class="timeline-index">2</span>
                 <div>
-                  <strong>캠페인 트리 작성</strong>
+                  <strong>캠페인 구조 입력</strong>
                   <span>캠페인 아래 광고그룹과 소재를 계층형으로 추가합니다.</span>
                 </div>
               </div>
               <div class="timeline-item">
                 <span class="timeline-index">3</span>
                 <div>
-                  <strong>워크북 생성</strong>
-                  <span>수동 세팅값과 xlsx 출력값을 분리해서 저장합니다.</span>
+                  <strong>업로드 파일 생성</strong>
+                  <span>수동 세팅값과 업로드 파일 출력값을 분리해서 저장합니다.</span>
                 </div>
               </div>
             </div>
             <div class="button-row">
               <a class="btn-secondary" href="/dev">
                 <i class="ti ti-arrow-left"></i>
-                워크벤치
+                운영 도구
               </a>
               <a class="btn-secondary" href="/dev/admin">
                 <i class="ti ti-lock-cog"></i>
@@ -154,7 +154,7 @@
                   <em>아직 비활성</em>
                 </summary>
                 <div class="feed-reference">
-                  <p>공식 가이드 확정 전까지는 참고용입니다. 현재 워크북 생성은 표준 캠페인 기준으로 유지합니다.</p>
+                  <p>공식 가이드 확정 전까지는 참고용입니다. 현재 업로드 파일 생성은 표준 캠페인 기준으로 유지합니다.</p>
                   <ul>
                     <li>랜딩 페이지 쿼리 매개변수</li>
                     <li>제품 피드 ID · 제품 필터</li>
@@ -170,25 +170,25 @@
           <section class="surface">
             <div class="surface-head">
               <div>
-                <p class="eyebrow">Workbook Import</p>
-                <h2 class="surface-title">기존 워크북 불러오기</h2>
-                <p class="surface-copy">공식 템플릿 xlsx를 업로드하면 캠페인 / 광고그룹 / 소재 값을 검수하고 입력폼에 반영합니다.</p>
+                <p class="eyebrow">업로드 파일 불러오기</p>
+                <h2 class="surface-title">기존 업로드 파일 불러오기</h2>
+                <p class="surface-copy">공식 템플릿 .xlsx를 업로드하면 캠페인 / 광고그룹 / 소재 값을 검수하고 입력폼에 반영합니다.</p>
               </div>
             </div>
             <div class="surface-body stack">
               <div class="field">
-                <label for="workbook-file">워크북 파일</label>
+                <label for="workbook-file">.xlsx 파일</label>
                 <input class="control" id="workbook-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
               </div>
-              <p class="status-line" id="import-status">워크북을 선택하면 검수 결과가 표시됩니다.</p>
+              <p class="status-line" id="import-status">.xlsx 파일을 선택하면 검수 결과가 표시됩니다.</p>
             </div>
           </section>
 
           <form class="surface" id="intake-form" novalidate>
             <div class="surface-head">
               <div>
-                <p class="eyebrow">Ops Metadata</p>
-                <h2 class="surface-title">내부 접수 정보</h2>
+                <p class="eyebrow">접수 기본 정보</p>
+                <h2 class="surface-title">접수 기본 정보</h2>
                 <p class="surface-copy">업로드 파일에는 들어가지 않는 운영 식별값입니다.</p>
               </div>
             </div>
@@ -203,7 +203,7 @@
                   <input class="control" id="adsManagerAccount" />
                 </div>
                 <div class="field">
-                  <label for="executionRoute">운영 루트</label>
+                  <label for="executionRoute">집행 경로</label>
                   <select class="select" id="executionRoute">
                     <option value="openai_cbt">OpenAI CBT</option>
                     <option value="criteo">Criteo 경유</option>
@@ -255,7 +255,7 @@
               <div class="button-row">
                 <button class="btn-command" type="button" id="download-workbook">
                   <i class="ti ti-file-spreadsheet"></i>
-                  Ads Manager용 xlsx 다운로드
+                  Ads Manager용 .xlsx 다운로드
                 </button>
                 <button class="btn-secondary" type="submit">
                   <i class="ti ti-send"></i>
@@ -264,7 +264,7 @@
               </div>
               <div class="workbook-notice">
                 <strong>다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다.</strong>
-                <span>이 화면은 수동 세팅에 필요한 값을 먼저 확인하고, 워크북 생성 시 업로드 규칙에 맞게 자동 변환합니다.</span>
+                <span>이 화면은 수동 세팅에 필요한 값을 먼저 확인하고, 파일 생성 시 업로드 규칙에 맞게 자동 변환합니다.</span>
                 <span>캠페인명은 광고그룹에, 광고그룹명은 소재에 자동 참조됩니다.</span>
               </div>
               <p class="status-line" id="form-status"></p>
@@ -414,7 +414,7 @@
             <div class="field">
               <label>campaign_name 자동 참조</label>
               <input class="control adgroup-campaign-ref" readonly placeholder="캠페인명을 먼저 입력하세요" />
-              <small class="field-hint">상위 캠페인명으로 워크북에 자동 연결됩니다.</small>
+              <small class="field-hint">상위 캠페인명으로 업로드 파일에 자동 연결됩니다.</small>
             </div>
             <div class="field">
               <label>광고그룹명 <span class="required-mark" aria-hidden="true">*</span></label>
@@ -476,7 +476,7 @@
             <div class="field">
               <label>adgroup_name 자동 참조</label>
               <input class="control ad-adgroup-ref" readonly placeholder="광고그룹명을 먼저 입력하세요" />
-              <small class="field-hint">상위 광고그룹명으로 워크북에 자동 연결됩니다.</small>
+              <small class="field-hint">상위 광고그룹명으로 업로드 파일에 자동 연결됩니다.</small>
             </div>
             <div class="field">
               <label>소재명 <span class="required-mark" aria-hidden="true">*</span></label>
@@ -1221,33 +1221,33 @@
       $("#workbook-file").addEventListener("change", async () => {
         const file = $("#workbook-file").files?.[0];
         if (!file) return;
-        setStatus("import-status", "워크북을 검사하고 있습니다.");
+        setStatus("import-status", "업로드 파일을 확인하고 있습니다.");
         const form = new FormData();
         form.append("file", file);
         try {
           const response = await fetch("/intake/inspect-workbook", { method: "POST", body: form });
           const body = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(serverErrorMessage(body, response.statusText || "워크북 검수 중 오류가 발생했습니다."));
+          if (!response.ok) throw new Error(serverErrorMessage(body, response.statusText || "업로드 파일 검수 중 오류가 발생했습니다."));
           if (body.ok && body.data) populateFromWorkbook(body.data);
           const summary = Object.entries(body.sheets || {})
             .map(([name, sheet]) => `${name}: ${sheet.rows}행`)
             .join(" / ");
           setStatus("import-status", `${body.ok ? "검수 통과" : "확인 필요"} - ${summary}`, body.ok ? "ok" : "error");
         } catch (error) {
-          setStatus("import-status", error.message || "워크북 검수 중 오류가 발생했습니다.", "error");
+          setStatus("import-status", error.message || "업로드 파일 검수 중 오류가 발생했습니다.", "error");
         }
       });
 
       $("#download-workbook").addEventListener("click", async () => {
         if (!ensureFormReady()) return;
-        setStatus("form-status", "워크북을 생성하고 있습니다.");
+        setStatus("form-status", "Ads Manager 업로드 파일을 생성하고 있습니다.");
         try {
           const response = await postJson("/intake/workbook", payload());
           const blob = await response.blob();
           downloadBlob(blob, `openai_ads_bulk_upload_${new Date().toISOString().slice(0, 10)}.xlsx`);
-          setStatus("form-status", "xlsx 워크북을 생성했습니다.", "ok");
+          setStatus("form-status", "업로드용 .xlsx 파일을 생성했습니다.", "ok");
         } catch (error) {
-          setStatus("form-status", error.message || "xlsx 워크북 생성에 실패했습니다.", "error");
+          setStatus("form-status", error.message || ".xlsx 파일 생성에 실패했습니다.", "error");
         }
       });
 
@@ -1271,7 +1271,7 @@
       fetch("/api/analytics/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "dev:intake", label: "DEV · 소재 접수 및 업로드 워크북 생성" }),
+        body: JSON.stringify({ page: "dev:intake", label: "소재 접수 및 업로드 파일 생성" }),
       }).catch(() => {});
     </script>
   </body>
