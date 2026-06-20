@@ -37,6 +37,12 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("echarts@5", admin)
         self.assertIn('id="campaign-template"', intake)
         self.assertIn('id="adgroup-template"', intake)
+        self.assertIn("수동 세팅 위치", intake)
+        self.assertIn("xlsx target_countries", intake)
+        self.assertIn("수동 세팅 입찰가", intake)
+        self.assertIn("xlsx max_bid", intake)
+        self.assertIn("campaign-manual-country", intake)
+        self.assertIn("adgroup-manual-bid", intake)
 
     def test_dev_redesign_css_asset_is_available(self) -> None:
         client = TestClient(app)

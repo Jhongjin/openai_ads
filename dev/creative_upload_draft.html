@@ -29,7 +29,7 @@
               <p class="eyebrow">Creative Intake</p>
               <h1 class="page-title" style="color: #fff;">소재 접수 및 업로드 워크북 생성</h1>
               <p class="surface-copy">
-                기존 입력폼의 카드 구조를 버리고, Ads Manager 업로드 흐름에 맞춘 빌더형 UI로 다시 구성했습니다.
+                수동 세팅에 필요한 운영값을 먼저 수집하고, xlsx 생성 시에는 OpenAI 벌크 업로드 규칙에 맞게 자동 변환합니다.
               </p>
             </div>
           </div>
@@ -53,7 +53,7 @@
                 <span class="timeline-index">3</span>
                 <div>
                   <strong>워크북 생성</strong>
-                  <span>입력값으로 xlsx를 만들거나 내부 시트에 저장합니다.</span>
+                  <span>수동 세팅값과 xlsx 출력값을 분리해서 저장합니다.</span>
                 </div>
               </div>
             </div>
@@ -227,9 +227,30 @@
               <input class="control campaign-end" type="date" required />
             </div>
           </div>
-          <div class="field">
-            <label>target countries</label>
-            <input class="control campaign-countries" placeholder="한국 집행은 비워둡니다. 예: US, JP" />
+          <div class="grid-2">
+            <div class="field">
+              <label>수동 세팅 위치</label>
+              <select class="select campaign-manual-country" required>
+                <option value="KR">대한민국</option>
+                <option value="US">미국</option>
+                <option value="CA">캐나다</option>
+                <option value="AU">호주</option>
+                <option value="NZ">뉴질랜드</option>
+                <option value="ALL">전체 / 플랫폼 기본</option>
+              </select>
+              <small class="field-hint">Ads Manager 화면에서 직접 선택해야 하는 위치입니다.</small>
+            </div>
+            <div class="mapping-panel">
+              <div class="mapping-item">
+                <span>수동 세팅 위치</span>
+                <strong class="manual-country-preview">대한민국</strong>
+              </div>
+              <div class="mapping-item">
+                <span>xlsx target_countries</span>
+                <strong class="xlsx-country-preview">blank(NULL)</strong>
+              </div>
+              <p class="mapping-help country-rule-help">대한민국은 수동 세팅에서는 선택하고, xlsx에는 빈칸으로 변환합니다.</p>
+            </div>
           </div>
           <div class="repeat-list adgroup-list"></div>
         </div>
@@ -252,13 +273,25 @@
               <input class="control adgroup-name" required placeholder="Brand_Core_Audience" />
             </div>
             <div class="field">
-              <label>최대 입찰가(KRW)</label>
-              <input class="control adgroup-bid" type="number" min="1" step="1" placeholder="Clicks 목표일 때만 입력" />
+              <label>수동 세팅 입찰가(KRW)</label>
+              <input class="control adgroup-manual-bid" type="number" min="1" step="1" required placeholder="예: 5300" />
+              <small class="field-hint">Ads Manager 화면에서 직접 입력해야 하는 입찰가입니다.</small>
             </div>
             <div class="field">
               <label>키워드</label>
               <input class="control adgroup-keywords" placeholder="ai, productivity" />
             </div>
+          </div>
+          <div class="mapping-panel">
+            <div class="mapping-item">
+              <span>수동 세팅 입찰가</span>
+              <strong class="manual-bid-preview">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>xlsx max_bid</span>
+              <strong class="xlsx-bid-preview">blank(NULL)</strong>
+            </div>
+            <p class="mapping-help bid-rule-help">Views(CPM)는 수동 입찰가를 받지만, xlsx max_bid는 빈칸으로 변환합니다.</p>
           </div>
           <div class="repeat-list ad-list"></div>
         </div>
@@ -304,6 +337,14 @@
       const $ = (selector, root = document) => root.querySelector(selector);
       const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
       const startedAt = Date.now();
+      const countryLabels = {
+        KR: "대한민국",
+        US: "미국",
+        CA: "캐나다",
+        AU: "호주",
+        NZ: "뉴질랜드",
+        ALL: "전체 / 플랫폼 기본",
+      };
 
       function setStatus(id, message, type = "") {
         const element = document.getElementById(id);
@@ -313,6 +354,63 @@
 
       function template(id) {
         return document.getElementById(id).content.firstElementChild.cloneNode(true);
+      }
+
+      function countryLabel(value) {
+        return countryLabels[value] || value || "대한민국";
+      }
+
+      function bulkCountriesFor(manualCountry) {
+        if (!manualCountry || manualCountry === "KR" || manualCountry === "ALL") return [];
+        return [manualCountry];
+      }
+
+      function countryFromBulk(values) {
+        const first = Array.isArray(values) && values.length ? String(values[0]).trim().toUpperCase() : "KR";
+        return countryLabels[first] ? first : "ALL";
+      }
+
+      function formatBulkCountries(values) {
+        return values.length ? JSON.stringify(values) : "blank(NULL)";
+      }
+
+      function formatKrw(value) {
+        return value ? `${Number(value).toLocaleString("ko-KR")} KRW` : "입력 필요";
+      }
+
+      function syncDerivedFields() {
+        $$(".campaign-block").forEach((campaign) => {
+          const objective = $(".campaign-objective", campaign).value;
+          const manualCountry = $(".campaign-manual-country", campaign).value;
+          const bulkCountries = bulkCountriesFor(manualCountry);
+          $(".manual-country-preview", campaign).textContent = countryLabel(manualCountry);
+          $(".xlsx-country-preview", campaign).textContent = formatBulkCountries(bulkCountries);
+          $(".country-rule-help", campaign).textContent = manualCountry === "KR"
+            ? "대한민국은 수동 세팅에서는 선택하고, xlsx에는 빈칸으로 변환합니다."
+            : manualCountry === "ALL"
+              ? "전체/플랫폼 기본은 수동 확인값으로 남기고, xlsx에는 빈칸으로 내보냅니다."
+              : `${countryLabel(manualCountry)}은 수동 세팅값과 xlsx target_countries에 모두 반영합니다.`;
+
+          $$(".adgroup-block", campaign).forEach((group) => {
+            const manualBid = $(".adgroup-manual-bid", group).value ? Number($(".adgroup-manual-bid", group).value) : null;
+            $(".manual-bid-preview", group).textContent = formatKrw(manualBid);
+            $(".xlsx-bid-preview", group).textContent = objective === "views"
+              ? "blank(NULL)"
+              : (manualBid ? String(manualBid) : "입력 필요");
+            $(".bid-rule-help", group).textContent = objective === "views"
+              ? "Views(CPM)는 수동 입찰가를 받지만, xlsx max_bid는 빈칸으로 변환합니다."
+              : "Clicks(CPC)는 수동 입찰가를 xlsx max_bid에도 그대로 반영합니다.";
+          });
+        });
+      }
+
+      function ensureFormReady() {
+        syncDerivedFields();
+        if (!$("#intake-form").reportValidity()) {
+          setStatus("form-status", "수동 세팅 기준 필수값을 먼저 입력해 주세요.", "error");
+          return false;
+        }
+        return true;
       }
 
       function addAd(group, data = {}) {
@@ -328,10 +426,11 @@
       function addAdgroup(campaign, data = {}, ads = [{}]) {
         const group = template("adgroup-template");
         $(".adgroup-name", group).value = data.adgroup_name || "";
-        $(".adgroup-bid", group).value = data.max_bid || "";
+        $(".adgroup-manual-bid", group).value = data.max_bid || "";
         $(".adgroup-keywords", group).value = Array.isArray(data.keywords) ? data.keywords.join(", ") : "";
         ads.forEach((ad) => addAd(group, ad));
         $(".adgroup-list", campaign).append(group);
+        syncDerivedFields();
       }
 
       function addCampaign(data = {}, adgroups = [{ adgroup: {}, ads: [{}] }]) {
@@ -342,13 +441,16 @@
         $(".campaign-objective", campaign).value = data.objective || "views";
         $(".campaign-launch", campaign).value = data.launch_date || "";
         $(".campaign-end", campaign).value = data.end_date || "";
-        $(".campaign-countries", campaign).value = Array.isArray(data.target_countries) ? data.target_countries.join(", ") : "";
+        $(".campaign-manual-country", campaign).value = countryFromBulk(data.target_countries);
         adgroups.forEach((group) => addAdgroup(campaign, group.adgroup || group, group.ads || [{}]));
         $("#campaign-list").append(campaign);
+        syncDerivedFields();
       }
 
       function readCampaign(campaign) {
         const campaignName = $(".campaign-name", campaign).value.trim();
+        const objective = $(".campaign-objective", campaign).value;
+        const targetCountries = bulkCountriesFor($(".campaign-manual-country", campaign).value);
         return {
           campaign: {
             campaign_name: campaignName,
@@ -356,16 +458,17 @@
             budget_type: $(".campaign-budget-type", campaign).value,
             launch_date: $(".campaign-launch", campaign).value || null,
             end_date: $(".campaign-end", campaign).value || null,
-            objective: $(".campaign-objective", campaign).value,
-            target_countries: $(".campaign-countries", campaign).value.split(",").map((item) => item.trim()).filter(Boolean),
+            objective,
+            target_countries: targetCountries,
           },
           adgroups: $$(".adgroup-block", campaign).map((group) => {
             const groupName = $(".adgroup-name", group).value.trim();
+            const manualBid = $(".adgroup-manual-bid", group).value ? Number($(".adgroup-manual-bid", group).value) : null;
             return {
               adgroup: {
                 campaign_name: campaignName,
                 adgroup_name: groupName,
-                max_bid: $(".adgroup-bid", group).value ? Number($(".adgroup-bid", group).value) : null,
+                max_bid: objective === "views" ? null : manualBid,
                 keywords: $(".adgroup-keywords", group).value.split(",").map((item) => item.trim()).filter(Boolean),
               },
               ads: $$(".ad-block", group).map((ad) => ({
@@ -442,6 +545,7 @@
           addCampaign(campaign, groups.length ? groups : [{ adgroup: {}, ads: [{}] }]);
         });
         if (!campaigns.length) addCampaign();
+        syncDerivedFields();
       }
 
       $("#campaign-list").addEventListener("click", (event) => {
@@ -455,7 +559,11 @@
           campaign.remove();
           if (!$("#campaign-list").children.length) addCampaign();
         }
+        syncDerivedFields();
       });
+
+      $("#campaign-list").addEventListener("input", syncDerivedFields);
+      $("#campaign-list").addEventListener("change", syncDerivedFields);
 
       $("#add-campaign").addEventListener("click", () => addCampaign());
 
@@ -480,6 +588,7 @@
       });
 
       $("#download-workbook").addEventListener("click", async () => {
+        if (!ensureFormReady()) return;
         setStatus("form-status", "워크북을 생성하고 있습니다.");
         try {
           const response = await postJson("/intake/workbook", payload());
@@ -493,6 +602,7 @@
 
       $("#intake-form").addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!ensureFormReady()) return;
         setStatus("form-status", "내부 시트에 저장하고 알림을 요청하고 있습니다.");
         try {
           const response = await postJson("/intake", payload());

@@ -795,6 +795,55 @@ body.dev-console :focus-visible {
   border-left-color: var(--oa-blue);
 }
 
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mapping-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+  border: 1px solid #ded6c9;
+  border-radius: var(--oa-radius-sm);
+  background: #faf7ef;
+  padding: 12px;
+}
+
+.mapping-item {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.mapping-item span {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.mapping-item strong {
+  min-width: 0;
+  color: var(--oa-ink);
+  font-family: var(--oa-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.mapping-help {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .status-line {
   min-height: 22px;
   color: var(--oa-muted);
@@ -929,7 +978,8 @@ body.dev-console :focus-visible {
   .grid-3,
   .guide-masonry,
   .image-strip,
-  .editor-row {
+  .editor-row,
+  .mapping-panel {
     grid-template-columns: 1fr;
   }
 
