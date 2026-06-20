@@ -115,6 +115,7 @@ class AdminStaticTests(unittest.TestCase):
 
         self.assertIn('"/api/admin/ads-dashboard"', app_py)
         self.assertIn('"/api/admin/ads-api-keys"', app_py)
+        self.assertIn('"/api/admin/ads-api-keys/{advertiser_name}"', app_py)
         self.assertNotIn('href="/ads-api"', html)
 
 

@@ -851,6 +851,74 @@ body.dev-console :focus-visible {
   border-bottom: 0;
 }
 
+.form-actions,
+.row-actions,
+.list-toolbar,
+.list-pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-actions {
+  flex-wrap: wrap;
+}
+
+.form-actions .btn-command {
+  flex: 1 1 220px;
+}
+
+.list-toolbar {
+  justify-content: space-between;
+}
+
+.list-toolbar label {
+  display: grid;
+  flex: 1 1 220px;
+  gap: 5px;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.list-pagination {
+  justify-content: flex-end;
+}
+
+.list-pagination .status-line {
+  min-width: 96px;
+  margin: 0;
+  text-align: center;
+}
+
+.row-actions {
+  flex-wrap: nowrap;
+}
+
+.row-actions .btn-plain,
+.row-actions .btn-danger {
+  min-height: 30px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
+.ads-key-table {
+  min-width: 760px;
+}
+
+.ads-key-table th:first-child,
+.ads-key-table td:first-child {
+  min-width: 210px;
+}
+
+.btn-secondary:disabled,
+.btn-plain:disabled,
+.btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+  transform: none;
+}
+
 .url-cell {
   overflow-wrap: anywhere;
 }
@@ -1266,6 +1334,7 @@ body.dev-console :focus-visible {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) minmax(160px, .9fr) minmax(160px, .9fr);
   gap: 8px;
+  align-items: start;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius-sm);
   background: #fff;
@@ -1274,6 +1343,8 @@ body.dev-console :focus-visible {
 
 .admin-guide-image-tools label {
   display: grid;
+  grid-template-rows: auto 40px auto;
+  align-content: start;
   gap: 5px;
   color: var(--oa-muted);
   font-size: 11px;
@@ -2469,6 +2540,7 @@ body.dev-console :focus-visible {
   .guide-tabs,
   .guide-admin-tabs,
   .admin-guide-image-tools,
+  .list-toolbar,
   .faq-categories,
   .editor-row,
   .mapping-panel {
@@ -2478,6 +2550,11 @@ body.dev-console :focus-visible {
   .stage-title,
   .page-title {
     font-size: 34px;
+  }
+
+  .list-toolbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   body.dev-console::before {

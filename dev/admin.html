@@ -391,20 +391,24 @@
                     </div>
                   </div>
                   <div class="surface-body stack">
+                    <p class="status-line" id="ads-edit-note">새 광고주 등록 모드입니다.</p>
                     <div class="field">
                       <label for="ads-name">광고주명</label>
                       <input class="control" id="ads-name" />
                     </div>
                     <div class="field">
                       <label for="ads-key">Ads API Key</label>
-                      <input class="control" id="ads-key" />
+                      <input class="control" id="ads-key" autocomplete="off" />
                     </div>
                     <div class="field">
                       <label for="conversion-key">Conversion API Key</label>
-                      <input class="control" id="conversion-key" />
+                      <input class="control" id="conversion-key" autocomplete="off" />
                     </div>
                     <label class="tag"><input type="checkbox" id="ads-enabled" checked /> 활성화</label>
-                    <button class="btn-command" type="button" id="save-ads-key">API 키 저장</button>
+                    <div class="form-actions">
+                      <button class="btn-command" type="button" id="save-ads-key">API 키 저장</button>
+                      <button class="btn-secondary" type="button" id="cancel-ads-edit" hidden>수정 취소</button>
+                    </div>
                     <p class="status-line" id="ads-status"></p>
                   </div>
                 </section>
@@ -412,13 +416,34 @@
                   <div class="surface-head">
                     <div>
                       <h2 class="surface-title">등록 현황</h2>
+                      <p class="surface-copy">검색, 광고주명 정렬, 10개 단위 페이지 보기로 관리합니다.</p>
                     </div>
                   </div>
-                  <div class="surface-body table-scroll">
-                    <table class="data-grid">
-                      <thead><tr><th>광고주</th><th>Ads Key</th><th>Conversion</th><th>상태</th></tr></thead>
-                      <tbody id="ads-key-rows"></tbody>
-                    </table>
+                  <div class="surface-body stack">
+                    <div class="list-toolbar">
+                      <label>
+                        검색
+                        <input class="control" id="ads-key-search" placeholder="광고주명 검색" />
+                      </label>
+                      <label>
+                        정렬
+                        <select class="control" id="ads-key-sort">
+                          <option value="asc">광고주명 오름차순</option>
+                          <option value="desc">광고주명 내림차순</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="table-scroll">
+                      <table class="data-grid ads-key-table">
+                        <thead><tr><th>광고주</th><th>Ads Key</th><th>Conversion</th><th>상태</th><th>관리</th></tr></thead>
+                        <tbody id="ads-key-rows"></tbody>
+                      </table>
+                    </div>
+                    <div class="list-pagination">
+                      <button class="btn-secondary" type="button" id="ads-key-prev">이전</button>
+                      <span class="status-line" id="ads-key-page-info">-</span>
+                      <button class="btn-secondary" type="button" id="ads-key-next">다음</button>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -488,6 +513,12 @@
       let visitPieChart = null;
       let openQuestionCategory = null;
       let activeGuideDeck = "advertiser";
+      let adsKeyItems = [];
+      let adsKeyPage = 1;
+      let adsKeyQuery = "";
+      let adsKeySort = "asc";
+      let editingAdsName = "";
+      const ADS_KEY_PAGE_SIZE = 10;
       const adminGuideDecks = {
         advertiser: {
           label: "광고주 안내 자료",
@@ -1634,31 +1665,115 @@
 
       async function loadAdsKeys() {
         const data = await adminFetch("/api/admin/ads-api-keys");
-        $("#ads-key-rows").innerHTML = (data.items || []).map((item) => `
+        adsKeyItems = Array.isArray(data.items) ? data.items : [];
+        adsKeyPage = 1;
+        renderAdsKeyRows();
+      }
+
+      function filteredAdsKeyItems() {
+        const query = adsKeyQuery.trim().toLowerCase();
+        return adsKeyItems
+          .filter((item) => {
+            if (!query) return true;
+            return String(item.advertiser_name || "").toLowerCase().includes(query);
+          })
+          .sort((a, b) => {
+            const left = String(a.advertiser_name || "");
+            const right = String(b.advertiser_name || "");
+            const direction = adsKeySort === "desc" ? -1 : 1;
+            return left.localeCompare(right, "ko", { sensitivity: "base", numeric: true }) * direction;
+          });
+      }
+
+      function renderAdsKeyRows() {
+        const filtered = filteredAdsKeyItems();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / ADS_KEY_PAGE_SIZE));
+        adsKeyPage = Math.min(Math.max(1, adsKeyPage), totalPages);
+        const startIndex = (adsKeyPage - 1) * ADS_KEY_PAGE_SIZE;
+        const pageItems = filtered.slice(startIndex, startIndex + ADS_KEY_PAGE_SIZE);
+
+        $("#ads-key-rows").innerHTML = pageItems.map((item) => `
           <tr>
             <td>${escapeHtml(item.advertiser_name)}</td>
             <td>${item.has_ads_api_key ? escapeHtml(item.masked_ads_api_key) : "-"}</td>
             <td>${item.has_conversion_api_key ? escapeHtml(item.masked_conversion_api_key) : "-"}</td>
             <td><span class="${item.enabled ? "tag tag-green" : "tag"}">${item.enabled ? "활성" : "비활성"}</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn-plain" type="button" data-ads-action="edit" data-ads-name="${escapeHtml(item.advertiser_name)}">수정</button>
+                <button class="btn-danger" type="button" data-ads-action="delete" data-ads-name="${escapeHtml(item.advertiser_name)}">삭제</button>
+              </div>
+            </td>
           </tr>
-        `).join("") || '<tr><td colspan="4">등록된 API 키가 없습니다.</td></tr>';
+        `).join("") || '<tr><td colspan="5">등록된 API 키가 없습니다.</td></tr>';
+
+        $("#ads-key-page-info").textContent = filtered.length
+          ? `${startIndex + 1}-${Math.min(startIndex + ADS_KEY_PAGE_SIZE, filtered.length)} / ${filtered.length}`
+          : "0 / 0";
+        $("#ads-key-prev").disabled = adsKeyPage <= 1;
+        $("#ads-key-next").disabled = adsKeyPage >= totalPages;
+      }
+
+      function resetAdsKeyForm() {
+        editingAdsName = "";
+        $("#ads-name").value = "";
+        $("#ads-name").readOnly = false;
+        $("#ads-key").value = "";
+        $("#ads-key").placeholder = "";
+        $("#conversion-key").value = "";
+        $("#conversion-key").placeholder = "";
+        $("#ads-enabled").checked = true;
+        $("#save-ads-key").textContent = "API 키 저장";
+        $("#cancel-ads-edit").hidden = true;
+        $("#ads-edit-note").textContent = "새 광고주 등록 모드입니다.";
+      }
+
+      function editAdsKey(advertiserName) {
+        const item = adsKeyItems.find((entry) => entry.advertiser_name === advertiserName);
+        if (!item) return;
+        editingAdsName = item.advertiser_name;
+        $("#ads-name").value = item.advertiser_name;
+        $("#ads-name").readOnly = true;
+        $("#ads-key").value = "";
+        $("#ads-key").placeholder = item.has_ads_api_key ? "비워두면 기존 Ads API Key 유지" : "Ads API Key 입력";
+        $("#conversion-key").value = "";
+        $("#conversion-key").placeholder = item.has_conversion_api_key ? "비워두면 기존 Conversion API Key 유지" : "Conversion API Key 입력";
+        $("#ads-enabled").checked = Boolean(item.enabled);
+        $("#save-ads-key").textContent = "수정 저장";
+        $("#cancel-ads-edit").hidden = false;
+        $("#ads-edit-note").textContent = `${item.advertiser_name} 수정 중입니다. 보안상 기존 키 원문은 표시하지 않습니다.`;
+        $("#ads-name").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      async function deleteAdsKey(advertiserName) {
+        if (!advertiserName) return;
+        if (!window.confirm(`${advertiserName} API 키 등록을 삭제할까요?`)) return;
+        await adminFetch(`/api/admin/ads-api-keys/${encodeURIComponent(advertiserName)}`, { method: "DELETE" });
+        if (editingAdsName === advertiserName) resetAdsKeyForm();
+        await loadAdsKeys();
+        setStatus("ads-status", "API 키 등록 삭제 완료", "ok");
       }
 
       async function saveAdsKey() {
-        setStatus("ads-status", "API 키 저장 중입니다.");
+        const advertiserName = $("#ads-name").value.trim();
+        if (!advertiserName) {
+          setStatus("ads-status", "광고주명을 입력해 주세요.", "error");
+          return;
+        }
+        const wasEditing = Boolean(editingAdsName);
+        setStatus("ads-status", editingAdsName ? "API 키 수정 중입니다." : "API 키 저장 중입니다.");
         await adminFetch("/api/admin/ads-api-keys", {
           method: "POST",
           body: JSON.stringify({
-            advertiser_name: $("#ads-name").value,
+            advertiser_name: advertiserName,
             ads_api_key: $("#ads-key").value,
             conversion_api_key: $("#conversion-key").value,
             enabled: $("#ads-enabled").checked,
           }),
         });
-        $("#ads-key").value = "";
-        $("#conversion-key").value = "";
+        resetAdsKeyForm();
         await loadAdsKeys();
-        setStatus("ads-status", "API 키 저장 완료", "ok");
+        setStatus("ads-status", wasEditing ? "API 키 수정 완료" : "API 키 저장 완료", "ok");
       }
 
       async function loadOfficialChanges() {
@@ -1769,6 +1884,37 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
+      $("#cancel-ads-edit").addEventListener("click", () => {
+        resetAdsKeyForm();
+        setStatus("ads-status", "수정 모드를 취소했습니다.");
+      });
+      $("#ads-key-search").addEventListener("input", (event) => {
+        adsKeyQuery = event.target.value || "";
+        adsKeyPage = 1;
+        renderAdsKeyRows();
+      });
+      $("#ads-key-sort").addEventListener("change", (event) => {
+        adsKeySort = event.target.value || "asc";
+        adsKeyPage = 1;
+        renderAdsKeyRows();
+      });
+      $("#ads-key-prev").addEventListener("click", () => {
+        adsKeyPage -= 1;
+        renderAdsKeyRows();
+      });
+      $("#ads-key-next").addEventListener("click", () => {
+        adsKeyPage += 1;
+        renderAdsKeyRows();
+      });
+      $("#ads-key-rows").addEventListener("click", (event) => {
+        const actionButton = event.target.closest("[data-ads-action]");
+        if (!actionButton) return;
+        const advertiserName = actionButton.dataset.adsName || "";
+        if (actionButton.dataset.adsAction === "edit") editAdsKey(advertiserName);
+        if (actionButton.dataset.adsAction === "delete") {
+          deleteAdsKey(advertiserName).catch((error) => setStatus("ads-status", error.message, "error"));
+        }
+      });
       ["notice-title", "notice-source-label", "notice-source-url", "notice-bg"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderNoticePreview);
       });
