@@ -972,11 +972,11 @@
                     <label>국가</label>
                     <select class="target-countries">
                       <option value="" selected>비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
-                      <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
+                      <option value="KR">대한민국(KR)</option>
                       <option value="US">미국(US)</option>
                       <option value="JP">일본(JP)</option>
                     </select>
-                    <span class="help">한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
+                    <span class="help">선택한 국가는 xlsx target_countries에 JSON 배열로 저장됩니다. 전체 집행은 빈칸(NULL)으로 두세요.</span>
                   </div>
                 </div>
 
@@ -1469,13 +1469,12 @@
           const campaignNameInput = campaign.querySelector(".campaign-name");
           const campaignName = campaignNameInput.value.trim();
           const objective = checkedValue(campaign, ".campaign-objective") || "views";
-          if (!isSafeWorkbookName(campaignName)) {
-            focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+          if (campaignName.length < 3) {
+            focusInvalid(campaignNameInput, "캠페인명은 최소 3자 이상 입력해 주세요.");
             return false;
           }
-          const targetCountry = campaign.querySelector(".target-countries")?.value.trim();
-          if (targetCountry === "KR") {
-            focusInvalid(campaign.querySelector(".target-countries"), "현재 OpenAI Ads Manager 벌크 업로드에서 KR target_countries 오류가 확인되었습니다. 한국 집행은 국가를 빈칸으로 두세요.");
+          if (!isSafeWorkbookName(campaignName)) {
+            focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
           }
           if (campaignNames.has(campaignName)) {
@@ -1492,6 +1491,10 @@
           for (const adgroup of adgroupItems(campaign)) {
             const adgroupNameInput = adgroup.querySelector(".adgroup-name");
             const adgroupName = adgroupNameInput.value.trim();
+            if (adgroupName.length < 3) {
+              focusInvalid(adgroupNameInput, "광고그룹명은 최소 3자 이상 입력해 주세요.");
+              return false;
+            }
             if (!isSafeWorkbookName(adgroupName)) {
               focusInvalid(adgroupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
               return false;
@@ -1512,6 +1515,10 @@
             for (const ad of adItems(adgroup)) {
               const adNameInput = ad.querySelector(".ad-name");
               const adName = adNameInput.value.trim();
+              if (adName.length < 3) {
+                focusInvalid(adNameInput, "소재명은 최소 3자 이상 입력해 주세요.");
+                return false;
+              }
               if (!isSafeWorkbookName(adName)) {
                 focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
                 return false;

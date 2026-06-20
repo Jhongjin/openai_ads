@@ -98,7 +98,7 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertNotIn("honeypot", payload["data"]["ops"])
         self.assertNotIn("receiptNumber", payload)
 
-    def test_sheet_payload_keeps_manual_values_while_workbook_stays_upload_safe(self) -> None:
+    def test_sheet_payload_keeps_manual_values_while_workbook_keeps_upload_rules(self) -> None:
         from io import BytesIO
 
         from openpyxl import load_workbook
@@ -116,8 +116,62 @@ class IntakeValidationTests(unittest.TestCase):
 
         self.assertEqual(sheet_payload["data"]["campaigns"][0]["target_countries"], "대한민국")
         self.assertEqual(sheet_payload["data"]["adgroups"][0]["max_bid"], "5300")
-        self.assertIn(workbook["campaigns"]["G2"].value, (None, ""))
+        self.assertEqual(workbook["campaigns"]["G2"].value, '["KR"]')
         self.assertIn(workbook["adgroups"]["C2"].value, (None, ""))
+
+    def test_rejects_names_shorter_than_three_characters(self) -> None:
+        cases = [
+            ("campaign", "campaign_name", "캠페인명"),
+            ("adgroup", "adgroup_name", "광고그룹명"),
+            ("ads", 0, "소재명"),
+        ]
+        for section, key, label in cases:
+            with self.subTest(label=label):
+                payload = valid_payload()
+                if section == "ads":
+                    payload["ads"][key]["ad_name"] = "소"
+                else:
+                    payload[section][key] = "가"
+
+                with self.assertRaises(ValidationError) as ctx:
+                    IntakeSubmission.model_validate(payload)
+
+                self.assertIn("최소 3자", str(ctx.exception))
+
+    def test_inspect_workbook_rejects_short_names(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        wb.remove(wb.active)
+        rows_by_sheet = {
+            "campaigns": [
+                ["campaign_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"],
+                ["가", 5000, "lifetime", "2026-06-30", "2026-07-06", "views", '["KR"]'],
+            ],
+            "adgroups": [
+                ["campaign_name", "adgroup_name", "max_bid", "keywords"],
+                ["가", "나", "", ""],
+            ],
+            "ads": [
+                ["adgroup_name", "ad_name", "title", "copy", "link", "image_link"],
+                ["나", "다", "제목", "설명", "https://example.com", "https://example.com/logo.png"],
+            ],
+        }
+        for sheet_name, rows in rows_by_sheet.items():
+            ws = wb.create_sheet(sheet_name)
+            for row in rows:
+                ws.append(row)
+        buffer = BytesIO()
+        wb.save(buffer)
+
+        summary = inspect_workbook_bytes(buffer.getvalue())
+
+        self.assertFalse(summary["ok"])
+        self.assertTrue(any("campaign_name은 최소 3자" in error for error in summary["errors"]))
+        self.assertTrue(any("adgroup_name은 최소 3자" in error for error in summary["errors"]))
+        self.assertTrue(any("ad_name은 최소 3자" in error for error in summary["errors"]))
 
     def test_multi_campaign_payload_preserves_each_campaign_and_adgroup_link(self) -> None:
         payload = valid_payload()
@@ -473,7 +527,7 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertTrue(any("Views(CPM)" in error and "max_bid" in error for error in summary["errors"]))
         self.assertTrue(any("존재하지 않는 adgroup_name" in error for error in summary["errors"]))
 
-    def test_inspect_workbook_rejects_kr_target_country_but_accepts_http_image_url_shape(self) -> None:
+    def test_inspect_workbook_accepts_kr_target_country_and_http_image_url_shape(self) -> None:
         from io import BytesIO
 
         from openpyxl import Workbook
@@ -503,8 +557,8 @@ class IntakeValidationTests(unittest.TestCase):
 
         summary = inspect_workbook_bytes(buffer.getvalue())
 
-        self.assertFalse(summary["ok"])
-        self.assertTrue(any("target_countries에 KR" in error for error in summary["errors"]))
+        self.assertTrue(summary["ok"])
+        self.assertFalse(any("target_countries에 KR" in error for error in summary["errors"]))
         self.assertFalse(any("image_link" in error for error in summary["errors"]))
 
     def test_inspect_workbook_rejects_malformed_landing_and_image_urls(self) -> None:

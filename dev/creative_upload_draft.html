@@ -567,7 +567,7 @@
       }
 
       function bulkCountriesFor(manualCountry) {
-        if (!manualCountry || manualCountry === "KR" || manualCountry === "ALL") return [];
+        if (!manualCountry || manualCountry === "ALL") return [];
         return [manualCountry];
       }
 
@@ -757,6 +757,10 @@
         for (const campaign of campaignBlocks()) {
           const campaignNameInput = $(".campaign-name", campaign);
           const campaignName = campaignNameInput.value.trim();
+          if (campaignName.length < 3) {
+            focusInvalid(campaignNameInput, "캠페인명은 최소 3자 이상 입력해 주세요.");
+            return false;
+          }
           if (!isSafeWorkbookName(campaignName)) {
             focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
@@ -776,6 +780,10 @@
           for (const group of $$(".adgroup-block", campaign)) {
             const groupNameInput = $(".adgroup-name", group);
             const groupName = groupNameInput.value.trim();
+            if (groupName.length < 3) {
+              focusInvalid(groupNameInput, "광고그룹명은 최소 3자 이상 입력해 주세요.");
+              return false;
+            }
             if (!isSafeWorkbookName(groupName)) {
               focusInvalid(groupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
               return false;
@@ -789,6 +797,10 @@
             for (const ad of $$(".ad-block", group)) {
               const adNameInput = $(".ad-name", ad);
               const adName = adNameInput.value.trim();
+              if (adName.length < 3) {
+                focusInvalid(adNameInput, "소재명은 최소 3자 이상 입력해 주세요.");
+                return false;
+              }
               if (!isSafeWorkbookName(adName)) {
                 focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
                 return false;

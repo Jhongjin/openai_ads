@@ -4212,11 +4212,11 @@
                     <label>국가</label>
                     <select class="target-countries">
                       <option selected value="">비워두기(플랫폼 기본 / ALL_COUNTRIES)</option>
-                      <option value="KR">대한민국(KR) - 현재 업로드 오류 확인</option>
+                      <option value="KR">대한민국(KR)</option>
                       <option value="US">미국(US)</option>
                       <option value="JP">일본(JP)</option>
                     </select>
-                    <span class="field-help">target_countries · 한국 집행은 현재 빈칸(NULL)으로 두세요. KR 입력 시 Ads Manager 업로드 오류가 확인되었습니다.</span>
+                    <span class="field-help">target_countries · 선택한 국가는 JSON 배열로 저장됩니다. 전체 집행은 빈칸(NULL)으로 두세요.</span>
                   </div>
                 </div>
 
@@ -6775,13 +6775,12 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
         for (const campaignItem of campaignItems()) {
           const campaignNameInput = campaignItem.querySelector(".campaign-name");
           const campaignName = campaignNameInput.value.trim();
-          if (!isSafeWorkbookName(campaignName)) {
-            focusIntakeField(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+          if (campaignName.length < 3) {
+            focusIntakeField(campaignNameInput, "캠페인명은 최소 3자 이상 입력해 주세요.");
             return false;
           }
-          const targetCountry = campaignItem.querySelector(".target-countries")?.value.trim();
-          if (targetCountry === "KR") {
-            focusIntakeField(campaignItem.querySelector(".target-countries"), "현재 OpenAI Ads Manager 벌크 업로드에서 KR target_countries 오류가 확인되었습니다. 한국 집행은 국가를 빈칸으로 두세요.");
+          if (!isSafeWorkbookName(campaignName)) {
+            focusIntakeField(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
           }
           if (campaignNames.has(campaignName)) {
@@ -6800,6 +6799,10 @@ height="0" width="0" style="display:none;visibility:hidden"&gt;&lt;/iframe&gt;&l
             const adgroupNameInput = adgroupItem.querySelector(".adgroup-name");
             const adgroupName = adgroupNameInput.value.trim();
             const maxBidInput = adgroupItem.querySelector(".max-bid");
+            if (adgroupName.length < 3) {
+              focusIntakeField(adgroupNameInput, "광고그룹명은 최소 3자 이상 입력해 주세요.");
+              return false;
+            }
             if (checkedValue(campaignItem, ".campaign-objective") === "views" && maxBidInput.value.trim()) {
               focusIntakeField(maxBidInput, "Views(CPM) 캠페인은 최대 입찰가(max_bid)를 비워야 합니다. Clicks(CPC) 캠페인에서만 입력할 수 있습니다.");
               return false;

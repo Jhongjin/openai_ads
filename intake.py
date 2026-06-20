@@ -67,6 +67,8 @@ def _valid_http_url(value: str, label: str = "URL") -> str:
 
 def _valid_safe_name(value: str, label: str) -> str:
     text = _require_text(value)
+    if len(text) < 3:
+        raise ValueError(f"{label}은 최소 3자 이상 입력해야 합니다.")
     if not _SAFE_NAME_RE.fullmatch(text):
         raise ValueError(
             f"{label}에는 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용할 수 있습니다. "
@@ -92,6 +94,14 @@ def _manual_country_for_sheet(campaign: "CampaignInfo") -> str | list[str]:
     if campaign.manual_target_country:
         return _COUNTRY_LABELS.get(campaign.manual_target_country, campaign.manual_target_country)
     return campaign.target_countries
+
+
+def _workbook_countries_for_campaign(campaign: "CampaignInfo") -> list[str]:
+    if campaign.target_countries:
+        return campaign.target_countries
+    if campaign.manual_target_country and campaign.manual_target_country != "ALL":
+        return [campaign.manual_target_country]
+    return []
 
 
 class OpsMeta(BaseModel):
@@ -175,8 +185,6 @@ class CampaignInfo(BaseModel):
         invalid = [value for value in cleaned if not re.fullmatch(r"[A-Z]{2}", value)]
         if invalid:
             raise ValueError("국가는 2자리 ISO 코드로 저장해야 합니다.")
-        if "KR" in cleaned:
-            raise ValueError("현재 한국 집행은 target_countries를 빈칸(NULL)으로 두어야 합니다. KR은 벌크 업로드 오류가 확인되었습니다.")
         return cleaned
 
     @field_validator("manual_target_country")
@@ -426,7 +434,7 @@ def _build_rows_for_submission(
         target_countries = (
             _manual_country_for_sheet(campaign_item.campaign)
             if use_manual_values
-            else campaign_item.campaign.target_countries
+            else _workbook_countries_for_campaign(campaign_item.campaign)
         )
         campaigns.append({
             "campaign_name": campaign_name,
@@ -707,6 +715,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"campaigns 행 {row_number}: campaign_name은 필수입니다.")
         elif _is_template_sample_value(campaign_name):
             errors.append(f"campaigns 행 {row_number}: 공식 샘플 campaign_name(oaitest...)을 실제 캠페인명으로 바꿔 주세요.")
+        elif len(campaign_name) < 3:
+            errors.append(f"campaigns 행 {row_number}: campaign_name은 최소 3자 이상 입력하세요.")
         elif not _SAFE_NAME_RE.fullmatch(campaign_name):
             errors.append(
                 f"campaigns 행 {row_number}: campaign_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
@@ -739,12 +749,6 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
                 invalid = [str(country) for country in countries if not re.fullmatch(r"[A-Z]{2}", str(country).strip().upper())]
                 if invalid:
                     errors.append(f"campaigns 행 {row_number}: target_countries는 2자리 국가 코드 배열이어야 합니다.")
-                normalized = {str(country).strip().upper() for country in countries}
-                if "KR" in normalized:
-                    errors.append(
-                        f"campaigns 행 {row_number}: 현재 OpenAI Ads Manager 벌크 업로드에서 "
-                        "target_countries에 KR을 넣으면 오류가 확인되었습니다. 한국 집행은 이 칸을 빈칸(NULL)으로 두세요."
-                    )
         else:
             warnings.append(
                 f"campaigns 행 {row_number}: target_countries는 빈칸입니다. "
@@ -768,6 +772,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"adgroups 행 {row_number}: adgroup_name은 필수입니다.")
         elif _is_template_sample_value(adgroup_name):
             errors.append(f"adgroups 행 {row_number}: 공식 샘플 adgroup_name(oaitest...)을 실제 광고그룹명으로 바꿔 주세요.")
+        elif len(adgroup_name) < 3:
+            errors.append(f"adgroups 행 {row_number}: adgroup_name은 최소 3자 이상 입력하세요.")
         elif not _SAFE_NAME_RE.fullmatch(adgroup_name):
             errors.append(
                 f"adgroups 행 {row_number}: adgroup_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
@@ -808,6 +814,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"ads 행 {row_number}: ad_name은 필수입니다.")
         elif _is_template_sample_value(ad_name):
             errors.append(f"ads 행 {row_number}: 공식 샘플 ad_name(oaitest...)을 실제 소재명으로 바꿔 주세요.")
+        elif len(ad_name) < 3:
+            errors.append(f"ads 행 {row_number}: ad_name은 최소 3자 이상 입력하세요.")
         elif not _SAFE_NAME_RE.fullmatch(ad_name):
             errors.append(
                 f"ads 행 {row_number}: ad_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
