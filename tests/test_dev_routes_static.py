@@ -56,7 +56,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("isHttpUrl", intake)
         self.assertIn("campaignBlocks().map(readCampaign)", intake)
         self.assertIn("data-reference-static", intake)
-        self.assertIn("한글, 점(.), 슬래시(/)", intake)
+        self.assertIn("한글, 영문, 숫자", intake)
         self.assertIn("review-overlay", intake)
         self.assertIn("구글 시트에 저장할 내용을 확인해 주세요", intake)
         self.assertIn("openReviewModal(payload())", intake)

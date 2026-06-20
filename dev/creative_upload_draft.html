@@ -244,7 +244,7 @@
               <div>
                 <p class="eyebrow">Campaign Tree</p>
                 <h2 class="surface-title">캠페인 / 광고그룹 / 소재</h2>
-                <p class="surface-copy">영문, 숫자, 공백, 하이픈, 언더스코어만 사용해야 벌크 업로드 오류를 줄일 수 있습니다.</p>
+                <p class="surface-copy">한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용해야 벌크 업로드 오류를 줄일 수 있습니다.</p>
               </div>
               <button class="btn-secondary" type="button" id="add-campaign">
                 <i class="ti ti-plus"></i>
@@ -585,7 +585,7 @@
       }
 
       function isSafeWorkbookName(value) {
-        return /^(?=.*[0-9A-Za-z])[0-9A-Za-z _-]+$/.test(String(value || "").trim());
+        return /^(?=.*[\p{L}\p{N}])[\p{L}\p{N}_ -]+$/u.test(String(value || "").trim());
       }
 
       function isHttpUrl(value) {
@@ -754,7 +754,7 @@
           const campaignNameInput = $(".campaign-name", campaign);
           const campaignName = campaignNameInput.value.trim();
           if (!isSafeWorkbookName(campaignName)) {
-            focusInvalid(campaignNameInput, "캠페인명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 한글, 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+            focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
           }
           if (campaignNames.has(campaignName)) {
@@ -773,7 +773,7 @@
             const groupNameInput = $(".adgroup-name", group);
             const groupName = groupNameInput.value.trim();
             if (!isSafeWorkbookName(groupName)) {
-              focusInvalid(groupNameInput, "광고그룹명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 한글, 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+              focusInvalid(groupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
               return false;
             }
             if (adgroupNames.has(groupName)) {
@@ -786,7 +786,7 @@
               const adNameInput = $(".ad-name", ad);
               const adName = adNameInput.value.trim();
               if (!isSafeWorkbookName(adName)) {
-                focusInvalid(adNameInput, "소재명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 한글, 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+                focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
                 return false;
               }
               if (adNames.has(adName)) {

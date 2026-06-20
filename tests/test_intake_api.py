@@ -36,7 +36,7 @@ def invalid_name_payload() -> dict:
         "campaigns": [
             {
                 "campaign": {
-                    "campaign_name": "캠페인1",
+                    "campaign_name": "캠페인.1",
                     "budget_max": 4000000,
                     "budget_type": "daily",
                     "launch_date": tomorrow.isoformat(),
@@ -47,15 +47,15 @@ def invalid_name_payload() -> dict:
                 "adgroups": [
                     {
                         "adgroup": {
-                            "campaign_name": "캠페인1",
-                            "adgroup_name": "그룹1",
+                            "campaign_name": "캠페인.1",
+                            "adgroup_name": "그룹/1",
                             "max_bid": None,
                             "keywords": [],
                         },
                         "ads": [
                             {
-                                "adgroup_name": "그룹1",
-                                "ad_name": "소재1",
+                                "adgroup_name": "그룹/1",
+                                "ad_name": "소재(1)",
                                 "title": "광고 제목",
                                 "copy": "광고 설명",
                                 "link": "https://example.com",
@@ -70,6 +70,27 @@ def invalid_name_payload() -> dict:
 
 
 class IntakeApiTests(unittest.TestCase):
+    def test_workbook_accepts_korean_names(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        payload = invalid_name_payload()
+        campaign = payload["campaigns"][0]
+        adgroup = campaign["adgroups"][0]
+        ad = adgroup["ads"][0]
+        campaign["campaign"]["campaign_name"] = "캠페인1"
+        adgroup["adgroup"]["campaign_name"] = "캠페인1"
+        adgroup["adgroup"]["adgroup_name"] = "그룹1"
+        ad["adgroup_name"] = "그룹1"
+        ad["ad_name"] = "소재1"
+
+        response = client.post("/intake/workbook", json=payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["content-type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertGreater(len(response.content), 1000)
+
     def test_workbook_validation_errors_are_json_serializable(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 
@@ -78,7 +99,7 @@ class IntakeApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertNotIn("Internal Server Error", response.text)
         body = response.json()
-        self.assertIn("캠페인명에는 영문", body["detail"][0]["msg"])
+        self.assertIn("캠페인명에는 한글, 영문", body["detail"][0]["msg"])
         self.assertNotIn("ctx", body["detail"][0])
 
     def test_sheet_validation_errors_are_json_serializable(self) -> None:
@@ -89,7 +110,7 @@ class IntakeApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertNotIn("Internal Server Error", response.text)
         body = response.json()
-        self.assertIn("캠페인명에는 영문", body["detail"][0]["msg"])
+        self.assertIn("캠페인명에는 한글, 영문", body["detail"][0]["msg"])
         self.assertNotIn("ctx", body["detail"][0])
 
 

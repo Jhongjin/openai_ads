@@ -824,7 +824,7 @@
             <ul>
               <li>시작일, 종료일, 예산 유형, 캠페인 목표는 내부 검토와 Ads Manager 수동 세팅을 위해 모두 입력합니다.</li>
               <li>Clicks(CPC)는 광고그룹별 max_bid를 KRW 기준으로 입력하고, Views(CPM)는 max_bid를 비웁니다.</li>
-              <li>캠페인명, 광고그룹명, 소재명은 영문/숫자/공백/하이픈/언더스코어만 사용합니다.</li>
+              <li>캠페인명, 광고그룹명, 소재명은 한글/영문/숫자/공백/하이픈/언더스코어만 사용합니다.</li>
             </ul>
           </div>
           <div class="rule-column">
@@ -938,7 +938,7 @@
                   <div class="field">
                     <label class="required">캠페인명</label>
                     <input class="campaign-name" required />
-                    <span class="help">campaign_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
+                    <span class="help">campaign_name · 한글/영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
                   </div>
                   <div class="field">
                     <label class="required">예산 금액</label>
@@ -1006,7 +1006,7 @@
                           <div class="field">
                             <label class="required">광고그룹명</label>
                             <input class="adgroup-name" required />
-                            <span class="help">adgroup_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용. 소재 연결을 위해 접수 내 중복 불가</span>
+                            <span class="help">adgroup_name · 한글/영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용. 소재 연결을 위해 접수 내 중복 불가</span>
                           </div>
                           <div class="field">
                             <label class="max-bid-label">최대 입찰가</label>
@@ -1045,7 +1045,7 @@
                                   <div class="field">
                                     <label class="required">소재명</label>
                                     <input class="ad-name" required />
-                                    <span class="help">ad_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
+                                    <span class="help">ad_name · 한글/영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
                                   </div>
                                   <div class="field">
                                     <label class="required">광고 제목</label>
@@ -1219,7 +1219,7 @@
       }
 
       function isSafeWorkbookName(value) {
-        return /^(?=.*[0-9A-Za-z])[0-9A-Za-z _-]+$/.test(String(value || "").trim());
+        return /^(?=.*[\p{L}\p{N}])[\p{L}\p{N}_ -]+$/u.test(String(value || "").trim());
       }
 
       function selectedTargetCountries(campaign) {
@@ -1470,7 +1470,7 @@
           const campaignName = campaignNameInput.value.trim();
           const objective = checkedValue(campaign, ".campaign-objective") || "views";
           if (!isSafeWorkbookName(campaignName)) {
-            focusInvalid(campaignNameInput, "캠페인명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+            focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
           }
           const targetCountry = campaign.querySelector(".target-countries")?.value.trim();
@@ -1493,7 +1493,7 @@
             const adgroupNameInput = adgroup.querySelector(".adgroup-name");
             const adgroupName = adgroupNameInput.value.trim();
             if (!isSafeWorkbookName(adgroupName)) {
-              focusInvalid(adgroupNameInput, "광고그룹명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+              focusInvalid(adgroupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
               return false;
             }
             if (adgroupNames.has(adgroupName)) {
@@ -1513,7 +1513,7 @@
               const adNameInput = ad.querySelector(".ad-name");
               const adName = adNameInput.value.trim();
               if (!isSafeWorkbookName(adName)) {
-                focusInvalid(adNameInput, "소재명은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지, 한글 등은 제외합니다.");
+                focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
                 return false;
               }
               if (adNames.has(adName)) {

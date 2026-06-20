@@ -221,6 +221,21 @@ class IntakeValidationTests(unittest.TestCase):
 
         IntakeSubmission.model_validate(payload)
 
+    def test_allows_korean_letters_in_names(self) -> None:
+        payload = valid_payload()
+        payload["campaign"]["campaign_name"] = "캠페인1"
+        payload["adgroup"]["campaign_name"] = "캠페인1"
+        payload["adgroup"]["adgroup_name"] = "그룹1"
+        for ad in payload["ads"]:
+            ad["adgroup_name"] = "그룹1"
+        payload["ads"][0]["ad_name"] = "소재1"
+        payload["ads"][1]["ad_name"] = "소재2"
+
+        submission = IntakeSubmission.model_validate(payload)
+        workbook = create_workbook_bytes(submission)
+
+        self.assertGreater(len(workbook), 1000)
+
     def test_rejects_dot_and_other_special_characters_in_names(self) -> None:
         payload = valid_payload()
         payload["campaign"]["campaign_name"] = "campaign.1"

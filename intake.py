@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 KST = ZoneInfo("Asia/Seoul")
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_SAFE_NAME_RE = re.compile(r"^(?=.*[0-9A-Za-z])[0-9A-Za-z _-]+$")
+_SAFE_NAME_RE = re.compile(r"^(?=.*[^\W_])[\w -]+$")
 _RECEIPT_LOCK = threading.Lock()
 _RECEIPT_COUNTERS: dict[str, int] = {}
 _RATE_LIMIT_SECONDS = 10
@@ -59,8 +59,8 @@ def _valid_safe_name(value: str, label: str) -> str:
     text = _require_text(value)
     if not _SAFE_NAME_RE.fullmatch(text):
         raise ValueError(
-            f"{label}에는 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용할 수 있습니다. "
-            "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
+            f"{label}에는 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용할 수 있습니다. "
+            "점(.), 슬래시(/), 괄호, 이모지 등은 벌크 업로드 오류 방지를 위해 피해주세요."
         )
     return text
 
@@ -639,8 +639,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"campaigns 행 {row_number}: 공식 샘플 campaign_name(oaitest...)을 실제 캠페인명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(campaign_name):
             errors.append(
-                f"campaigns 행 {row_number}: campaign_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
-                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
+                f"campaigns 행 {row_number}: campaign_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지 등은 벌크 업로드 오류 방지를 위해 피해주세요."
             )
         elif campaign_name in campaign_objectives:
             errors.append(f"campaigns 행 {row_number}: campaign_name '{campaign_name}'이 중복되었습니다.")
@@ -700,8 +700,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"adgroups 행 {row_number}: 공식 샘플 adgroup_name(oaitest...)을 실제 광고그룹명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(adgroup_name):
             errors.append(
-                f"adgroups 행 {row_number}: adgroup_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
-                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
+                f"adgroups 행 {row_number}: adgroup_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지 등은 벌크 업로드 오류 방지를 위해 피해주세요."
             )
         elif adgroup_name in adgroup_campaigns:
             errors.append(f"adgroups 행 {row_number}: adgroup_name '{adgroup_name}'이 중복되었습니다.")
@@ -740,8 +740,8 @@ def inspect_workbook_bytes(content: bytes) -> dict[str, Any]:
             errors.append(f"ads 행 {row_number}: 공식 샘플 ad_name(oaitest...)을 실제 소재명으로 바꿔 주세요.")
         elif not _SAFE_NAME_RE.fullmatch(ad_name):
             errors.append(
-                f"ads 행 {row_number}: ad_name은 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
-                "점(.), 슬래시(/), 괄호, 이모지, 한글 등은 벌크 업로드 오류 방지를 위해 피해주세요."
+                f"ads 행 {row_number}: ad_name은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용하세요. "
+                "점(.), 슬래시(/), 괄호, 이모지 등은 벌크 업로드 오류 방지를 위해 피해주세요."
             )
         elif ad_name in ad_names:
             errors.append(f"ads 행 {row_number}: ad_name '{ad_name}'이 중복되었습니다.")
