@@ -116,7 +116,7 @@
               </div>
             </div>
 
-            <div class="workspace is-qa-mode" id="workspace-layout">
+            <div class="workspace is-wide-mode is-qa-mode" id="workspace-layout">
               <section class="workbench" aria-live="polite">
                 <div class="surface-head">
                   <div>
@@ -194,12 +194,13 @@
                               <th>URL</th>
                               <th>판정</th>
                               <th>사유</th>
+                              <th>캠페인 영향</th>
                               <th>권장 조치</th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr>
-                              <td colspan="4">점검할 URL을 입력하세요.</td>
+                              <td colspan="5">점검할 URL을 입력하세요.</td>
                             </tr>
                           </tbody>
                         </table>
@@ -235,12 +236,13 @@
                               <th>판정</th>
                               <th>실측</th>
                               <th>배경</th>
+                              <th>캠페인 영향</th>
                               <th>권장 조치</th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr>
-                              <td colspan="5">점검할 이미지 URL을 입력하세요.</td>
+                              <td colspan="6">점검할 이미지 URL을 입력하세요.</td>
                             </tr>
                           </tbody>
                         </table>
@@ -345,6 +347,7 @@
         faqCategory: "account",
         openFaqId: null,
       };
+      const wideWorkspaceViews = new Set(["qa", "landing", "favicon"]);
 
       const faqCategories = [
         {
@@ -557,7 +560,9 @@
 
       function setView(name) {
         const meta = views[name] || views.qa;
-        $("#workspace-layout").classList.toggle("is-qa-mode", name === "qa");
+        const workspace = $("#workspace-layout");
+        workspace.classList.toggle("is-wide-mode", wideWorkspaceViews.has(name));
+        workspace.classList.toggle("is-qa-mode", name === "qa");
         $$(".rail-button[data-view-button]").forEach((button) => {
           button.classList.toggle("is-active", button.dataset.viewButton === name);
         });
@@ -636,17 +641,60 @@
         return "tag tag-red";
       }
 
+      function hasGreenVerdict(verdict) {
+        return ["allow", "pass", "ok"].includes(String(verdict || "").toLowerCase());
+      }
+
+      function landingCampaignImpact(row) {
+        const verdict = String(row.verdict || "").toLowerCase();
+        const detail = `${row.reason || ""} ${row.action || ""}`.toLowerCase();
+        if (hasGreenVerdict(verdict)) return "-";
+        if (verdict === "block") {
+          return "OpenAI 광고 로봇이 랜딩을 읽지 못하면 광고 게재가 제한되거나 승인 보류될 수 있습니다.";
+        }
+        if (detail.includes("방화벽") || detail.includes("cloudflare") || detail.includes("429")) {
+          return "방화벽·요청 제한이 유지되면 크롤러 검수 실패로 게재 지연이 발생할 수 있습니다.";
+        }
+        if (detail.includes("확인 불가") || detail.includes("재확인") || verdict === "warn") {
+          return "접근 허용 여부가 불확실해 캠페인 오픈 전 재점검이 필요합니다.";
+        }
+        return "랜딩 접근 문제가 해소될 때까지 캠페인 활성화가 지연될 수 있습니다.";
+      }
+
+      function faviconCampaignImpact(row) {
+        const verdict = String(row.verdict || "").toLowerCase();
+        const detail = `${row.reason || ""} ${row.action || ""}`.toLowerCase();
+        if (hasGreenVerdict(verdict)) return "-";
+        if (verdict === "wait") return "이미지 URL 확보 전에는 소재 검수를 완료할 수 없습니다.";
+        if (detail.includes("방화벽") || detail.includes("접속") || detail.includes("서버")) {
+          return "이미지 접근이 불안정하면 소재 미리보기·검수 단계에서 승인 보류될 수 있습니다.";
+        }
+        if (detail.includes("작음") || detail.includes("정사각형") || detail.includes("투명")) {
+          return "규격 또는 배경 조건 미충족 시 소재 교체 요청으로 캠페인 오픈이 지연될 수 있습니다.";
+        }
+        return "최종 소재 검수에서 교체 요청 또는 승인 보류가 발생할 수 있습니다.";
+      }
+
+      function withLandingImpact(row) {
+        return { ...row, campaign_impact: landingCampaignImpact(row) };
+      }
+
+      function withFaviconImpact(row) {
+        return { ...row, campaign_impact: faviconCampaignImpact(row) };
+      }
+
       function renderLandingTable(rows) {
         const body = $("#landing-table tbody");
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="4">점검 결과가 없습니다.</td></tr>';
+          body.innerHTML = '<tr><td colspan="5">점검 결과가 없습니다.</td></tr>';
           return;
         }
         body.innerHTML = rows.map((row) => `
           <tr>
-            <td>${escapeHtml(row.input_url)}</td>
+            <td class="url-cell">${escapeHtml(row.input_url)}</td>
             <td><span class="${verdictTag(row.verdict)}">${escapeHtml(row.badge || row.verdict)}</span></td>
             <td>${escapeHtml(row.reason || "-")}</td>
+            <td class="impact-cell">${escapeHtml(landingCampaignImpact(row))}</td>
             <td>${escapeHtml(row.action || "-")}</td>
           </tr>
         `).join("");
@@ -655,15 +703,16 @@
       function renderFaviconTable(rows) {
         const body = $("#favicon-table tbody");
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="5">점검 결과가 없습니다.</td></tr>';
+          body.innerHTML = '<tr><td colspan="6">점검 결과가 없습니다.</td></tr>';
           return;
         }
         body.innerHTML = rows.map((row) => `
           <tr>
-            <td>${escapeHtml(row.input_url)}</td>
+            <td class="url-cell">${escapeHtml(row.input_url)}</td>
             <td><span class="${verdictTag(row.verdict)}">${escapeHtml(row.badge || row.verdict)}</span></td>
             <td>${escapeHtml(row.size || "-")}<br>${escapeHtml(row.format || "-")}</td>
             <td>${escapeHtml(row.background || "-")}</td>
+            <td class="impact-cell">${escapeHtml(faviconCampaignImpact(row))}</td>
             <td>${escapeHtml(row.action || row.reason || "-")}</td>
           </tr>
         `).join("");
@@ -728,7 +777,7 @@
           setStatus(`${state.landingRows.length}개 URL 점검을 완료했습니다.`, "ok");
         } catch (error) {
           setStatus(error.message, "error");
-          $("#landing-table tbody").innerHTML = `<tr><td colspan="4">${escapeHtml(error.message)}</td></tr>`;
+          $("#landing-table tbody").innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
         } finally {
           $("#landing-run").disabled = false;
         }
@@ -754,7 +803,7 @@
           setStatus(`${state.faviconRows.length}개 이미지 점검을 완료했습니다.`, "ok");
         } catch (error) {
           setStatus(error.message, "error");
-          $("#favicon-table tbody").innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+          $("#favicon-table tbody").innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
         } finally {
           $("#favicon-run").disabled = false;
         }
@@ -816,10 +865,18 @@
       $("#landing-run").addEventListener("click", runLanding);
       $("#favicon-run").addEventListener("click", runFavicon);
       $("#landing-csv").addEventListener("click", () => {
-        downloadCsv("oai_adsbot_landing_check.csv", ["input_url", "badge", "reason", "action"], state.landingRows);
+        downloadCsv(
+          "oai_adsbot_landing_check.csv",
+          ["input_url", "badge", "reason", "campaign_impact", "action"],
+          state.landingRows.map(withLandingImpact),
+        );
       });
       $("#favicon-csv").addEventListener("click", () => {
-        downloadCsv("openai_ads_logo_favicon_check.csv", ["input_url", "badge", "size", "format", "background", "action"], state.faviconRows);
+        downloadCsv(
+          "openai_ads_logo_favicon_check.csv",
+          ["input_url", "badge", "size", "format", "background", "campaign_impact", "action"],
+          state.faviconRows.map(withFaviconImpact),
+        );
       });
 
       renderFaq();
