@@ -36,7 +36,7 @@ class GuideSlidesAdminTests(unittest.TestCase):
                     }
                 ],
                 "layout": {
-                    "version": 2,
+                    "version": 3,
                     "decks": {
                         "advertiser": {
                             "slides": [
@@ -51,6 +51,9 @@ class GuideSlidesAdminTests(unittest.TestCase):
                                             "테스트 내용",
                                             "advertiser.custom.card.body",
                                             "advertiser.custom.card.title",
+                                            ["테스트 배지"],
+                                            "wide",
+                                            "User-agent: OAI-AdsBot",
                                         ]
                                     ],
                                     "fieldRows": [["필드명", "필드 설명"]],
@@ -70,11 +73,13 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(saved.status_code, 200)
             body = saved.json()
             self.assertEqual(body["storage"], "memory")
-            self.assertEqual(body["layout"]["version"], 2)
+            self.assertEqual(body["layout"]["version"], 3)
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["kicker"], "테스트 키커")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["fieldRows"][0][0], "필드명")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["images"][0]["key"], "campaign_preview")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["codeBlocks"][0]["title"], "코드 예시")
+            self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["cards"][0][4][0], "테스트 배지")
+            self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["cards"][0][6], "User-agent: OAI-AdsBot")
             self.assertTrue(any(item["value"] == "테스트 안내자료 제목" for item in body["items"]))
             self.assertTrue(any(item.get("caption") == "테스트 캡션" for item in body["images"]))
 

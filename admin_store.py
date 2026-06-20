@@ -46,7 +46,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
 
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
-    "layout": {"version": 2, "decks": {}},
+    "layout": {"version": 3, "decks": {}},
     "items": [
         {
             "key": "advertiser.hero.title",
@@ -1011,7 +1011,10 @@ def _clean_slide_cards(value: Any) -> list[list[str]]:
         body = _clean_slide_text(raw_card[1] if len(raw_card) > 1 else "", multiline=True, fallback="내용을 입력해 주세요.")[:1200]
         body_key = _clean_slide_key(raw_card[2] if len(raw_card) > 2 else "")
         title_key = _clean_slide_key(raw_card[3] if len(raw_card) > 3 else "")
-        cards.append([title, body, body_key, title_key])
+        pills = _clean_slide_string_list(raw_card[4] if len(raw_card) > 4 else [], max_items=6)
+        class_name = re.sub(r"[^a-zA-Z0-9_ -]", "", str(raw_card[5] if len(raw_card) > 5 else "")).strip()[:80]
+        card_code = _clean_slide_text(raw_card[6] if len(raw_card) > 6 else "", multiline=True, fallback="")[:1600]
+        cards.append([title, body, body_key, title_key, pills, class_name, card_code])
     return cards
 
 

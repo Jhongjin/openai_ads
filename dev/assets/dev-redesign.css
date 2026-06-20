@@ -1123,6 +1123,18 @@ body.dev-console :focus-visible {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dev-slide-grid.material {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.dev-slide-grid.material .dev-slide-item {
+  grid-column: span 2;
+}
+
+.dev-slide-grid.material .dev-slide-item:nth-child(n + 7) {
+  grid-column: span 3;
+}
+
 .dev-slide-grid.check .dev-slide-item {
   min-height: 68px;
   border-color: #e6ccd0;
@@ -1151,6 +1163,40 @@ body.dev-console :focus-visible {
   font-size: 13px;
   line-height: 1.45;
   white-space: pre-line;
+}
+
+.dev-slide-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.dev-slide-pills em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #d9dde6;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 950;
+  padding: 3px 8px;
+}
+
+.dev-card-code {
+  overflow: auto;
+  margin: 12px 0 0;
+  border: 1px solid #28323f;
+  border-radius: 6px;
+  background: #111827;
+  color: #f8fafc;
+  padding: 11px 12px;
+  font-family: var(--oa-mono);
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .dev-slide-callout {
@@ -2724,10 +2770,16 @@ body.dev-console :focus-visible {
   }
 
   .dev-slide-grid.three,
+  .dev-slide-grid.material,
   .dev-guide-process-grid,
   .dev-guide-overview-grid,
   .dev-guide-code-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dev-slide-grid.material .dev-slide-item,
+  .dev-slide-grid.material .dev-slide-item:nth-child(n + 7) {
+    grid-column: auto;
   }
 
   .dev-slide-card {

@@ -519,7 +519,7 @@
       let adsKeySort = "asc";
       let editingAdsName = "";
       const ADS_KEY_PAGE_SIZE = 10;
-      const GUIDE_LAYOUT_VERSION = 2;
+      const GUIDE_LAYOUT_VERSION = 3;
       const adminGuideDecks = {
         advertiser: {
           label: "광고주 안내 자료",
@@ -733,12 +733,15 @@
             if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
             if (slide.code && !slide.codeKey) slide.codeKey = `${slideKey}.code`;
             slide.cards = (slide.cards || []).map((card, cardIndex) => {
-              const [title, body, bodyKey, titleKey] = card;
+              const [title, body, bodyKey, titleKey, pills, cardClass, cardCode] = card;
               return [
                 title,
                 body,
                 bodyKey || `${slideKey}.card${cardIndex + 1}.body`,
                 titleKey || `${slideKey}.card${cardIndex + 1}.title`,
+                Array.isArray(pills) ? pills : [],
+                cardClass || "",
+                cardCode || "",
               ];
             });
           });
@@ -759,12 +762,12 @@
             kicker: "01 · 광고 소재",
             titleKey: "advertiser.material.title",
             title: "광고 소재 준비물",
-            gridClass: "three",
+            gridClass: "material",
             cards: [
               ["브랜드명", "광고 상단 노출"],
               ["로고/파비콘", "공개 직접 이미지 링크, 256×256 이상, 정사각형, 흰 배경, 원형 크롭 가능"],
-              ["광고 제목", "최대 제목 24자 / 권장 16~18자\nOpenAI 공식 워크북 기준 · 정식 오픈 시 Ads Manager 재확인"],
-              ["광고 설명", "최대 설명 48자 / 권장 32~36자\nOpenAI 공식 워크북 기준"],
+              ["광고 제목", "최대 제목 24자 / 권장 16~18자", "", "", ["OpenAI 공식 워크북 기준", "정식 오픈 시 Ads Manager 재확인"]],
+              ["광고 설명", "최대 설명 48자 / 권장 32~36자", "", "", ["OpenAI 공식 워크북 기준"]],
               ["크리테오 경유", "제목 30자 / 설명 60자"],
               ["이미지", "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것", "advertiser.material.image"],
               ["랜딩 URL", "유효·접근 가능, 광고 내용과 관련성 높은 페이지(자사몰/외부몰 제품 페이지 가능)"],
@@ -787,11 +790,10 @@
             title: "랜딩 페이지 기술 준비",
             gridClass: "three",
             cards: [
-              ["1. robots.txt 허용", "OAI-AdsBot 필수 / OAI-SearchBot 권장 허용"],
+              ["1. robots.txt 허용", "OAI-AdsBot 필수 / OAI-SearchBot 권장 허용", "", "", [], "", "User-agent: OAI-SearchBot\nAllow: /\nUser-agent: OAI-AdsBot\nAllow: /"],
               ["2. 방화벽 allowlist", "Cloudflare·Akamai 등 웹 방화벽과 봇 차단에서 OpenAI 크롤러 차단 해제"],
               ["3. 안티봇 예외 처리", "CAPTCHA/안티봇 로직이 랜딩 페이지 접근을 막지 않도록 예외 처리"],
             ],
-            code: "User-agent: OAI-SearchBot\nAllow: /\nUser-agent: OAI-AdsBot\nAllow: /",
             callout: "Cloudflare는 OAI-AdsBot 공식 허용이 완료되었습니다. 크롤러 접근 불가 시 광고 노출(delivery)이 제한될 수 있으며, robots.txt 점검은 케이티나스미디어가 지원합니다.",
             footer: "최종 확인은 광고주 개발팀의 실제 접근 테스트가 필요합니다.",
           },
@@ -1542,8 +1544,8 @@
       }
 
       function renderAdminGuideCards(cards = [], deckKey, slide, slideIndex) {
-        return cards.map(([title, body, bodyKey, titleKey], cardIndex) => `
-          <div class="dev-slide-item admin-guide-editable-card" data-guide-card="${cardIndex}">
+        return cards.map(([title, body, bodyKey, titleKey, pills = [], cardClass = "", cardCode = ""], cardIndex) => `
+          <div class="dev-slide-item admin-guide-editable-card ${escapeHtml(cardClass || "")}" data-guide-card="${cardIndex}">
             <button class="admin-guide-card-action" type="button" data-guide-action="remove-card" aria-label="박스 삭제">삭제</button>
             ${renderGuideEditableText(
               titleKey,
@@ -1562,6 +1564,8 @@
               "span",
               true,
             )}
+            ${Array.isArray(pills) && pills.length ? `<div class="dev-slide-pills">${pills.map((pill) => `<em>${escapeHtml(pill)}</em>`).join("")}</div>` : ""}
+            ${cardCode ? `<pre class="dev-card-code">${escapeHtml(cardCode)}</pre>` : ""}
           </div>
         `).join("");
       }
@@ -1842,11 +1846,14 @@
         ["overview", "copyGuide"].forEach((key) => {
           if (slide[key] && typeof slide[key] === "object") normalized[key] = JSON.parse(JSON.stringify(slide[key]));
         });
-        normalized.cards = (slide.cards || []).map(([title, body, bodyKey, titleKey]) => [
+        normalized.cards = (slide.cards || []).map(([title, body, bodyKey, titleKey, pills = [], cardClass = "", cardCode = ""]) => [
           title || "새 박스 제목",
           body || "내용을 입력해 주세요.",
           bodyKey || "",
           titleKey || "",
+          Array.isArray(pills) ? pills : [],
+          cardClass || "",
+          cardCode || "",
         ]);
         return normalized;
       }
