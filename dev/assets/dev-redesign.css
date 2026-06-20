@@ -1095,79 +1095,7 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-list {
-  display: grid;
-  gap: 16px;
-}
-
-.campaign-intake-card {
-  padding: 16px;
-  border: 1px solid var(--oa-line);
-  border-left: 5px solid var(--oa-red);
-  border-radius: var(--oa-radius);
-  background: #fffaf4;
-}
-
-.campaign-intake-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--oa-line);
-}
-
-.campaign-intake-head h3 {
-  margin: 4px 0;
-  font-size: 24px;
-}
-
-.campaign-intake-head p {
-  margin: 0;
-  color: var(--oa-muted);
-  font-weight: 700;
-}
-
-.campaign-intake-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.campaign-intake-meta-grid,
-.intake-field-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.campaign-intake-meta-grid {
-  margin-top: 14px;
-}
-
-.intake-field {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid #ded6c9;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.intake-field span {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--oa-muted);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.intake-field strong {
-  display: block;
-  overflow-wrap: anywhere;
-  color: var(--oa-ink);
-  font-size: 14px;
-  line-height: 1.45;
+  border-top: 1px solid var(--oa-line);
 }
 
 .campaign-intake-ops {
@@ -1175,100 +1103,166 @@ body.dev-console :focus-visible {
   grid-template-columns: minmax(160px, .55fr) 150px minmax(220px, 1fr) auto;
   gap: 10px;
   align-items: end;
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid #ecd4d4;
-  border-radius: 8px;
-  background: #fff6f6;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--oa-line);
 }
 
 .campaign-intake-tree {
   display: grid;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 0;
 }
 
-.intake-node {
-  border: 1px solid var(--oa-line);
-  border-radius: 8px;
-  background: #fff;
+.campaign-intake-record {
+  border-bottom: 1px solid var(--oa-line);
 }
 
-.intake-node summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.intake-node summary::-webkit-details-marker {
+.campaign-intake-record summary::-webkit-details-marker,
+.intake-section summary::-webkit-details-marker {
   display: none;
 }
 
-.intake-node summary strong {
-  overflow-wrap: anywhere;
+.campaign-intake-summary {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(150px, .8fr) minmax(120px, .7fr) minmax(220px, 1fr) 86px;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--oa-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.campaign-intake-receipt {
+  color: var(--oa-ink);
   font-size: 15px;
+  font-weight: 950;
+}
+
+.campaign-intake-status-pill {
+  justify-self: end;
+  border: 1px solid #d7cec0;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--oa-ink);
+  font-size: 12px;
+  font-weight: 900;
+  background: #fff;
+}
+
+.campaign-intake-detail {
+  padding: 0 0 14px 18px;
+  border-left: 3px solid var(--oa-red);
+}
+
+.campaign-intake-meta {
+  margin: 12px 0;
 }
 
 .intake-step-badge {
-  border-radius: 999px;
-  background: #111827;
-  padding: 5px 9px;
-  color: #fff;
-  font-size: 11px;
+  color: var(--oa-red);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.intake-section {
+  border-top: 1px solid var(--oa-line);
+}
+
+.intake-section summary {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 38px;
+  cursor: pointer;
+  color: var(--oa-ink);
   font-weight: 900;
 }
 
-.intake-node-body {
-  display: grid;
-  gap: 12px;
-  padding: 0 12px 12px;
+.intake-section summary strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
 }
 
-.intake-adgroup-node {
-  margin-top: 10px;
-  border-left: 4px solid #0f766e;
+.intake-section-body {
+  padding: 0 0 10px 116px;
+}
+
+.intake-adgroup-section {
+  margin-left: 14px;
+}
+
+.intake-ad-section {
+  margin-left: 28px;
 }
 
 .intake-ads-list {
   display: grid;
-  gap: 10px;
+  gap: 0;
 }
 
-.intake-ad-card {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid #d5e1ef;
-  border-left: 4px solid #2563eb;
-  border-radius: 8px;
-  background: #f8fbff;
+.intake-kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
 }
 
-.intake-ad-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+.intake-kv-table th,
+.intake-kv-table td {
+  border-bottom: 1px solid #ebe3d8;
+  padding: 7px 8px;
+  text-align: left;
+  vertical-align: top;
 }
 
-.intake-ad-head span {
-  display: block;
+.intake-kv-table th {
+  width: 180px;
   color: var(--oa-muted);
-  font-size: 11px;
   font-weight: 900;
-}
-
-.intake-ad-head strong {
-  display: block;
-  margin-top: 3px;
-  font-size: 15px;
-}
-
-.intake-copy {
   white-space: nowrap;
+}
+
+.intake-kv-table td {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  color: var(--oa-ink);
+  font-weight: 800;
+}
+
+.intake-kv-table td span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.btn-icon.intake-copy-value {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--oa-muted);
+  cursor: pointer;
+}
+
+.btn-icon.intake-copy-value:hover {
+  border-color: #e7d7c7;
+  color: var(--oa-red);
+  background: #fff8f2;
+}
+
+.btn-icon.intake-copy-value:disabled {
+  cursor: not-allowed;
+  opacity: .35;
 }
 
 .empty-state.compact {
@@ -1284,8 +1278,7 @@ body.dev-console :focus-visible {
   .manual-rag-form,
   .manual-rag-edit-grid,
   .campaign-intake-toolbar,
-  .campaign-intake-meta-grid,
-  .intake-field-grid,
+  .campaign-intake-summary,
   .campaign-intake-ops {
     grid-template-columns: 1fr;
   }
@@ -1294,17 +1287,29 @@ body.dev-console :focus-visible {
     flex-direction: column;
   }
 
-  .campaign-intake-head,
-  .intake-ad-head {
-    flex-direction: column;
+  .campaign-intake-status-pill {
+    justify-self: start;
   }
 
-  .campaign-intake-badges {
-    justify-content: flex-start;
+  .campaign-intake-detail {
+    padding-left: 10px;
   }
 
-  .intake-node summary {
+  .intake-section summary {
     grid-template-columns: 1fr;
+  }
+
+  .intake-section-body {
+    padding-left: 0;
+  }
+
+  .intake-adgroup-section,
+  .intake-ad-section {
+    margin-left: 10px;
+  }
+
+  .intake-kv-table th {
+    width: 128px;
   }
 }
 
@@ -1315,6 +1320,7 @@ body.dev-console :focus-visible {
 
 .btn-secondary:disabled,
 .btn-plain:disabled,
+.btn-icon:disabled,
 .btn-danger:disabled {
   cursor: not-allowed;
   opacity: .45;

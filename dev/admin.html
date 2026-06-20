@@ -2525,12 +2525,45 @@
         return text || fallback;
       }
 
-      function intakeField(label, value) {
+      function intakeTeamName(item = {}) {
+        return [item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / ");
+      }
+
+      function intakeCopyButton(value, label) {
+        const text = String(value ?? "").trim();
+        if (!text) {
+          return `
+            <button class="btn-icon intake-copy-value" type="button" disabled title="${escapeHtml(label)} 값 없음" aria-label="${escapeHtml(label)} 값 없음">
+              <i class="ti ti-copy-off"></i>
+            </button>
+          `;
+        }
         return `
-          <div class="intake-field">
-            <span>${escapeHtml(label)}</span>
-            <strong>${escapeHtml(intakeValue(value))}</strong>
-          </div>
+          <button class="btn-icon intake-copy-value" type="button" data-intake-value="${escapeHtml(text)}" data-intake-label="${escapeHtml(label)}" title="${escapeHtml(label)} 복사" aria-label="${escapeHtml(label)} 복사">
+            <i class="ti ti-copy"></i>
+          </button>
+        `;
+      }
+
+      function intakeValueCell(label, value, fallback = "-") {
+        return `
+          <tr>
+            <th>${escapeHtml(label)}</th>
+            <td>
+              <span>${escapeHtml(intakeValue(value, fallback))}</span>
+              ${intakeCopyButton(value, label)}
+            </td>
+          </tr>
+        `;
+      }
+
+      function intakeTable(rows = []) {
+        return `
+          <table class="intake-kv-table">
+            <tbody>
+              ${rows.map(([label, value]) => intakeValueCell(label, value)).join("")}
+            </tbody>
+          </table>
         `;
       }
 
@@ -2573,79 +2606,6 @@
         });
       }
 
-      function intakeLinesForAd(ad = {}, label = "소재") {
-        return [
-          `[${label}]`,
-          `광고 이름: ${intakeValue(ad.ad_name)}`,
-          `제목: ${intakeValue(ad.title)}`,
-          `설명: ${intakeValue(ad.copy)}`,
-          `랜딩 URL: ${intakeValue(ad.link)}`,
-          `이미지 URL: ${intakeValue(ad.image_link)}`,
-        ];
-      }
-
-      function intakeLinesForAdgroup(adgroup = {}, label = "광고그룹") {
-        const lines = [
-          `[${label}]`,
-          `광고그룹명: ${intakeValue(adgroup.adgroup_name)}`,
-          `campaign_name 참조: ${intakeValue(adgroup.campaign_name)}`,
-          `최대 입찰가: ${intakeValue(adgroup.max_bid)}`,
-          `키워드: ${intakeValue(adgroup.keywords)}`,
-        ];
-        (adgroup.ads || []).forEach((ad, index) => {
-          lines.push("", ...intakeLinesForAd(ad, `${label} · 소재 ${index + 1}`));
-        });
-        return lines;
-      }
-
-      function intakeLinesForCampaign(campaign = {}, label = "캠페인") {
-        const lines = [
-          `[${label}]`,
-          `캠페인명: ${intakeValue(campaign.campaign_name)}`,
-          `목표: ${intakeValue(campaign.objective)}`,
-          `예산: ${intakeValue(campaign.budget_max)} / ${intakeValue(campaign.budget_type)}`,
-          `시작일: ${intakeValue(campaign.launch_date)}`,
-          `종료일: ${intakeValue(campaign.end_date)}`,
-          `국가: ${intakeValue(campaign.target_countries)}`,
-        ];
-        (campaign.adgroups || []).forEach((adgroup, index) => {
-          lines.push("", ...intakeLinesForAdgroup(adgroup, `${label} · 광고그룹 ${index + 1}`));
-        });
-        return lines;
-      }
-
-      function intakeLinesForReceipt(item = {}) {
-        const lines = [
-          `[접수 정보]`,
-          `접수번호: ${intakeValue(item.receipt_number)}`,
-          `제출시각: ${intakeValue(item.submitted_at_kst)}`,
-          `광고주: ${intakeValue(item.advertiser_name)}`,
-          `브랜드: ${intakeValue(item.brand_name)}`,
-          `담당자: ${intakeValue(item.sales_owner)}`,
-          `담당자 이메일: ${intakeValue(item.sales_owner_email)}`,
-          `담당자팀: ${[item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / ") || "-"}`,
-          `운영자: ${intakeValue(item.operator_name)}`,
-          `상태: ${intakeValue(item.status_label || CAMPAIGN_INTAKE_STATUSES[item.status])}`,
-          item.memo ? `운영 메모: ${item.memo}` : "",
-        ].filter(Boolean);
-        (item.campaigns || []).forEach((campaign, index) => {
-          lines.push("", ...intakeLinesForCampaign(campaign, `캠페인 ${index + 1}`));
-        });
-        return lines;
-      }
-
-      function campaignIntakeCopyText(scope, receipt, indexes = {}) {
-        const item = campaignIntakeItems.find((entry) => entry.receipt_number === receipt);
-        if (!item) return "";
-        const campaign = item.campaigns?.[Number(indexes.campaign || 0)];
-        const adgroup = campaign?.adgroups?.[Number(indexes.adgroup || 0)];
-        const ad = adgroup?.ads?.[Number(indexes.ad || 0)];
-        if (scope === "campaign" && campaign) return intakeLinesForCampaign(campaign, "캠페인").join("\n");
-        if (scope === "adgroup" && adgroup) return intakeLinesForAdgroup(adgroup, "광고그룹").join("\n");
-        if (scope === "ad" && ad) return intakeLinesForAd(ad, "소재").join("\n");
-        return intakeLinesForReceipt(item).join("\n");
-      }
-
       async function copyTextToClipboard(text) {
         const cleanText = String(text || "").trim();
         if (!cleanText) return false;
@@ -2668,46 +2628,39 @@
       function renderIntakeAds(ads = [], receipt, campaignIndex, adgroupIndex) {
         if (!ads.length) return '<div class="empty-state compact">등록된 소재가 없습니다.</div>';
         return ads.map((ad, adIndex) => `
-          <article class="intake-ad-card">
-            <div class="intake-ad-head">
-              <div>
-                <span>소재 ${campaignIndex + 1}-${adgroupIndex + 1}-${adIndex + 1}</span>
-                <strong>${escapeHtml(intakeValue(ad.ad_name, `소재 ${adIndex + 1}`))}</strong>
-              </div>
-              <button class="btn-plain intake-copy" type="button" data-intake-copy="ad" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}" data-adgroup-index="${adgroupIndex}" data-ad-index="${adIndex}">
-                <i class="ti ti-copy"></i>
-                소재 복사
-              </button>
+          <details class="intake-section intake-ad-section" open>
+            <summary>
+              <span class="intake-step-badge">소재 ${campaignIndex + 1}-${adgroupIndex + 1}-${adIndex + 1}</span>
+              <strong>${escapeHtml(intakeValue(ad.ad_name, `소재 ${adIndex + 1}`))}</strong>
+            </summary>
+            <div class="intake-section-body">
+              ${intakeTable([
+                ["소재명", ad.ad_name],
+                ["제목", ad.title],
+                ["설명", ad.copy],
+                ["랜딩 URL", ad.link],
+                ["이미지 URL", ad.image_link],
+              ])}
             </div>
-            <div class="intake-field-grid">
-              ${intakeField("제목", ad.title)}
-              ${intakeField("설명", ad.copy)}
-              ${intakeField("랜딩 URL", ad.link)}
-              ${intakeField("이미지 URL", ad.image_link)}
-            </div>
-          </article>
+          </details>
         `).join("");
       }
 
       function renderIntakeAdgroups(adgroups = [], receipt, campaignIndex) {
         if (!adgroups.length) return '<div class="empty-state compact">등록된 광고그룹이 없습니다.</div>';
         return adgroups.map((adgroup, adgroupIndex) => `
-          <details class="intake-node intake-adgroup-node" open>
+          <details class="intake-section intake-adgroup-section" open>
             <summary>
               <span class="intake-step-badge">광고그룹 ${campaignIndex + 1}-${adgroupIndex + 1}</span>
               <strong>${escapeHtml(intakeValue(adgroup.adgroup_name, `광고그룹 ${adgroupIndex + 1}`))}</strong>
-              <button class="btn-plain intake-copy" type="button" data-intake-copy="adgroup" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}" data-adgroup-index="${adgroupIndex}">
-                <i class="ti ti-copy"></i>
-                광고그룹 복사
-              </button>
             </summary>
-            <div class="intake-node-body">
-              <div class="intake-field-grid">
-                ${intakeField("campaign_name 참조", adgroup.campaign_name)}
-                ${intakeField("광고그룹명", adgroup.adgroup_name)}
-                ${intakeField("최대 입찰가", adgroup.max_bid)}
-                ${intakeField("키워드", adgroup.keywords)}
-              </div>
+            <div class="intake-section-body">
+              ${intakeTable([
+                ["campaign_name 참조", adgroup.campaign_name],
+                ["광고그룹명", adgroup.adgroup_name],
+                ["최대 입찰가", adgroup.max_bid],
+                ["키워드", adgroup.keywords],
+              ])}
               <div class="intake-ads-list">
                 ${renderIntakeAds(adgroup.ads || [], receipt, campaignIndex, adgroupIndex)}
               </div>
@@ -2719,24 +2672,21 @@
       function renderIntakeCampaigns(campaigns = [], receipt) {
         if (!campaigns.length) return '<div class="empty-state compact">등록된 캠페인 정보가 없습니다.</div>';
         return campaigns.map((campaign, campaignIndex) => `
-          <details class="intake-node intake-campaign-node" open>
+          <details class="intake-section intake-campaign-section" open>
             <summary>
               <span class="intake-step-badge">캠페인 ${campaignIndex + 1}</span>
               <strong>${escapeHtml(intakeValue(campaign.campaign_name, `캠페인 ${campaignIndex + 1}`))}</strong>
-              <button class="btn-plain intake-copy" type="button" data-intake-copy="campaign" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}">
-                <i class="ti ti-copy"></i>
-                캠페인 복사
-              </button>
             </summary>
-            <div class="intake-node-body">
-              <div class="intake-field-grid">
-                ${intakeField("캠페인명", campaign.campaign_name)}
-                ${intakeField("목표", campaign.objective)}
-                ${intakeField("예산", `${intakeValue(campaign.budget_max)} / ${intakeValue(campaign.budget_type)}`)}
-                ${intakeField("시작일", campaign.launch_date)}
-                ${intakeField("종료일", campaign.end_date)}
-                ${intakeField("국가", campaign.target_countries)}
-              </div>
+            <div class="intake-section-body">
+              ${intakeTable([
+                ["캠페인명", campaign.campaign_name],
+                ["목표", campaign.objective],
+                ["예산", campaign.budget_max],
+                ["예산 유형", campaign.budget_type],
+                ["시작일", campaign.launch_date],
+                ["종료일", campaign.end_date],
+                ["국가", campaign.target_countries],
+              ])}
               <div class="intake-adgroup-list">
                 ${renderIntakeAdgroups(campaign.adgroups || [], receipt, campaignIndex)}
               </div>
@@ -2754,53 +2704,50 @@
           return;
         }
         root.innerHTML = items.map((item) => `
-          <article class="campaign-intake-card" data-receipt="${escapeHtml(item.receipt_number || "")}">
-            <div class="campaign-intake-head">
-              <div>
-                <p class="eyebrow">Receipt</p>
-                <h3>${escapeHtml(intakeValue(item.receipt_number, "접수번호 없음"))}</h3>
-                <p>${escapeHtml(intakeValue(item.submitted_at_kst, "제출시각 없음"))} · ${escapeHtml(intakeValue(item.advertiser_name, "광고주 없음"))}</p>
-              </div>
-              <div class="campaign-intake-badges">
-                <span class="tag tag-blue">캠페인 ${formatNumber(item.campaign_count || 0)}</span>
-                <span class="tag tag-green">광고그룹 ${formatNumber(item.adgroup_count || 0)}</span>
-                <span class="tag tag-red">소재 ${formatNumber(item.ad_count || 0)}</span>
-                <button class="btn-secondary intake-copy" type="button" data-intake-copy="receipt" data-receipt="${escapeHtml(item.receipt_number || "")}">
-                  <i class="ti ti-copy"></i>
-                  전체 복사
+          <details class="campaign-intake-record" data-receipt="${escapeHtml(item.receipt_number || "")}" open>
+            <summary class="campaign-intake-summary">
+              <span class="campaign-intake-receipt">${escapeHtml(intakeValue(item.receipt_number, "접수번호 없음"))}</span>
+              <span>${escapeHtml(intakeValue(item.submitted_at_kst, "제출시각 없음"))}</span>
+              <span>${escapeHtml(intakeValue(item.advertiser_name, "광고주 없음"))}</span>
+              <span>캠페인 ${formatNumber(item.campaign_count || 0)} · 광고그룹 ${formatNumber(item.adgroup_count || 0)} · 소재 ${formatNumber(item.ad_count || 0)}</span>
+              <span class="campaign-intake-status-pill">${escapeHtml(item.status_label || CAMPAIGN_INTAKE_STATUSES[item.status] || "준비")}</span>
+            </summary>
+            <div class="campaign-intake-detail">
+              <div class="campaign-intake-ops">
+                <label>
+                  운영자명
+                  <input class="control campaign-intake-operator" value="${escapeHtml(item.operator_name || "")}" placeholder="실제 캠페인 세팅 담당자" />
+                </label>
+                <label>
+                  상태
+                  <select class="control campaign-intake-status-select">${intakeStatusOptions(item.status || "ready")}</select>
+                </label>
+                <label>
+                  운영 메모
+                  <input class="control campaign-intake-memo" value="${escapeHtml(item.memo || "")}" placeholder="세팅 중 특이사항" />
+                </label>
+                <button class="btn-command" type="button" data-intake-action="save">
+                  <i class="ti ti-device-floppy"></i>
+                  운영 저장
                 </button>
               </div>
+              <div class="campaign-intake-meta">
+                ${intakeTable([
+                  ["접수번호", item.receipt_number],
+                  ["제출시각", item.submitted_at_kst],
+                  ["광고주", item.advertiser_name],
+                  ["브랜드", item.brand_name],
+                  ["담당자명", item.sales_owner],
+                  ["담당자 이메일", item.sales_owner_email],
+                  ["담당자팀", intakeTeamName(item)],
+                  ["비고", item.note],
+                ])}
+              </div>
+              <div class="campaign-intake-tree">
+                ${renderIntakeCampaigns(item.campaigns || [], item.receipt_number || "")}
+              </div>
             </div>
-            <div class="campaign-intake-meta-grid">
-              ${intakeField("광고주", item.advertiser_name)}
-              ${intakeField("브랜드", item.brand_name)}
-              ${intakeField("담당자명", item.sales_owner)}
-              ${intakeField("담당자 이메일", item.sales_owner_email)}
-              ${intakeField("담당자팀", [item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / "))}
-              ${intakeField("비고", item.note)}
-            </div>
-            <div class="campaign-intake-ops">
-              <label>
-                운영자명
-                <input class="control campaign-intake-operator" value="${escapeHtml(item.operator_name || "")}" placeholder="실제 캠페인 세팅 담당자" />
-              </label>
-              <label>
-                상태
-                <select class="control campaign-intake-status-select">${intakeStatusOptions(item.status || "ready")}</select>
-              </label>
-              <label>
-                운영 메모
-                <input class="control campaign-intake-memo" value="${escapeHtml(item.memo || "")}" placeholder="세팅 중 특이사항" />
-              </label>
-              <button class="btn-command" type="button" data-intake-action="save">
-                <i class="ti ti-device-floppy"></i>
-                운영 상태 저장
-              </button>
-            </div>
-            <div class="campaign-intake-tree">
-              ${renderIntakeCampaigns(item.campaigns || [], item.receipt_number || "")}
-            </div>
-          </article>
+          </details>
         `).join("");
       }
 
@@ -2811,7 +2758,7 @@
         renderCampaignIntakeList();
         const message = data.ok === false
           ? (data.error || "접수 목록을 불러오지 못했습니다.")
-          : `접수 ${formatNumber(data.total_count || campaignIntakeItems.length)}건을 불러왔습니다. 복사 버튼으로 Ads Manager 입력값을 바로 옮길 수 있습니다.`;
+          : `접수 ${formatNumber(data.total_count || campaignIntakeItems.length)}건을 불러왔습니다. 각 필드의 복사 아이콘으로 Ads Manager 입력값을 한 칸씩 옮길 수 있습니다.`;
         setStatus("campaign-intake-status", message, data.ok === false ? "error" : "ok");
       }
 
@@ -3170,18 +3117,15 @@
         renderCampaignIntakeList();
       });
       $("#campaign-intake-list").addEventListener("click", async (event) => {
-        const copyButton = event.target.closest("[data-intake-copy]");
+        const copyButton = event.target.closest("[data-intake-value]");
         if (copyButton) {
           event.preventDefault();
           event.stopPropagation();
-          const text = campaignIntakeCopyText(copyButton.dataset.intakeCopy, copyButton.dataset.receipt || "", {
-            campaign: copyButton.dataset.campaignIndex,
-            adgroup: copyButton.dataset.adgroupIndex,
-            ad: copyButton.dataset.adIndex,
-          });
+          const text = copyButton.dataset.intakeValue || "";
+          const label = copyButton.dataset.intakeLabel || "선택한 값";
           try {
             await copyTextToClipboard(text);
-            setStatus("campaign-intake-status", "선택한 캠페인 정보를 클립보드에 복사했습니다.", "ok");
+            setStatus("campaign-intake-status", `${label} 값을 클립보드에 복사했습니다.`, "ok");
           } catch (error) {
             setStatus("campaign-intake-status", `복사 실패: ${error.message}`, "error");
           }
