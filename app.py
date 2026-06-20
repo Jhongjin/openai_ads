@@ -155,6 +155,13 @@ class ManualRagItemRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=20000)
 
 
+class CampaignIntakeOpsRequest(BaseModel):
+    receipt_number: str = Field(..., min_length=3, max_length=80)
+    operator_name: str | None = Field(default="", max_length=80)
+    status: str = Field(default="ready", min_length=1, max_length=40)
+    memo: str | None = Field(default="", max_length=1000)
+
+
 class VisitRequest(BaseModel):
     page: str = Field(..., min_length=1, max_length=80)
     label: str | None = Field(default=None, max_length=120)
@@ -557,6 +564,28 @@ def admin_delete_manual_rag(request: Request, item_id: str) -> dict[str, Any]:
     _require_admin(request)
     try:
         return delete_manual_rag_item(item_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/campaign-intakes", include_in_schema=False)
+def admin_campaign_intakes(request: Request) -> dict[str, Any]:
+    from admin_store import list_campaign_intake_items
+
+    _require_admin(request)
+    return list_campaign_intake_items()
+
+
+@app.post("/api/admin/campaign-intakes/update", include_in_schema=False)
+def admin_update_campaign_intake(
+    request: Request,
+    update: CampaignIntakeOpsRequest,
+) -> dict[str, Any]:
+    from admin_store import update_campaign_intake_ops
+
+    _require_admin(request)
+    try:
+        return update_campaign_intake_ops(update.model_dump())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -47,6 +47,13 @@ class IntakeAppsScriptStaticTests(unittest.TestCase):
         self.assertIn("return { sent: false", script)
         self.assertIn("function sendMailAuthTest()", script)
         self.assertIn("function debugMailConfig()", script)
+        self.assertIn('payload.action === "campaign_intake_list"', script)
+        self.assertIn("function campaignIntakeList_()", script)
+        self.assertIn('readSheetRows_("campaigns")', script)
+        self.assertIn('readSheetRows_("adgroups")', script)
+        self.assertIn('readSheetRows_("ads")', script)
+        self.assertIn('readSheetRows_("ops_meta")', script)
+        self.assertIn("function normalizeSheetCell_", script)
 
 
 if __name__ == "__main__":

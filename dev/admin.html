@@ -84,6 +84,10 @@
               <i class="ti ti-inbox"></i>
               <span>지식베이스 검토함</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="campaignIntakes">
+              <i class="ti ti-stack-forward"></i>
+              <span>접수 캠페인</span>
+            </button>
             <button class="rail-button" type="button" data-admin-view="manualRag">
               <i class="ti ti-database-edit"></i>
               <span>직접 입력 RAG</span>
@@ -555,6 +559,42 @@
               </section>
             </section>
 
+            <section class="view" id="admin-view-campaignIntakes">
+              <section class="surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">접수 캠페인 운영 보드</h2>
+                    <p class="surface-copy">구글 시트에 저장된 접수 정보를 접수번호 기준으로 묶어 Ads Manager 세팅 순서대로 확인합니다.</p>
+                  </div>
+                  <button class="btn-secondary" type="button" id="campaign-intake-refresh">
+                    <i class="ti ti-refresh"></i>
+                    접수 새로고침
+                  </button>
+                </div>
+                <div class="surface-body stack">
+                  <div class="campaign-intake-toolbar">
+                    <label>
+                      검색
+                      <input class="control" id="campaign-intake-search" placeholder="접수번호, 광고주, 캠페인, 광고그룹, 소재 검색" />
+                    </label>
+                    <label>
+                      상태
+                      <select class="control" id="campaign-intake-status-filter">
+                        <option value="all">전체 상태</option>
+                        <option value="ready">준비</option>
+                        <option value="in_progress">진행중</option>
+                        <option value="done">완료</option>
+                      </select>
+                    </label>
+                    <p class="status-line" id="campaign-intake-status">접수 목록을 불러오는 중입니다.</p>
+                  </div>
+                  <div class="campaign-intake-list" id="campaign-intake-list" aria-live="polite">
+                    <div class="empty-pane">구글 시트 접수 정보를 불러오는 중입니다.</div>
+                  </div>
+                </div>
+              </section>
+            </section>
+
             <section class="view" id="admin-view-manualRag">
               <section class="surface">
                 <div class="surface-head">
@@ -589,6 +629,7 @@
         ads: ["API 키", "광고주별 Ads API 키를 등록하고 상태를 확인합니다."],
         official: ["공식 문서 동기화", "공식 문서 변경 감지 로그를 검토합니다."],
         mail: ["지식베이스 검토함", "메일 기반 지식베이스 반영 후보를 검토합니다."],
+        campaignIntakes: ["접수 캠페인 운영 보드", "구글 시트 접수 정보를 실제 캠페인 세팅 순서로 확인합니다."],
         manualRag: ["직접 입력 RAG 관리", "관리자가 직접 반영한 운영 커뮤니케이션 지식을 수정·삭제합니다."],
       };
       let adminPassword = sessionStorage.getItem("openaiAdsAdminPassword") || "";
@@ -608,6 +649,14 @@
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
       const MAIL_REVIEW_PAGE_SIZE = 10;
+      let campaignIntakeItems = [];
+      let campaignIntakeQuery = "";
+      let campaignIntakeStatusFilter = "all";
+      const CAMPAIGN_INTAKE_STATUSES = {
+        ready: "준비",
+        in_progress: "진행중",
+        done: "완료",
+      };
       let manualRagItems = [];
       const MANUAL_RAG_CATEGORIES = [
         "계정·런칭",
@@ -2471,6 +2520,334 @@
         setStatus("mail-status", data.ok === false ? (data.error || "검토함을 불러오지 못했습니다.") : okMessage, data.ok === false ? "error" : "ok");
       }
 
+      function intakeValue(value, fallback = "-") {
+        const text = String(value ?? "").trim();
+        return text || fallback;
+      }
+
+      function intakeField(label, value) {
+        return `
+          <div class="intake-field">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(intakeValue(value))}</strong>
+          </div>
+        `;
+      }
+
+      function intakeStatusOptions(selected = "ready") {
+        const current = CAMPAIGN_INTAKE_STATUSES[selected] ? selected : "ready";
+        return Object.entries(CAMPAIGN_INTAKE_STATUSES).map(([value, label]) => `
+          <option value="${escapeHtml(value)}" ${value === current ? "selected" : ""}>${escapeHtml(label)}</option>
+        `).join("");
+      }
+
+      function intakeSearchText(item) {
+        const parts = [
+          item.receipt_number,
+          item.submitted_at_kst,
+          item.advertiser_name,
+          item.brand_name,
+          item.sales_owner,
+          item.owner_team,
+          item.operator_name,
+          item.memo,
+        ];
+        (item.campaigns || []).forEach((campaign) => {
+          parts.push(campaign.campaign_name, campaign.objective, campaign.target_countries);
+          (campaign.adgroups || []).forEach((adgroup) => {
+            parts.push(adgroup.adgroup_name, adgroup.max_bid, adgroup.keywords);
+            (adgroup.ads || []).forEach((ad) => {
+              parts.push(ad.ad_name, ad.title, ad.copy, ad.link, ad.image_link);
+            });
+          });
+        });
+        return parts.join(" ").toLowerCase();
+      }
+
+      function filteredCampaignIntakes() {
+        const query = campaignIntakeQuery.trim().toLowerCase();
+        return campaignIntakeItems.filter((item) => {
+          const statusMatch = campaignIntakeStatusFilter === "all" || item.status === campaignIntakeStatusFilter;
+          const queryMatch = !query || intakeSearchText(item).includes(query);
+          return statusMatch && queryMatch;
+        });
+      }
+
+      function intakeLinesForAd(ad = {}, label = "소재") {
+        return [
+          `[${label}]`,
+          `광고 이름: ${intakeValue(ad.ad_name)}`,
+          `제목: ${intakeValue(ad.title)}`,
+          `설명: ${intakeValue(ad.copy)}`,
+          `랜딩 URL: ${intakeValue(ad.link)}`,
+          `이미지 URL: ${intakeValue(ad.image_link)}`,
+        ];
+      }
+
+      function intakeLinesForAdgroup(adgroup = {}, label = "광고그룹") {
+        const lines = [
+          `[${label}]`,
+          `광고그룹명: ${intakeValue(adgroup.adgroup_name)}`,
+          `campaign_name 참조: ${intakeValue(adgroup.campaign_name)}`,
+          `최대 입찰가: ${intakeValue(adgroup.max_bid)}`,
+          `키워드: ${intakeValue(adgroup.keywords)}`,
+        ];
+        (adgroup.ads || []).forEach((ad, index) => {
+          lines.push("", ...intakeLinesForAd(ad, `${label} · 소재 ${index + 1}`));
+        });
+        return lines;
+      }
+
+      function intakeLinesForCampaign(campaign = {}, label = "캠페인") {
+        const lines = [
+          `[${label}]`,
+          `캠페인명: ${intakeValue(campaign.campaign_name)}`,
+          `목표: ${intakeValue(campaign.objective)}`,
+          `예산: ${intakeValue(campaign.budget_max)} / ${intakeValue(campaign.budget_type)}`,
+          `시작일: ${intakeValue(campaign.launch_date)}`,
+          `종료일: ${intakeValue(campaign.end_date)}`,
+          `국가: ${intakeValue(campaign.target_countries)}`,
+        ];
+        (campaign.adgroups || []).forEach((adgroup, index) => {
+          lines.push("", ...intakeLinesForAdgroup(adgroup, `${label} · 광고그룹 ${index + 1}`));
+        });
+        return lines;
+      }
+
+      function intakeLinesForReceipt(item = {}) {
+        const lines = [
+          `[접수 정보]`,
+          `접수번호: ${intakeValue(item.receipt_number)}`,
+          `제출시각: ${intakeValue(item.submitted_at_kst)}`,
+          `광고주: ${intakeValue(item.advertiser_name)}`,
+          `브랜드: ${intakeValue(item.brand_name)}`,
+          `담당자: ${intakeValue(item.sales_owner)}`,
+          `담당자 이메일: ${intakeValue(item.sales_owner_email)}`,
+          `담당자팀: ${[item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / ") || "-"}`,
+          `운영자: ${intakeValue(item.operator_name)}`,
+          `상태: ${intakeValue(item.status_label || CAMPAIGN_INTAKE_STATUSES[item.status])}`,
+          item.memo ? `운영 메모: ${item.memo}` : "",
+        ].filter(Boolean);
+        (item.campaigns || []).forEach((campaign, index) => {
+          lines.push("", ...intakeLinesForCampaign(campaign, `캠페인 ${index + 1}`));
+        });
+        return lines;
+      }
+
+      function campaignIntakeCopyText(scope, receipt, indexes = {}) {
+        const item = campaignIntakeItems.find((entry) => entry.receipt_number === receipt);
+        if (!item) return "";
+        const campaign = item.campaigns?.[Number(indexes.campaign || 0)];
+        const adgroup = campaign?.adgroups?.[Number(indexes.adgroup || 0)];
+        const ad = adgroup?.ads?.[Number(indexes.ad || 0)];
+        if (scope === "campaign" && campaign) return intakeLinesForCampaign(campaign, "캠페인").join("\n");
+        if (scope === "adgroup" && adgroup) return intakeLinesForAdgroup(adgroup, "광고그룹").join("\n");
+        if (scope === "ad" && ad) return intakeLinesForAd(ad, "소재").join("\n");
+        return intakeLinesForReceipt(item).join("\n");
+      }
+
+      async function copyTextToClipboard(text) {
+        const cleanText = String(text || "").trim();
+        if (!cleanText) return false;
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(cleanText);
+          return true;
+        }
+        const textarea = document.createElement("textarea");
+        textarea.value = cleanText;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const copied = document.execCommand("copy");
+        textarea.remove();
+        return copied;
+      }
+
+      function renderIntakeAds(ads = [], receipt, campaignIndex, adgroupIndex) {
+        if (!ads.length) return '<div class="empty-state compact">등록된 소재가 없습니다.</div>';
+        return ads.map((ad, adIndex) => `
+          <article class="intake-ad-card">
+            <div class="intake-ad-head">
+              <div>
+                <span>소재 ${campaignIndex + 1}-${adgroupIndex + 1}-${adIndex + 1}</span>
+                <strong>${escapeHtml(intakeValue(ad.ad_name, `소재 ${adIndex + 1}`))}</strong>
+              </div>
+              <button class="btn-plain intake-copy" type="button" data-intake-copy="ad" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}" data-adgroup-index="${adgroupIndex}" data-ad-index="${adIndex}">
+                <i class="ti ti-copy"></i>
+                소재 복사
+              </button>
+            </div>
+            <div class="intake-field-grid">
+              ${intakeField("제목", ad.title)}
+              ${intakeField("설명", ad.copy)}
+              ${intakeField("랜딩 URL", ad.link)}
+              ${intakeField("이미지 URL", ad.image_link)}
+            </div>
+          </article>
+        `).join("");
+      }
+
+      function renderIntakeAdgroups(adgroups = [], receipt, campaignIndex) {
+        if (!adgroups.length) return '<div class="empty-state compact">등록된 광고그룹이 없습니다.</div>';
+        return adgroups.map((adgroup, adgroupIndex) => `
+          <details class="intake-node intake-adgroup-node" open>
+            <summary>
+              <span class="intake-step-badge">광고그룹 ${campaignIndex + 1}-${adgroupIndex + 1}</span>
+              <strong>${escapeHtml(intakeValue(adgroup.adgroup_name, `광고그룹 ${adgroupIndex + 1}`))}</strong>
+              <button class="btn-plain intake-copy" type="button" data-intake-copy="adgroup" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}" data-adgroup-index="${adgroupIndex}">
+                <i class="ti ti-copy"></i>
+                광고그룹 복사
+              </button>
+            </summary>
+            <div class="intake-node-body">
+              <div class="intake-field-grid">
+                ${intakeField("campaign_name 참조", adgroup.campaign_name)}
+                ${intakeField("광고그룹명", adgroup.adgroup_name)}
+                ${intakeField("최대 입찰가", adgroup.max_bid)}
+                ${intakeField("키워드", adgroup.keywords)}
+              </div>
+              <div class="intake-ads-list">
+                ${renderIntakeAds(adgroup.ads || [], receipt, campaignIndex, adgroupIndex)}
+              </div>
+            </div>
+          </details>
+        `).join("");
+      }
+
+      function renderIntakeCampaigns(campaigns = [], receipt) {
+        if (!campaigns.length) return '<div class="empty-state compact">등록된 캠페인 정보가 없습니다.</div>';
+        return campaigns.map((campaign, campaignIndex) => `
+          <details class="intake-node intake-campaign-node" open>
+            <summary>
+              <span class="intake-step-badge">캠페인 ${campaignIndex + 1}</span>
+              <strong>${escapeHtml(intakeValue(campaign.campaign_name, `캠페인 ${campaignIndex + 1}`))}</strong>
+              <button class="btn-plain intake-copy" type="button" data-intake-copy="campaign" data-receipt="${escapeHtml(receipt)}" data-campaign-index="${campaignIndex}">
+                <i class="ti ti-copy"></i>
+                캠페인 복사
+              </button>
+            </summary>
+            <div class="intake-node-body">
+              <div class="intake-field-grid">
+                ${intakeField("캠페인명", campaign.campaign_name)}
+                ${intakeField("목표", campaign.objective)}
+                ${intakeField("예산", `${intakeValue(campaign.budget_max)} / ${intakeValue(campaign.budget_type)}`)}
+                ${intakeField("시작일", campaign.launch_date)}
+                ${intakeField("종료일", campaign.end_date)}
+                ${intakeField("국가", campaign.target_countries)}
+              </div>
+              <div class="intake-adgroup-list">
+                ${renderIntakeAdgroups(campaign.adgroups || [], receipt, campaignIndex)}
+              </div>
+            </div>
+          </details>
+        `).join("");
+      }
+
+      function renderCampaignIntakeList() {
+        const root = $("#campaign-intake-list");
+        if (!root) return;
+        const items = filteredCampaignIntakes();
+        if (!items.length) {
+          root.innerHTML = '<div class="empty-pane">조건에 맞는 접수 캠페인이 없습니다.</div>';
+          return;
+        }
+        root.innerHTML = items.map((item) => `
+          <article class="campaign-intake-card" data-receipt="${escapeHtml(item.receipt_number || "")}">
+            <div class="campaign-intake-head">
+              <div>
+                <p class="eyebrow">Receipt</p>
+                <h3>${escapeHtml(intakeValue(item.receipt_number, "접수번호 없음"))}</h3>
+                <p>${escapeHtml(intakeValue(item.submitted_at_kst, "제출시각 없음"))} · ${escapeHtml(intakeValue(item.advertiser_name, "광고주 없음"))}</p>
+              </div>
+              <div class="campaign-intake-badges">
+                <span class="tag tag-blue">캠페인 ${formatNumber(item.campaign_count || 0)}</span>
+                <span class="tag tag-green">광고그룹 ${formatNumber(item.adgroup_count || 0)}</span>
+                <span class="tag tag-red">소재 ${formatNumber(item.ad_count || 0)}</span>
+                <button class="btn-secondary intake-copy" type="button" data-intake-copy="receipt" data-receipt="${escapeHtml(item.receipt_number || "")}">
+                  <i class="ti ti-copy"></i>
+                  전체 복사
+                </button>
+              </div>
+            </div>
+            <div class="campaign-intake-meta-grid">
+              ${intakeField("광고주", item.advertiser_name)}
+              ${intakeField("브랜드", item.brand_name)}
+              ${intakeField("담당자명", item.sales_owner)}
+              ${intakeField("담당자 이메일", item.sales_owner_email)}
+              ${intakeField("담당자팀", [item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / "))}
+              ${intakeField("비고", item.note)}
+            </div>
+            <div class="campaign-intake-ops">
+              <label>
+                운영자명
+                <input class="control campaign-intake-operator" value="${escapeHtml(item.operator_name || "")}" placeholder="실제 캠페인 세팅 담당자" />
+              </label>
+              <label>
+                상태
+                <select class="control campaign-intake-status-select">${intakeStatusOptions(item.status || "ready")}</select>
+              </label>
+              <label>
+                운영 메모
+                <input class="control campaign-intake-memo" value="${escapeHtml(item.memo || "")}" placeholder="세팅 중 특이사항" />
+              </label>
+              <button class="btn-command" type="button" data-intake-action="save">
+                <i class="ti ti-device-floppy"></i>
+                운영 상태 저장
+              </button>
+            </div>
+            <div class="campaign-intake-tree">
+              ${renderIntakeCampaigns(item.campaigns || [], item.receipt_number || "")}
+            </div>
+          </article>
+        `).join("");
+      }
+
+      async function loadCampaignIntakes() {
+        setStatus("campaign-intake-status", "구글 시트 접수 정보를 불러오는 중입니다.");
+        const data = await adminFetch("/api/admin/campaign-intakes");
+        campaignIntakeItems = Array.isArray(data.items) ? data.items : [];
+        renderCampaignIntakeList();
+        const message = data.ok === false
+          ? (data.error || "접수 목록을 불러오지 못했습니다.")
+          : `접수 ${formatNumber(data.total_count || campaignIntakeItems.length)}건을 불러왔습니다. 복사 버튼으로 Ads Manager 입력값을 바로 옮길 수 있습니다.`;
+        setStatus("campaign-intake-status", message, data.ok === false ? "error" : "ok");
+      }
+
+      async function saveCampaignIntakeOps(card) {
+        const receiptNumber = card?.dataset.receipt || "";
+        if (!receiptNumber) return;
+        const payload = {
+          receipt_number: receiptNumber,
+          operator_name: card.querySelector(".campaign-intake-operator")?.value.trim() || "",
+          status: card.querySelector(".campaign-intake-status-select")?.value || "ready",
+          memo: card.querySelector(".campaign-intake-memo")?.value.trim() || "",
+        };
+        const button = card.querySelector("[data-intake-action='save']");
+        setButtonBusy(button, true, "저장 중");
+        setStatus("campaign-intake-status", `${receiptNumber} 운영 상태를 저장하는 중입니다.`);
+        try {
+          const data = await adminFetch("/api/admin/campaign-intakes/update", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const updated = data.item || {};
+          const item = campaignIntakeItems.find((entry) => entry.receipt_number === receiptNumber);
+          if (item) {
+            item.operator_name = updated.operator_name || payload.operator_name;
+            item.status = updated.status || payload.status;
+            item.status_label = updated.status_label || CAMPAIGN_INTAKE_STATUSES[payload.status];
+            item.memo = updated.memo || payload.memo;
+          }
+          setStatus("campaign-intake-status", `${receiptNumber} 운영 상태 저장 완료`, "ok");
+        } catch (error) {
+          setStatus("campaign-intake-status", error.message, "error");
+        } finally {
+          setButtonBusy(button, false);
+        }
+      }
+
       function manualRagPayloadFromForm() {
         return {
           title: $("#manual-rag-title")?.value.trim() || "",
@@ -2624,6 +3001,7 @@
         if (currentView === "ads") await loadAdsKeys();
         if (currentView === "official") await loadOfficialChanges();
         if (currentView === "mail") await loadMailReview();
+        if (currentView === "campaignIntakes") await loadCampaignIntakes();
         if (currentView === "manualRag") await loadManualRagItems();
       }
 
@@ -2637,6 +3015,7 @@
           loadAdsKeys(),
           loadOfficialChanges(),
           loadMailReview(),
+          loadCampaignIntakes(),
           loadManualRagItems(),
         ]);
       }
@@ -2778,6 +3157,40 @@
       });
       $("#mail-next").addEventListener("click", () => {
         loadMailReview(mailPage + 1).catch((error) => setStatus("mail-status", error.message, "error"));
+      });
+      $("#campaign-intake-refresh").addEventListener("click", () => {
+        loadCampaignIntakes().catch((error) => setStatus("campaign-intake-status", error.message, "error"));
+      });
+      $("#campaign-intake-search").addEventListener("input", (event) => {
+        campaignIntakeQuery = event.target.value || "";
+        renderCampaignIntakeList();
+      });
+      $("#campaign-intake-status-filter").addEventListener("change", (event) => {
+        campaignIntakeStatusFilter = event.target.value || "all";
+        renderCampaignIntakeList();
+      });
+      $("#campaign-intake-list").addEventListener("click", async (event) => {
+        const copyButton = event.target.closest("[data-intake-copy]");
+        if (copyButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          const text = campaignIntakeCopyText(copyButton.dataset.intakeCopy, copyButton.dataset.receipt || "", {
+            campaign: copyButton.dataset.campaignIndex,
+            adgroup: copyButton.dataset.adgroupIndex,
+            ad: copyButton.dataset.adIndex,
+          });
+          try {
+            await copyTextToClipboard(text);
+            setStatus("campaign-intake-status", "선택한 캠페인 정보를 클립보드에 복사했습니다.", "ok");
+          } catch (error) {
+            setStatus("campaign-intake-status", `복사 실패: ${error.message}`, "error");
+          }
+          return;
+        }
+        const saveButton = event.target.closest("[data-intake-action='save']");
+        if (saveButton) {
+          saveCampaignIntakeOps(saveButton.closest("[data-receipt]"));
+        }
       });
       $("#manual-rag-create").addEventListener("click", () => createManualRagItem());
       $("#manual-rag-refresh").addEventListener("click", () => loadManualRagItems().catch((error) => setStatus("manual-rag-status", error.message, "error")));

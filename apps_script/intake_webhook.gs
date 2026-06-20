@@ -47,6 +47,10 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "unauthorized" });
     }
 
+    if (payload.action === "campaign_intake_list") {
+      return jsonResponse_(campaignIntakeList_(payload));
+    }
+
     const data = payload.data || {};
     const campaigns = normalizeRows_(data.campaigns || data.campaign_rows || data.campaign);
     const adgroups = normalizeRows_(data.adgroups);
@@ -126,6 +130,61 @@ function appendRows_(sheetName, rows) {
     }),
   );
   sheet.getRange(sheet.getLastRow() + 1, 1, values.length, columns.length).setValues(values);
+}
+
+function campaignIntakeList_() {
+  return {
+    ok: true,
+    sheets: {
+      campaigns: readSheetRows_("campaigns"),
+      adgroups: readSheetRows_("adgroups"),
+      ads: readSheetRows_("ads"),
+      ops_meta: readSheetRows_("ops_meta"),
+    },
+  };
+}
+
+function readSheetRows_(sheetName) {
+  const columns = SHEET_COLUMNS[sheetName];
+  const sheet = ensureSheet_(sheetName, columns);
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return [];
+
+  const keyByHeader = {};
+  columns.forEach((column) => {
+    keyByHeader[column.header] = column.key;
+    keyByHeader[column.key] = column.key;
+  });
+  const headers = sheet
+    .getRange(1, 1, 1, lastColumn)
+    .getValues()[0]
+    .map((value) => String(value || "").trim());
+  const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+
+  return values
+    .map((row, rowIndex) => {
+      const item = { __row: rowIndex + 2 };
+      headers.forEach((header, index) => {
+        if (!header) return;
+        const key = keyByHeader[header] || header;
+        item[key] = normalizeSheetCell_(row[index]);
+      });
+      return item;
+    })
+    .filter((item) => {
+      return Object.keys(item).some((key) => key !== "__row" && String(item[key] || "").trim());
+    });
+}
+
+function normalizeSheetCell_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  if (Array.isArray(value) || (value && typeof value === "object")) {
+    return JSON.stringify(value);
+  }
+  return value == null ? "" : String(value).trim();
 }
 
 function ensureSheet_(sheetName, columns) {

@@ -1073,15 +1073,238 @@ body.dev-console :focus-visible {
   min-height: 220px;
 }
 
+.campaign-intake-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 180px minmax(240px, auto);
+  gap: 12px;
+  align-items: end;
+}
+
+.campaign-intake-toolbar label,
+.campaign-intake-ops label {
+  display: grid;
+  gap: 6px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.campaign-intake-toolbar .status-line {
+  align-self: center;
+  margin: 0;
+}
+
+.campaign-intake-list {
+  display: grid;
+  gap: 16px;
+}
+
+.campaign-intake-card {
+  padding: 16px;
+  border: 1px solid var(--oa-line);
+  border-left: 5px solid var(--oa-red);
+  border-radius: var(--oa-radius);
+  background: #fffaf4;
+}
+
+.campaign-intake-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--oa-line);
+}
+
+.campaign-intake-head h3 {
+  margin: 4px 0;
+  font-size: 24px;
+}
+
+.campaign-intake-head p {
+  margin: 0;
+  color: var(--oa-muted);
+  font-weight: 700;
+}
+
+.campaign-intake-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.campaign-intake-meta-grid,
+.intake-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.campaign-intake-meta-grid {
+  margin-top: 14px;
+}
+
+.intake-field {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #ded6c9;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.intake-field span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.intake-field strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--oa-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.campaign-intake-ops {
+  display: grid;
+  grid-template-columns: minmax(160px, .55fr) 150px minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #ecd4d4;
+  border-radius: 8px;
+  background: #fff6f6;
+}
+
+.campaign-intake-tree {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.intake-node {
+  border: 1px solid var(--oa-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.intake-node summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.intake-node summary::-webkit-details-marker {
+  display: none;
+}
+
+.intake-node summary strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.intake-step-badge {
+  border-radius: 999px;
+  background: #111827;
+  padding: 5px 9px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.intake-node-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.intake-adgroup-node {
+  margin-top: 10px;
+  border-left: 4px solid #0f766e;
+}
+
+.intake-ads-list {
+  display: grid;
+  gap: 10px;
+}
+
+.intake-ad-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d5e1ef;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.intake-ad-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.intake-ad-head span {
+  display: block;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.intake-ad-head strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 15px;
+}
+
+.intake-copy {
+  white-space: nowrap;
+}
+
+.empty-state.compact {
+  padding: 12px;
+  border: 1px dashed var(--oa-line);
+  border-radius: 8px;
+  color: var(--oa-muted);
+  font-weight: 800;
+}
+
 @media (max-width: 980px) {
   .manual-rag-submit,
   .manual-rag-form,
-  .manual-rag-edit-grid {
+  .manual-rag-edit-grid,
+  .campaign-intake-toolbar,
+  .campaign-intake-meta-grid,
+  .intake-field-grid,
+  .campaign-intake-ops {
     grid-template-columns: 1fr;
   }
 
   .manual-rag-item-head {
     flex-direction: column;
+  }
+
+  .campaign-intake-head,
+  .intake-ad-head {
+    flex-direction: column;
+  }
+
+  .campaign-intake-badges {
+    justify-content: flex-start;
+  }
+
+  .intake-node summary {
+    grid-template-columns: 1fr;
   }
 }
 

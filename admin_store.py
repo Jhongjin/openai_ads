@@ -39,6 +39,11 @@ MANUAL_RAG_CATEGORIES = (
     "전환·권한",
     "플랫폼·지원",
 )
+CAMPAIGN_INTAKE_STATUSES = {
+    "ready": "준비",
+    "in_progress": "진행중",
+    "done": "완료",
+}
 
 
 DEFAULT_NOTICE: dict[str, Any] = {
@@ -210,6 +215,7 @@ _memory_visit_days: dict[str, int] = {}
 _memory_visit_events: list[dict[str, Any]] = []
 _memory_chat_questions: list[dict[str, Any]] = []
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
+_memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
 _db_ready = False
 
 
@@ -746,6 +752,29 @@ def _post_mail_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _intake_webhook_config() -> tuple[str, str]:
+    webhook_url = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "").strip()
+    webhook_secret = os.getenv("SHEETS_SHARED_SECRET", "").strip()
+    if not webhook_url or not webhook_secret:
+        raise RuntimeError("GOOGLE_SHEETS_WEBHOOK_URL/SHEETS_SHARED_SECRET is not configured.")
+    return webhook_url, webhook_secret
+
+
+def _post_intake_webhook(payload: dict[str, Any]) -> dict[str, Any]:
+    webhook_url, webhook_secret = _intake_webhook_config()
+    response = httpx.post(
+        webhook_url,
+        json={"secret": webhook_secret, **payload},
+        timeout=30,
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise RuntimeError("접수 시트 응답 형식이 올바르지 않습니다.")
+    return data
+
+
 def _schema() -> str:
     return _quote_ident(load_settings().supabase_schema)
 
@@ -920,6 +949,26 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE INDEX IF NOT EXISTS admin_manual_rag_items_status_updated_idx
                 ON {schema}.admin_manual_rag_items (status, updated_at_utc DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.campaign_intake_ops (
+                    receipt_number text PRIMARY KEY,
+                    operator_name text NOT NULL DEFAULT '',
+                    status text NOT NULL DEFAULT 'ready',
+                    memo text NOT NULL DEFAULT '',
+                    created_at_utc timestamptz NOT NULL DEFAULT now(),
+                    updated_at_utc timestamptz NOT NULL DEFAULT now(),
+                    CONSTRAINT campaign_intake_ops_status_check
+                        CHECK (status IN ('ready', 'in_progress', 'done'))
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS campaign_intake_ops_status_updated_idx
+                ON {schema}.campaign_intake_ops (status, updated_at_utc DESC)
                 """
             )
             cur.execute(
@@ -2046,6 +2095,304 @@ def list_official_guide_changes(
             "ok": False,
             "items": [],
             "error": str(exc),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def _normalize_sheet_key(value: Any) -> str:
+    return re.sub(r"[\s_\-]+", "", str(value or "").strip().lower())
+
+
+def _sheet_value(row: dict[str, Any], *keys: str) -> str:
+    if not isinstance(row, dict):
+        return ""
+    for key in keys:
+        if key in row and row[key] not in (None, ""):
+            return str(row[key]).strip()
+    normalized = {_normalize_sheet_key(key): value for key, value in row.items()}
+    for key in keys:
+        value = normalized.get(_normalize_sheet_key(key))
+        if value not in (None, ""):
+            return str(value).strip()
+    return ""
+
+
+def _sheet_rows(payload: dict[str, Any], sheet_name: str) -> list[dict[str, Any]]:
+    raw_sheets = payload.get("sheets") if isinstance(payload, dict) else {}
+    rows = raw_sheets.get(sheet_name) if isinstance(raw_sheets, dict) else None
+    if rows is None:
+        rows = payload.get(sheet_name) if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return []
+    return [dict(row) for row in rows if isinstance(row, dict)]
+
+
+def _receipt_from_row(row: dict[str, Any]) -> str:
+    return _sheet_value(row, "receipt_number", "접수번호", "receiptNumber")
+
+
+def _campaign_intake_status_item(row: dict[str, Any] | None) -> dict[str, Any]:
+    row = row or {}
+    status = str(row.get("status") or "ready").strip()
+    if status not in CAMPAIGN_INTAKE_STATUSES:
+        status = "ready"
+    return {
+        "operator_name": str(row.get("operator_name") or "").strip(),
+        "status": status,
+        "status_label": CAMPAIGN_INTAKE_STATUSES[status],
+        "memo": str(row.get("memo") or "").strip(),
+        "updated_at_utc": _iso_value(row.get("updated_at_utc")),
+    }
+
+
+def _campaign_intake_sort_value(item: dict[str, Any]) -> tuple[str, str]:
+    submitted_at = str(item.get("submitted_at_kst") or item.get("submitted_at") or "")
+    parsed = _parse_mail_datetime(submitted_at)
+    sortable_date = parsed.astimezone(KST).isoformat() if parsed else submitted_at
+    return (sortable_date, str(item.get("receipt_number") or ""))
+
+
+def _public_campaign_row(row: dict[str, Any]) -> dict[str, str]:
+    return {
+        "campaign_name": _sheet_value(row, "campaign_name"),
+        "budget_max": _sheet_value(row, "budget_max"),
+        "budget_type": _sheet_value(row, "budget_type"),
+        "launch_date": _sheet_value(row, "launch_date"),
+        "end_date": _sheet_value(row, "end_date"),
+        "objective": _sheet_value(row, "objective"),
+        "target_countries": _sheet_value(row, "target_countries"),
+    }
+
+
+def _public_adgroup_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "campaign_name": _sheet_value(row, "campaign_name"),
+        "adgroup_name": _sheet_value(row, "adgroup_name"),
+        "max_bid": _sheet_value(row, "max_bid"),
+        "keywords": _sheet_value(row, "keywords"),
+        "ads": [],
+    }
+
+
+def _public_ad_row(row: dict[str, Any]) -> dict[str, str]:
+    return {
+        "adgroup_name": _sheet_value(row, "adgroup_name"),
+        "ad_name": _sheet_value(row, "ad_name"),
+        "title": _sheet_value(row, "title"),
+        "copy": _sheet_value(row, "copy"),
+        "link": _sheet_value(row, "link"),
+        "image_link": _sheet_value(row, "image_link"),
+    }
+
+
+def _build_campaign_intake_items(
+    payload: dict[str, Any],
+    ops_state: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    ops_state = ops_state or {}
+    campaigns_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    adgroups_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    ads_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    meta_by_receipt: dict[str, dict[str, Any]] = {}
+    receipts: set[str] = set()
+
+    for row in _sheet_rows(payload, "campaigns"):
+        receipt = _receipt_from_row(row)
+        if not receipt:
+            continue
+        receipts.add(receipt)
+        campaigns_by_receipt.setdefault(receipt, []).append(_public_campaign_row(row))
+
+    for row in _sheet_rows(payload, "adgroups"):
+        receipt = _receipt_from_row(row)
+        if not receipt:
+            continue
+        receipts.add(receipt)
+        adgroups_by_receipt.setdefault(receipt, []).append(_public_adgroup_row(row))
+
+    for row in _sheet_rows(payload, "ads"):
+        receipt = _receipt_from_row(row)
+        if not receipt:
+            continue
+        receipts.add(receipt)
+        ads_by_receipt.setdefault(receipt, []).append(_public_ad_row(row))
+
+    for row in _sheet_rows(payload, "ops_meta"):
+        receipt = _receipt_from_row(row)
+        if not receipt:
+            continue
+        receipts.add(receipt)
+        meta_by_receipt[receipt] = {
+            "receipt_number": receipt,
+            "submitted_at_kst": _sheet_value(row, "submitted_at_kst", "제출시각"),
+            "advertiser_name": _sheet_value(row, "advertiser_name", "광고주명"),
+            "brand_name": _sheet_value(row, "brand_name", "브랜드명"),
+            "sales_owner": _sheet_value(row, "sales_owner", "담당자명"),
+            "sales_owner_email": _sheet_value(row, "sales_owner_email", "담당자 이메일"),
+            "owner_headquarters": _sheet_value(row, "owner_headquarters", "본부"),
+            "owner_office": _sheet_value(row, "owner_office", "실"),
+            "owner_team": _sheet_value(row, "owner_team", "팀"),
+            "note": _sheet_value(row, "note", "비고"),
+        }
+
+    items: list[dict[str, Any]] = []
+    for receipt in sorted(receipts):
+        campaigns = campaigns_by_receipt.get(receipt, [])
+        adgroups = adgroups_by_receipt.get(receipt, [])
+        ads = ads_by_receipt.get(receipt, [])
+        ads_by_adgroup: dict[str, list[dict[str, str]]] = {}
+        for ad in ads:
+            ads_by_adgroup.setdefault(ad["adgroup_name"], []).append(ad)
+
+        grouped_campaigns: list[dict[str, Any]] = []
+        for campaign in campaigns:
+            campaign_adgroups = [
+                dict(adgroup, ads=ads_by_adgroup.get(adgroup["adgroup_name"], []))
+                for adgroup in adgroups
+                if adgroup["campaign_name"] == campaign["campaign_name"]
+            ]
+            grouped_campaigns.append({**campaign, "adgroups": campaign_adgroups})
+
+        assigned_adgroups = {
+            adgroup["adgroup_name"]
+            for campaign in grouped_campaigns
+            for adgroup in campaign["adgroups"]
+        }
+        orphan_adgroups = [
+            dict(adgroup, ads=ads_by_adgroup.get(adgroup["adgroup_name"], []))
+            for adgroup in adgroups
+            if adgroup["adgroup_name"] not in assigned_adgroups
+        ]
+        if orphan_adgroups and len(grouped_campaigns) == 1:
+            grouped_campaigns[0]["adgroups"].extend(orphan_adgroups)
+        elif orphan_adgroups:
+            grouped_campaigns.append(
+                {
+                    "campaign_name": "캠페인 미지정",
+                    "budget_max": "",
+                    "budget_type": "",
+                    "launch_date": "",
+                    "end_date": "",
+                    "objective": "",
+                    "target_countries": "",
+                    "adgroups": orphan_adgroups,
+                }
+            )
+
+        meta = meta_by_receipt.get(receipt, {"receipt_number": receipt})
+        status_item = _campaign_intake_status_item(ops_state.get(receipt))
+        items.append(
+            {
+                **meta,
+                **status_item,
+                "campaign_count": len(campaigns),
+                "adgroup_count": len(adgroups),
+                "ad_count": len(ads),
+                "campaigns": grouped_campaigns,
+            }
+        )
+
+    items.sort(key=_campaign_intake_sort_value, reverse=True)
+    return items
+
+
+def _load_campaign_intake_ops(receipts: set[str]) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    if not receipts:
+        return {}, _storage_info("supabase")
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT receipt_number, operator_name, status, memo, updated_at_utc
+                    FROM {schema}.campaign_intake_ops
+                    WHERE receipt_number = ANY(%s)
+                    """,
+                    (list(receipts),),
+                )
+                rows = {str(row["receipt_number"]): dict(row) for row in cur.fetchall()}
+        return rows, _storage_info("supabase")
+    except Exception as exc:
+        rows = {receipt: _memory_campaign_intake_ops[receipt] for receipt in receipts if receipt in _memory_campaign_intake_ops}
+        return rows, _storage_info("memory", str(exc))
+
+
+def list_campaign_intake_items() -> dict[str, Any]:
+    try:
+        payload = _post_intake_webhook({"action": "campaign_intake_list"})
+        if payload.get("ok") is False:
+            raise RuntimeError(str(payload.get("error") or "접수 시트 목록을 가져오지 못했습니다."))
+        receipts = {
+            _receipt_from_row(row)
+            for sheet_name in ("campaigns", "adgroups", "ads", "ops_meta")
+            for row in _sheet_rows(payload, sheet_name)
+        }
+        receipts.discard("")
+        ops_state, storage = _load_campaign_intake_ops(receipts)
+        items = _build_campaign_intake_items(payload, ops_state)
+        return {
+            "ok": True,
+            "items": items,
+            "total_count": len(items),
+            "statusLabels": CAMPAIGN_INTAKE_STATUSES,
+            **storage,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "items": [],
+            "total_count": 0,
+            "statusLabels": CAMPAIGN_INTAKE_STATUSES,
+            "error": str(exc),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def update_campaign_intake_ops(payload: dict[str, Any]) -> dict[str, Any]:
+    receipt_number = str(payload.get("receipt_number") or "").strip()[:80]
+    operator_name = str(payload.get("operator_name") or "").strip()[:80]
+    status = str(payload.get("status") or "ready").strip()
+    memo = str(payload.get("memo") or "").strip()[:1000]
+    if not receipt_number:
+        raise ValueError("접수번호가 필요합니다.")
+    if status not in CAMPAIGN_INTAKE_STATUSES:
+        raise ValueError("지원하지 않는 상태입니다.")
+
+    row = {
+        "receipt_number": receipt_number,
+        "operator_name": operator_name,
+        "status": status,
+        "memo": memo,
+        "updated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.campaign_intake_ops
+                        (receipt_number, operator_name, status, memo)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (receipt_number) DO UPDATE SET
+                        operator_name = EXCLUDED.operator_name,
+                        status = EXCLUDED.status,
+                        memo = EXCLUDED.memo,
+                        updated_at_utc = now()
+                    RETURNING receipt_number, operator_name, status, memo, updated_at_utc
+                    """,
+                    (receipt_number, operator_name, status, memo),
+                )
+                row = dict(cur.fetchone())
+        return {"ok": True, "item": {"receipt_number": receipt_number, **_campaign_intake_status_item(row)}, **_storage_info("supabase")}
+    except Exception as exc:
+        _memory_campaign_intake_ops[receipt_number] = row
+        return {
+            "ok": True,
+            "item": {"receipt_number": receipt_number, **_campaign_intake_status_item(row)},
             **_storage_info("memory", str(exc)),
         }
 
