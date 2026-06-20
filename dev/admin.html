@@ -84,6 +84,10 @@
               <i class="ti ti-inbox"></i>
               <span>지식베이스 검토함</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="manualRag">
+              <i class="ti ti-database-edit"></i>
+              <span>직접 입력 RAG</span>
+            </button>
           </div>
 
           <div class="rail-section">
@@ -507,12 +511,52 @@
                     <option value="rejected">제외</option>
                   </select>
                 </div>
-                <div class="surface-body table-scroll">
-                  <table class="data-grid mail-review-table">
-                    <thead><tr><th>상태</th><th>제목</th><th>메일 원문</th><th>RAG 반영안</th><th>액션</th></tr></thead>
-                    <tbody id="mail-rows"></tbody>
-                  </table>
+                <div class="surface-body stack">
+                  <section class="manual-rag-submit">
+                    <div>
+                      <p class="eyebrow">Manual RAG Intake</p>
+                      <h3>OpenAI 담당자 커뮤니케이션 직접 반영</h3>
+                      <p>메일 검토함에 없는 운영 합의, 테스트 결과, 담당자 확인 내용을 관리자가 직접 정리해 RAG에 반영합니다.</p>
+                    </div>
+                    <div class="manual-rag-form">
+                      <input class="control" id="manual-rag-title" type="text" placeholder="제목 예: 2026-06-20 OpenAI 담당자 확인 - 국가 타겟팅" />
+                      <input class="control" id="manual-rag-category" type="text" placeholder="카테고리 예: 캠페인 세팅 / 정책 운영 / 픽셀" />
+                      <input class="control" id="manual-rag-source-note" type="text" placeholder="출처 메모 예: OpenAI 담당자 메일, Slack, 회의록" />
+                      <textarea class="textarea" id="manual-rag-content" placeholder="RAG에 반영할 내용을 관리자가 확인 가능한 문장으로 정리해 주세요."></textarea>
+                      <button class="btn-command" type="button" id="manual-rag-create">
+                        <i class="ti ti-database-plus"></i>
+                        RAG에 직접 반영
+                      </button>
+                      <p class="status-line" id="manual-rag-create-status"></p>
+                    </div>
+                  </section>
+                  <div class="table-scroll">
+                    <table class="data-grid mail-review-table">
+                      <thead><tr><th>상태</th><th>제목</th><th>메일 원문</th><th>RAG 반영안</th><th>액션</th></tr></thead>
+                      <tbody id="mail-rows"></tbody>
+                    </table>
+                  </div>
                   <p class="status-line" id="mail-status"></p>
+                </div>
+              </section>
+            </section>
+
+            <section class="view" id="admin-view-manualRag">
+              <section class="surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">직접 입력 RAG 관리</h2>
+                    <p class="surface-copy">관리자가 직접 반영한 운영 커뮤니케이션 지식을 수정 후 재반영하거나 RAG에서 삭제합니다.</p>
+                  </div>
+                  <button class="btn-secondary" type="button" id="manual-rag-refresh">
+                    <i class="ti ti-refresh"></i>
+                    목록 새로고침
+                  </button>
+                </div>
+                <div class="surface-body stack">
+                  <p class="status-line">삭제는 RAG 검색 문서에서 제거하고, 관리 이력은 삭제됨 상태로 남깁니다.</p>
+                  <div class="manual-rag-list" id="manual-rag-list"></div>
+                  <p class="status-line" id="manual-rag-status"></p>
                 </div>
               </section>
             </section>
@@ -531,6 +575,7 @@
         ads: ["API 키", "광고주별 Ads API 키를 등록하고 상태를 확인합니다."],
         official: ["공식 문서 동기화", "공식 문서 변경 감지 로그를 검토합니다."],
         mail: ["지식베이스 검토함", "메일 기반 지식베이스 반영 후보를 검토합니다."],
+        manualRag: ["직접 입력 RAG 관리", "관리자가 직접 반영한 운영 커뮤니케이션 지식을 수정·삭제합니다."],
       };
       let adminPassword = sessionStorage.getItem("openaiAdsAdminPassword") || "";
       let slideContent = { items: [], images: [] };
@@ -547,6 +592,7 @@
       const ADS_KEY_PAGE_SIZE = 10;
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
+      let manualRagItems = [];
       const GUIDE_LAYOUT_VERSION = 5;
       const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
       const adminGuideDecks = {
@@ -2356,11 +2402,11 @@
             <td>${escapeHtml(row.review_status || "needs_review")}</td>
             <td>${escapeHtml(row.subject || "(제목 없음)")}</td>
             <td>
-              <textarea class="textarea mail-source-text" data-hash="${escapeHtml(row.duplicate_hash || "")}" aria-label="메일 원문 편집">${escapeHtml(sourceText || "(원문 없음)")}</textarea>
+              <textarea class="textarea mail-source-text" data-hash="${escapeHtml(row.duplicate_hash || "")}" aria-label="메일 원문" readonly>${escapeHtml(sourceText || "(원문 없음)")}</textarea>
             </td>
             <td>
               <textarea class="textarea mail-rag-draft" data-hash="${escapeHtml(row.duplicate_hash || "")}" aria-label="RAG 반영안 편집">${escapeHtml(ragDraft)}</textarea>
-              <p class="mail-rag-hint">원문 수정 시 자동 갱신됩니다. 질문/답변 패턴은 FAQ 형태로 정리됩니다.</p>
+              <p class="mail-rag-hint">메일 원문은 증거 자료로 잠겨 있습니다. RAG 반영안만 검토 후 수정해 주세요.</p>
             </td>
             <td>
               <button class="btn-secondary mail-approve" type="button" data-hash="${escapeHtml(row.duplicate_hash || "")}">
@@ -2373,6 +2419,138 @@
         setStatus("mail-status", data.ok === false ? (data.error || "검토함을 불러오지 못했습니다.") : "검토함 갱신 완료", data.ok === false ? "error" : "ok");
       }
 
+      function manualRagPayloadFromForm() {
+        return {
+          title: $("#manual-rag-title")?.value.trim() || "",
+          category: $("#manual-rag-category")?.value.trim() || "",
+          source_note: $("#manual-rag-source-note")?.value.trim() || "",
+          content: $("#manual-rag-content")?.value.trim() || "",
+        };
+      }
+
+      async function createManualRagItem() {
+        const payload = manualRagPayloadFromForm();
+        if (!payload.title || !payload.content) {
+          setStatus("manual-rag-create-status", "제목과 RAG 반영 내용을 입력해 주세요.", "error");
+          return;
+        }
+        const button = $("#manual-rag-create");
+        button.disabled = true;
+        setStatus("manual-rag-create-status", "RAG에 반영하는 중입니다. embedding 생성과 저장을 진행합니다.");
+        try {
+          const data = await adminFetch("/api/admin/manual-rag", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          if (data.ok === false) throw new Error(data.error || "직접 입력 RAG 반영에 실패했습니다.");
+          $("#manual-rag-title").value = "";
+          $("#manual-rag-category").value = "";
+          $("#manual-rag-source-note").value = "";
+          $("#manual-rag-content").value = "";
+          setStatus("manual-rag-create-status", "직접 입력한 내용을 RAG에 반영했습니다.", "ok");
+          alert("직접 입력한 운영 커뮤니케이션 내용을 RAG에 반영했습니다.");
+          await loadManualRagItems();
+        } catch (error) {
+          setStatus("manual-rag-create-status", error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      function renderManualRagList() {
+        const root = $("#manual-rag-list");
+        if (!root) return;
+        root.innerHTML = manualRagItems.map((item) => `
+          <article class="manual-rag-item" data-manual-rag-id="${escapeHtml(item.id || "")}">
+            <div class="manual-rag-item-head">
+              <div>
+                <span class="status-pill ${item.status === "deleted" ? "is-muted" : "is-live"}">${escapeHtml(item.status === "deleted" ? "삭제됨" : "활성")}</span>
+                <h3>${escapeHtml(item.title || "(제목 없음)")}</h3>
+                <p>${escapeHtml(item.category || "운영 커뮤니케이션")} · 마지막 반영 ${escapeHtml(item.last_indexed_at || "-")}</p>
+              </div>
+              <div class="row-actions">
+                <button class="btn-secondary" type="button" data-manual-rag-action="reindex">
+                  <i class="ti ti-refresh-dot"></i>
+                  수정 후 재반영
+                </button>
+                <button class="btn-danger" type="button" data-manual-rag-action="delete">
+                  <i class="ti ti-trash"></i>
+                  RAG에서 삭제
+                </button>
+              </div>
+            </div>
+            <div class="manual-rag-edit-grid">
+              <label>
+                제목
+                <input class="control manual-rag-title" type="text" value="${escapeHtml(item.title || "")}" />
+              </label>
+              <label>
+                카테고리
+                <input class="control manual-rag-category" type="text" value="${escapeHtml(item.category || "")}" />
+              </label>
+              <label>
+                출처 메모
+                <input class="control manual-rag-source-note" type="text" value="${escapeHtml(item.source_note || "")}" />
+              </label>
+            </div>
+            <label class="manual-rag-content-field">
+              RAG 반영 내용
+              <textarea class="textarea manual-rag-content">${escapeHtml(item.content || "")}</textarea>
+            </label>
+          </article>
+        `).join("") || '<p class="status-line">직접 입력한 RAG 항목이 없습니다.</p>';
+      }
+
+      function manualRagPayloadFromItem(card) {
+        return {
+          title: card.querySelector(".manual-rag-title")?.value.trim() || "",
+          category: card.querySelector(".manual-rag-category")?.value.trim() || "",
+          source_note: card.querySelector(".manual-rag-source-note")?.value.trim() || "",
+          content: card.querySelector(".manual-rag-content")?.value.trim() || "",
+        };
+      }
+
+      async function loadManualRagItems() {
+        setStatus("manual-rag-status", "직접 입력 RAG 목록을 불러오는 중입니다.");
+        const data = await adminFetch("/api/admin/manual-rag?include_deleted=1&limit=200");
+        manualRagItems = data.items || [];
+        renderManualRagList();
+        setStatus("manual-rag-status", data.ok === false ? (data.error || "목록을 불러오지 못했습니다.") : `직접 입력 RAG ${manualRagItems.length}개를 불러왔습니다.`, data.ok === false ? "error" : "ok");
+      }
+
+      async function updateManualRagItem(card) {
+        const itemId = card?.dataset.manualRagId || "";
+        const payload = manualRagPayloadFromItem(card);
+        if (!itemId || !payload.title || !payload.content) {
+          setStatus("manual-rag-status", "제목과 RAG 반영 내용을 확인해 주세요.", "error");
+          return;
+        }
+        setStatus("manual-rag-status", "수정 내용을 RAG에 재반영하는 중입니다.");
+        const data = await adminFetch(`/api/admin/manual-rag/${encodeURIComponent(itemId)}/update`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (data.ok === false) throw new Error(data.error || "재반영에 실패했습니다.");
+        setStatus("manual-rag-status", "수정한 내용을 RAG에 재반영했습니다.", "ok");
+        alert("수정한 직접 입력 RAG 항목을 재반영했습니다.");
+        await loadManualRagItems();
+      }
+
+      async function deleteManualRagItem(card) {
+        const itemId = card?.dataset.manualRagId || "";
+        if (!itemId) return;
+        if (!confirm("이 항목을 RAG 검색 문서에서 삭제할까요? 관리 이력은 삭제됨 상태로 남습니다.")) return;
+        setStatus("manual-rag-status", "RAG 문서에서 삭제하는 중입니다.");
+        const data = await adminFetch(`/api/admin/manual-rag/${encodeURIComponent(itemId)}/delete`, {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        if (data.ok === false) throw new Error(data.error || "삭제에 실패했습니다.");
+        setStatus("manual-rag-status", "RAG 문서에서 삭제했습니다.", "ok");
+        alert("해당 직접 입력 RAG 항목을 검색 문서에서 삭제했습니다.");
+        await loadManualRagItems();
+      }
+
       async function refreshCurrent() {
         if (currentView === "analytics") await loadAnalytics();
         if (currentView === "notice") await loadNotice();
@@ -2380,6 +2558,7 @@
         if (currentView === "ads") await loadAdsKeys();
         if (currentView === "official") await loadOfficialChanges();
         if (currentView === "mail") await loadMailReview();
+        if (currentView === "manualRag") await loadManualRagItems();
       }
 
       async function bootstrap() {
@@ -2392,6 +2571,7 @@
           loadAdsKeys(),
           loadOfficialChanges(),
           loadMailReview(),
+          loadManualRagItems(),
         ]);
       }
 
@@ -2524,12 +2704,18 @@
         control.addEventListener("change", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
       });
       $("#mail-filter").addEventListener("change", () => loadMailReview().catch((error) => setStatus("mail-status", error.message, "error")));
-      $("#mail-rows").addEventListener("input", (event) => {
-        const source = event.target.closest(".mail-source-text");
-        if (!source) return;
-        const draft = source.closest("tr")?.querySelector(".mail-rag-draft");
-        if (!draft) return;
-        draft.value = faqDraftFromMail(source.value) || source.value;
+      $("#manual-rag-create").addEventListener("click", () => createManualRagItem());
+      $("#manual-rag-refresh").addEventListener("click", () => loadManualRagItems().catch((error) => setStatus("manual-rag-status", error.message, "error")));
+      $("#manual-rag-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-manual-rag-action]");
+        if (!button) return;
+        const card = button.closest("[data-manual-rag-id]");
+        if (button.dataset.manualRagAction === "reindex") {
+          updateManualRagItem(card).catch((error) => setStatus("manual-rag-status", error.message, "error"));
+        }
+        if (button.dataset.manualRagAction === "delete") {
+          deleteManualRagItem(card).catch((error) => setStatus("manual-rag-status", error.message, "error"));
+        }
       });
       $("#mail-rows").addEventListener("click", async (event) => {
         const button = event.target.closest(".mail-approve");

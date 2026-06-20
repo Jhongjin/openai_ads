@@ -148,6 +148,13 @@ class MailReviewUpdateRequest(BaseModel):
     supersedes_duplicate_hash: str | None = Field(default="", max_length=128)
 
 
+class ManualRagItemRequest(BaseModel):
+    title: str = Field(..., min_length=2, max_length=300)
+    category: str | None = Field(default="", max_length=120)
+    source_note: str | None = Field(default="", max_length=1000)
+    content: str = Field(..., min_length=1, max_length=20000)
+
+
 class VisitRequest(BaseModel):
     page: str = Field(..., min_length=1, max_length=80)
     label: str | None = Field(default=None, max_length=120)
@@ -500,6 +507,52 @@ def admin_update_mail_review(request: Request, update: MailReviewUpdateRequest) 
     _require_admin(request)
     try:
         return update_mail_review_row(update.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/manual-rag", include_in_schema=False)
+def admin_manual_rag_items(request: Request) -> dict[str, Any]:
+    from admin_store import list_manual_rag_items
+
+    _require_admin(request)
+    include_deleted = str(request.query_params.get("include_deleted") or "").lower() in {"1", "true", "yes"}
+    try:
+        limit = int(str(request.query_params.get("limit") or "200"))
+    except ValueError:
+        limit = 200
+    return list_manual_rag_items(include_deleted=include_deleted, limit=limit)
+
+
+@app.post("/api/admin/manual-rag", include_in_schema=False)
+def admin_create_manual_rag(request: Request, item: ManualRagItemRequest) -> dict[str, Any]:
+    from admin_store import create_manual_rag_item
+
+    _require_admin(request)
+    try:
+        return create_manual_rag_item(item.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/manual-rag/{item_id}/update", include_in_schema=False)
+def admin_update_manual_rag(request: Request, item_id: str, item: ManualRagItemRequest) -> dict[str, Any]:
+    from admin_store import update_manual_rag_item
+
+    _require_admin(request)
+    try:
+        return update_manual_rag_item(item_id, item.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/manual-rag/{item_id}/delete", include_in_schema=False)
+def admin_delete_manual_rag(request: Request, item_id: str) -> dict[str, Any]:
+    from admin_store import delete_manual_rag_item
+
+    _require_admin(request)
+    try:
+        return delete_manual_rag_item(item_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

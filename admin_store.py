@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import uuid
 from html import escape as html_escape
 from html import unescape as html_unescape
 from html.parser import HTMLParser
@@ -11,15 +12,23 @@ from typing import Any
 
 import httpx
 import psycopg
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from psycopg.rows import dict_row
 
 from rag_chatbot.config import load_settings
+from rag_chatbot.db import delete_source_documents, ensure_database, insert_documents
+from rag_chatbot.embeddings import embed_texts
+from rag_chatbot.help_center import content_hash
 from rag_chatbot.official_changes import summarize_official_document_change
 
 
 KST = timezone(timedelta(hours=9))
 GUIDE_LAYOUT_VERSION = 5
 GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2"
+MANUAL_RAG_COLLECTION = "kr_ops"
+MANUAL_RAG_SOURCE_PREFIX = "manual-rag:"
+MANUAL_RAG_SOURCE_URL_PREFIX = "internal://manual-rag/"
 
 
 DEFAULT_NOTICE: dict[str, Any] = {
@@ -845,6 +854,32 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE INDEX IF NOT EXISTS official_guide_changes_article_lang_idx
                 ON {schema}.official_guide_changes (article_id, lang)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.admin_manual_rag_items (
+                    id text PRIMARY KEY,
+                    title text NOT NULL,
+                    category text NOT NULL DEFAULT '',
+                    source_note text NOT NULL DEFAULT '',
+                    content text NOT NULL DEFAULT '',
+                    status text NOT NULL DEFAULT 'active',
+                    rag_source_identity text NOT NULL,
+                    rag_source_url text NOT NULL,
+                    created_at_utc timestamptz NOT NULL DEFAULT now(),
+                    updated_at_utc timestamptz NOT NULL DEFAULT now(),
+                    last_indexed_at_utc timestamptz,
+                    deleted_at_utc timestamptz,
+                    CONSTRAINT admin_manual_rag_status_check
+                        CHECK (status IN ('active', 'deleted'))
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS admin_manual_rag_items_status_updated_idx
+                ON {schema}.admin_manual_rag_items (status, updated_at_utc DESC)
                 """
             )
             cur.execute(
@@ -2025,3 +2060,277 @@ def update_mail_review_row(payload: dict[str, Any]) -> dict[str, Any]:
     response = _post_mail_webhook(clean_payload)
     response.setdefault("statusLabels", MAIL_REVIEW_STATUSES)
     return response
+
+
+def _manual_rag_identity(item_id: str) -> str:
+    return f"{MANUAL_RAG_SOURCE_PREFIX}{item_id}"
+
+
+def _manual_rag_source_url(item_id: str) -> str:
+    return f"{MANUAL_RAG_SOURCE_URL_PREFIX}{item_id}"
+
+
+def _manual_rag_content(*, title: str, category: str, source_note: str, content: str) -> str:
+    parts = [
+        "# 관리자 직접 입력 RAG",
+        f"제목: {title}",
+        f"분류: {category or '운영 커뮤니케이션'}",
+    ]
+    if source_note:
+        parts.append(f"출처 메모: {source_note}")
+    parts.extend(["", content.strip()])
+    return "\n".join(parts).strip()
+
+
+def _index_manual_rag_item(
+    *,
+    item_id: str,
+    title: str,
+    category: str,
+    source_note: str,
+    content: str,
+) -> None:
+    clean_content = content.strip()
+    if not clean_content:
+        raise ValueError("RAG 반영 내용이 필요합니다.")
+
+    settings = load_settings()
+    ensure_database(settings)
+    source_identity = _manual_rag_identity(item_id)
+    source_url = _manual_rag_source_url(item_id)
+    delete_source_documents(
+        collection_name=MANUAL_RAG_COLLECTION,
+        source_identity=source_identity,
+        source_url=source_url,
+        settings=settings,
+    )
+
+    now_utc = datetime.now(timezone.utc)
+    page_content = _manual_rag_content(
+        title=title,
+        category=category,
+        source_note=source_note,
+        content=clean_content,
+    )
+    document = Document(
+        page_content=page_content,
+        metadata={
+            "source_tier": MANUAL_RAG_COLLECTION,
+            "source_url": source_url,
+            "source_identity": source_identity,
+            "title": title,
+            "category": category or "운영 커뮤니케이션",
+            "source_note": source_note,
+            "content_hash": content_hash(title, page_content),
+            "lang": "ko",
+            "article_id": item_id,
+            "source_updated_at": now_utc.date().isoformat(),
+            "crawled_at": now_utc.isoformat(),
+            "manual_admin_entry": True,
+        },
+    )
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        encoding_name="cl100k_base",
+        chunk_size=700,
+        chunk_overlap=100,
+        add_start_index=True,
+    )
+    chunks = splitter.split_documents([document])
+    for index, chunk in enumerate(chunks):
+        chunk.metadata["chunk_index"] = index
+    embeddings = embed_texts([chunk.page_content for chunk in chunks], settings)
+    insert_documents(
+        collection_name=MANUAL_RAG_COLLECTION,
+        chunks=chunks,
+        embeddings=embeddings,
+        settings=settings,
+    )
+
+
+def _public_manual_rag_item(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(row.get("id") or ""),
+        "title": str(row.get("title") or ""),
+        "category": str(row.get("category") or ""),
+        "source_note": str(row.get("source_note") or ""),
+        "content": str(row.get("content") or ""),
+        "status": str(row.get("status") or "active"),
+        "rag_source_identity": str(row.get("rag_source_identity") or ""),
+        "rag_source_url": str(row.get("rag_source_url") or ""),
+        "created_at": _iso_value(row.get("created_at_utc")),
+        "updated_at": _iso_value(row.get("updated_at_utc")),
+        "last_indexed_at": _iso_value(row.get("last_indexed_at_utc")),
+        "deleted_at": _iso_value(row.get("deleted_at_utc")),
+    }
+
+
+def list_manual_rag_items(*, include_deleted: bool = False, limit: int = 200) -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        limit = max(1, min(int(limit or 200), 500))
+        where = "" if include_deleted else "WHERE status <> 'deleted'"
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT *
+                    FROM {schema}.admin_manual_rag_items
+                    {where}
+                    ORDER BY updated_at_utc DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+                rows = [_public_manual_rag_item(dict(row)) for row in cur.fetchall()]
+        return {"ok": True, "items": rows, **_storage_info("supabase")}
+    except Exception as exc:
+        return {
+            "ok": False,
+            "items": [],
+            "error": str(exc),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def create_manual_rag_item(payload: dict[str, Any]) -> dict[str, Any]:
+    title = str(payload.get("title") or "").strip()[:300]
+    category = str(payload.get("category") or "").strip()[:120]
+    source_note = str(payload.get("source_note") or "").strip()[:1000]
+    content = str(payload.get("content") or "").strip()
+    if len(title) < 2:
+        raise ValueError("제목을 2자 이상 입력해 주세요.")
+    if not content:
+        raise ValueError("RAG 반영 내용이 필요합니다.")
+
+    _ensure_tables()
+    item_id = uuid.uuid4().hex
+    source_identity = _manual_rag_identity(item_id)
+    source_url = _manual_rag_source_url(item_id)
+    schema = _schema()
+    with _connect() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                INSERT INTO {schema}.admin_manual_rag_items
+                    (id, title, category, source_note, content, status, rag_source_identity, rag_source_url)
+                VALUES (%s, %s, %s, %s, %s, 'active', %s, %s)
+                RETURNING *
+                """,
+                (item_id, title, category, source_note, content, source_identity, source_url),
+            )
+            row = dict(cur.fetchone())
+
+    _index_manual_rag_item(
+        item_id=item_id,
+        title=title,
+        category=category,
+        source_note=source_note,
+        content=content,
+    )
+    with _connect() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                UPDATE {schema}.admin_manual_rag_items
+                SET last_indexed_at_utc = now(), updated_at_utc = now()
+                WHERE id = %s
+                RETURNING *
+                """,
+                (item_id,),
+            )
+            row = dict(cur.fetchone())
+    return {"ok": True, "item": _public_manual_rag_item(row), **_storage_info("supabase")}
+
+
+def update_manual_rag_item(item_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    item_id = str(item_id or "").strip()
+    title = str(payload.get("title") or "").strip()[:300]
+    category = str(payload.get("category") or "").strip()[:120]
+    source_note = str(payload.get("source_note") or "").strip()[:1000]
+    content = str(payload.get("content") or "").strip()
+    if not item_id:
+        raise ValueError("관리 항목 ID가 필요합니다.")
+    if len(title) < 2:
+        raise ValueError("제목을 2자 이상 입력해 주세요.")
+    if not content:
+        raise ValueError("RAG 반영 내용이 필요합니다.")
+
+    _ensure_tables()
+    schema = _schema()
+    with _connect() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                UPDATE {schema}.admin_manual_rag_items
+                SET title = %s,
+                    category = %s,
+                    source_note = %s,
+                    content = %s,
+                    status = 'active',
+                    deleted_at_utc = NULL,
+                    updated_at_utc = now()
+                WHERE id = %s
+                RETURNING *
+                """,
+                (title, category, source_note, content, item_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("수정할 직접 입력 RAG 항목을 찾지 못했습니다.")
+
+    _index_manual_rag_item(
+        item_id=item_id,
+        title=title,
+        category=category,
+        source_note=source_note,
+        content=content,
+    )
+    with _connect() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                UPDATE {schema}.admin_manual_rag_items
+                SET last_indexed_at_utc = now(), updated_at_utc = now()
+                WHERE id = %s
+                RETURNING *
+                """,
+                (item_id,),
+            )
+            row = dict(cur.fetchone())
+    return {"ok": True, "item": _public_manual_rag_item(row), **_storage_info("supabase")}
+
+
+def delete_manual_rag_item(item_id: str) -> dict[str, Any]:
+    item_id = str(item_id or "").strip()
+    if not item_id:
+        raise ValueError("삭제할 직접 입력 RAG 항목 ID가 필요합니다.")
+    _ensure_tables()
+    schema = _schema()
+    source_identity = _manual_rag_identity(item_id)
+    source_url = _manual_rag_source_url(item_id)
+    settings = load_settings()
+    ensure_database(settings)
+    delete_source_documents(
+        collection_name=MANUAL_RAG_COLLECTION,
+        source_identity=source_identity,
+        source_url=source_url,
+        settings=settings,
+    )
+    with _connect() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                UPDATE {schema}.admin_manual_rag_items
+                SET status = 'deleted',
+                    deleted_at_utc = now(),
+                    updated_at_utc = now()
+                WHERE id = %s
+                RETURNING *
+                """,
+                (item_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("삭제할 직접 입력 RAG 항목을 찾지 못했습니다.")
+    return {"ok": True, "item": _public_manual_rag_item(dict(row)), **_storage_info("supabase")}
