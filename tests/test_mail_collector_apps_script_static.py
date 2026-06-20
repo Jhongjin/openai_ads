@@ -19,6 +19,7 @@ class MailCollectorAppsScriptStaticTests(unittest.TestCase):
             "function reviewUpdate_",
             "function reviewStats_",
             "function safeReviewRow_",
+            "45000 : 1000",
             "approved_summary is required for approved_for_rag",
             "supersedes_duplicate_hash",
             "review_status: reviewStatus",

@@ -216,6 +216,11 @@ class MailCollectorTests(unittest.TestCase):
         self.assertNotIn("원문 전체는 자동 인덱싱하지 않는다.", markdown)
         self.assertNotIn("요약 없는 승인 행", markdown)
 
+    def test_default_body_capture_allows_long_review_text(self) -> None:
+        settings_value = settings()
+
+        self.assertGreaterEqual(settings_value.body_max_chars, 45_000)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -51,7 +51,7 @@ class MailCollectorSettings:
     target_recipients: tuple[str, ...]
     webhook_url: str
     webhook_secret: str
-    body_max_chars: int = 12_000
+    body_max_chars: int = 45_000
     trim_quoted_replies: bool = True
 
     @classmethod
@@ -97,7 +97,7 @@ class MailCollectorSettings:
                 or os.getenv("SHEETS_SHARED_SECRET")
                 or ""
             ).strip(),
-            body_max_chars=max(500, int(os.getenv("MAIL_COLLECTOR_BODY_MAX_CHARS", "12000") or "12000")),
+            body_max_chars=max(500, int(os.getenv("MAIL_COLLECTOR_BODY_MAX_CHARS", "45000") or "45000")),
             trim_quoted_replies=_bool_env("MAIL_COLLECTOR_TRIM_QUOTES", True),
         )
 

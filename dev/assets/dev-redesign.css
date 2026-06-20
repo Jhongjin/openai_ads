@@ -915,6 +915,44 @@ body.dev-console :focus-visible {
   min-width: 760px;
 }
 
+.mail-review-table {
+  min-width: 1180px;
+}
+
+.mail-review-table th:nth-child(1),
+.mail-review-table td:nth-child(1) {
+  width: 120px;
+}
+
+.mail-review-table th:nth-child(2),
+.mail-review-table td:nth-child(2) {
+  min-width: 220px;
+}
+
+.mail-review-table th:nth-child(3),
+.mail-review-table td:nth-child(3),
+.mail-review-table th:nth-child(4),
+.mail-review-table td:nth-child(4) {
+  min-width: 360px;
+}
+
+.mail-source-text,
+.mail-rag-draft {
+  min-height: 180px;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.mail-rag-hint {
+  margin: 7px 0 0;
+  color: var(--oa-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .ads-key-table th:first-child,
 .ads-key-table td:first-child {
   min-width: 210px;

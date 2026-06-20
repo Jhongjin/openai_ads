@@ -247,7 +247,7 @@ function reviewStats_(rows) {
 function safeReviewRow_(row) {
   const result = {};
   MAIL_SHEET_HEADERS.forEach((header) => {
-    result[header] = clamp_(row[header], header === "body_text" || header === "attachment_text" ? 5000 : 1000);
+    result[header] = clamp_(row[header], header === "body_text" || header === "attachment_text" ? 45000 : 1000);
   });
   result.row_number = row.__row_number || "";
   return result;

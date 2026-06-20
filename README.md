@@ -410,7 +410,7 @@ python -m rag_chatbot.mail_collector --write-approved-rag-doc data/kr_ops/openai
 python ingest.py --collection kr_ops
 ```
 
-메일 누적용 Apps Script 예시는 [apps_script/mail_collector_webhook.gs](apps_script/mail_collector_webhook.gs)에 있습니다. 별도 Google Sheet 웹앱으로 배포하거나 기존 Apps Script에 병합해 사용합니다. 이 예시는 `duplicate_hash` 기준으로 이미 적재된 메일을 다시 append하지 않고, `review_status=approved_for_rag`와 `approved_summary`가 있는 행만 RAG 승인 데이터로 반환합니다. 원문 메일 제목은 자동 RAG 문서에 쓰지 않으며, 관리자가 입력한 `approved_title`만 표시 제목으로 사용합니다.
+메일 누적용 Apps Script 예시는 [apps_script/mail_collector_webhook.gs](apps_script/mail_collector_webhook.gs)에 있습니다. 별도 Google Sheet 웹앱으로 배포하거나 기존 Apps Script에 병합해 사용합니다. 이 예시는 `duplicate_hash` 기준으로 이미 적재된 메일을 다시 append하지 않고, `review_status=approved_for_rag`와 `approved_summary`가 있는 행만 RAG 승인 데이터로 반환합니다. 원문 메일 제목은 자동 RAG 문서에 쓰지 않으며, 관리자가 입력한 `approved_title`만 표시 제목으로 사용합니다. 관리자 검토 화면에서 긴 메일 원문을 확인하려면 Apps Script도 최신 버전으로 재배포해야 하며, 최신 예시는 `body_text`와 `attachment_text`를 최대 45,000자까지 반환합니다.
 
 ## 연동 필요 정보
 

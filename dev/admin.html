@@ -508,8 +508,8 @@
                   </select>
                 </div>
                 <div class="surface-body table-scroll">
-                  <table class="data-grid">
-                    <thead><tr><th>상태</th><th>제목</th><th>요약</th><th>액션</th></tr></thead>
+                  <table class="data-grid mail-review-table">
+                    <thead><tr><th>상태</th><th>제목</th><th>메일 원문</th><th>RAG 반영안</th><th>액션</th></tr></thead>
                     <tbody id="mail-rows"></tbody>
                   </table>
                   <p class="status-line" id="mail-status"></p>
@@ -2297,22 +2297,79 @@
         setStatus("official-status", `총 ${total.toLocaleString("ko-KR")}개 중 ${start.toLocaleString("ko-KR")}~${end.toLocaleString("ko-KR")}번째 표시 · 15개/페이지 · 중복 URL은 최신 항목만 유지`, "ok");
       }
 
+      function mailOriginalText(row = {}) {
+        return String(row.body_text || row.body_summary || row.key_summary || row.approved_summary || "").trim();
+      }
+
+      function normalizeMailLine(value = "") {
+        return String(value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function faqDraftFromMail(text = "") {
+        const normalized = String(text || "").replace(/\r/g, "").trim();
+        if (!normalized) return "";
+        const qaPairs = [];
+        const blockPattern = /(?:^|\n)\s*(?:Q\d*|질문\d*)\s*[:.)-]\s*([\s\S]*?)(?=\n\s*(?:A\d*|답변\d*)\s*[:.)-])\n\s*(?:A\d*|답변\d*)\s*[:.)-]\s*([\s\S]*?)(?=\n\s*(?:Q\d*|질문\d*)\s*[:.)-]|\s*$)/gi;
+        let match;
+        while ((match = blockPattern.exec(normalized)) && qaPairs.length < 10) {
+          const question = normalizeMailLine(match[1]);
+          const answer = normalizeMailLine(match[2]);
+          if (question && answer) qaPairs.push({ question, answer });
+        }
+        if (!qaPairs.length) return "";
+        return qaPairs
+          .map((pair, index) => [
+            `FAQ ${index + 1}`,
+            `질문: ${pair.question}`,
+            `답변: ${pair.answer}`,
+          ].join("\n"))
+          .join("\n\n");
+      }
+
+      function mailRagDraft(row = {}, sourceText = "") {
+        const approved = String(row.approved_summary || "").trim();
+        if (approved) return approved;
+        const source = String(sourceText || mailOriginalText(row)).trim();
+        const faqDraft = faqDraftFromMail(source);
+        if (faqDraft) return faqDraft;
+        const subject = normalizeMailLine(row.subject || "OpenAI 담당자 메일 확인 사항");
+        const from = normalizeMailLine(row.from_name || row.from_email || "");
+        const received = normalizeMailLine(row.received_at || "");
+        return [
+          `제목: ${subject}`,
+          from ? `출처: ${from}` : "",
+          received ? `수신일: ${received}` : "",
+          "",
+          source || "(메일 원문 없음)",
+        ].filter((line, index, lines) => line || lines[index - 1]).join("\n").trim();
+      }
+
       async function loadMailReview() {
         const filter = $("#mail-filter").value || "all";
         setStatus("mail-status", "검토함을 불러오는 중입니다.");
         const data = await adminFetch(`/api/admin/mail-review?status=${encodeURIComponent(filter)}&limit=80`);
-        $("#mail-rows").innerHTML = (data.rows || []).map((row) => `
+        $("#mail-rows").innerHTML = (data.rows || []).map((row) => {
+          const sourceText = mailOriginalText(row);
+          const ragDraft = mailRagDraft(row, sourceText);
+          return `
           <tr>
             <td>${escapeHtml(row.review_status || "needs_review")}</td>
             <td>${escapeHtml(row.subject || "(제목 없음)")}</td>
-            <td>${escapeHtml(row.approved_summary || row.body_summary || row.key_summary || "-")}</td>
+            <td>
+              <textarea class="textarea mail-source-text" data-hash="${escapeHtml(row.duplicate_hash || "")}" aria-label="메일 원문 편집">${escapeHtml(sourceText || "(원문 없음)")}</textarea>
+            </td>
+            <td>
+              <textarea class="textarea mail-rag-draft" data-hash="${escapeHtml(row.duplicate_hash || "")}" aria-label="RAG 반영안 편집">${escapeHtml(ragDraft)}</textarea>
+              <p class="mail-rag-hint">원문 수정 시 자동 갱신됩니다. 질문/답변 패턴은 FAQ 형태로 정리됩니다.</p>
+            </td>
             <td>
               <button class="btn-secondary mail-approve" type="button" data-hash="${escapeHtml(row.duplicate_hash || "")}">
                 반영 승인
               </button>
             </td>
           </tr>
-        `).join("") || '<tr><td colspan="4">검토할 메일이 없습니다.</td></tr>';
+        `;
+        }).join("") || '<tr><td colspan="5">검토할 메일이 없습니다.</td></tr>';
         setStatus("mail-status", data.ok === false ? (data.error || "검토함을 불러오지 못했습니다.") : "검토함 갱신 완료", data.ok === false ? "error" : "ok");
       }
 
@@ -2467,22 +2524,38 @@
         control.addEventListener("change", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
       });
       $("#mail-filter").addEventListener("change", () => loadMailReview().catch((error) => setStatus("mail-status", error.message, "error")));
+      $("#mail-rows").addEventListener("input", (event) => {
+        const source = event.target.closest(".mail-source-text");
+        if (!source) return;
+        const draft = source.closest("tr")?.querySelector(".mail-rag-draft");
+        if (!draft) return;
+        draft.value = faqDraftFromMail(source.value) || source.value;
+      });
       $("#mail-rows").addEventListener("click", async (event) => {
         const button = event.target.closest(".mail-approve");
         if (!button || !button.dataset.hash) return;
+        const row = button.closest("tr");
+        const approvedSummary = row?.querySelector(".mail-rag-draft")?.value.trim() || "";
+        const sourceText = row?.querySelector(".mail-source-text")?.value.trim() || "";
+        if (!approvedSummary) {
+          setStatus("mail-status", "RAG 반영안이 비어 있습니다. 승인 전에 반영할 내용을 입력해 주세요.", "error");
+          return;
+        }
         try {
-          await adminFetch("/api/admin/mail-review/update", {
+          const data = await adminFetch("/api/admin/mail-review/update", {
             method: "POST",
             body: JSON.stringify({
               duplicate_hash: button.dataset.hash,
               review_status: "approved_for_rag",
-              approved_summary: "관리자 콘솔에서 반영 승인 처리되었습니다.",
+              approved_summary: approvedSummary,
               approved_title: "",
-              review_note: "dev console quick approval",
+              review_note: sourceText ? "dev console approval from edited mail body" : "dev console approval",
               approved_by: "관리자",
               supersedes_duplicate_hash: "",
             }),
           });
+          if (data.ok === false) throw new Error(data.error || "반영 승인에 실패했습니다.");
+          setStatus("mail-status", "관리자가 편집한 RAG 반영안으로 승인했습니다.", "ok");
           await loadMailReview();
         } catch (error) {
           setStatus("mail-status", error.message, "error");
