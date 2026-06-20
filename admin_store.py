@@ -2323,7 +2323,13 @@ def list_campaign_intake_items() -> dict[str, Any]:
     try:
         payload = _post_intake_webhook({"action": "campaign_intake_list"})
         if payload.get("ok") is False:
-            raise RuntimeError(str(payload.get("error") or "접수 시트 목록을 가져오지 못했습니다."))
+            error_message = str(payload.get("error") or "접수 시트 목록을 가져오지 못했습니다.")
+            if "campaigns is required" in error_message:
+                error_message = (
+                    "접수 시트 Apps Script가 아직 목록 조회 액션을 지원하지 않습니다. "
+                    "apps_script/intake_webhook.gs 최신 코드를 Apps Script에 붙여넣고 새 버전으로 배포해 주세요."
+                )
+            raise RuntimeError(error_message)
         receipts = {
             _receipt_from_row(row)
             for sheet_name in ("campaigns", "adgroups", "ads", "ops_meta")

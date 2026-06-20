@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from admin_store import _build_campaign_intake_items
+from admin_store import _build_campaign_intake_items, list_campaign_intake_items
 from app import app
 
 
@@ -105,6 +105,14 @@ class CampaignIntakeAdminTests(unittest.TestCase):
             )
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["item"]["receipt_number"], "KT-OAI-1")
+
+    def test_campaign_intake_list_reports_old_apps_script_action_clearly(self) -> None:
+        with patch("admin_store._post_intake_webhook", return_value={"ok": False, "error": "campaigns is required"}):
+            result = list_campaign_intake_items()
+
+        self.assertFalse(result["ok"])
+        self.assertIn("Apps Script", result["error"])
+        self.assertIn("새 버전", result["error"])
 
 
 if __name__ == "__main__":
