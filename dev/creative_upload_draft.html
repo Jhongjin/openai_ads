@@ -278,6 +278,30 @@
       </div>
     </div>
 
+    <div class="review-overlay" id="review-overlay" role="dialog" aria-modal="true" aria-labelledby="review-title" hidden>
+      <section class="review-modal" tabindex="-1">
+        <header>
+          <div>
+            <p class="eyebrow">제출 전 확인</p>
+            <h2 id="review-title">구글 시트에 저장할 내용을 확인해 주세요</h2>
+            <p class="surface-copy">아래 내용을 저장하면 내부 시트에 기록되고 담당자 알림 발송을 요청합니다.</p>
+          </div>
+          <span class="review-badge">담당자 검토</span>
+        </header>
+        <div class="review-body" id="review-body"></div>
+        <footer>
+          <span>캠페인명, 광고그룹명, 소재명, 랜딩 URL, 이미지 URL을 한 번 더 확인해 주세요.</span>
+          <div class="button-row">
+            <button class="btn-secondary" type="button" id="review-cancel">수정하기</button>
+            <button class="btn-command" type="button" id="review-confirm">
+              <i class="ti ti-send"></i>
+              저장하고 알림 보내기
+            </button>
+          </div>
+        </footer>
+      </section>
+    </div>
+
     <template id="campaign-template">
       <section class="repeat-block campaign-block">
         <div class="repeat-head">
@@ -471,6 +495,33 @@
               <input class="control ad-image" type="url" required placeholder="https://example.com/image.png" />
             </div>
           </div>
+          <div class="mapping-panel input-summary ad-summary-panel" aria-live="polite">
+            <p class="summary-title mapping-wide">소재 입력 요약</p>
+            <div class="mapping-item">
+              <span>adgroup_name</span>
+              <strong class="summary-ad-adgroup">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>소재명</span>
+              <strong class="summary-ad-name">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>제목</span>
+              <strong class="summary-ad-title">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>설명</span>
+              <strong class="summary-ad-copy">입력 필요</strong>
+            </div>
+            <div class="mapping-item mapping-wide">
+              <span>랜딩 URL</span>
+              <strong class="summary-ad-link">입력 필요</strong>
+            </div>
+            <div class="mapping-item mapping-wide">
+              <span>이미지 URL</span>
+              <strong class="summary-ad-image">입력 필요</strong>
+            </div>
+          </div>
         </div>
       </section>
     </template>
@@ -480,6 +531,12 @@
       const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
       const startedAt = Date.now();
       const campaignRoot = document.getElementById("campaign-list");
+      const reviewOverlay = document.getElementById("review-overlay");
+      const reviewModal = document.querySelector(".review-modal");
+      const reviewBody = document.getElementById("review-body");
+      const reviewCancel = document.getElementById("review-cancel");
+      const reviewConfirm = document.getElementById("review-confirm");
+      let pendingSubmissionPayload = null;
       const countryLabels = {
         ALL: "전체",
         US: "미국",
@@ -570,6 +627,23 @@
         return "시작일 / 종료일 입력 필요";
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function objectiveLabel(value) {
+        return value === "clicks" ? "Clicks = CPC" : "Views = CPM";
+      }
+
+      function workbookCountryLabel(values) {
+        return values?.length ? values.join(", ") : "빈칸(NULL)";
+      }
+
       function collapseButtonFor(block) {
         return $(".collapse-toggle", block);
       }
@@ -645,7 +719,18 @@
             setCollapseButtonState(group);
 
             $$(".ad-block", group).forEach((ad) => {
+              const adName = $(".ad-name", ad).value.trim();
+              const title = $(".ad-title", ad).value.trim();
+              const copy = $(".ad-copy", ad).value.trim();
+              const link = $(".ad-link", ad).value.trim();
+              const image = $(".ad-image", ad).value.trim();
               $(".ad-adgroup-ref", ad).value = groupName || "";
+              $(".summary-ad-adgroup", ad).textContent = valueOrNeeded(groupName);
+              $(".summary-ad-name", ad).textContent = valueOrNeeded(adName);
+              $(".summary-ad-title", ad).textContent = valueOrNeeded(title);
+              $(".summary-ad-copy", ad).textContent = valueOrNeeded(copy);
+              $(".summary-ad-link", ad).textContent = valueOrNeeded(link);
+              $(".summary-ad-image", ad).textContent = valueOrNeeded(image);
               setCollapseButtonState(ad);
             });
           });
@@ -817,6 +902,128 @@
         };
       }
 
+      function payloadCounts(currentPayload) {
+        const campaigns = currentPayload.campaigns || [];
+        const adgroups = campaigns.reduce((sum, campaign) => sum + campaign.adgroups.length, 0);
+        const ads = campaigns.reduce((sum, campaign) => (
+          sum + campaign.adgroups.reduce((inner, adgroup) => inner + adgroup.ads.length, 0)
+        ), 0);
+        return { campaigns: campaigns.length, adgroups, ads };
+      }
+
+      function renderReview(currentPayload) {
+        const counts = payloadCounts(currentPayload);
+        const campaignRows = currentPayload.campaigns.map((item, index) => {
+          const campaign = item.campaign;
+          const adCount = item.adgroups.reduce((sum, group) => sum + group.ads.length, 0);
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(campaign.campaign_name)}</td>
+              <td>${objectiveLabel(campaign.objective)}</td>
+              <td>${Number(campaign.budget_max).toLocaleString("ko-KR")} KRW · ${budgetTypeLabel(campaign.budget_type)}</td>
+              <td>${escapeHtml(workbookCountryLabel(campaign.target_countries))}</td>
+              <td>광고그룹 ${item.adgroups.length}개 · 소재 ${adCount}개</td>
+            </tr>
+          `;
+        }).join("");
+        const adgroupRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.map((group) => `
+            <tr>
+              <td>${escapeHtml(group.adgroup.campaign_name)}</td>
+              <td>${escapeHtml(group.adgroup.adgroup_name)}</td>
+              <td>${group.adgroup.max_bid ? Number(group.adgroup.max_bid).toLocaleString("ko-KR") : "빈칸"}</td>
+              <td>${escapeHtml(group.adgroup.keywords.length ? group.adgroup.keywords.join(", ") : "선택 입력")}</td>
+              <td>${group.ads.length}개</td>
+            </tr>
+          `)
+        )).join("");
+        const adRows = currentPayload.campaigns.flatMap((item) => (
+          item.adgroups.flatMap((group) => group.ads.map((ad) => `
+            <tr>
+              <td>${escapeHtml(ad.adgroup_name)}</td>
+              <td>${escapeHtml(ad.ad_name)}</td>
+              <td>${escapeHtml(ad.title)}</td>
+              <td>${escapeHtml(ad.copy)}</td>
+              <td>${escapeHtml(ad.link)}</td>
+              <td>${escapeHtml(ad.image_link)}</td>
+            </tr>
+          `))
+        )).join("");
+
+        reviewBody.innerHTML = `
+          <div class="review-grid">
+            <div class="review-stat"><b>${counts.campaigns}</b><span>캠페인</span></div>
+            <div class="review-stat"><b>${counts.adgroups}</b><span>광고그룹</span></div>
+            <div class="review-stat"><b>${counts.ads}</b><span>소재</span></div>
+            <div class="review-stat"><b>${escapeHtml(currentPayload.opsMeta.salesOwner)}</b><span>담당자</span></div>
+          </div>
+          <section class="review-section">
+            <h3>기본 정보</h3>
+            <p>
+              광고주 ${escapeHtml(currentPayload.opsMeta.advertiserName)}
+              ${currentPayload.opsMeta.adsManagerAccount ? ` · 브랜드 ${escapeHtml(currentPayload.opsMeta.adsManagerAccount)}` : ""}
+              · 담당자 ${escapeHtml(currentPayload.opsMeta.salesOwner)} / ${escapeHtml(currentPayload.opsMeta.salesOwnerEmail)}
+              · 소속 ${escapeHtml(currentPayload.opsMeta.ownerHeadquarters)} / ${escapeHtml(currentPayload.opsMeta.ownerOffice)} / ${escapeHtml(currentPayload.opsMeta.ownerTeam)}
+            </p>
+          </section>
+          <section class="review-section">
+            <h3>캠페인 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>#</th><th>캠페인명</th><th>목표</th><th>예산</th><th>워크북 국가</th><th>구조</th></tr></thead>
+              <tbody>${campaignRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>광고그룹 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>campaign_name</th><th>adgroup_name</th><th>워크북 입찰가</th><th>키워드</th><th>소재 수</th></tr></thead>
+              <tbody>${adgroupRows}</tbody>
+            </table>
+          </section>
+          <section class="review-section">
+            <h3>소재 확인</h3>
+            <table class="review-table">
+              <thead><tr><th>adgroup_name</th><th>ad_name</th><th>title</th><th>copy</th><th>link</th><th>image_link</th></tr></thead>
+              <tbody>${adRows}</tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      function openReviewModal(currentPayload) {
+        pendingSubmissionPayload = currentPayload;
+        renderReview(currentPayload);
+        reviewConfirm.disabled = false;
+        reviewOverlay.hidden = false;
+        reviewModal.focus();
+      }
+
+      function closeReviewModal() {
+        reviewOverlay.hidden = true;
+      }
+
+      async function submitReviewedPayload() {
+        if (!pendingSubmissionPayload) return;
+        reviewConfirm.disabled = true;
+        closeReviewModal();
+        setStatus("form-status", "내부 시트에 저장하고 담당자 알림을 요청하고 있습니다.");
+        try {
+          const response = await postJson("/intake", pendingSubmissionPayload);
+          const body = await response.json();
+          const mailNotice = body.mail_sent === false && body.mail_error
+            ? ` · 메일 발송 실패: ${body.mail_error}`
+            : body.mail_sent === true
+              ? " · 메일 발송 요청 완료"
+              : "";
+          setStatus("form-status", `접수 완료: ${body.receipt_number} / ${body.submitted_at_kst} KST${mailNotice}`, body.mail_sent === false ? "warning" : "ok");
+          pendingSubmissionPayload = null;
+        } catch (error) {
+          reviewConfirm.disabled = false;
+          setStatus("form-status", error.message || "내부 시트 저장에 실패했습니다.", "error");
+        }
+      }
+
       function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -953,14 +1160,17 @@
       $("#intake-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         if (!ensureFormReady()) return;
-        setStatus("form-status", "내부 시트에 저장하고 알림을 요청하고 있습니다.");
-        try {
-          const response = await postJson("/intake", payload());
-          const body = await response.json();
-          setStatus("form-status", `접수 완료: ${body.receipt_number} / ${body.submitted_at_kst} KST`, "ok");
-        } catch (error) {
-          setStatus("form-status", error.message || "내부 시트 저장에 실패했습니다.", "error");
-        }
+        setStatus("form-status", "");
+        openReviewModal(payload());
+      });
+
+      reviewCancel.addEventListener("click", closeReviewModal);
+      reviewConfirm.addEventListener("click", submitReviewedPayload);
+      reviewOverlay.addEventListener("click", (event) => {
+        if (event.target === reviewOverlay) closeReviewModal();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !reviewOverlay.hidden) closeReviewModal();
       });
 
       addCampaign();

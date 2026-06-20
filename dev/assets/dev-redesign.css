@@ -1190,6 +1190,145 @@ body.dev-console :focus-visible {
   color: var(--oa-red-dark);
 }
 
+.status-line.warning {
+  color: var(--oa-gold);
+}
+
+.review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(16 21 31 / 62%);
+  backdrop-filter: blur(5px);
+}
+
+.review-overlay[hidden] {
+  display: none;
+}
+
+.review-modal {
+  width: min(1080px, 100%);
+  max-height: min(860px, calc(100dvh - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--oa-line);
+  border-radius: 12px;
+  background: var(--oa-surface-strong);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 30%);
+}
+
+.review-modal > header,
+.review-modal > footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--oa-line);
+}
+
+.review-modal > footer {
+  border-top: 1px solid var(--oa-line);
+  border-bottom: 0;
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.review-modal h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.review-badge {
+  flex: 0 0 auto;
+  border: 1px solid #ffc9cc;
+  border-radius: 999px;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.review-body {
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.review-stat {
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius-sm);
+  background: #faf7ef;
+  padding: 12px;
+}
+
+.review-stat b {
+  display: block;
+  color: var(--oa-ink);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.review-stat span {
+  display: block;
+  margin-top: 5px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-section {
+  display: grid;
+  gap: 8px;
+}
+
+.review-section h3 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 15px;
+}
+
+.review-section p {
+  margin: 0;
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.review-table th,
+.review-table td {
+  border: 1px solid var(--oa-line);
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.review-table th {
+  background: #eee8de;
+  color: var(--oa-ink);
+  font-weight: 900;
+}
+
 .login-panel {
   width: min(520px, 100%);
   margin: 42px auto;
@@ -1307,6 +1446,7 @@ body.dev-console :focus-visible {
   .metric-strip,
   .grid-2,
   .grid-3,
+  .review-grid,
   .guide-masonry,
   .image-strip,
   .editor-row,
