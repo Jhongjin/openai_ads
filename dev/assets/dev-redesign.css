@@ -1102,7 +1102,7 @@ body.dev-console :focus-visible {
 .campaign-intake-header,
 .campaign-intake-summary {
   display: grid;
-  grid-template-columns: 68px minmax(160px, 1fr) 106px minmax(100px, .75fr) minmax(90px, .7fr) minmax(120px, .9fr) minmax(120px, .85fr) 110px minmax(220px, 1.25fr);
+  grid-template-columns: 68px minmax(220px, 1.25fr) 106px minmax(100px, .7fr) minmax(90px, .65fr) minmax(120px, .85fr) minmax(120px, .8fr) 110px minmax(220px, 1.2fr);
   gap: 12px;
   align-items: center;
   min-width: 1180px;
@@ -1149,6 +1149,7 @@ body.dev-console :focus-visible {
   color: var(--oa-ink);
   font-size: 15px;
   font-weight: 950;
+  white-space: nowrap;
 }
 
 .campaign-intake-status-pill {
@@ -1188,7 +1189,7 @@ body.dev-console :focus-visible {
 
 .intake-section summary {
   display: grid;
-  grid-template-columns: 68px 104px minmax(0, 1fr);
+  grid-template-columns: 68px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   min-height: 38px;
@@ -1227,13 +1228,8 @@ body.dev-console :focus-visible {
   content: "접기";
 }
 
-.intake-section summary strong {
-  overflow-wrap: anywhere;
-  font-size: 14px;
-}
-
 .intake-section-body {
-  padding: 0 0 10px 138px;
+  padding: 0 0 10px 92px;
 }
 
 .intake-adgroup-section {
@@ -1335,7 +1331,7 @@ body.dev-console :focus-visible {
   }
 
   .intake-section summary {
-    grid-template-columns: 68px minmax(96px, auto) minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .intake-section-body {

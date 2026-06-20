@@ -2640,7 +2640,6 @@
             <summary>
               <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">소재 ${campaignIndex + 1}-${adgroupIndex + 1}-${adIndex + 1}</span>
-              <strong>${escapeHtml(intakeValue(ad.ad_name, `소재 ${adIndex + 1}`))}</strong>
             </summary>
             <div class="intake-section-body">
               ${intakeTable([
@@ -2662,7 +2661,6 @@
             <summary>
               <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">광고그룹 ${campaignIndex + 1}-${adgroupIndex + 1}</span>
-              <strong>${escapeHtml(intakeValue(adgroup.adgroup_name, `광고그룹 ${adgroupIndex + 1}`))}</strong>
             </summary>
             <div class="intake-section-body">
               ${intakeTable([
@@ -2686,7 +2684,6 @@
             <summary>
               <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">캠페인 ${campaignIndex + 1}</span>
-              <strong>${escapeHtml(intakeValue(campaign.campaign_name, `캠페인 ${campaignIndex + 1}`))}</strong>
             </summary>
             <div class="intake-section-body">
               ${intakeTable([
