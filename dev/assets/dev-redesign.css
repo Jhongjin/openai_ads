@@ -2193,6 +2193,26 @@ body.dev-console :focus-visible {
   justify-content: flex-end;
 }
 
+.guide-editor-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid rgb(37 99 235 / 18%);
+  border-radius: var(--oa-radius-sm);
+  background: #f7fbff;
+  padding: 12px 14px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.guide-editor-notice strong {
+  flex: 0 0 auto;
+  color: #1d4ed8;
+  font-weight: 950;
+}
+
 .admin-guide-slide-card {
   padding-top: clamp(62px, 5vw, 76px);
 }
@@ -2246,7 +2266,7 @@ body.dev-console :focus-visible {
 
 .admin-guide-image {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .admin-guide-image-tools {
@@ -2262,17 +2282,24 @@ body.dev-console :focus-visible {
 
 .admin-guide-image-tools label {
   display: grid;
-  grid-template-rows: auto 40px auto;
+  grid-template-rows: auto minmax(44px, auto) auto;
   align-content: start;
-  gap: 5px;
+  gap: 7px;
   color: var(--oa-muted);
   font-size: 11px;
   font-weight: 900;
 }
 
 .admin-guide-image-tools .control {
-  min-height: 38px;
+  min-height: 42px;
   font-size: 12px;
+}
+
+.admin-guide-image-tools .admin-guide-image-file {
+  height: auto;
+  min-height: 44px;
+  padding: 7px;
+  line-height: 1.25;
 }
 
 .admin-guide-upload-status {
