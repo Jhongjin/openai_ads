@@ -21,8 +21,22 @@ class DevRoutesStaticTests(unittest.TestCase):
                 response = client.get(path)
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(phrase, response.text)
-                self.assertIn("DEV redesign layer", response.text)
                 self.assertIn('/dev-assets/dev-redesign.css', response.text)
+                self.assertIn("@tabler/core", response.text)
+
+    def test_dev_pages_use_new_command_center_markup(self) -> None:
+        client = TestClient(app)
+
+        home = client.get("/dev").text
+        admin = client.get("/dev/admin").text
+        intake = client.get("/dev/creative-upload-draft").text
+
+        self.assertIn('class="app-frame"', home)
+        self.assertIn('data-view-button="qa"', home)
+        self.assertIn('id="admin-app"', admin)
+        self.assertIn("echarts@5", admin)
+        self.assertIn('id="campaign-template"', intake)
+        self.assertIn('id="adgroup-template"', intake)
 
     def test_dev_redesign_css_asset_is_available(self) -> None:
         client = TestClient(app)
@@ -31,9 +45,10 @@ class DevRoutesStaticTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/css", response.headers.get("content-type", ""))
-        self.assertIn("body.dev-home main", response.text)
-        self.assertIn("body.dev-admin .topbar", response.text)
-        self.assertIn("body.dev-creative .page", response.text)
+        self.assertIn("DEV redesign layer", response.text)
+        self.assertIn("body.dev-console", response.text)
+        self.assertIn(".app-frame", response.text)
+        self.assertIn(".data-grid", response.text)
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
         client = TestClient(app)
