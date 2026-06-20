@@ -606,6 +606,25 @@ body.dev-console :focus-visible {
   transform: none;
 }
 
+.btn-command.is-busy {
+  opacity: .82;
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 255 255 / 46%);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: button-spin .8s linear infinite;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .view {
   display: none;
 }
@@ -1195,7 +1214,7 @@ body.dev-console :focus-visible {
 
 .admin-guide-image-tools {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(190px, 1fr) minmax(160px, .9fr) minmax(160px, .9fr);
   gap: 8px;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius-sm);
@@ -1214,6 +1233,13 @@ body.dev-console :focus-visible {
 .admin-guide-image-tools .control {
   min-height: 38px;
   font-size: 12px;
+}
+
+.admin-guide-upload-status {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.35;
 }
 
 .split {

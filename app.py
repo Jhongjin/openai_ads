@@ -304,6 +304,66 @@ def update_admin_guide_slides(request: Request, slides: SlideContentRequest) -> 
     return save_slide_content(slides.model_dump())
 
 
+@app.post("/api/admin/guide-image", response_model=ImageUploadResponse, include_in_schema=False)
+async def upload_admin_guide_image(request: Request, file: UploadFile = File(...)) -> ImageUploadResponse:
+    _require_admin(request)
+
+    supabase_url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    bucket = os.getenv("SUPABASE_STORAGE_BUCKET", "openai-ad-assets").strip()
+    if not supabase_url or not service_role_key:
+        raise HTTPException(
+            status_code=503,
+            detail="이미지 업로드 저장소가 아직 설정되지 않았습니다. 공개 직접 이미지 URL을 입력해 주세요.",
+        )
+
+    suffix_by_type = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/webp": ".webp",
+    }
+    content_type = file.content_type or ""
+    suffix = suffix_by_type.get(content_type)
+    if not suffix:
+        raise HTTPException(status_code=400, detail="PNG, JPG, WEBP 이미지만 업로드할 수 있습니다.")
+
+    data = await file.read()
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="안내자료 이미지는 8MB 이하만 업로드할 수 있습니다.")
+
+    try:
+        from PIL import Image
+
+        image = Image.open(BytesIO(data))
+        width, height = image.size
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="이미지 파일을 열 수 없습니다.") from exc
+    if width < 240 or height < 160 or width > 4096 or height > 4096:
+        raise HTTPException(status_code=400, detail="안내자료 이미지는 240×160 이상, 4096×4096 이하만 업로드할 수 있습니다.")
+
+    safe_stem = re.sub(r"[^0-9A-Za-z._-]+", "-", Path(file.filename or "guide-image").stem).strip("-")
+    object_name = f"guide-slides/{uuid4().hex}-{safe_stem or 'guide-image'}{suffix}"
+    upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{object_name}"
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+        "Content-Type": content_type,
+        "x-upsert": "false",
+    }
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+        response = await client.post(upload_url, content=data, headers=headers)
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"Supabase Storage 업로드 실패(HTTP {response.status_code})")
+
+    public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{object_name}"
+    return ImageUploadResponse(
+        image_url=public_url,
+        width=width,
+        height=height,
+        content_type=content_type,
+    )
+
+
 @app.get("/api/admin/analytics", include_in_schema=False)
 def admin_analytics(request: Request) -> dict[str, Any]:
     from admin_store import get_visit_analytics

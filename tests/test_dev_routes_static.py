@@ -81,6 +81,12 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("data-guide-text-key", admin)
         self.assertIn("data-guide-image-key", admin)
         self.assertIn("admin-guide-image-url", admin)
+        self.assertIn("admin-guide-image-file", admin)
+        self.assertIn("uploadGuideImageFile", admin)
+        self.assertIn("/api/admin/guide-image", admin)
+        self.assertIn("setButtonBusy", admin)
+        self.assertIn("button-spinner", admin)
+        self.assertIn("안내자료 저장이 완료되었습니다.", admin)
         self.assertIn("readGuidePayload", admin)
         self.assertNotIn('id="guide-item-editor"', admin)
         self.assertNotIn('id="guide-image-editor"', admin)
@@ -200,6 +206,9 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".guide-admin-deck", response.text)
         self.assertIn(".guide-editable-text", response.text)
         self.assertIn(".admin-guide-image-tools", response.text)
+        self.assertIn(".admin-guide-upload-status", response.text)
+        self.assertIn(".button-spinner", response.text)
+        self.assertIn("@keyframes button-spin", response.text)
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
         client = TestClient(app)

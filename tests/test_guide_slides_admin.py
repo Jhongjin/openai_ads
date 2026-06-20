@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -45,6 +46,27 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(body["storage"], "memory")
             self.assertTrue(any(item["value"] == "테스트 안내자료 제목" for item in body["items"]))
             self.assertTrue(any(item.get("caption") == "테스트 캡션" for item in body["images"]))
+
+    def test_admin_guide_image_upload_requires_admin_and_storage(self) -> None:
+        client = TestClient(app)
+        files = {"file": ("guide.png", b"not-an-image", "image/png")}
+
+        denied = client.post("/api/admin/guide-image", files=files)
+
+        self.assertEqual(denied.status_code, 403)
+
+        with patch.dict(
+            os.environ,
+            {"SUPABASE_URL": "", "SUPABASE_SERVICE_ROLE_KEY": ""},
+        ):
+            unavailable = client.post(
+                "/api/admin/guide-image",
+                files={"file": ("guide.png", b"not-an-image", "image/png")},
+                headers={"x-admin-password": "nas2026@"},
+            )
+
+        self.assertEqual(unavailable.status_code, 503)
+        self.assertIn("이미지 업로드 저장소", unavailable.json()["detail"])
 
 
 if __name__ == "__main__":

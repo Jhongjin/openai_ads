@@ -727,6 +727,20 @@
         element.textContent = message || "";
       }
 
+      function setButtonBusy(button, isBusy, label = "처리 중") {
+        if (!button) return;
+        if (isBusy) {
+          if (!button.dataset.defaultHtml) button.dataset.defaultHtml = button.innerHTML;
+          button.disabled = true;
+          button.classList.add("is-busy");
+          button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span>${escapeHtml(label)}`;
+          return;
+        }
+        button.disabled = false;
+        button.classList.remove("is-busy");
+        if (button.dataset.defaultHtml) button.innerHTML = button.dataset.defaultHtml;
+      }
+
       async function adminFetch(url, options = {}) {
         const response = await fetch(url, {
           ...options,
@@ -1209,6 +1223,11 @@
                 <input class="control admin-guide-image-url" value="${escapeHtml(image.src)}" placeholder="https://... 또는 /images/guide/name.png" />
               </label>
               <label>
+                이미지 파일 업로드
+                <input class="control admin-guide-image-file" type="file" accept="image/png,image/jpeg,image/webp" />
+                <span class="admin-guide-upload-status">업로드 후 저장 버튼을 눌러 반영합니다.</span>
+              </label>
+              <label>
                 대체 텍스트
                 <input class="control admin-guide-image-alt" value="${escapeHtml(image.alt)}" />
               </label>
@@ -1342,6 +1361,50 @@
         }
       }
 
+      async function uploadGuideImageFile(input) {
+        const figure = input.closest("[data-guide-image-key]");
+        const key = figure?.dataset.guideImageKey;
+        const item = guideImages().find((entry) => entry.key === key);
+        const file = input.files?.[0];
+        if (!figure || !item || !file) return;
+
+        const status = $(".admin-guide-upload-status", figure);
+        const urlInput = $(".admin-guide-image-url", figure);
+        const image = $("img", figure);
+        if (status) status.textContent = "이미지 업로드 중입니다...";
+        input.disabled = true;
+        setStatus("guide-status", "이미지 업로드 중입니다.");
+
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const response = await fetch("/api/admin/guide-image", {
+            method: "POST",
+            headers: { "x-admin-password": adminPassword },
+            body: formData,
+          });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.detail || body.error || response.statusText);
+
+          item.value = body.image_url;
+          item.alt = item.alt || file.name;
+          item.caption = item.caption || file.name;
+          if (urlInput) urlInput.value = body.image_url;
+          if (image) image.src = body.image_url;
+          if (status) status.textContent = `${body.width}×${body.height} 업로드 완료`;
+          setStatus("guide-status", "이미지 업로드 완료. 안내자료 저장 버튼을 눌러 최종 반영해 주세요.", "ok");
+          window.alert("이미지 업로드가 완료되었습니다. 안내자료 저장 버튼을 누르면 화면에 최종 반영됩니다.");
+        } catch (error) {
+          const message = error.message || "이미지 업로드에 실패했습니다.";
+          if (status) status.textContent = message;
+          setStatus("guide-status", message, "error");
+          window.alert(`이미지 업로드 실패: ${message}`);
+        } finally {
+          input.disabled = false;
+          input.value = "";
+        }
+      }
+
       async function loadGuides() {
         slideContent = await adminFetch("/api/admin/guide-slides");
         renderGuideEditor();
@@ -1369,13 +1432,20 @@
       }
 
       async function saveGuides() {
+        const button = $("#save-guides");
+        setButtonBusy(button, true, "저장 중...");
         setStatus("guide-status", "안내자료 저장 중입니다.");
-        slideContent = await adminFetch("/api/admin/guide-slides", {
-          method: "POST",
-          body: JSON.stringify(readGuidePayload()),
-        });
-        renderGuideEditor();
-        setStatus("guide-status", "안내자료 저장 완료", "ok");
+        try {
+          slideContent = await adminFetch("/api/admin/guide-slides", {
+            method: "POST",
+            body: JSON.stringify(readGuidePayload()),
+          });
+          renderGuideEditor();
+          setStatus("guide-status", "안내자료 저장 완료", "ok");
+          window.alert("안내자료 저장이 완료되었습니다.");
+        } finally {
+          setButtonBusy(button, false);
+        }
       }
 
       async function loadAdsKeys() {
@@ -1498,6 +1568,10 @@
         if (editable) updateGuideTextFromEditable(editable);
         const imageInput = event.target.closest(".admin-guide-image-url, .admin-guide-image-alt, .admin-guide-image-caption");
         if (imageInput) updateGuideImageFromInput(imageInput);
+      });
+      $("#admin-guide-deck").addEventListener("change", (event) => {
+        const fileInput = event.target.closest(".admin-guide-image-file");
+        if (fileInput) uploadGuideImageFile(fileInput);
       });
       $("#admin-guide-deck").addEventListener("paste", (event) => {
         const editable = event.target.closest("[data-guide-text-key]");
