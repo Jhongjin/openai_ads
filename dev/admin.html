@@ -1692,15 +1692,16 @@
         font-size: 12px;
       }
     </style>
+    <link rel="stylesheet" href="/dev-assets/dev-redesign.css" />
   </head>
-  <body>
+  <body class="dev-page dev-admin">
     <main>
       <div class="topbar">
         <div>
           <p class="eyebrow">OpenAI Ads Admin</p>
-          <h1>관리자 설정</h1>
+          <h1>OpenAI Ads 운영 관리자 콘솔</h1>
         </div>
-        <a class="home-link" href="/">메인으로 돌아가기</a>
+        <a class="home-link" href="/dev">메인으로 돌아가기</a>
       </div>
 
       <section class="card login-card" id="login-card">
@@ -1718,7 +1719,7 @@
 
       <section class="admin-shell hidden" id="admin-panel">
         <nav class="admin-nav" aria-label="관리자 기능">
-          <div class="admin-nav-title">관리자 메뉴</div>
+          <div class="admin-nav-title">운영 메뉴</div>
           <button class="admin-nav-item active" data-admin-page="notice" type="button">
             <span>공지 작성</span>
             <small>팝업 문구·가이드 링크</small>
@@ -1733,11 +1734,11 @@
           </button>
           <button class="admin-nav-item" data-admin-page="official" type="button">
             <span>공식 가이드 변경</span>
-            <small>자동 RAG 반영 로그</small>
+            <small>공식 문서 동기화 로그</small>
           </button>
           <button class="admin-nav-item" data-admin-page="mail" type="button">
-            <span>메일 검토함</span>
-            <small>승인 후 RAG 반영</small>
+            <span>지식베이스 검토함</span>
+            <small>승인 후 지식베이스 반영</small>
           </button>
         </nav>
         <div class="admin-pages">
@@ -1936,7 +1937,7 @@
             <label class="ads-advertiser-control">
               광고주
               <select id="ads-advertiser-select">
-                <option value="">공통 환경변수</option>
+                <option value="">기본 API 키</option>
               </select>
             </label>
             <label>
@@ -2108,12 +2109,12 @@
         <div class="card section admin-page" data-admin-page-panel="official">
           <h2>OpenAI 공식 가이드 변경 로그</h2>
           <p class="help">
-            GitHub Actions 재인덱싱에서 새로 발견되거나 내용 해시가 바뀐 공식 문서만 기록합니다.
-            공식 가이드 변경분은 official 컬렉션에 자동 반영됩니다.
+            자동 동기화에서 새로 발견되거나 내용이 바뀐 공식 문서만 기록합니다.
+            공식 가이드 변경분은 지식베이스에 자동 반영됩니다.
           </p>
           <div class="change-log-note">
             운영 원칙: OpenAI Help Center/Developers 문서는 하루 2회 확인하고, 동일 문서는 건너뜁니다.
-            아래 목록은 변경이 감지된 문서의 감사 로그이며 메일 검토함과 달리 별도 승인 없이 RAG에 반영됩니다.
+            아래 목록은 변경이 감지된 공식 문서의 동기화 로그이며, 검토함과 달리 별도 승인 없이 지식베이스에 반영됩니다.
           </div>
           <div class="filter-strip" style="margin-top: 16px;">
             <label>
@@ -2161,14 +2162,14 @@
         </div>
 
         <div class="card section admin-page" data-admin-page-panel="mail">
-          <h2>OpenAI 담당자 메일 검토함</h2>
+          <h2>OpenAI 담당자 지식베이스 검토함</h2>
           <p class="help">
             Daum IMAP에서 수집된 관련 메일을 검토합니다. 원문은 시트에 영구 보존하고,
-            관리자가 RAG 반영 문장을 확정한 행만 다음 자동 동기화 때 RAG에 반영됩니다.
+            관리자가 반영 문장을 확정한 행만 다음 자동 동기화 때 지식베이스에 반영됩니다.
           </p>
           <div class="mail-review-note">
-            운영 원칙: 모든 수집 메일을 곧바로 RAG에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
-            AI 주요 요약을 먼저 검토한 뒤, 확정해도 되는 문장만 RAG 반영 문장으로 남겨 주세요.
+            운영 원칙: 모든 수집 메일을 곧바로 지식베이스에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
+            AI 주요 요약을 먼저 검토한 뒤, 확정해도 되는 문장만 지식베이스 반영 문장으로 남겨 주세요.
           </div>
           <div class="sync-schedule" aria-label="메일 자동 수집 시간">
             <strong>메일 자동 수집</strong>
@@ -2198,7 +2199,7 @@
               <select id="mail-review-filter">
                 <option value="all">전체 보기</option>
                 <option value="needs_review">검토 필요</option>
-                <option value="approved_for_rag">RAG 반영 승인</option>
+                <option value="approved_for_rag">지식베이스 반영 승인</option>
                 <option value="hold">보류</option>
                 <option value="rejected">제외</option>
                 <option value="superseded">이전 내용 대체</option>
@@ -2677,7 +2678,7 @@
         adsApiKeys = data.items || [];
         const select = document.querySelector("#ads-advertiser-select");
         const previousValue = select.value || "";
-        select.innerHTML = '<option value="">공통 환경변수</option>';
+        select.innerHTML = '<option value="">기본 API 키</option>';
         adsApiKeys.forEach((item) => {
           if (!item.enabled || !item.has_ads_api_key) return;
           const option = document.createElement("option");
@@ -3115,7 +3116,7 @@
               <input id="mail-approved-title" type="text" value="${escapeHtml(defaultTitle)}" />
             </label>
             <label>
-              RAG 반영 문장
+              지식베이스 반영 문장
               <textarea id="mail-approved-summary" placeholder="관리자가 확정해도 되는 문장만 정리해 주세요.">${escapeHtml(defaultSummary)}</textarea>
             </label>
             <label>
@@ -3128,7 +3129,7 @@
             </label>
           </div>
           <div class="actions">
-            <button class="danger" type="button" data-review-action="approved_for_rag">승인하여 RAG 반영</button>
+            <button class="danger" type="button" data-review-action="approved_for_rag">승인하여 지식베이스 반영</button>
             <button class="secondary" type="button" data-review-action="hold">보류</button>
             <button class="secondary" type="button" data-review-action="rejected">제외</button>
             <button class="secondary" type="button" data-review-action="superseded">이전 내용 대체 처리</button>
@@ -3175,7 +3176,7 @@
         const payload = readMailDetail(status);
         if (!payload.duplicate_hash) throw new Error("검토할 메일을 먼저 선택해 주세요.");
         if (status === "approved_for_rag" && !payload.approved_summary.trim()) {
-          throw new Error("RAG 반영 승인에는 승인 요약이 필요합니다.");
+          throw new Error("지식베이스 반영 승인에는 승인 요약이 필요합니다.");
         }
         setStatus(mailReviewStatus, "검토 상태를 저장하는 중...");
         const data = await adminFetch("/api/admin/mail-review/update", {

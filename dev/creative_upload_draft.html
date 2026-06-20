@@ -893,13 +893,14 @@
         background: #f2f5fa;
       }
     </style>
+    <link rel="stylesheet" href="/dev-assets/dev-redesign.css" />
   </head>
-  <body>
+  <body class="dev-page dev-creative">
     <main class="page">
       <header class="hero">
         <div>
           <p class="eyebrow">내부 운영용 · 벌크 업로드 준비</p>
-          <h1>OpenAI Ads Manager 업로드 워크북 작성</h1>
+          <h1>소재 접수 및 업로드 워크북 생성</h1>
           <p class="note">
             광고주 등록/정산 정보는 별도 트래커에서 관리하고, 이 페이지는 Ads Manager 벌크 업로드에 필요한
             캠페인·광고그룹·광고 소재 정보를 수집합니다.
@@ -937,7 +938,7 @@
         <div class="card-header">
           <div>
             <h2>워크북 파일 불러오기</h2>
-            <p class="note">광고주가 작성한 공식 워크북(.xlsx)을 업로드하면 campaigns / adgroups / ads 값을 검사하고, 오류가 없을 때 아래 입력폼에 자동으로 채웁니다.</p>
+            <p class="note">광고주가 작성한 공식 워크북(.xlsx)을 업로드하면 캠페인 / 광고그룹 / 소재 값을 점검하고, 유효한 항목만 아래 입력폼에 자동으로 채웁니다.</p>
           </div>
         </div>
         <div class="grid">
@@ -953,21 +954,21 @@
               <span class="workbook-file-icon" aria-hidden="true">XLSX</span>
               <span class="workbook-file-copy">
                 <span class="workbook-file-name" id="bulk-workbook-file-name">워크북 파일을 선택하세요</span>
-                <span class="workbook-file-meta">campaigns / adgroups / ads 시트 자동 불러오기</span>
+                <span class="workbook-file-meta">캠페인 / 광고그룹 / 소재 시트 자동 불러오기</span>
               </span>
               <span class="workbook-file-action" aria-hidden="true">파일 선택</span>
             </label>
-            <span class="help">공식 템플릿 컬럼 기준: campaigns / adgroups / ads</span>
+            <span class="help">공식 템플릿 컬럼 기준: 캠페인 / 광고그룹 / 소재</span>
           </div>
         </div>
-        <div class="bulk-result" id="bulk-result">파일을 업로드하면 워크북 내용을 검사한 뒤, 통과한 값만 아래 폼으로 불러옵니다.</div>
+        <div class="bulk-result" id="bulk-result">워크북을 업로드하면 유효한 값만 입력폼에 반영합니다.</div>
       </section>
 
       <form id="creative-form" novalidate>
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>기본 정보</h2>
+              <h2>내부 접수 정보</h2>
               <p class="note">업로드 파일에는 들어가지 않는 내부 식별 정보입니다.</p>
             </div>
           </div>
@@ -977,7 +978,7 @@
               <input id="advertiser-name" name="advertiserName" required />
             </div>
             <div class="field">
-              <label for="ads-manager-account">브랜드명</label>
+              <label for="ads-manager-account">광고 노출 브랜드명</label>
               <input id="ads-manager-account" name="adsManagerAccount" />
             </div>
             <div class="field">
@@ -1036,7 +1037,7 @@
                     <span class="help">campaign_name · 영문/숫자와 공백, 하이픈(-), 언더스코어(_) 허용</span>
                   </div>
                   <div class="field">
-                    <label class="required">예산 금액</label>
+                    <label class="required">캠페인 예산(KRW)</label>
                     <input class="budget-max" type="number" min="1" step="1" placeholder="4000000" required />
                   </div>
                   <div class="field">
@@ -1183,11 +1184,11 @@
 
         <div class="footer-actions">
           <button class="primary" id="download-workbook" type="button">Ads Manager용 .xlsx 다운로드</button>
-          <button id="submit-sheet" type="submit">구글 시트 저장 후 알림 보내기</button>
+          <button id="submit-sheet" type="submit">내부 시트 저장 및 알림 발송</button>
           <div class="action-copy">
             <strong>XLSX 다운로드</strong>는 현재 입력값으로 OpenAI Ads Manager 벌크 업로드용 워크북을 생성합니다.
             다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다. 업로드 후 Ads Manager에서 국가, 스케줄, 입찰, 소재 URL 등 반영값을 항목별로 반드시 확인하세요.
-            <strong>구글 시트 저장</strong>은 내부 시트에 저장하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
+            <strong>내부 시트 저장</strong>은 입력값을 내부 시트에 기록하고 openai@nasmedia.co.kr 담당자에게 알림 메일을 보냅니다.
           </div>
           <span class="status" id="form-status" aria-live="polite"></span>
         </div>
@@ -1751,7 +1752,7 @@
             <div class="review-stat"><b>${escapeHtml(currentPayload.opsMeta.salesOwner)}</b><span>담당자</span></div>
           </div>
           <section class="review-section">
-            <h3>기본 정보</h3>
+            <h3>내부 접수 정보</h3>
             <p>
               광고주 ${escapeHtml(currentPayload.opsMeta.advertiserName)}
               ${currentPayload.opsMeta.adsManagerAccount ? ` · 브랜드 ${escapeHtml(currentPayload.opsMeta.adsManagerAccount)}` : ""}

@@ -23,6 +23,11 @@ app.mount(
     StaticFiles(directory=project_root() / "public" / "images", check_dir=False),
     name="images",
 )
+app.mount(
+    "/dev-assets",
+    StaticFiles(directory=project_root() / "dev" / "assets", check_dir=False),
+    name="dev-assets",
+)
 
 
 class ChatRequest(BaseModel):
