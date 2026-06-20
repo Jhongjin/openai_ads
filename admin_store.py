@@ -385,7 +385,25 @@ def _sanitize_hex_color(value: Any, fallback: str = "#ffffff") -> str:
 
 
 class _NoticeHtmlSanitizer(HTMLParser):
-    _allowed_tags = {"p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "span", "h2", "blockquote"}
+    _allowed_tags = {
+        "p",
+        "br",
+        "hr",
+        "strong",
+        "b",
+        "em",
+        "i",
+        "u",
+        "s",
+        "strike",
+        "ul",
+        "ol",
+        "li",
+        "a",
+        "span",
+        "h2",
+        "blockquote",
+    }
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=False)
@@ -395,8 +413,8 @@ class _NoticeHtmlSanitizer(HTMLParser):
         tag = tag.lower()
         if tag not in self._allowed_tags:
             return
-        if tag == "br":
-            self.parts.append("<br>")
+        if tag in {"br", "hr"}:
+            self.parts.append(f"<{tag}>")
             return
         safe_attrs: list[str] = []
         for name, value in attrs:
@@ -425,7 +443,7 @@ class _NoticeHtmlSanitizer(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
-        if tag in self._allowed_tags and tag != "br":
+        if tag in self._allowed_tags and tag not in {"br", "hr"}:
             self.parts.append(f"</{tag}>")
 
     def handle_data(self, data: str) -> None:

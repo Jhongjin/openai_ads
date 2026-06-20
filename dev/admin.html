@@ -224,57 +224,119 @@
             </section>
 
             <section class="view" id="admin-view-notice">
-              <div class="admin-grid">
-                <section class="surface">
-                  <div class="surface-head">
-                    <div>
-                      <h2 class="surface-title">공지 팝업</h2>
-                      <p class="surface-copy">운영 화면 첫 진입 안내 문구를 수정합니다.</p>
-                    </div>
+              <section class="surface notice-compose-surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">공지 팝업</h2>
+                    <p class="surface-copy">HTML 태그 없이 버튼과 선택 메뉴로 운영 화면 첫 진입 안내 문구를 수정합니다.</p>
                   </div>
-                  <div class="surface-body stack">
+                </div>
+                <div class="surface-body stack">
+                  <div class="field">
+                    <label for="notice-title">제목</label>
+                    <input class="control" id="notice-title" />
+                  </div>
+
+                  <div class="notice-editor-shell">
+                    <div class="notice-toolbar" id="notice-toolbar" aria-label="공지 편집 도구">
+                      <div class="notice-toolbar-row">
+                        <div class="notice-tool-group" data-label="문단">
+                          <button type="button" data-notice-command="format-p"><i class="ti ti-pilcrow"></i>본문</button>
+                          <button type="button" data-notice-command="format-h2"><i class="ti ti-heading"></i>소제목</button>
+                          <button type="button" data-notice-command="blockquote"><i class="ti ti-blockquote"></i>강조문</button>
+                          <button type="button" data-notice-command="insertHorizontalRule"><i class="ti ti-separator-horizontal"></i>구분선</button>
+                        </div>
+                        <div class="notice-tool-group" data-label="글자">
+                          <button type="button" data-notice-command="bold"><i class="ti ti-bold"></i>굵게</button>
+                          <button type="button" data-notice-command="italic"><i class="ti ti-italic"></i>기울임</button>
+                          <button type="button" data-notice-command="underline"><i class="ti ti-underline"></i>밑줄</button>
+                          <button type="button" data-notice-command="strikeThrough"><i class="ti ti-strikethrough"></i>취소선</button>
+                        </div>
+                        <div class="notice-tool-group" data-label="목록">
+                          <button type="button" data-notice-command="insertUnorderedList"><i class="ti ti-list"></i>목록</button>
+                          <button type="button" data-notice-command="insertOrderedList"><i class="ti ti-list-numbers"></i>번호</button>
+                          <button type="button" data-notice-command="outdent"><i class="ti ti-indent-decrease"></i>내어쓰기</button>
+                          <button type="button" data-notice-command="indent"><i class="ti ti-indent-increase"></i>들여쓰기</button>
+                        </div>
+                      </div>
+                      <div class="notice-toolbar-row">
+                        <div class="notice-tool-group" data-label="링크">
+                          <button type="button" data-notice-command="createLink"><i class="ti ti-link"></i>링크</button>
+                          <button type="button" data-notice-command="unlink"><i class="ti ti-unlink"></i>링크 해제</button>
+                        </div>
+                        <div class="notice-tool-group" data-label="스타일">
+                          <label class="notice-tool-control">글자색 <input type="color" data-notice-format="color" value="#101828" /></label>
+                          <label class="notice-tool-control">배경색 <input type="color" data-notice-format="background" value="#fff1f1" /></label>
+                          <label class="notice-tool-control">
+                            크기
+                            <select data-notice-format="fontSize">
+                              <option value="">기본</option>
+                              <option value="13px">작게</option>
+                              <option value="18px">크게</option>
+                              <option value="24px">매우 크게</option>
+                            </select>
+                          </label>
+                          <label class="notice-tool-control">팝업 배경 <input id="notice-bg" type="color" value="#ffffff" /></label>
+                        </div>
+                      </div>
+                      <div class="notice-toolbar-row">
+                        <div class="notice-tool-group" data-label="빠른 삽입">
+                          <button type="button" data-notice-template="checklist"><i class="ti ti-checklist"></i>체크 목록</button>
+                          <button type="button" data-notice-template="warning"><i class="ti ti-alert-triangle"></i>주의 박스</button>
+                          <button type="button" data-notice-template="contact"><i class="ti ti-mail"></i>문의 문구</button>
+                          <button type="button" data-notice-emoji="📢">📢</button>
+                          <button type="button" data-notice-emoji="✅">✅</button>
+                          <button type="button" data-notice-emoji="⚠️">⚠️</button>
+                          <button type="button" data-notice-emoji="🔗">🔗</button>
+                          <button type="button" data-notice-command="removeFormat"><i class="ti ti-eraser"></i>서식 지우기</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="notice-editor"
+                      id="notice-editor"
+                      contenteditable="true"
+                      role="textbox"
+                      aria-multiline="true"
+                      aria-label="공지 본문"
+                    ></div>
+                  </div>
+
+                  <div class="grid-2">
                     <div class="field">
-                      <label for="notice-title">제목</label>
-                      <input class="control" id="notice-title" />
+                      <label for="notice-source-label">출처 라벨</label>
+                      <input class="control" id="notice-source-label" />
                     </div>
                     <div class="field">
-                      <label for="notice-body">본문 HTML</label>
-                      <textarea class="textarea" id="notice-body"></textarea>
-                    </div>
-                    <div class="grid-2">
-                      <div class="field">
-                        <label for="notice-source-label">출처 라벨</label>
-                        <input class="control" id="notice-source-label" />
-                      </div>
-                      <div class="field">
-                        <label for="notice-source-url">출처 URL</label>
-                        <input class="control" id="notice-source-url" />
-                      </div>
-                    </div>
-                    <div class="grid-2">
-                      <label class="tag"><input type="checkbox" id="notice-enabled" /> 공지 활성화</label>
-                      <div class="field">
-                        <label for="notice-bg">팝업 배경</label>
-                        <input class="control" id="notice-bg" type="color" value="#ffffff" />
-                      </div>
-                    </div>
-                    <div class="button-row">
-                      <button class="btn-command" type="button" id="save-notice">공지 저장</button>
-                    </div>
-                    <p class="status-line" id="notice-status"></p>
-                  </div>
-                </section>
-                <aside class="surface">
-                  <div class="surface-head">
-                    <div>
-                      <h2 class="surface-title">공지 미리보기</h2>
+                      <label for="notice-source-url">출처 URL</label>
+                      <input class="control" id="notice-source-url" />
                     </div>
                   </div>
-                  <div class="surface-body">
-                    <article class="preview-card" id="notice-preview"></article>
+                  <label class="tag"><input type="checkbox" id="notice-enabled" /> 공지 활성화</label>
+                  <div class="button-row">
+                    <button class="btn-command" type="button" id="save-notice">공지 저장</button>
                   </div>
-                </aside>
-              </div>
+                  <p class="status-line" id="notice-status"></p>
+                </div>
+              </section>
+              <section class="surface notice-preview-surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">공지 미리보기</h2>
+                    <p class="surface-copy">저장 전 실제 팝업에 가까운 형태로 확인합니다.</p>
+                  </div>
+                </div>
+                <div class="surface-body">
+                  <article class="preview-card notice-preview-card" id="notice-preview" aria-live="polite">
+                    <p class="preview-eyebrow">팝업 미리보기</p>
+                    <h3 id="notice-preview-title">공지 제목</h3>
+                    <div class="notice-preview-body" id="notice-preview-body">
+                      <p>공지 내용을 입력하면 여기에 표시됩니다.</p>
+                    </div>
+                    <a class="notice-preview-source" id="notice-preview-source" href="#" target="_blank" rel="noopener" hidden></a>
+                  </article>
+                </div>
+              </section>
             </section>
 
             <section class="view" id="admin-view-guides">
@@ -621,18 +683,138 @@
         renderQuestionCategories(data.questions || { total: 0, categories: [] });
       }
 
+      function noticeEditor() {
+        return $("#notice-editor");
+      }
+
+      function getNoticeHtml() {
+        return noticeEditor()?.innerHTML.trim() || "";
+      }
+
+      function setNoticeHtml(html) {
+        const editor = noticeEditor();
+        if (!editor) return;
+        editor.innerHTML = html || "";
+      }
+
+      function focusNoticeEditor() {
+        const editor = noticeEditor();
+        if (!editor) return false;
+        editor.focus();
+        return editor.contains(window.getSelection()?.anchorNode);
+      }
+
+      function normalizeNoticeEditorMarkup() {
+        const editor = noticeEditor();
+        if (!editor) return;
+        editor.querySelectorAll("font").forEach((font) => {
+          const span = document.createElement("span");
+          const color = font.getAttribute("color");
+          const size = font.getAttribute("size");
+          if (color) span.style.color = color;
+          if (size) {
+            const map = { "2": "13px", "3": "15px", "4": "16px", "5": "18px", "6": "24px", "7": "24px" };
+            span.style.fontSize = map[size] || "15px";
+          }
+          span.innerHTML = font.innerHTML;
+          font.replaceWith(span);
+        });
+        editor.querySelectorAll("div").forEach((node) => {
+          const paragraph = document.createElement("p");
+          paragraph.innerHTML = node.innerHTML || "<br>";
+          node.replaceWith(paragraph);
+        });
+      }
+
+      function runNoticeCommand(command) {
+        if (!command) return;
+        focusNoticeEditor();
+        if (command === "createLink") {
+          const url = window.prompt("링크 URL을 입력해 주세요. 예: https://example.com");
+          if (url && /^(https?:\/\/|mailto:)/i.test(url.trim())) {
+            document.execCommand("createLink", false, url.trim());
+          }
+        } else if (command === "format-h2") {
+          document.execCommand("formatBlock", false, "h2");
+        } else if (command === "format-p") {
+          document.execCommand("formatBlock", false, "p");
+        } else if (command === "blockquote") {
+          document.execCommand("formatBlock", false, "blockquote");
+        } else if (command === "insertHorizontalRule") {
+          document.execCommand("insertHorizontalRule", false, null);
+        } else {
+          document.execCommand(command, false, null);
+        }
+        normalizeNoticeEditorMarkup();
+        renderNoticePreview();
+      }
+
+      function applyNoticeFormat(format, value) {
+        if (!format) return;
+        focusNoticeEditor();
+        document.execCommand("styleWithCSS", false, true);
+        if (format === "color") {
+          document.execCommand("foreColor", false, value || "#101828");
+        } else if (format === "background") {
+          document.execCommand("hiliteColor", false, value || "#fff1f1");
+        } else if (format === "fontSize") {
+          if (value) {
+            document.execCommand("fontSize", false, value === "13px" ? "2" : value === "18px" ? "5" : "6");
+            normalizeNoticeEditorMarkup();
+          } else {
+            document.execCommand("removeFormat", false, null);
+          }
+        }
+        normalizeNoticeEditorMarkup();
+        renderNoticePreview();
+      }
+
+      function insertNoticeHtml(html) {
+        focusNoticeEditor();
+        document.execCommand("insertHTML", false, html);
+        normalizeNoticeEditorMarkup();
+        renderNoticePreview();
+      }
+
+      function insertNoticeTemplate(name) {
+        const templates = {
+          checklist: "<ul><li><strong>준비 항목</strong> — 내용을 입력해 주세요.</li><li><strong>확인 항목</strong> — 내용을 입력해 주세요.</li></ul>",
+          warning: '<blockquote><strong>주의</strong> — 운영상 반드시 확인해야 하는 내용을 입력해 주세요.</blockquote>',
+          contact: "<p><strong>문의</strong> — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</p>",
+        };
+        insertNoticeHtml(templates[name] || "");
+      }
+
+      function insertNoticeEmoji(emoji) {
+        if (!emoji) return;
+        focusNoticeEditor();
+        document.execCommand("insertText", false, emoji);
+        renderNoticePreview();
+      }
+
       function renderNoticePreview() {
-        $("#notice-preview").innerHTML = `
-          <h3>${escapeHtml($("#notice-title").value || "공지 제목")}</h3>
-          <p>${$("#notice-body").value || "공지 본문이 여기에 표시됩니다."}</p>
-          <p style="margin-top: 12px;"><strong>${escapeHtml($("#notice-source-label").value || "출처")}</strong></p>
-        `;
+        const preview = $("#notice-preview");
+        const source = $("#notice-preview-source");
+        $("#notice-preview-title").textContent = $("#notice-title").value || "공지 제목";
+        $("#notice-preview-body").innerHTML = getNoticeHtml() || "<p>공지 내용을 입력하면 여기에 표시됩니다.</p>";
+        preview.style.background = $("#notice-bg").value || "#ffffff";
+        const label = $("#notice-source-label").value.trim();
+        const url = $("#notice-source-url").value.trim();
+        if (label && url) {
+          source.hidden = false;
+          source.textContent = label;
+          source.href = url;
+        } else {
+          source.hidden = true;
+          source.removeAttribute("href");
+          source.textContent = "";
+        }
       }
 
       async function loadNotice() {
         const data = await adminFetch("/api/admin/notice");
         $("#notice-title").value = data.title || "";
-        $("#notice-body").value = data.body_html || (data.bullets || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        setNoticeHtml(data.body_html || (data.bullets || []).map((item) => `<li>${escapeHtml(item)}</li>`).join(""));
         $("#notice-source-label").value = data.source_label || "";
         $("#notice-source-url").value = data.source_url || "";
         $("#notice-bg").value = data.modal_background || "#ffffff";
@@ -646,7 +828,7 @@
           method: "POST",
           body: JSON.stringify({
             title: $("#notice-title").value,
-            body_html: $("#notice-body").value,
+            body_html: getNoticeHtml(),
             modal_background: $("#notice-bg").value,
             bullets: [],
             source_label: $("#notice-source-label").value,
@@ -811,8 +993,24 @@
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
-      ["notice-title", "notice-body", "notice-source-label"].forEach((id) => {
+      ["notice-title", "notice-source-label", "notice-source-url", "notice-bg"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderNoticePreview);
+      });
+      $("#notice-editor").addEventListener("input", () => {
+        normalizeNoticeEditorMarkup();
+        renderNoticePreview();
+      });
+      $("#notice-toolbar").addEventListener("click", (event) => {
+        const commandButton = event.target.closest("[data-notice-command]");
+        const templateButton = event.target.closest("[data-notice-template]");
+        const emojiButton = event.target.closest("[data-notice-emoji]");
+        if (commandButton) runNoticeCommand(commandButton.dataset.noticeCommand);
+        if (templateButton) insertNoticeTemplate(templateButton.dataset.noticeTemplate);
+        if (emojiButton) insertNoticeEmoji(emojiButton.dataset.noticeEmoji);
+      });
+      $$("[data-notice-format]").forEach((control) => {
+        control.addEventListener("input", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
+        control.addEventListener("change", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
       });
       $("#mail-filter").addEventListener("change", () => loadMailReview().catch((error) => setStatus("mail-status", error.message, "error")));
       $("#mail-rows").addEventListener("click", async (event) => {
