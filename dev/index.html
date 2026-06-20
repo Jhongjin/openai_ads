@@ -582,6 +582,29 @@
         },
       };
 
+      function normalizeGuideDeckEditKeys() {
+        Object.entries(guideDecks).forEach(([deckKey, deck]) => {
+          (deck.slides || []).forEach((slide, slideIndex) => {
+            const slideKey = `${deckKey}.slide${slideIndex + 1}`;
+            if (slide.title && !slide.titleKey) slide.titleKey = `${slideKey}.title`;
+            if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
+            if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
+            if (slide.code && !slide.codeKey) slide.codeKey = `${slideKey}.code`;
+            slide.cards = (slide.cards || []).map((card, cardIndex) => {
+              const [title, body, bodyKey, titleKey] = card;
+              return [
+                title,
+                body,
+                bodyKey || `${slideKey}.card${cardIndex + 1}.body`,
+                titleKey || `${slideKey}.card${cardIndex + 1}.title`,
+              ];
+            });
+          });
+        });
+      }
+
+      normalizeGuideDeckEditKeys();
+
       const faqCategories = [
         {
           id: "account",
@@ -1057,9 +1080,9 @@
       }
 
       function renderGuideCards(cards = []) {
-        return cards.map(([title, body, textKey]) => `
+        return cards.map(([title, body, textKey, titleKey]) => `
           <div class="dev-slide-item">
-            <strong>${escapeHtml(title)}</strong>
+            <strong>${escapeHtml(titleKey ? guideText(titleKey, title) : title)}</strong>
             <span>${escapeHtml(textKey ? guideText(textKey, body) : body)}</span>
           </div>
         `).join("");
@@ -1083,7 +1106,8 @@
         const title = slide.titleKey ? guideText(slide.titleKey, slide.title) : slide.title;
         const subtitle = slide.subtitleKey ? guideText(slide.subtitleKey, slide.subtitle) : slide.subtitle;
         const callout = slide.calloutKey ? guideText(slide.calloutKey, slide.callout) : slide.callout;
-        const hasMedia = Boolean(slide.imageKey || slide.code);
+        const code = slide.codeKey ? guideText(slide.codeKey, slide.code) : slide.code;
+        const hasMedia = Boolean(slide.imageKey || code);
         const body = `
           <div class="dev-slide-main${hasMedia ? " has-media" : ""}">
             <div class="dev-slide-copy">
@@ -1096,7 +1120,7 @@
             ${hasMedia ? `
               <div class="dev-slide-media">
                 ${renderGuideImage(slide.imageKey)}
-                ${slide.code ? `<pre class="dev-slide-code">${escapeHtml(slide.code)}</pre>` : ""}
+                ${code ? `<pre class="dev-slide-code">${escapeHtml(code)}</pre>` : ""}
               </div>
             ` : ""}
           </div>

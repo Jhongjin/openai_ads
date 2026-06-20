@@ -344,14 +344,35 @@
                 <div class="surface-head">
                   <div>
                     <h2 class="surface-title">안내자료 슬라이드 편집</h2>
-                    <p class="surface-copy">광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드의 텍스트와 이미지 URL을 직접 수정합니다.</p>
+                    <p class="surface-copy">실제 안내자료 화면에서 텍스트 영역을 직접 수정하고, 이미지 영역은 URL·대체 텍스트·캡션을 교체합니다.</p>
                   </div>
                   <button class="btn-command" type="button" id="save-guides">안내자료 저장</button>
                 </div>
                 <div class="surface-body stack">
-                  <div class="editor-list" id="guide-item-editor"></div>
-                  <h3 class="surface-title">이미지</h3>
-                  <div class="editor-list" id="guide-image-editor"></div>
+                  <div class="guide-admin-tabs" id="admin-guide-tabs" role="tablist" aria-label="안내자료 편집 탭">
+                    <button class="guide-tab is-active" type="button" role="tab" aria-selected="true" data-admin-guide-deck="advertiser">
+                      <span>PDF</span>
+                      광고주 안내 자료
+                    </button>
+                    <button class="guide-tab" type="button" role="tab" aria-selected="false" data-admin-guide-deck="setup">
+                      <span>SET</span>
+                      캠페인 세팅 가이드
+                    </button>
+                    <button class="guide-tab" type="button" role="tab" aria-selected="false" data-admin-guide-deck="pixel">
+                      <span>PX</span>
+                      픽셀 설치 가이드
+                    </button>
+                  </div>
+                  <div class="guide-admin-head">
+                    <div>
+                      <p class="eyebrow" id="admin-guide-kicker">Advertiser Deck</p>
+                      <h3 class="surface-title" id="admin-guide-title">광고주 안내 자료</h3>
+                    </div>
+                    <span class="tag tag-blue" id="admin-guide-updated">loading</span>
+                  </div>
+                  <div class="guide-admin-deck" id="admin-guide-deck" aria-live="polite">
+                    <div class="empty-pane">안내자료를 불러오는 중입니다.</div>
+                  </div>
                   <p class="status-line" id="guide-status"></p>
                 </div>
               </section>
@@ -463,6 +484,232 @@
       let visitChart = null;
       let visitPieChart = null;
       let openQuestionCategory = null;
+      let activeGuideDeck = "advertiser";
+      const adminGuideDecks = {
+        advertiser: {
+          label: "광고주 안내 자료",
+          kicker: "Advertiser Deck",
+          filename: "ChatGPT광고_집행준비안내_케이티나스미디어",
+          slides: [
+            {
+              kicker: "OpenAI ChatGPT Ads 베타 기준",
+              titleKey: "advertiser.hero.title",
+              title: "ChatGPT 광고 집행 준비 안내",
+              subtitleKey: "advertiser.hero.subtitle",
+              subtitle: "광고주님께서 준비해주실 항목",
+              footer: "케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr",
+            },
+            {
+              kicker: "01 · 광고 소재",
+              titleKey: "advertiser.material.title",
+              title: "광고 소재 준비물",
+              cards: [
+                ["브랜드명", "광고 상단 노출에 사용됩니다."],
+                ["로고/파비콘", "공개 직접 이미지 링크, 256×256 이상, 정사각형, 흰 배경 권장"],
+                ["광고 제목", "워크북 기준 최대 24자, Ads Manager 직접 입력 기준 최대 50자"],
+                ["광고 설명", "워크북 기준 최대 48자, Ads Manager 직접 입력 기준 최대 100자"],
+                ["이미지", "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크"],
+                ["랜딩 URL", "유효·접근 가능하고 광고 내용과 관련성 높은 페이지"],
+              ],
+              calloutKey: "advertiser.material.image",
+              callout: "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것",
+            },
+            {
+              kicker: "02 · 랜딩 페이지",
+              title: "랜딩 페이지 기술 준비",
+              cards: [
+                ["robots.txt 허용", "OAI-AdsBot 필수 / OAI-SearchBot 권장 허용"],
+                ["방화벽 allowlist", "Cloudflare·Akamai 등 WAF와 봇 차단 정책에서 OpenAI 크롤러 차단 해제"],
+                ["안티봇 예외 처리", "CAPTCHA/안티봇 로직이 랜딩 접근을 막지 않도록 예외 처리"],
+              ],
+              code: "User-agent: OAI-SearchBot\nAllow: /\nUser-agent: OAI-AdsBot\nAllow: /",
+              callout: "크롤러 접근 불가 시 광고 게재가 제한될 수 있으며, 오픈 전 랜딩 점검을 권장합니다.",
+            },
+            {
+              kicker: "03 · 집행 조건",
+              title: "집행 조건 안내",
+              cards: [
+                ["최소 집행 약정", "400만원 / 상세 조건은 영업 담당 안내", "advertiser.condition.minimum"],
+                ["과금 방식", "OpenAI 직접 CPC·CPM / Criteo 경유 CPM"],
+                ["초기 노출", "한국 Free·Go 이용자 일부부터 시작해 단계 확대"],
+                ["인보이스", "월별 실제 집행 기준 발행, 광고주별 집행금액 라인 표기"],
+              ],
+              callout: "베타 기준 운영값은 OpenAI 정책 및 파일럿 운영 상황에 따라 변동될 수 있습니다.",
+            },
+            {
+              kicker: "04 · 다음 단계",
+              title: "준비 체크리스트 & 다음 단계",
+              cards: [
+                ["소재 준비", "브랜드명, 로고/파비콘, 제목, 설명, 이미지"],
+                ["랜딩 확인", "광고 로봇 접근 허용, 방화벽 예외 처리"],
+                ["집행 조건 확인", "예산, 기간, 과금 방식, 인보이스 정보"],
+              ],
+              calloutKey: "advertiser.footer.contact",
+              callout: "문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+            },
+          ],
+        },
+        setup: {
+          label: "캠페인 세팅 가이드",
+          kicker: "Setup Deck",
+          filename: "ChatGPT광고_캠페인세팅가이드_케이티나스미디어",
+          slides: [
+            {
+              kicker: "Ads Manager 세팅 프로세스",
+              titleKey: "setup.hero.title",
+              title: "광고 캠페인 세팅 가이드",
+              subtitle: "캠페인 → 광고그룹 → 광고 생성 프로세스",
+              cards: [
+                ["STEP 1 · 캠페인", "캠페인명, 유형, 목표, 위치, 예산, 스케줄 설정"],
+                ["STEP 2 · 광고그룹", "광고그룹 이름, 입찰가, 기본 광고 URL 입력"],
+                ["STEP 3 · 광고 만들기", "광고 이름, URL, 헤드라인, 설명, 이미지 등록"],
+              ],
+            },
+            {
+              kicker: "STEP 1 · 캠페인",
+              titleKey: "setup.step1.title",
+              title: "캠페인 만들기",
+              imageKey: "campaign_step1",
+              cards: [
+                ["캠페인 이름", "필수 · 최소 3자 이상"],
+                ["캠페인 유형", "표준 디폴트, 제품피드는 확인 전까지 참고용"],
+                ["목표", "클릭 또는 노출"],
+                ["위치·예산·일정", "수동 세팅 기준 필수 입력"],
+              ],
+            },
+            {
+              kicker: "STEP 2 · 광고그룹",
+              titleKey: "setup.step2.title",
+              title: "광고그룹 만들기",
+              imageKey: "campaign_step2",
+              cards: [
+                ["광고그룹 이름", "필수 · 최소 3자 이상"],
+                ["최대 입찰가", "클릭은 CPC, 노출은 CPM 기준"],
+                ["기본 광고 URL", "새 광고 URL 기본값으로 사용"],
+                ["컨텍스트 힌트", "선택 입력, 매칭 참고용"],
+              ],
+            },
+            {
+              kicker: "STEP 3 · 광고",
+              titleKey: "setup.step3.title",
+              title: "광고 만들기",
+              imageKey: "campaign_step3",
+              cards: [
+                ["광고 이름", "필수 · 최소 3자 이상"],
+                ["광고 URL", "클릭 시 이동하는 랜딩 URL"],
+                ["헤드라인·설명", "Ads Manager 직접 입력 기준 50자/100자"],
+                ["이미지", "PNG 또는 JPG, 정사각형 이미지 권장"],
+              ],
+            },
+            {
+              kicker: "미리보기",
+              title: "광고 소재 미리보기 확인",
+              imageKey: "campaign_preview",
+              cards: [
+                ["브랜드 표시", "광고주명과 스폰서 표기 확인"],
+                ["소재 조합", "제목·설명·이미지가 실제 사용자 화면에서 자연스러운지 확인"],
+                ["최종 확인", "랜딩 URL, 이미지 접근성, 문구 정책 리스크 재확인"],
+              ],
+            },
+          ],
+        },
+        pixel: {
+          label: "픽셀 설치 가이드",
+          kicker: "Pixel Deck",
+          filename: "ChatGPT광고_픽셀설치가이드_케이티나스미디어",
+          slides: [
+            {
+              kicker: "OpenAI Ads Measurement Pixel",
+              titleKey: "pixel.hero.title",
+              title: "픽셀 설치 가이드",
+              subtitle: "웹 페이지뷰·전환·이벤트 측정 설정",
+              cards: [
+                ["데이터 소스", "Ads Manager 전환 메뉴에서 웹 데이터 소스 생성"],
+                ["웹사이트 설치", "공통 픽셀 스크립트를 측정 대상 페이지 head에 설치"],
+                ["이벤트 연결", "페이지뷰·리드·구매 등 목적별 이벤트 호출"],
+              ],
+            },
+            {
+              kicker: "STEP 1 · Ads Manager",
+              title: "픽셀 발급 위치",
+              imageKey: "pixel_step1_conversion_home",
+              cards: [
+                ["진입 경로", "광고 관리자 → 도구 → 전환 → 데이터 소스"],
+                ["데이터 소스", "데이터 소스 만들기 → 이름 입력 → 웹 선택"],
+                ["발급값", "설정 코드와 Pixel ID를 광고주 개발팀에 전달"],
+              ],
+            },
+            {
+              kicker: "STEP 1-B · 코드 복사",
+              title: "웹 픽셀 만들기와 코드 복사",
+              imageKey: "pixel_step3_setup_code",
+              cards: [
+                ["Pixel ID", "설치 코드 안의 PIXEL_ID 자리에 광고 계정 발급값 입력"],
+                ["설정 코드", "공통 스크립트는 페이지당 한 번만 설치"],
+                ["개발팀 전달", "코드 전체와 Pixel ID를 함께 전달"],
+              ],
+            },
+            {
+              kicker: "STEP 2 · 공통 설치 코드",
+              titleKey: "pixel.head.title",
+              title: "웹사이트 head에 설치",
+              code: 'oaiq("init", {\n  pixelId: "PIXEL_ID",\n  debug: true\n});',
+              cards: [
+                ["설치 위치", "측정할 모든 페이지의 HTML head 안"],
+                ["테스트", "초기 검수 중 debug true로 콘솔 확인"],
+                ["주의", "개인정보 원문 전송 금지, 공식 해시 규칙 준수"],
+              ],
+            },
+            {
+              kicker: "STEP 3 · 페이지뷰/전환",
+              title: "이벤트 측정 코드 연결",
+              imageKey: "pixel_step5_event_code",
+              code: 'oaiq("measure", "page_viewed", {\n  type: "contents"\n});\n\noaiq("measure", "order_created", {\n  value: 100000,\n  currency: "KRW"\n});',
+              cards: [
+                ["page_viewed", "광고 랜딩 또는 주요 페이지 로드 시 호출"],
+                ["order_created", "구매 완료 또는 전환 완료 시점에 호출"],
+                ["캠페인 연결", "전환 이벤트를 캠페인에 연결해야 리포팅·최적화에 활용"],
+              ],
+            },
+            {
+              kicker: "지원 범위",
+              titleKey: "pixel.gtm.title",
+              title: "GTM 삽입 방법",
+              imageKey: "pixel_step7_gtm_workspace",
+              cards: [
+                ["GTM 태그", "Custom HTML 태그로 공통 픽셀 스크립트 삽입"],
+                ["트리거", "전체 페이지 또는 전환 완료 페이지 트리거 설정"],
+                ["검수", "Preview 모드와 Ads Manager 이벤트 수신 여부 확인"],
+              ],
+              calloutKey: "pixel.footer.support",
+              callout: "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr",
+            },
+          ],
+        },
+      };
+
+      function normalizeAdminGuideDeckEditKeys() {
+        Object.entries(adminGuideDecks).forEach(([deckKey, deck]) => {
+          (deck.slides || []).forEach((slide, slideIndex) => {
+            const slideKey = `${deckKey}.slide${slideIndex + 1}`;
+            if (slide.title && !slide.titleKey) slide.titleKey = `${slideKey}.title`;
+            if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
+            if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
+            if (slide.code && !slide.codeKey) slide.codeKey = `${slideKey}.code`;
+            slide.cards = (slide.cards || []).map((card, cardIndex) => {
+              const [title, body, bodyKey, titleKey] = card;
+              return [
+                title,
+                body,
+                bodyKey || `${slideKey}.card${cardIndex + 1}.body`,
+                titleKey || `${slideKey}.card${cardIndex + 1}.title`,
+              ];
+            });
+          });
+        });
+      }
+
+      normalizeAdminGuideDeckEditKeys();
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -839,23 +1086,260 @@
         setStatus("notice-status", "공지 저장 완료", "ok");
       }
 
-      function renderGuideEditor() {
-        $("#guide-item-editor").innerHTML = (slideContent.items || []).map((item, index) => `
-          <div class="editor-row" data-guide-item="${index}">
-            <label>${escapeHtml(item.label || item.key)}</label>
-            <textarea class="textarea guide-value" rows="3">${escapeHtml(item.value || "")}</textarea>
+      function guideItems() {
+        if (!Array.isArray(slideContent.items)) slideContent.items = [];
+        return slideContent.items;
+      }
+
+      function guideImages() {
+        if (!Array.isArray(slideContent.images)) slideContent.images = [];
+        return slideContent.images;
+      }
+
+      function ensureGuideTextItem(key, fallback, label, deck, multiline = false) {
+        const cleanKey = String(key || "").trim();
+        let item = guideItems().find((entry) => entry.key === cleanKey);
+        if (!item) {
+          item = {
+            key: cleanKey,
+            deck,
+            label: label || cleanKey,
+            default: fallback || "",
+            value: fallback || "",
+            multiline,
+          };
+          guideItems().push(item);
+        }
+        item.deck = item.deck || deck || "custom";
+        item.label = item.label || label || cleanKey;
+        item.default = item.default || fallback || "";
+        item.multiline = Boolean(item.multiline || multiline);
+        if (typeof item.value !== "string") item.value = item.default || fallback || "";
+        return item;
+      }
+
+      function ensureGuideImageItem(key, label, deck) {
+        const cleanKey = String(key || "").trim();
+        let item = guideImages().find((entry) => entry.key === cleanKey);
+        if (!item) {
+          const fallback = `/images/guide/${cleanKey}.png`;
+          item = {
+            key: cleanKey,
+            deck,
+            label: label || cleanKey,
+            default: fallback,
+            value: fallback,
+            alt: label || cleanKey,
+            caption: label || cleanKey,
+          };
+          guideImages().push(item);
+        }
+        item.deck = item.deck || deck || "custom";
+        item.label = item.label || label || cleanKey;
+        item.default = item.default || `/images/guide/${cleanKey}.png`;
+        item.value = item.value || item.default;
+        item.alt = item.alt || item.label;
+        item.caption = item.caption || item.label;
+        return item;
+      }
+
+      function guideTextValue(key, fallback, label, deck, multiline = false) {
+        const item = ensureGuideTextItem(key, fallback, label, deck, multiline);
+        return item.value || item.default || fallback || "";
+      }
+
+      function guideImageValue(key, label, deck) {
+        const item = ensureGuideImageItem(key, label, deck);
+        return {
+          src: item.value || item.default || `/images/guide/${key}.png`,
+          alt: item.alt || item.label || key,
+          caption: item.caption || item.label || key,
+        };
+      }
+
+      function renderGuideEditableText(key, fallback, label, deck, className = "", tagName = "span", multiline = false) {
+        const item = ensureGuideTextItem(key, fallback, label, deck, multiline);
+        const tag = ["h4", "p", "strong", "span", "pre"].includes(tagName) ? tagName : "span";
+        const text = item.value || item.default || fallback || "";
+        return `<${tag}
+          class="${escapeHtml(className)} guide-editable-text"
+          contenteditable="true"
+          spellcheck="false"
+          data-guide-text-key="${escapeHtml(item.key)}"
+          data-guide-multiline="${multiline ? "true" : "false"}">${escapeHtml(text)}</${tag}>`;
+      }
+
+      function renderAdminGuideCards(cards = [], deckKey, slide, slideIndex) {
+        return cards.map(([title, body, bodyKey, titleKey], cardIndex) => `
+          <div class="dev-slide-item admin-guide-editable-card">
+            ${renderGuideEditableText(
+              titleKey,
+              title,
+              `${slide.kicker || `슬라이드 ${slideIndex + 1}`} · 카드 ${cardIndex + 1} 제목`,
+              deckKey,
+              "",
+              "strong",
+            )}
+            ${renderGuideEditableText(
+              bodyKey,
+              body,
+              `${slide.kicker || `슬라이드 ${slideIndex + 1}`} · 카드 ${cardIndex + 1} 내용`,
+              deckKey,
+              "",
+              "span",
+              true,
+            )}
           </div>
         `).join("");
-        $("#guide-image-editor").innerHTML = (slideContent.images || []).map((item, index) => `
-          <div class="editor-row" data-guide-image="${index}">
-            <label>${escapeHtml(item.label || item.key)}</label>
-            <div class="stack">
-              <input class="control guide-image-value" value="${escapeHtml(item.value || "")}" placeholder="이미지 URL" />
-              <input class="control guide-image-alt" value="${escapeHtml(item.alt || "")}" placeholder="대체 텍스트" />
-              <input class="control guide-image-caption" value="${escapeHtml(item.caption || "")}" placeholder="캡션" />
+      }
+
+      function renderAdminGuideImage(key, deckKey, slide) {
+        if (!key) return "";
+        const image = guideImageValue(key, slide.title || key, deckKey);
+        return `
+          <figure class="dev-guide-figure admin-guide-image" data-guide-image-key="${escapeHtml(key)}">
+            <div class="dev-guide-image-frame">
+              <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}" loading="lazy" />
+              <div class="dev-guide-placeholder">이미지 URL이 없거나 접근할 수 없습니다.</div>
             </div>
-          </div>
-        `).join("");
+            <figcaption>${escapeHtml(image.caption)}</figcaption>
+            <div class="admin-guide-image-tools">
+              <label>
+                이미지 URL 교체
+                <input class="control admin-guide-image-url" value="${escapeHtml(image.src)}" placeholder="https://... 또는 /images/guide/name.png" />
+              </label>
+              <label>
+                대체 텍스트
+                <input class="control admin-guide-image-alt" value="${escapeHtml(image.alt)}" />
+              </label>
+              <label>
+                캡션
+                <input class="control admin-guide-image-caption" value="${escapeHtml(image.caption)}" />
+              </label>
+            </div>
+          </figure>
+        `;
+      }
+
+      function renderAdminGuideSlide(slide, index, total, deckKey) {
+        const titleKey = slide.titleKey;
+        const subtitleKey = slide.subtitleKey;
+        const calloutKey = slide.calloutKey;
+        const codeKey = slide.codeKey;
+        const title = titleKey
+          ? renderGuideEditableText(titleKey, slide.title, `${slide.kicker || `슬라이드 ${index + 1}`} 제목`, deckKey, "", "h4")
+          : "";
+        const subtitle = subtitleKey
+          ? renderGuideEditableText(subtitleKey, slide.subtitle, `${slide.kicker || `슬라이드 ${index + 1}`} 부제`, deckKey, "dev-slide-subtitle", "p", true)
+          : (slide.subtitle ? `<p class="dev-slide-subtitle">${escapeHtml(slide.subtitle)}</p>` : "");
+        const callout = calloutKey
+          ? renderGuideEditableText(calloutKey, slide.callout, `${slide.kicker || `슬라이드 ${index + 1}`} 강조 문구`, deckKey, "dev-slide-callout", "p", true)
+          : (slide.callout ? `<p class="dev-slide-callout">${escapeHtml(slide.callout)}</p>` : "");
+        const code = codeKey
+          ? renderGuideEditableText(codeKey, slide.code, `${slide.kicker || `슬라이드 ${index + 1}`} 코드`, deckKey, "dev-slide-code", "pre", true)
+          : (slide.code ? `<pre class="dev-slide-code">${escapeHtml(slide.code)}</pre>` : "");
+        const hasMedia = Boolean(slide.imageKey || code);
+
+        return `
+          <section class="dev-slide-card admin-guide-slide-card" data-guide-slide="${index + 1}">
+            <span class="dev-slide-update">최종 업데이트: ${escapeHtml(slideContent.updated_at || "-")}</span>
+            <div class="dev-slide-main${hasMedia ? " has-media" : ""}">
+              <div class="dev-slide-copy">
+                ${slide.kicker ? `<p class="dev-slide-kicker">${escapeHtml(slide.kicker)}</p>` : ""}
+                ${title || (slide.title ? `<h4>${escapeHtml(slide.title)}</h4>` : "")}
+                ${subtitle}
+                ${slide.cards?.length ? `<div class="dev-slide-grid">${renderAdminGuideCards(slide.cards, deckKey, slide, index)}</div>` : ""}
+                ${callout}
+              </div>
+              ${hasMedia ? `
+                <div class="dev-slide-media">
+                  ${renderAdminGuideImage(slide.imageKey, deckKey, slide)}
+                  ${code}
+                </div>
+              ` : ""}
+            </div>
+            <footer class="dev-slide-footer">
+              <span>${escapeHtml(slide.footer || "OpenAI Ads 운영 워크벤치 · KT Nasmedia")}</span>
+              <b>${index + 1}/${total}</b>
+            </footer>
+          </section>
+        `;
+      }
+
+      function hydrateAdminGuideDeckImages() {
+        $$("#admin-guide-deck .dev-guide-image-frame img").forEach((image) => {
+          const frame = image.closest(".dev-guide-image-frame");
+          const markLoaded = () => {
+            frame?.classList.add("has-image");
+            frame?.classList.remove("is-missing");
+          };
+          const markMissing = () => {
+            frame?.classList.add("is-missing");
+            frame?.classList.remove("has-image");
+          };
+          image.addEventListener("load", markLoaded, { once: true });
+          image.addEventListener("error", markMissing, { once: true });
+          if (!image.getAttribute("src")) markMissing();
+          if (image.complete && image.naturalWidth) markLoaded();
+        });
+      }
+
+      function renderGuideEditor() {
+        const deck = adminGuideDecks[activeGuideDeck] || adminGuideDecks.advertiser;
+        $$("#admin-guide-tabs [data-admin-guide-deck]").forEach((button) => {
+          const isActive = button.dataset.adminGuideDeck === activeGuideDeck;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-selected", String(isActive));
+        });
+        $("#admin-guide-kicker").textContent = deck.kicker;
+        $("#admin-guide-title").textContent = deck.label;
+        $("#admin-guide-updated").textContent = slideContent.updated_at ? `updated ${slideContent.updated_at}` : "loading";
+        $("#admin-guide-deck").innerHTML = (deck.slides || [])
+          .map((slide, index) => renderAdminGuideSlide(slide, index, deck.slides.length, activeGuideDeck))
+          .join("") || '<div class="empty-pane">편집할 슬라이드가 없습니다.</div>';
+        hydrateAdminGuideDeckImages();
+      }
+
+      function editableTextValue(element) {
+        const multiline = element.dataset.guideMultiline === "true";
+        const raw = (element.innerText || element.textContent || "").replace(/\u00a0/g, " ");
+        if (multiline) {
+          return raw
+            .replace(/\r\n?/g, "\n")
+            .split("\n")
+            .map((line) => line.replace(/[ \t]+/g, " ").trim())
+            .filter(Boolean)
+            .join("\n");
+        }
+        return raw.replace(/\s+/g, " ").trim();
+      }
+
+      function updateGuideTextFromEditable(element) {
+        const key = element.dataset.guideTextKey;
+        const item = guideItems().find((entry) => entry.key === key);
+        if (!item) return;
+        item.value = editableTextValue(element);
+      }
+
+      function updateGuideImageFromInput(input) {
+        const figure = input.closest("[data-guide-image-key]");
+        const key = figure?.dataset.guideImageKey;
+        const item = guideImages().find((entry) => entry.key === key);
+        if (!figure || !item) return;
+        const image = $("img", figure);
+        const caption = $("figcaption", figure);
+        if (input.classList.contains("admin-guide-image-url")) {
+          item.value = input.value.trim();
+          if (image) image.src = item.value || item.default || "";
+        }
+        if (input.classList.contains("admin-guide-image-alt")) {
+          item.alt = input.value.trim();
+          if (image) image.alt = item.alt || item.label || item.key;
+        }
+        if (input.classList.contains("admin-guide-image-caption")) {
+          item.caption = input.value.trim();
+          if (caption) caption.textContent = item.caption || item.label || item.key;
+        }
       }
 
       async function loadGuides() {
@@ -863,21 +1347,32 @@
         renderGuideEditor();
       }
 
+      function readGuidePayload() {
+        const items = guideItems().filter((item) => item.key).map((item) => ({
+          key: item.key,
+          deck: item.deck || "custom",
+          label: item.label || item.key,
+          default: item.default || "",
+          value: item.value || "",
+          multiline: Boolean(item.multiline),
+        }));
+        const images = guideImages().filter((item) => item.key).map((item) => ({
+          key: item.key,
+          deck: item.deck || "custom",
+          label: item.label || item.key,
+          default: item.default || "",
+          value: item.value || "",
+          alt: item.alt || item.label || item.key,
+          caption: item.caption || item.label || item.key,
+        }));
+        return { items, images };
+      }
+
       async function saveGuides() {
-        const items = (slideContent.items || []).map((item, index) => ({
-          key: item.key,
-          value: $(`[data-guide-item="${index}"] .guide-value`).value,
-        }));
-        const images = (slideContent.images || []).map((item, index) => ({
-          key: item.key,
-          value: $(`[data-guide-image="${index}"] .guide-image-value`).value,
-          alt: $(`[data-guide-image="${index}"] .guide-image-alt`).value,
-          caption: $(`[data-guide-image="${index}"] .guide-image-caption`).value,
-        }));
         setStatus("guide-status", "안내자료 저장 중입니다.");
         slideContent = await adminFetch("/api/admin/guide-slides", {
           method: "POST",
-          body: JSON.stringify({ items, images }),
+          body: JSON.stringify(readGuidePayload()),
         });
         renderGuideEditor();
         setStatus("guide-status", "안내자료 저장 완료", "ok");
@@ -992,6 +1487,24 @@
       $("#analytics-period").addEventListener("change", () => loadAnalytics().catch((error) => console.error(error)));
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
+      $("#admin-guide-tabs").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-admin-guide-deck]");
+        if (!button) return;
+        activeGuideDeck = button.dataset.adminGuideDeck || "advertiser";
+        renderGuideEditor();
+      });
+      $("#admin-guide-deck").addEventListener("input", (event) => {
+        const editable = event.target.closest("[data-guide-text-key]");
+        if (editable) updateGuideTextFromEditable(editable);
+        const imageInput = event.target.closest(".admin-guide-image-url, .admin-guide-image-alt, .admin-guide-image-caption");
+        if (imageInput) updateGuideImageFromInput(imageInput);
+      });
+      $("#admin-guide-deck").addEventListener("paste", (event) => {
+        const editable = event.target.closest("[data-guide-text-key]");
+        if (!editable) return;
+        event.preventDefault();
+        document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
+      });
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       ["notice-title", "notice-source-label", "notice-source-url", "notice-bg"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderNoticePreview);

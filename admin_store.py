@@ -1016,6 +1016,32 @@ def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, An
             multiline=bool(item.get("multiline")),
             fallback=item["default"],
         )
+
+    base_item_keys = {str(item.get("key") or "") for item in base["items"]}
+    for key, incoming in incoming_items.items():
+        clean_key = re.sub(r"[^a-zA-Z0-9_.:-]", "", key).strip()[:120]
+        if not clean_key or clean_key in base_item_keys:
+            continue
+        deck = _clean_slide_text(incoming.get("deck"), fallback="custom")[:40]
+        label = _clean_slide_text(incoming.get("label"), fallback=clean_key)[:200]
+        default = _clean_slide_text(incoming.get("default"), multiline=True, fallback="")[:1200]
+        multiline = bool(incoming.get("multiline", False))
+        base["items"].append(
+            {
+                "key": clean_key,
+                "deck": deck,
+                "label": label,
+                "default": default,
+                "value": _clean_slide_text(
+                    incoming.get("value"),
+                    multiline=multiline,
+                    fallback=default,
+                ),
+                "multiline": multiline,
+            }
+        )
+        base_item_keys.add(clean_key)
+
     for item in base["images"]:
         incoming = incoming_images.get(item["key"], {})
         item["value"] = _clean_slide_image_url(incoming.get("value", item.get("value")), item["default"])
@@ -1024,6 +1050,28 @@ def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, An
             incoming.get("caption", item.get("caption", item["label"])),
             fallback=item["label"],
         )
+
+    base_image_keys = {str(item.get("key") or "") for item in base["images"]}
+    for key, incoming in incoming_images.items():
+        clean_key = re.sub(r"[^a-zA-Z0-9_.:-]", "", key).strip()[:120]
+        if not clean_key or clean_key in base_image_keys:
+            continue
+        deck = _clean_slide_text(incoming.get("deck"), fallback="custom")[:40]
+        label = _clean_slide_text(incoming.get("label"), fallback=clean_key)[:200]
+        default = _clean_slide_image_url(incoming.get("default"), "")
+        value = _clean_slide_image_url(incoming.get("value"), default)
+        base["images"].append(
+            {
+                "key": clean_key,
+                "deck": deck,
+                "label": label,
+                "default": default,
+                "value": value,
+                "alt": _clean_slide_text(incoming.get("alt"), fallback=label),
+                "caption": _clean_slide_text(incoming.get("caption"), fallback=label),
+            }
+        )
+        base_image_keys.add(clean_key)
 
     base["updated_at"] = _clean_slide_text(source.get("updated_at"), fallback=_today_kst())
     return base

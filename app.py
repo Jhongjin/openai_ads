@@ -123,13 +123,17 @@ class NoticeConfigRequest(BaseModel):
 class SlideContentItemRequest(BaseModel):
     key: str = Field(..., min_length=1, max_length=120)
     value: str = Field(default="", max_length=1200)
+    deck: str | None = Field(default="", max_length=40)
+    label: str | None = Field(default="", max_length=200)
+    default: str | None = Field(default="", max_length=1200)
+    multiline: bool | None = False
     alt: str | None = Field(default="", max_length=300)
     caption: str | None = Field(default="", max_length=300)
 
 
 class SlideContentRequest(BaseModel):
-    items: list[SlideContentItemRequest] = Field(default_factory=list, max_length=80)
-    images: list[SlideContentItemRequest] = Field(default_factory=list, max_length=40)
+    items: list[SlideContentItemRequest] = Field(default_factory=list, max_length=240)
+    images: list[SlideContentItemRequest] = Field(default_factory=list, max_length=80)
 
 
 class MailReviewUpdateRequest(BaseModel):
