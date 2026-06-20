@@ -562,6 +562,10 @@
         return countryLabels[value] || value || "대한민국";
       }
 
+      function manualCountryForReview(campaign) {
+        return campaign.manual_target_country_label || countryLabel(campaign.manual_target_country);
+      }
+
       function bulkCountriesFor(manualCountry) {
         if (!manualCountry || manualCountry === "KR" || manualCountry === "ALL") return [];
         return [manualCountry];
@@ -821,7 +825,7 @@
       function addAdgroup(campaign, data = {}, ads = [{}]) {
         const group = template("adgroup-template");
         $(".adgroup-name", group).value = data.adgroup_name || "";
-        $(".adgroup-manual-bid", group).value = data.max_bid || "";
+        $(".adgroup-manual-bid", group).value = data.manual_max_bid || data.max_bid || "";
         $(".adgroup-keywords", group).value = Array.isArray(data.keywords) ? data.keywords.join(", ") : "";
         ads.forEach((ad) => addAd(group, ad));
         $(".adgroup-list", campaign).append(group);
@@ -836,7 +840,7 @@
         $(".campaign-objective", campaign).value = data.objective || "views";
         $(".campaign-launch", campaign).value = data.launch_date || "";
         $(".campaign-end", campaign).value = data.end_date || "";
-        $(".campaign-manual-country", campaign).value = countryFromBulk(data.target_countries);
+        $(".campaign-manual-country", campaign).value = data.manual_target_country || countryFromBulk(data.target_countries);
         adgroups.forEach((group) => addAdgroup(campaign, group.adgroup || group, group.ads || [{}]));
         $("#campaign-list").append(campaign);
         syncDerivedFields();
@@ -845,7 +849,8 @@
       function readCampaign(campaign) {
         const campaignName = $(".campaign-name", campaign).value.trim();
         const objective = $(".campaign-objective", campaign).value;
-        const targetCountries = bulkCountriesFor($(".campaign-manual-country", campaign).value);
+        const manualCountry = $(".campaign-manual-country", campaign).value;
+        const targetCountries = bulkCountriesFor(manualCountry);
         return {
           campaign: {
             campaign_name: campaignName,
@@ -855,6 +860,8 @@
             end_date: $(".campaign-end", campaign).value || null,
             objective,
             target_countries: targetCountries,
+            manual_target_country: manualCountry,
+            manual_target_country_label: countryLabel(manualCountry),
           },
           adgroups: $$(".adgroup-block", campaign).map((group) => {
             const groupName = $(".adgroup-name", group).value.trim();
@@ -864,6 +871,7 @@
                 campaign_name: campaignName,
                 adgroup_name: groupName,
                 max_bid: objective === "views" ? null : manualBid,
+                manual_max_bid: manualBid,
                 keywords: $(".adgroup-keywords", group).value.split(",").map((item) => item.trim()).filter(Boolean),
               },
               ads: $$(".ad-block", group).map((ad) => ({
@@ -922,7 +930,7 @@
               <td>${escapeHtml(campaign.campaign_name)}</td>
               <td>${objectiveLabel(campaign.objective)}</td>
               <td>${Number(campaign.budget_max).toLocaleString("ko-KR")} KRW · ${budgetTypeLabel(campaign.budget_type)}</td>
-              <td>${escapeHtml(workbookCountryLabel(campaign.target_countries))}</td>
+              <td>${escapeHtml(manualCountryForReview(campaign))}</td>
               <td>광고그룹 ${item.adgroups.length}개 · 소재 ${adCount}개</td>
             </tr>
           `;
@@ -932,7 +940,7 @@
             <tr>
               <td>${escapeHtml(group.adgroup.campaign_name)}</td>
               <td>${escapeHtml(group.adgroup.adgroup_name)}</td>
-              <td>${group.adgroup.max_bid ? Number(group.adgroup.max_bid).toLocaleString("ko-KR") : "빈칸"}</td>
+              <td>${group.adgroup.manual_max_bid ? Number(group.adgroup.manual_max_bid).toLocaleString("ko-KR") : "입력 필요"}</td>
               <td>${escapeHtml(group.adgroup.keywords.length ? group.adgroup.keywords.join(", ") : "선택 입력")}</td>
               <td>${group.ads.length}개</td>
             </tr>
@@ -970,14 +978,14 @@
           <section class="review-section">
             <h3>캠페인 확인</h3>
             <table class="review-table">
-              <thead><tr><th>#</th><th>캠페인명</th><th>목표</th><th>예산</th><th>워크북 국가</th><th>구조</th></tr></thead>
+              <thead><tr><th>#</th><th>캠페인명</th><th>목표</th><th>예산</th><th>수동 국가</th><th>구조</th></tr></thead>
               <tbody>${campaignRows}</tbody>
             </table>
           </section>
           <section class="review-section">
             <h3>광고그룹 확인</h3>
             <table class="review-table">
-              <thead><tr><th>campaign_name</th><th>adgroup_name</th><th>워크북 입찰가</th><th>키워드</th><th>소재 수</th></tr></thead>
+              <thead><tr><th>campaign_name</th><th>adgroup_name</th><th>수동 입찰가(KRW)</th><th>키워드</th><th>소재 수</th></tr></thead>
               <tbody>${adgroupRows}</tbody>
             </table>
           </section>

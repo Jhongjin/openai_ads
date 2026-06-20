@@ -18,6 +18,16 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 KST = ZoneInfo("Asia/Seoul")
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _SAFE_NAME_RE = re.compile(r"^(?=.*[^\W_])[\w -]+$")
+_COUNTRY_LABELS = {
+    "ALL": "전체",
+    "US": "미국",
+    "AU": "오스트레일리아",
+    "CA": "캐나다",
+    "JP": "일본",
+    "NZ": "뉴질랜드",
+    "KR": "대한민국",
+    "GB": "영국",
+}
 _RECEIPT_LOCK = threading.Lock()
 _RECEIPT_COUNTERS: dict[str, int] = {}
 _RATE_LIMIT_SECONDS = 10
@@ -74,6 +84,14 @@ def _number_for_sheet(value: float | None) -> str:
 
 def _date_for_sheet(value: date | None) -> str:
     return value.isoformat() if value else ""
+
+
+def _manual_country_for_sheet(campaign: "CampaignInfo") -> str | list[str]:
+    if campaign.manual_target_country_label:
+        return campaign.manual_target_country_label
+    if campaign.manual_target_country:
+        return _COUNTRY_LABELS.get(campaign.manual_target_country, campaign.manual_target_country)
+    return campaign.target_countries
 
 
 class OpsMeta(BaseModel):
@@ -135,6 +153,8 @@ class CampaignInfo(BaseModel):
     end_date: date | None = None
     objective: Literal["views", "clicks"]
     target_countries: list[str] = Field(default_factory=list)
+    manual_target_country: str = ""
+    manual_target_country_label: str = ""
 
     @field_validator("campaign_name")
     @classmethod
@@ -159,6 +179,21 @@ class CampaignInfo(BaseModel):
             raise ValueError("현재 한국 집행은 target_countries를 빈칸(NULL)으로 두어야 합니다. KR은 벌크 업로드 오류가 확인되었습니다.")
         return cleaned
 
+    @field_validator("manual_target_country")
+    @classmethod
+    def _valid_manual_target_country(cls, value: str) -> str:
+        text = _clean_text(value).upper()
+        if not text:
+            return ""
+        if text != "ALL" and not re.fullmatch(r"[A-Z]{2}", text):
+            raise ValueError("수동 국가는 2자리 ISO 코드 또는 ALL로 저장해야 합니다.")
+        return text
+
+    @field_validator("manual_target_country_label")
+    @classmethod
+    def _clean_manual_target_country_label(cls, value: str) -> str:
+        return _clean_text(value)
+
     @model_validator(mode="after")
     def _required_operational_fields(self) -> "CampaignInfo":
         if self.launch_date is None:
@@ -172,6 +207,7 @@ class AdGroupInfo(BaseModel):
     campaign_name: str = ""
     adgroup_name: str
     max_bid: float | None = None
+    manual_max_bid: float | None = None
     keywords: list[str] = Field(default_factory=list)
 
     @field_validator("campaign_name")
@@ -191,11 +227,25 @@ class AdGroupInfo(BaseModel):
             return None
         return value
 
+    @field_validator("manual_max_bid", mode="before")
+    @classmethod
+    def _blank_manual_max_bid(cls, value: Any) -> Any:
+        if value == "":
+            return None
+        return value
+
     @field_validator("max_bid")
     @classmethod
     def _valid_max_bid(cls, value: float | None) -> float | None:
         if value is not None and value <= 0:
             raise ValueError("최대 입찰가는 0보다 커야 합니다.")
+        return value
+
+    @field_validator("manual_max_bid")
+    @classmethod
+    def _valid_manual_max_bid(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("수동 세팅 입찰가는 0보다 커야 합니다.")
         return value
 
     @field_validator("keywords")
@@ -344,12 +394,40 @@ def build_sheet_payload(
     *,
     shared_secret: str,
 ) -> dict[str, Any]:
+    data = _build_rows_for_submission(submission, use_manual_values=True)
+    primary_campaign = data["campaigns"][0]
+    return {
+        "secret": shared_secret,
+        "data": {
+            # Keep both shapes while the Apps Script web app is being redeployed.
+            # Older script versions only read data.campaign; newer versions read data.campaigns.
+            "campaign": data["campaigns"],
+            "primary_campaign": primary_campaign,
+            "campaigns": data["campaigns"],
+            "adgroups": data["adgroups"],
+            "ads": data["ads"],
+            "ops": data["ops"],
+        },
+    }
+
+
+def _build_rows_for_submission(
+    submission: IntakeSubmission,
+    *,
+    use_manual_values: bool,
+) -> dict[str, Any]:
     campaigns: list[dict[str, Any]] = []
     adgroups: list[dict[str, Any]] = []
     ads: list[dict[str, Any]] = []
 
     for campaign_item in submission.campaigns:
         campaign_name = campaign_item.campaign.campaign_name
+        target_countries: str | list[str]
+        target_countries = (
+            _manual_country_for_sheet(campaign_item.campaign)
+            if use_manual_values
+            else campaign_item.campaign.target_countries
+        )
         campaigns.append({
             "campaign_name": campaign_name,
             "budget_max": _number_for_sheet(campaign_item.campaign.budget_max),
@@ -357,14 +435,19 @@ def build_sheet_payload(
             "launch_date": _date_for_sheet(campaign_item.campaign.launch_date),
             "end_date": _date_for_sheet(campaign_item.campaign.end_date),
             "objective": campaign_item.campaign.objective,
-            "target_countries": campaign_item.campaign.target_countries,
+            "target_countries": target_countries,
         })
         for group_item in campaign_item.adgroups:
             adgroup_name = group_item.adgroup.adgroup_name
+            max_bid = (
+                group_item.adgroup.manual_max_bid
+                if use_manual_values and group_item.adgroup.manual_max_bid is not None
+                else group_item.adgroup.max_bid
+            )
             adgroups.append({
                 "campaign_name": campaign_name,
                 "adgroup_name": adgroup_name,
-                "max_bid": _number_for_sheet(group_item.adgroup.max_bid),
+                "max_bid": _number_for_sheet(max_bid),
                 "keywords": group_item.adgroup.keywords,
             })
             ads.extend(
@@ -390,19 +473,7 @@ def build_sheet_payload(
         "owner_team": submission.ops_meta.owner_team,
         "note": submission.ops_meta.notes,
     }
-    return {
-        "secret": shared_secret,
-        "data": {
-            # Keep both shapes while the Apps Script web app is being redeployed.
-            # Older script versions only read data.campaign; newer versions read data.campaigns.
-            "campaign": campaigns,
-            "primary_campaign": primary_campaign,
-            "campaigns": campaigns,
-            "adgroups": adgroups,
-            "ads": ads,
-            "ops": ops,
-        },
-    }
+    return {"campaigns": campaigns, "adgroups": adgroups, "ads": ads, "ops": ops}
 
 
 WORKBOOK_COLUMNS = {
@@ -509,8 +580,7 @@ def create_workbook_bytes(submission: IntakeSubmission) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
-    sheet_payload = build_sheet_payload(submission, shared_secret="workbook")
-    data = sheet_payload["data"]
+    data = _build_rows_for_submission(submission, use_manual_values=False)
     wb = Workbook()
     default = wb.active
     wb.remove(default)

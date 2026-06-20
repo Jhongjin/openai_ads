@@ -98,6 +98,27 @@ class IntakeValidationTests(unittest.TestCase):
         self.assertNotIn("honeypot", payload["data"]["ops"])
         self.assertNotIn("receiptNumber", payload)
 
+    def test_sheet_payload_keeps_manual_values_while_workbook_stays_upload_safe(self) -> None:
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        payload = valid_payload()
+        payload["campaign"]["objective"] = "views"
+        payload["campaign"]["manual_target_country"] = "KR"
+        payload["campaign"]["manual_target_country_label"] = "대한민국"
+        payload["adgroup"]["max_bid"] = None
+        payload["adgroup"]["manual_max_bid"] = 5300
+
+        submission = IntakeSubmission.model_validate(payload)
+        sheet_payload = build_sheet_payload(submission, shared_secret="secret")
+        workbook = load_workbook(BytesIO(create_workbook_bytes(submission)))
+
+        self.assertEqual(sheet_payload["data"]["campaigns"][0]["target_countries"], "대한민국")
+        self.assertEqual(sheet_payload["data"]["adgroups"][0]["max_bid"], "5300")
+        self.assertIn(workbook["campaigns"]["G2"].value, (None, ""))
+        self.assertIn(workbook["adgroups"]["C2"].value, (None, ""))
+
     def test_multi_campaign_payload_preserves_each_campaign_and_adgroup_link(self) -> None:
         payload = valid_payload()
         tomorrow = datetime.now(KST).date() + timedelta(days=1)
