@@ -414,6 +414,11 @@ body.dev-console :focus-visible {
   font-weight: 900;
 }
 
+.required-mark {
+  color: var(--oa-red);
+  font-weight: 950;
+}
+
 .field .help,
 .help {
   color: var(--oa-muted);

@@ -99,7 +99,7 @@
             <div class="surface-body stack">
               <div class="grid-3">
                 <div class="field">
-                  <label for="advertiserName">광고주명</label>
+                  <label for="advertiserName">광고주명 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="advertiserName" required />
                 </div>
                 <div class="field">
@@ -116,37 +116,31 @@
               </div>
               <div class="grid-3">
                 <div class="field">
-                  <label for="salesOwner">담당자명</label>
+                  <label for="salesOwner">담당자명 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="salesOwner" required />
                 </div>
                 <div class="field">
-                  <label for="salesOwnerEmail">담당자 이메일</label>
+                  <label for="salesOwnerEmail">담당자 이메일 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="salesOwnerEmail" type="email" required />
                 </div>
                 <div class="field">
-                  <label for="ownerTeam">팀</label>
+                  <label for="ownerTeam">팀 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="ownerTeam" required />
                 </div>
               </div>
               <div class="grid-3">
                 <div class="field">
-                  <label for="ownerHeadquarters">본부</label>
+                  <label for="ownerHeadquarters">본부 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="ownerHeadquarters" required />
                 </div>
                 <div class="field">
-                  <label for="ownerOffice">실</label>
+                  <label for="ownerOffice">실 <span class="required-mark" aria-hidden="true">*</span></label>
                   <input class="control" id="ownerOffice" required />
                 </div>
                 <div class="field">
                   <label for="notes">비고</label>
                   <input class="control" id="notes" />
                 </div>
-              </div>
-              <div class="grid-2">
-                <label class="tag"><input type="checkbox" id="adsManagerReady" /> Ads Manager 계정 준비</label>
-                <label class="tag"><input type="checkbox" id="paymentReady" /> 정산 정보 확인</label>
-                <label class="tag"><input type="checkbox" id="crawlerReady" /> 랜딩 접근 확인</label>
-                <label class="tag"><input type="checkbox" id="faviconReady" /> 로고·파비콘 확인</label>
               </div>
             </div>
 
@@ -195,15 +189,15 @@
         <div class="repeat-body">
           <div class="grid-3">
             <div class="field">
-              <label>캠페인명</label>
+              <label>캠페인명 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control campaign-name" required placeholder="Brand_Search_2026" />
             </div>
             <div class="field">
-              <label>캠페인 예산(KRW)</label>
+              <label>캠페인 예산(KRW) <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control campaign-budget" type="number" min="1" step="1" required placeholder="4000000" />
             </div>
             <div class="field">
-              <label>목표</label>
+              <label>목표 <span class="required-mark" aria-hidden="true">*</span></label>
               <select class="select campaign-objective">
                 <option value="views">노출 최적화(Views/CPM)</option>
                 <option value="clicks">클릭 최적화(Clicks/CPC)</option>
@@ -212,44 +206,45 @@
           </div>
           <div class="grid-3">
             <div class="field">
-              <label>예산 유형</label>
+              <label>예산 유형 <span class="required-mark" aria-hidden="true">*</span></label>
               <select class="select campaign-budget-type">
                 <option value="lifetime">총예산</option>
                 <option value="daily">일예산</option>
               </select>
             </div>
             <div class="field">
-              <label>시작일</label>
+              <label>시작일 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control campaign-launch" type="date" required />
             </div>
             <div class="field">
-              <label>종료일</label>
+              <label>종료일 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control campaign-end" type="date" required />
             </div>
           </div>
           <div class="grid-2">
             <div class="field">
-              <label>수동 세팅 위치</label>
+              <label>수동 국가 <span class="required-mark" aria-hidden="true">*</span></label>
               <select class="select campaign-manual-country" required>
-                <option value="KR">대한민국</option>
+                <option value="ALL">전체</option>
                 <option value="US">미국</option>
+                <option value="AU">오스트레일리아</option>
                 <option value="CA">캐나다</option>
-                <option value="AU">호주</option>
+                <option value="JP">일본</option>
                 <option value="NZ">뉴질랜드</option>
-                <option value="ALL">전체 / 플랫폼 기본</option>
+                <option value="KR">대한민국</option>
+                <option value="GB">영국</option>
               </select>
-              <small class="field-hint">Ads Manager 화면에서 직접 선택해야 하는 위치입니다.</small>
+              <small class="field-hint">캠페인을 집행할 국가를 선택하세요.</small>
             </div>
             <div class="mapping-panel">
               <div class="mapping-item">
-                <span>수동 세팅 위치</span>
+                <span>수동 국가</span>
                 <strong class="manual-country-preview">대한민국</strong>
               </div>
               <div class="mapping-item">
                 <span>xlsx target_countries</span>
                 <strong class="xlsx-country-preview">blank(NULL)</strong>
               </div>
-              <p class="mapping-help country-rule-help">대한민국은 수동 세팅에서는 선택하고, xlsx에는 빈칸으로 변환합니다.</p>
             </div>
           </div>
           <div class="repeat-list adgroup-list"></div>
@@ -269,13 +264,13 @@
         <div class="repeat-body">
           <div class="grid-3">
             <div class="field">
-              <label>광고그룹명</label>
+              <label>광고그룹명 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control adgroup-name" required placeholder="Brand_Core_Audience" />
             </div>
             <div class="field">
-              <label>수동 세팅 입찰가(KRW)</label>
+              <label>수동 세팅 입찰가(KRW) <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control adgroup-manual-bid" type="number" min="1" step="1" required placeholder="예: 5300" />
-              <small class="field-hint">Ads Manager 화면에서 직접 입력해야 하는 입찰가입니다.</small>
+              <small class="field-hint">캠페인 세팅 시 사용할 입찰가를 입력하세요.</small>
             </div>
             <div class="field">
               <label>키워드</label>
@@ -307,25 +302,25 @@
         <div class="repeat-body">
           <div class="grid-3">
             <div class="field">
-              <label>소재명</label>
+              <label>소재명 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-name" required placeholder="Ad_A_01" />
             </div>
             <div class="field">
-              <label>제목(24자 이내)</label>
+              <label>제목(24자 이내) <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-title" required maxlength="24" />
             </div>
             <div class="field">
-              <label>설명(48자 이내)</label>
+              <label>설명(48자 이내) <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-copy" required maxlength="48" />
             </div>
           </div>
           <div class="grid-2">
             <div class="field">
-              <label>랜딩 URL</label>
+              <label>랜딩 URL <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-link" required placeholder="https://example.com" />
             </div>
             <div class="field">
-              <label>이미지 URL</label>
+              <label>이미지 URL <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-image" required placeholder="https://example.com/image.png" />
             </div>
           </div>
@@ -338,12 +333,14 @@
       const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
       const startedAt = Date.now();
       const countryLabels = {
-        KR: "대한민국",
+        ALL: "전체",
         US: "미국",
+        AU: "오스트레일리아",
         CA: "캐나다",
-        AU: "호주",
+        JP: "일본",
         NZ: "뉴질랜드",
-        ALL: "전체 / 플랫폼 기본",
+        KR: "대한민국",
+        GB: "영국",
       };
 
       function setStatus(id, message, type = "") {
@@ -367,7 +364,7 @@
 
       function countryFromBulk(values) {
         const first = Array.isArray(values) && values.length ? String(values[0]).trim().toUpperCase() : "KR";
-        return countryLabels[first] ? first : "ALL";
+        return countryLabels[first] ? first : "KR";
       }
 
       function formatBulkCountries(values) {
@@ -385,11 +382,6 @@
           const bulkCountries = bulkCountriesFor(manualCountry);
           $(".manual-country-preview", campaign).textContent = countryLabel(manualCountry);
           $(".xlsx-country-preview", campaign).textContent = formatBulkCountries(bulkCountries);
-          $(".country-rule-help", campaign).textContent = manualCountry === "KR"
-            ? "대한민국은 수동 세팅에서는 선택하고, xlsx에는 빈칸으로 변환합니다."
-            : manualCountry === "ALL"
-              ? "전체/플랫폼 기본은 수동 확인값으로 남기고, xlsx에는 빈칸으로 내보냅니다."
-              : `${countryLabel(manualCountry)}은 수동 세팅값과 xlsx target_countries에 모두 반영합니다.`;
 
           $$(".adgroup-block", campaign).forEach((group) => {
             const manualBid = $(".adgroup-manual-bid", group).value ? Number($(".adgroup-manual-bid", group).value) : null;
@@ -496,10 +488,10 @@
             ownerOffice: $("#ownerOffice").value.trim(),
             ownerTeam: $("#ownerTeam").value.trim(),
             notes: $("#notes").value.trim(),
-            adsManagerReady: $("#adsManagerReady").checked,
-            paymentReady: $("#paymentReady").checked,
-            crawlerReady: $("#crawlerReady").checked,
-            faviconReady: $("#faviconReady").checked,
+            adsManagerReady: false,
+            paymentReady: false,
+            crawlerReady: false,
+            faviconReady: false,
             honeypot: "",
             formStartedAt: startedAt,
           },
