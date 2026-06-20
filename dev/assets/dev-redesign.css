@@ -1095,7 +1095,26 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-list {
+  overflow-x: auto;
   border-top: 1px solid var(--oa-line);
+}
+
+.campaign-intake-header,
+.campaign-intake-summary {
+  display: grid;
+  grid-template-columns: 26px minmax(165px, 1fr) minmax(150px, .9fr) minmax(110px, .75fr) minmax(100px, .7fr) minmax(130px, .9fr) minmax(100px, .75fr) 72px minmax(190px, 1.1fr) minmax(130px, .9fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 1260px;
+}
+
+.campaign-intake-header {
+  min-height: 34px;
+  padding: 0 0 0 0;
+  border-bottom: 1px solid var(--oa-line);
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 950;
 }
 
 .campaign-intake-ops {
@@ -1113,6 +1132,7 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-record {
+  min-width: 1260px;
   border-bottom: 1px solid var(--oa-line);
 }
 
@@ -1122,16 +1142,16 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-summary {
-  display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(150px, .8fr) minmax(120px, .7fr) minmax(220px, 1fr) 86px;
-  gap: 12px;
-  align-items: center;
   min-height: 44px;
   padding: 10px 0;
   cursor: pointer;
   color: var(--oa-muted);
   font-size: 13px;
   font-weight: 800;
+}
+
+.campaign-intake-record[open] > .campaign-intake-summary {
+  border-bottom: 1px solid #efe4d8;
 }
 
 .campaign-intake-receipt {
@@ -1141,7 +1161,7 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-status-pill {
-  justify-self: end;
+  justify-self: start;
   border: 1px solid #d7cec0;
   border-radius: 999px;
   padding: 4px 9px;
@@ -1152,12 +1172,8 @@ body.dev-console :focus-visible {
 }
 
 .campaign-intake-detail {
-  padding: 0 0 14px 18px;
+  padding: 0 0 14px 26px;
   border-left: 3px solid var(--oa-red);
-}
-
-.campaign-intake-meta {
-  margin: 12px 0;
 }
 
 .intake-step-badge {
@@ -1173,7 +1189,7 @@ body.dev-console :focus-visible {
 
 .intake-section summary {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 22px 104px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   min-height: 38px;
@@ -1182,13 +1198,31 @@ body.dev-console :focus-visible {
   font-weight: 900;
 }
 
+.intake-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--oa-muted);
+}
+
+.campaign-intake-record[open] > .campaign-intake-summary .intake-toggle i,
+.intake-section[open] > summary .intake-toggle i {
+  transform: rotate(90deg);
+}
+
+.intake-toggle i {
+  transition: transform .16s ease;
+}
+
 .intake-section summary strong {
   overflow-wrap: anywhere;
   font-size: 14px;
 }
 
 .intake-section-body {
-  padding: 0 0 10px 116px;
+  padding: 0 0 10px 138px;
 }
 
 .intake-adgroup-section {
@@ -1278,7 +1312,6 @@ body.dev-console :focus-visible {
   .manual-rag-form,
   .manual-rag-edit-grid,
   .campaign-intake-toolbar,
-  .campaign-intake-summary,
   .campaign-intake-ops {
     grid-template-columns: 1fr;
   }
@@ -1287,20 +1320,16 @@ body.dev-console :focus-visible {
     flex-direction: column;
   }
 
-  .campaign-intake-status-pill {
-    justify-self: start;
-  }
-
   .campaign-intake-detail {
-    padding-left: 10px;
+    padding-left: 18px;
   }
 
   .intake-section summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: 22px minmax(96px, auto) minmax(0, 1fr);
   }
 
   .intake-section-body {
-    padding-left: 0;
+    padding-left: 34px;
   }
 
   .intake-adgroup-section,
