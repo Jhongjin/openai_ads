@@ -24,6 +24,9 @@ class MailCollectorAppsScriptStaticTests(unittest.TestCase):
             "supersedes_duplicate_hash",
             "review_status: reviewStatus",
             "status: reviewStatus",
+            "retention_days",
+            "function isRecentMailRow_",
+            "Date.now() - retentionDays * 24 * 60 * 60 * 1000",
         ]
         for phrase in required:
             self.assertIn(phrase, script)

@@ -494,10 +494,14 @@ def admin_mail_review(request: Request) -> dict[str, Any]:
     _require_admin(request)
     status_filter = str(request.query_params.get("status") or "")
     try:
-        limit = int(str(request.query_params.get("limit") or "100"))
+        limit = int(str(request.query_params.get("limit") or "10"))
     except ValueError:
-        limit = 100
-    return list_mail_review_rows(status_filter=status_filter, limit=limit)
+        limit = 10
+    try:
+        page = int(str(request.query_params.get("page") or "1"))
+    except ValueError:
+        page = 1
+    return list_mail_review_rows(status_filter=status_filter, limit=limit, page=page)
 
 
 @app.post("/api/admin/mail-review/update", include_in_schema=False)

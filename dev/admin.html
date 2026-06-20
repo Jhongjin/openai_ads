@@ -536,6 +536,11 @@
                       <tbody id="mail-rows"></tbody>
                     </table>
                   </div>
+                  <div class="list-pagination mail-pagination">
+                    <button class="btn-secondary" type="button" id="mail-prev">이전</button>
+                    <span class="status-line" id="mail-page-info">1 / 1</span>
+                    <button class="btn-secondary" type="button" id="mail-next">다음</button>
+                  </div>
                   <p class="status-line" id="mail-status"></p>
                 </div>
               </section>
@@ -592,6 +597,8 @@
       const ADS_KEY_PAGE_SIZE = 10;
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
+      let mailPage = 1;
+      const MAIL_REVIEW_PAGE_SIZE = 10;
       let manualRagItems = [];
       const GUIDE_LAYOUT_VERSION = 5;
       const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
@@ -2390,10 +2397,28 @@
         ].filter((line, index, lines) => line || lines[index - 1]).join("\n").trim();
       }
 
-      async function loadMailReview() {
+      function renderMailPagination(meta = {}) {
+        const page = Number(meta.page || mailPage || 1);
+        const totalPages = Math.max(1, Number(meta.total_pages || 1));
+        mailPage = page;
+        const pageInfo = $("#mail-page-info");
+        if (pageInfo) pageInfo.textContent = `${page} / ${totalPages}`;
+        const prevButton = $("#mail-prev");
+        const nextButton = $("#mail-next");
+        if (prevButton) prevButton.disabled = !meta.has_previous;
+        if (nextButton) nextButton.disabled = !meta.has_next;
+      }
+
+      async function loadMailReview(page = mailPage) {
         const filter = $("#mail-filter").value || "all";
+        mailPage = Math.max(1, Number(page || 1));
         setStatus("mail-status", "검토함을 불러오는 중입니다.");
-        const data = await adminFetch(`/api/admin/mail-review?status=${encodeURIComponent(filter)}&limit=80`);
+        const params = new URLSearchParams({
+          status: filter,
+          limit: String(MAIL_REVIEW_PAGE_SIZE),
+          page: String(mailPage),
+        });
+        const data = await adminFetch(`/api/admin/mail-review?${params.toString()}`);
         $("#mail-rows").innerHTML = (data.rows || []).map((row) => {
           const sourceText = mailOriginalText(row);
           const ragDraft = mailRagDraft(row, sourceText);
@@ -2416,7 +2441,15 @@
           </tr>
         `;
         }).join("") || '<tr><td colspan="5">검토할 메일이 없습니다.</td></tr>';
-        setStatus("mail-status", data.ok === false ? (data.error || "검토함을 불러오지 못했습니다.") : "검토함 갱신 완료", data.ok === false ? "error" : "ok");
+        renderMailPagination(data);
+        const total = Number(data.total_count || 0);
+        const pageSize = Number(data.page_size || MAIL_REVIEW_PAGE_SIZE);
+        const start = total ? ((Number(data.page || 1) - 1) * pageSize) + 1 : 0;
+        const end = total ? Math.min(total, start + (data.rows || []).length - 1) : 0;
+        const retentionDays = Number(data.retention_days || 14);
+        const oldCount = Number(data.filtered_out_old || 0);
+        const okMessage = `최근 ${retentionDays}일 메일 ${total.toLocaleString("ko-KR")}개 중 ${start.toLocaleString("ko-KR")}~${end.toLocaleString("ko-KR")}번째 표시 · 10개/페이지${oldCount ? ` · 14일 초과 ${oldCount.toLocaleString("ko-KR")}개 제외` : ""}`;
+        setStatus("mail-status", data.ok === false ? (data.error || "검토함을 불러오지 못했습니다.") : okMessage, data.ok === false ? "error" : "ok");
       }
 
       function manualRagPayloadFromForm() {
@@ -2703,7 +2736,16 @@
         control.addEventListener("input", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
         control.addEventListener("change", () => applyNoticeFormat(control.dataset.noticeFormat, control.value));
       });
-      $("#mail-filter").addEventListener("change", () => loadMailReview().catch((error) => setStatus("mail-status", error.message, "error")));
+      $("#mail-filter").addEventListener("change", () => {
+        mailPage = 1;
+        loadMailReview(1).catch((error) => setStatus("mail-status", error.message, "error"));
+      });
+      $("#mail-prev").addEventListener("click", () => {
+        loadMailReview(Math.max(1, mailPage - 1)).catch((error) => setStatus("mail-status", error.message, "error"));
+      });
+      $("#mail-next").addEventListener("click", () => {
+        loadMailReview(mailPage + 1).catch((error) => setStatus("mail-status", error.message, "error"));
+      });
       $("#manual-rag-create").addEventListener("click", () => createManualRagItem());
       $("#manual-rag-refresh").addEventListener("click", () => loadManualRagItems().catch((error) => setStatus("manual-rag-status", error.message, "error")));
       $("#manual-rag-list").addEventListener("click", (event) => {

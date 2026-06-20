@@ -512,6 +512,36 @@ def _clean_date_filter(value: Any) -> str:
     return text
 
 
+def _parse_mail_datetime(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    normalized = text.replace("Z", "+00:00")
+    normalized = re.sub(r"\sKST$", "+09:00", normalized)
+    normalized = re.sub(r"\sUTC$", "+00:00", normalized)
+    if re.match(r"^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}[+-]\d{2}:?\d{2}$", normalized):
+        normalized = normalized.replace(" ", "T", 1)
+    try:
+        parsed = datetime.fromisoformat(normalized)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=KST)
+    except ValueError:
+        pass
+    for pattern in ("%Y-%m-%d %H:%M:%S %Z", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            parsed = datetime.strptime(text, pattern)
+            return parsed.replace(tzinfo=KST)
+        except ValueError:
+            continue
+    return None
+
+
+def _mail_row_recent(row: dict[str, Any], *, cutoff: datetime) -> bool:
+    parsed = _parse_mail_datetime(row.get("received_at") or row.get("collected_at_kst") or row.get("approved_at"))
+    if parsed is None:
+        return True
+    return parsed.astimezone(KST) >= cutoff
+
+
 def _quote_ident(value: str) -> str:
     if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", value):
         raise ValueError("Invalid Supabase schema name.")
@@ -2010,20 +2040,45 @@ def list_official_guide_changes(
         }
 
 
-def list_mail_review_rows(*, status_filter: str = "", limit: int = 100) -> dict[str, Any]:
+def list_mail_review_rows(*, status_filter: str = "", limit: int = 10, page: int = 1) -> dict[str, Any]:
     status_filter = (status_filter or "").strip()
     if status_filter and status_filter not in MAIL_REVIEW_STATUSES and status_filter != "all":
         status_filter = ""
-    limit = max(1, min(int(limit or 100), 300))
+    limit = max(1, min(int(limit or 10), 10))
+    page = max(1, int(page or 1))
+    retention_days = 14
+    cutoff = datetime.now(KST) - timedelta(days=retention_days)
 
     try:
         payload = _post_mail_webhook(
             {
                 "action": "review_list",
                 "status": status_filter,
-                "limit": limit,
+                "limit": 300,
+                "retention_days": retention_days,
             }
         )
+        source_rows = payload.get("rows") or []
+        if not isinstance(source_rows, list):
+            source_rows = []
+        recent_rows = [
+            row for row in source_rows
+            if isinstance(row, dict) and _mail_row_recent(row, cutoff=cutoff)
+        ]
+        total_count = len(recent_rows)
+        total_pages = max(1, (total_count + limit - 1) // limit)
+        if page > total_pages:
+            page = total_pages
+        start = (page - 1) * limit
+        payload["rows"] = recent_rows[start : start + limit]
+        payload["page"] = page
+        payload["page_size"] = limit
+        payload["total_count"] = total_count
+        payload["total_pages"] = total_pages
+        payload["has_previous"] = page > 1
+        payload["has_next"] = page < total_pages
+        payload["retention_days"] = retention_days
+        payload["filtered_out_old"] = max(0, len(source_rows) - total_count)
         payload.setdefault("statusLabels", MAIL_REVIEW_STATUSES)
         return payload
     except Exception as exc:
@@ -2032,6 +2087,13 @@ def list_mail_review_rows(*, status_filter: str = "", limit: int = 100) -> dict[
             "rows": [],
             "stats": {},
             "statusLabels": MAIL_REVIEW_STATUSES,
+            "page": page,
+            "page_size": limit,
+            "total_count": 0,
+            "total_pages": 1,
+            "has_previous": False,
+            "has_next": False,
+            "retention_days": retention_days,
             "error": str(exc),
         }
 

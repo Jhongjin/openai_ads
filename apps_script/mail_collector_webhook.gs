@@ -150,9 +150,12 @@ function approvedRows_(sheet) {
 function reviewList_(sheet, payload) {
   const statusFilter = String(payload.status || "").trim().toLowerCase();
   const limit = Math.max(1, Math.min(Number(payload.limit || 100), 300));
+  const retentionDays = Math.max(1, Math.min(Number(payload.retention_days || 14), 365));
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
   const rows = objectRows_(sheet).reverse();
   const filtered = rows
     .filter((row) => {
+      if (!isRecentMailRow_(row, cutoff)) return false;
       if (!statusFilter || statusFilter === "all") return true;
       const status = String(row.review_status || row.status || "").trim().toLowerCase();
       return status === statusFilter;
@@ -164,7 +167,23 @@ function reviewList_(sheet, payload) {
     ok: true,
     rows: filtered,
     stats: reviewStats_(rows),
+    retentionDays,
   };
+}
+
+function isRecentMailRow_(row, cutoffMs) {
+  const raw = String(row.received_at || row.collected_at_kst || row.approved_at || "").trim();
+  if (!raw) return true;
+  let normalized = raw.replace(/\sKST$/, "+09:00").replace(/\sUTC$/, "+00:00");
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}([+-]\d{2}:?\d{2})$/.test(normalized)) {
+    normalized = normalized.replace(" ", "T");
+  }
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+    normalized = normalized.replace(" ", "T") + "+09:00";
+  }
+  const timestamp = Date.parse(normalized);
+  if (Number.isNaN(timestamp)) return true;
+  return timestamp >= cutoffMs;
 }
 
 function reviewUpdate_(sheet, payload) {
