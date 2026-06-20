@@ -10,6 +10,85 @@ GENERIC_UPDATED_SUMMARY = (
 GENERIC_NEW_SUMMARY = "새 OpenAI 공식 문서가 수집되어 official 컬렉션에 인덱싱되었습니다."
 
 
+_KOREAN_TOPIC_RULES: list[tuple[tuple[str, ...], str, str]] = [
+    (
+        ("testing ads", "ads in chatgpt"),
+        "ChatGPT 광고 테스트 기준",
+        "광고가 ChatGPT 이용 경험에 어떤 방식으로 노출되고, 답변 품질과 무료 이용 지원에 어떤 영향을 주지 않는지 확인해야 합니다.",
+    ),
+    (
+        ("sso", "scim", "single sign-on"),
+        "Ads Manager SSO/SCIM 설정 기준",
+        "조직 인증, 사용자 프로비저닝, 권한 역할, 로그인 오류 대응 절차를 확인해야 합니다.",
+    ),
+    (
+        ("product feed", "product feeds", "feed id"),
+        "제품 피드 캠페인 생성 기준",
+        "제품 피드 업로드, 피드 ID, 상품 필터, 동적 소재 필드 설정 기준을 확인해야 합니다.",
+    ),
+    (
+        ("web crawler", "crawler", "robots.txt", "oai-adsbot", "oai-searchbot"),
+        "OpenAI 웹 크롤러 접근 허용 기준",
+        "OAI-AdsBot과 OAI-SearchBot 접근 허용, robots.txt, 방화벽 allowlist, 랜딩 차단 여부를 확인해야 합니다.",
+    ),
+    (
+        ("bulk upload", "schema", "spreadsheet", "workbook"),
+        "벌크 업로드 스키마 점검 기준",
+        "campaigns, adgroups, ads 시트의 필드명, 필수값, JSON 형식, 업로드 오류 기준을 확인해야 합니다.",
+    ),
+    (
+        ("quickstart", "launch your first campaign", "create campaign"),
+        "첫 캠페인 생성 절차",
+        "캠페인 목표, 위치, 예산, 일정, 광고그룹, 소재 등록 흐름을 확인해야 합니다.",
+    ),
+    (
+        ("frequently asked questions", "faq"),
+        "Ads 운영 FAQ",
+        "집행 가능 국가, 예산, 과금, 소재, 랜딩, 계정 권한 관련 운영 답변 기준을 확인해야 합니다.",
+    ),
+    (
+        ("troubleshooting", "common issues", "error"),
+        "Ads Manager 문제 해결 기준",
+        "캠페인 생성, 벌크 업로드, 소재 승인, 접근 권한, 추적 설정에서 발생하는 오류 대응을 확인해야 합니다.",
+    ),
+    (
+        ("pixel", "event", "conversion", "measurement"),
+        "픽셀과 전환 측정 기준",
+        "픽셀 설치, 데이터 소스, 이벤트 코드, GTM 연동, 전환 측정 방식 변경 여부를 확인해야 합니다.",
+    ),
+    (
+        ("api", "authentication", "endpoint"),
+        "Ads API 연동 기준",
+        "API 키, 인증, 요청과 응답 처리, 오류 대응, 권한 범위 변경 여부를 확인해야 합니다.",
+    ),
+]
+
+
+_HEADING_TRANSLATIONS: list[tuple[str, str]] = [
+    ("before you begin", "시작 전 준비"),
+    ("how ads roles work", "Ads 권한 구조"),
+    ("set up sso", "SSO 설정"),
+    ("troubleshoot", "문제 해결"),
+    ("campaign setup", "캠페인 설정"),
+    ("ad group setup", "광고그룹 설정"),
+    ("creative setup", "소재 설정"),
+    ("campaign", "캠페인"),
+    ("ad group", "광고그룹"),
+    ("creative", "소재"),
+    ("budget", "예산"),
+    ("billing", "정산"),
+    ("product feed", "제품 피드"),
+    ("upload", "업로드"),
+    ("schema", "스키마"),
+    ("crawler", "크롤러 접근"),
+    ("robots", "robots.txt"),
+    ("faq", "FAQ"),
+    ("pixel", "픽셀"),
+    ("events", "이벤트"),
+    ("conversion", "전환"),
+]
+
+
 def is_generic_official_summary(value: Any) -> bool:
     text = re.sub(r"\s+", " ", str(value or "")).strip()
     return text in {GENERIC_UPDATED_SUMMARY, GENERIC_NEW_SUMMARY, ""}
@@ -46,6 +125,39 @@ def _split_sentences(value: str) -> list[str]:
     return [_clean_line(part) for part in parts if len(_clean_line(part)) >= 24]
 
 
+def _infer_korean_topic(title: str, content: Any) -> tuple[str, str]:
+    haystack = f"{title} {content or ''}".lower()
+    for keywords, topic, detail in _KOREAN_TOPIC_RULES:
+        if any(keyword in haystack for keyword in keywords):
+            return topic, detail
+    return (
+        "OpenAI 공식 문서 운영 기준",
+        "공식 문서의 설정 절차, 정책 기준, 운영자가 확인해야 할 변경 항목을 재검토해야 합니다.",
+    )
+
+
+def _translate_heading_to_korean(value: str) -> str:
+    heading = _clean_line(value)
+    normalized = heading.lower()
+    for pattern, translated in _HEADING_TRANSLATIONS:
+        if pattern in normalized:
+            return translated
+    if re.fullmatch(r"[A-Za-z0-9 /&:._-]+", heading):
+        return "세부 설정 항목"
+    return heading
+
+
+def _summarize_headings_korean(headings: list[str]) -> str:
+    translated: list[str] = []
+    for heading in headings:
+        korean = _translate_heading_to_korean(heading)
+        if korean and korean not in translated:
+            translated.append(korean)
+        if len(translated) >= 3:
+            break
+    return ", ".join(translated)
+
+
 def summarize_official_document_change(
     *,
     title: Any,
@@ -69,31 +181,10 @@ def summarize_official_document_change(
         if len(headings) >= 3:
             break
 
-    candidates = [
-        line
-        for line in lines
-        if len(line) >= 45
-        and line.lower() != title_key
-        and not line.lower().startswith(f"{title_key} ")
-        and not line.lower().startswith(("updated ", "last updated", "table of contents"))
-        and "opens in a new window" not in line.lower()
-        and line.lower() not in {"foundation", "overview", "quickstart"}
-    ]
-    sentence = ""
-    for candidate in candidates:
-        sentence = (_split_sentences(candidate) or [candidate])[0]
-        if sentence:
-            break
-
-    detail_parts: list[str] = []
-    if sentence:
-        detail_parts.append(sentence[:180])
-    if headings:
-        detail_parts.append(f"주요 섹션: {', '.join(headings[:3])}")
-
-    if not detail_parts:
-        detail_parts.append(f"{clean_title} 문서의 본문과 메타데이터를 기준으로 재인덱싱했습니다.")
-
     prefix = "신규 문서 수집" if change_type == "new" else "문서 변경 감지"
-    summary = f"{prefix}: {clean_title} - {' / '.join(detail_parts)}"
+    topic, detail = _infer_korean_topic(clean_title, content)
+    heading_summary = _summarize_headings_korean(headings)
+    summary = f"{prefix}: {topic}. {detail}"
+    if heading_summary:
+        summary = f"{summary} 주요 확인 항목: {heading_summary}."
     return summary[:420]

@@ -81,16 +81,21 @@ class AdminStaticTests(unittest.TestCase):
             "OpenAI 공식 가이드 변경 로그",
             'id="official-change-body"',
             'id="refresh-official-changes"',
+            'id="official-start-date-filter"',
+            'id="official-end-date-filter"',
             "loadOfficialChanges",
             "/api/admin/official-changes",
         ]:
             self.assertIn(phrase, html)
 
         self.assertIn('"/api/admin/official-changes"', app_py)
+        self.assertIn('request.query_params.get("page")', app_py)
         self.assertIn('request.query_params.get("start_date")', app_py)
         self.assertIn('request.query_params.get("end_date")', app_py)
         self.assertIn("list_official_guide_changes", admin_store)
         self.assertIn("summarize_official_document_change", admin_store)
+        self.assertIn("total_count", admin_store)
+        self.assertIn("has_next", admin_store)
         self.assertIn("official_guide_changes", db_py)
         self.assertIn("fetch_official_source_snapshot", db_py)
         self.assertIn("record_official_guide_change", db_py)

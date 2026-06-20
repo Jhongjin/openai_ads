@@ -2094,8 +2094,12 @@
           </div>
           <div class="filter-strip" style="margin-top: 16px;">
             <label>
-              감지일
-              <input id="official-date-filter" type="date" />
+              시작일
+              <input id="official-start-date-filter" type="date" />
+            </label>
+            <label>
+              종료일
+              <input id="official-end-date-filter" type="date" />
             </label>
             <label>
               언어
@@ -2105,7 +2109,7 @@
                 <option value="en">EN</option>
               </select>
             </label>
-            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 10개씩 표시됩니다.</div>
+            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 한 페이지에 15개씩 표시됩니다.</div>
             <div class="pager">
               <button class="secondary" id="official-prev" type="button">이전</button>
               <span id="official-page-info">1 / 1</span>
@@ -2239,7 +2243,8 @@
       let noticeQuill = null;
       let visitChart = null;
       let officialPage = 1;
-      const officialPageSize = 10;
+      const officialPageSize = 15;
+      let officialPagination = { page: 1, total_pages: 1, has_previous: false, has_next: false };
       const fields = {
         title: document.querySelector("#notice-title"),
         updatedAt: document.querySelector("#notice-updated"),
@@ -3002,12 +3007,9 @@
       }
 
       function filteredOfficialChanges(items = officialChanges) {
-        const dateFilter = document.querySelector("#official-date-filter")?.value || "";
         const langFilter = document.querySelector("#official-lang-filter")?.value || "all";
         return (items || []).filter((item) => {
-          const detectedDate = String(item.detected_at || "").slice(0, 10);
           const lang = String(item.lang || "").toLowerCase();
-          if (dateFilter && detectedDate !== dateFilter) return false;
           if (langFilter !== "all" && lang !== langFilter) return false;
           return true;
         });
@@ -3019,12 +3021,12 @@
         const prevButton = document.querySelector("#official-prev");
         const nextButton = document.querySelector("#official-next");
         const filtered = filteredOfficialChanges(items);
-        const totalPages = Math.max(1, Math.ceil(filtered.length / officialPageSize));
-        officialPage = Math.min(Math.max(1, officialPage), totalPages);
-        const pageItems = filtered.slice((officialPage - 1) * officialPageSize, officialPage * officialPageSize);
+        const totalPages = Math.max(1, Number(officialPagination.total_pages || 1));
+        officialPage = Math.min(Math.max(1, Number(officialPagination.page || officialPage || 1)), totalPages);
+        const pageItems = filtered;
         if (pageInfo) pageInfo.textContent = `${officialPage} / ${totalPages}`;
-        if (prevButton) prevButton.disabled = officialPage <= 1;
-        if (nextButton) nextButton.disabled = officialPage >= totalPages;
+        if (prevButton) prevButton.disabled = !officialPagination.has_previous;
+        if (nextButton) nextButton.disabled = !officialPagination.has_next;
         body.innerHTML = "";
         if (!filtered.length) {
           body.innerHTML = '<tr><td colspan="6">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
@@ -3053,17 +3055,25 @@
         });
       }
 
-      async function loadOfficialChanges() {
+      async function loadOfficialChanges(page = officialPage) {
         setStatus(officialChangeStatus, "공식 변경 로그를 불러오는 중...");
-        const data = await adminFetch("/api/admin/official-changes?limit=80");
+        officialPage = Math.max(1, Number(page || 1));
+        const params = new URLSearchParams({ limit: String(officialPageSize), page: String(officialPage) });
+        const startDate = document.querySelector("#official-start-date-filter")?.value || "";
+        const endDate = document.querySelector("#official-end-date-filter")?.value || "";
+        if (startDate) params.set("start_date", startDate);
+        if (endDate) params.set("end_date", endDate);
+        const data = await adminFetch(`/api/admin/official-changes?${params.toString()}`);
         if (!data.ok) {
           officialChanges = [];
+          officialPagination = { page: 1, total_pages: 1, has_previous: false, has_next: false };
           renderOfficialChanges([]);
           throw new Error(data.error || "공식 변경 로그를 불러오지 못했습니다.");
         }
         officialChanges = data.items || [];
+        officialPagination = data;
         renderOfficialChanges(officialChanges);
-        setStatus(officialChangeStatus, "공식 변경 로그를 갱신했습니다.", "ok");
+        setStatus(officialChangeStatus, `공식 변경 로그를 갱신했습니다. 총 ${Number(data.total_count || 0).toLocaleString("ko-KR")}개`, "ok");
       }
 
       function statusLabel(status) {
@@ -3330,21 +3340,23 @@
         officialPage = 1;
         loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));
       });
-      document.querySelector("#official-date-filter").addEventListener("change", () => {
+      document.querySelector("#official-start-date-filter").addEventListener("change", () => {
         officialPage = 1;
-        renderOfficialChanges();
+        loadOfficialChanges(1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-end-date-filter").addEventListener("change", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
       });
       document.querySelector("#official-lang-filter").addEventListener("change", () => {
         officialPage = 1;
         renderOfficialChanges();
       });
       document.querySelector("#official-prev").addEventListener("click", () => {
-        officialPage = Math.max(1, officialPage - 1);
-        renderOfficialChanges();
+        loadOfficialChanges(Math.max(1, officialPage - 1)).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
       });
       document.querySelector("#official-next").addEventListener("click", () => {
-        officialPage += 1;
-        renderOfficialChanges();
+        loadOfficialChanges(officialPage + 1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
       });
       document.querySelector("#refresh-mail-review").addEventListener("click", () => {
         loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));

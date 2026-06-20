@@ -28,9 +28,10 @@ Set bids, URLs, and targeting context.
         )
 
         self.assertFalse(is_generic_official_summary(summary))
-        self.assertIn("Quickstart: Launch your first campaign", summary)
-        self.assertIn("Create a campaign", summary)
-        self.assertIn("Campaign setup", summary)
+        self.assertIn("첫 캠페인 생성 절차", summary)
+        self.assertIn("캠페인 목표", summary)
+        self.assertIn("캠페인 설정", summary)
+        self.assertNotIn("Create a campaign", summary)
 
     def test_generic_summary_detection(self) -> None:
         self.assertTrue(is_generic_official_summary(GENERIC_UPDATED_SUMMARY))

@@ -468,8 +468,13 @@ def admin_official_changes(request: Request) -> dict[str, Any]:
         limit = int(str(request.query_params.get("limit") or "15"))
     except ValueError:
         limit = 15
+    try:
+        page = int(str(request.query_params.get("page") or "1"))
+    except ValueError:
+        page = 1
     return list_official_guide_changes(
         limit=limit,
+        page=page,
         start_date=str(request.query_params.get("start_date") or ""),
         end_date=str(request.query_params.get("end_date") or ""),
     )

@@ -876,6 +876,11 @@ body.dev-console :focus-visible {
   align-items: end;
 }
 
+.official-pagination {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
 .list-toolbar label {
   display: grid;
   flex: 1 1 220px;

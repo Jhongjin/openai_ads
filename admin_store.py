@@ -14,10 +14,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from rag_chatbot.config import load_settings
-from rag_chatbot.official_changes import (
-    is_generic_official_summary,
-    summarize_official_document_change,
-)
+from rag_chatbot.official_changes import summarize_official_document_change
 
 
 KST = timezone(timedelta(hours=9))
@@ -1847,10 +1844,16 @@ def delete_ads_api_key(advertiser_name: str) -> dict[str, Any]:
 def list_official_guide_changes(
     *,
     limit: int = 15,
+    page: int = 1,
     start_date: str = "",
     end_date: str = "",
 ) -> dict[str, Any]:
     limit = max(1, min(int(limit or 15), 15))
+    try:
+        page = int(page or 1)
+    except (TypeError, ValueError):
+        page = 1
+    page = max(1, page)
     start_date = _clean_date_filter(start_date)
     end_date = _clean_date_filter(end_date)
     filters: list[str] = []
@@ -1878,6 +1881,19 @@ def list_official_guide_changes(
                       )
                     """
                 )
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*) AS total_count
+                    FROM {schema}.official_guide_changes c
+                    {where_sql}
+                    """,
+                    tuple(params),
+                )
+                count_row = cur.fetchone() or {}
+                total_count = int(count_row.get("total_count") or 0)
+                total_pages = max(1, (total_count + limit - 1) // limit)
+                page = min(page, total_pages)
+                offset = (page - 1) * limit
                 cur.execute(
                     f"""
                     SELECT
@@ -1908,20 +1924,18 @@ def list_official_guide_changes(
                     FROM {schema}.official_guide_changes c
                     {where_sql}
                     ORDER BY c.detected_at DESC, c.id DESC
-                    LIMIT %s
+                    LIMIT %s OFFSET %s
                     """,
-                    (*params, limit),
+                    (*params, limit, offset),
                 )
                 rows = cur.fetchall()
         items = []
         for row in rows:
-            summary = row["summary"] or ""
-            if is_generic_official_summary(summary):
-                summary = summarize_official_document_change(
-                    title=row["title"],
-                    content=row.get("document_content") or "",
-                    change_type=row["change_type"],
-                )
+            summary = summarize_official_document_change(
+                title=row["title"],
+                content=row.get("document_content") or "",
+                change_type=row["change_type"],
+            )
             items.append(
                 {
                     "id": row["id"],
@@ -1943,6 +1957,12 @@ def list_official_guide_changes(
             "ok": True,
             "items": items,
             "limit": limit,
+            "page": page,
+            "page_size": limit,
+            "total_count": total_count,
+            "total_pages": total_pages,
+            "has_previous": page > 1,
+            "has_next": page < total_pages,
             "filters": {"start_date": start_date, "end_date": end_date},
             **_storage_info("supabase"),
         }

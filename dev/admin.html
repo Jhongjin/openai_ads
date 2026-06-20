@@ -458,7 +458,7 @@
                 <div class="surface-head">
                   <div>
                     <h2 class="surface-title">공식 문서 동기화 로그</h2>
-                    <p class="surface-copy">OpenAI Help Center와 Developers 문서 변경 감지 결과입니다. 같은 URL은 최신 항목만 유지하고 최대 15개까지 표시합니다.</p>
+                    <p class="surface-copy">OpenAI Help Center와 Developers 문서 변경 감지 결과입니다. 같은 URL은 최신 항목만 유지하고 한 페이지에 15개씩 표시합니다.</p>
                   </div>
                 </div>
                 <div class="surface-body stack">
@@ -482,6 +482,11 @@
                       <thead><tr><th>감지일</th><th>언어</th><th>유형</th><th>문서</th><th>요약</th></tr></thead>
                       <tbody id="official-rows"></tbody>
                     </table>
+                  </div>
+                  <div class="list-pagination official-pagination">
+                    <button class="btn-secondary" type="button" id="official-prev">이전</button>
+                    <span class="status-line" id="official-page-info">1 / 1</span>
+                    <button class="btn-secondary" type="button" id="official-next">다음</button>
                   </div>
                 </div>
               </section>
@@ -540,6 +545,8 @@
       let adsKeySort = "asc";
       let editingAdsName = "";
       const ADS_KEY_PAGE_SIZE = 10;
+      let officialPage = 1;
+      const OFFICIAL_PAGE_SIZE = 15;
       const GUIDE_LAYOUT_VERSION = 5;
       const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
       const adminGuideDecks = {
@@ -2252,10 +2259,23 @@
         setStatus("ads-status", wasEditing ? "API 키 수정 완료" : "API 키 저장 완료", "ok");
       }
 
-      async function loadOfficialChanges() {
+      function renderOfficialPagination(meta = {}) {
+        const page = Number(meta.page || officialPage || 1);
+        const totalPages = Math.max(1, Number(meta.total_pages || 1));
+        const prevButton = $("#official-prev");
+        const nextButton = $("#official-next");
+        const pageInfo = $("#official-page-info");
+        officialPage = page;
+        if (pageInfo) pageInfo.textContent = `${page} / ${totalPages}`;
+        if (prevButton) prevButton.disabled = !meta.has_previous;
+        if (nextButton) nextButton.disabled = !meta.has_next;
+      }
+
+      async function loadOfficialChanges(page = officialPage) {
         const startDate = $("#official-start-date")?.value || "";
         const endDate = $("#official-end-date")?.value || "";
-        const params = new URLSearchParams({ limit: "15" });
+        officialPage = Math.max(1, Number(page || 1));
+        const params = new URLSearchParams({ limit: String(OFFICIAL_PAGE_SIZE), page: String(officialPage) });
         if (startDate) params.set("start_date", startDate);
         if (endDate) params.set("end_date", endDate);
         setStatus("official-status", "공식 문서 변경 로그를 불러오는 중입니다.");
@@ -2269,7 +2289,12 @@
             <td>${escapeHtml(item.summary || "-")}</td>
           </tr>
         `).join("") || '<tr><td colspan="5">변경 로그가 없습니다.</td></tr>';
-        setStatus("official-status", `${(data.items || []).length}개 표시 중 · 최대 15개 · 중복 URL은 최신 항목만 유지`, "ok");
+        renderOfficialPagination(data);
+        const total = Number(data.total_count || 0);
+        const pageSize = Number(data.page_size || OFFICIAL_PAGE_SIZE);
+        const start = total ? ((Number(data.page || 1) - 1) * pageSize) + 1 : 0;
+        const end = total ? Math.min(total, start + (data.items || []).length - 1) : 0;
+        setStatus("official-status", `총 ${total.toLocaleString("ko-KR")}개 중 ${start.toLocaleString("ko-KR")}~${end.toLocaleString("ko-KR")}번째 표시 · 15개/페이지 · 중복 URL은 최신 항목만 유지`, "ok");
       }
 
       async function loadMailReview() {
@@ -2337,13 +2362,29 @@
       });
       $("#refresh-current").addEventListener("click", () => refreshCurrent().catch((error) => console.error(error)));
       $("#analytics-period").addEventListener("change", () => loadAnalytics().catch((error) => console.error(error)));
-      $("#official-refresh").addEventListener("click", () => loadOfficialChanges().catch((error) => setStatus("official-status", error.message, "error")));
-      $("#official-start-date").addEventListener("change", () => loadOfficialChanges().catch((error) => setStatus("official-status", error.message, "error")));
-      $("#official-end-date").addEventListener("change", () => loadOfficialChanges().catch((error) => setStatus("official-status", error.message, "error")));
+      $("#official-refresh").addEventListener("click", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus("official-status", error.message, "error"));
+      });
+      $("#official-start-date").addEventListener("change", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus("official-status", error.message, "error"));
+      });
+      $("#official-end-date").addEventListener("change", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus("official-status", error.message, "error"));
+      });
       $("#official-clear-period").addEventListener("click", () => {
         $("#official-start-date").value = "";
         $("#official-end-date").value = "";
-        loadOfficialChanges().catch((error) => setStatus("official-status", error.message, "error"));
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus("official-status", error.message, "error"));
+      });
+      $("#official-prev").addEventListener("click", () => {
+        loadOfficialChanges(Math.max(1, officialPage - 1)).catch((error) => setStatus("official-status", error.message, "error"));
+      });
+      $("#official-next").addEventListener("click", () => {
+        loadOfficialChanges(officialPage + 1).catch((error) => setStatus("official-status", error.message, "error"));
       });
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
