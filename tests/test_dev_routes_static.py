@@ -38,11 +38,17 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="campaign-template"', intake)
         self.assertIn('id="adgroup-template"', intake)
         self.assertIn("수동 국가", intake)
-        self.assertIn("xlsx target_countries", intake)
-        self.assertIn("수동 세팅 입찰가", intake)
-        self.assertIn("xlsx max_bid", intake)
+        self.assertIn("캠페인 입력 요약", intake)
+        self.assertIn("광고그룹 입력 요약", intake)
+        self.assertIn("campaign_name 자동 참조", intake)
+        self.assertIn("adgroup_name 자동 참조", intake)
+        self.assertIn("수동 입찰가", intake)
         self.assertIn("campaign-manual-country", intake)
         self.assertIn("adgroup-manual-bid", intake)
+        self.assertIn("collapse-toggle", intake)
+        self.assertIn("workbook-notice", intake)
+        self.assertIn("다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다.", intake)
+        self.assertIn("serverErrorMessage", intake)
         self.assertIn("required-mark", intake)
         self.assertIn("Ads Manager Reference", intake)
         self.assertIn("실제 세팅 창 참고", intake)
@@ -72,6 +78,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertNotIn("랜딩 접근 확인", intake)
         self.assertNotIn("로고·파비콘 확인", intake)
         self.assertNotIn("대한민국은 수동 세팅에서는 선택하고", intake)
+        self.assertNotIn("xlsx target_countries", intake)
+        self.assertNotIn("xlsx max_bid", intake)
 
     def test_dev_redesign_css_asset_is_available(self) -> None:
         client = TestClient(app)
@@ -84,6 +92,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("body.dev-console", response.text)
         self.assertIn(".app-frame", response.text)
         self.assertIn(".data-grid", response.text)
+        self.assertIn(".repeat-block.is-collapsed > .repeat-body", response.text)
+        self.assertIn(".workbook-notice", response.text)
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
         client = TestClient(app)

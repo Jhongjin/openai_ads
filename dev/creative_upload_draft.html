@@ -266,6 +266,11 @@
                   내부 시트 저장 및 알림 발송
                 </button>
               </div>
+              <div class="workbook-notice">
+                <strong>다운로드한 XLSX는 OpenAI Ads Manager 벌크 업로드 기준 파일입니다.</strong>
+                <span>이 화면은 수동 세팅에 필요한 값을 먼저 확인하고, 워크북 생성 시 업로드 규칙에 맞게 자동 변환합니다.</span>
+                <span>캠페인명은 광고그룹에, 광고그룹명은 소재에 자동 참조됩니다.</span>
+              </div>
               <p class="status-line" id="form-status"></p>
             </div>
           </form>
@@ -278,6 +283,10 @@
         <div class="repeat-head">
           <strong>캠페인</strong>
           <div class="button-row">
+            <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
+              <i class="ti ti-chevron-up"></i>
+              <span>접기</span>
+            </button>
             <button class="btn-plain add-adgroup" type="button">광고그룹 추가</button>
             <button class="btn-danger remove-campaign" type="button">삭제</button>
           </div>
@@ -332,14 +341,27 @@
               </select>
               <small class="field-hint">캠페인을 집행할 국가를 선택하세요.</small>
             </div>
-            <div class="mapping-panel">
+            <div class="mapping-panel input-summary campaign-summary-panel" aria-live="polite">
+              <p class="summary-title mapping-wide">캠페인 입력 요약</p>
               <div class="mapping-item">
-                <span>수동 국가</span>
-                <strong class="manual-country-preview">대한민국</strong>
+                <span>캠페인명</span>
+                <strong class="summary-campaign-name">입력 필요</strong>
               </div>
               <div class="mapping-item">
-                <span>xlsx target_countries</span>
-                <strong class="xlsx-country-preview">blank(NULL)</strong>
+                <span>목표</span>
+                <strong class="summary-campaign-objective">노출 최적화(Views/CPM)</strong>
+              </div>
+              <div class="mapping-item">
+                <span>예산</span>
+                <strong class="summary-campaign-budget">입력 필요</strong>
+              </div>
+              <div class="mapping-item">
+                <span>국가</span>
+                <strong class="summary-campaign-country">대한민국</strong>
+              </div>
+              <div class="mapping-item mapping-wide">
+                <span>일정</span>
+                <strong class="summary-campaign-schedule">시작일 / 종료일 입력 필요</strong>
               </div>
             </div>
           </div>
@@ -353,12 +375,21 @@
         <div class="repeat-head">
           <strong>광고그룹</strong>
           <div class="button-row">
+            <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
+              <i class="ti ti-chevron-up"></i>
+              <span>접기</span>
+            </button>
             <button class="btn-plain add-ad" type="button">소재 추가</button>
             <button class="btn-danger remove-adgroup" type="button">삭제</button>
           </div>
         </div>
         <div class="repeat-body">
           <div class="grid-3">
+            <div class="field">
+              <label>campaign_name 자동 참조</label>
+              <input class="control adgroup-campaign-ref" readonly placeholder="캠페인명을 먼저 입력하세요" />
+              <small class="field-hint">상위 캠페인명으로 워크북에 자동 연결됩니다.</small>
+            </div>
             <div class="field">
               <label>광고그룹명 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control adgroup-name" required placeholder="Brand_Core_Audience" />
@@ -373,16 +404,25 @@
               <input class="control adgroup-keywords" placeholder="ai, productivity" />
             </div>
           </div>
-          <div class="mapping-panel">
+          <div class="mapping-panel input-summary adgroup-summary-panel" aria-live="polite">
+            <p class="summary-title mapping-wide">광고그룹 입력 요약</p>
             <div class="mapping-item">
-              <span>수동 세팅 입찰가</span>
+              <span>campaign_name</span>
+              <strong class="summary-adgroup-campaign">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>광고그룹명</span>
+              <strong class="summary-adgroup-name">입력 필요</strong>
+            </div>
+            <div class="mapping-item">
+              <span>수동 입찰가</span>
               <strong class="manual-bid-preview">입력 필요</strong>
             </div>
             <div class="mapping-item">
-              <span>xlsx max_bid</span>
-              <strong class="xlsx-bid-preview">blank(NULL)</strong>
+              <span>키워드</span>
+              <strong class="summary-adgroup-keywords">선택 입력</strong>
             </div>
-            <p class="mapping-help bid-rule-help">Views(CPM)는 수동 입찰가를 받지만, xlsx max_bid는 빈칸으로 변환합니다.</p>
+            <p class="mapping-help bid-rule-help">Views(CPM) 캠페인: 수동 세팅용 입찰가를 확인하세요.</p>
           </div>
           <div class="repeat-list ad-list"></div>
         </div>
@@ -393,10 +433,21 @@
       <section class="repeat-block nested nested-ad ad-block">
         <div class="repeat-head">
           <strong>소재</strong>
-          <button class="btn-danger remove-ad" type="button">삭제</button>
+          <div class="button-row">
+            <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
+              <i class="ti ti-chevron-up"></i>
+              <span>접기</span>
+            </button>
+            <button class="btn-danger remove-ad" type="button">삭제</button>
+          </div>
         </div>
         <div class="repeat-body">
           <div class="grid-3">
+            <div class="field">
+              <label>adgroup_name 자동 참조</label>
+              <input class="control ad-adgroup-ref" readonly placeholder="광고그룹명을 먼저 입력하세요" />
+              <small class="field-hint">상위 광고그룹명으로 워크북에 자동 연결됩니다.</small>
+            </div>
             <div class="field">
               <label>소재명 <span class="required-mark" aria-hidden="true">*</span></label>
               <input class="control ad-name" required placeholder="Ad_A_01" />
@@ -471,30 +522,100 @@
         return value ? `${Number(value).toLocaleString("ko-KR")} KRW` : "입력 필요";
       }
 
+      function valueOrNeeded(value, fallback = "입력 필요") {
+        const text = String(value || "").trim();
+        return text || fallback;
+      }
+
+      function selectedText(select) {
+        return select.selectedOptions?.[0]?.textContent.trim() || select.value || "";
+      }
+
+      function budgetTypeLabel(value) {
+        return value === "daily" ? "일예산" : "총예산";
+      }
+
+      function scheduleSummary(launch, end) {
+        if (launch && end) return `${launch} ~ ${end}`;
+        if (launch) return `${launch} ~ 종료일 입력 필요`;
+        if (end) return `시작일 입력 필요 ~ ${end}`;
+        return "시작일 / 종료일 입력 필요";
+      }
+
+      function collapseButtonFor(block) {
+        return $(".collapse-toggle", block);
+      }
+
+      function setCollapseButtonState(block) {
+        const button = collapseButtonFor(block);
+        if (!button) return;
+        const expanded = !block.classList.contains("is-collapsed");
+        button.setAttribute("aria-expanded", String(expanded));
+        const label = $("span", button);
+        if (label) label.textContent = expanded ? "접기" : "펼치기";
+        const icon = $("i", button);
+        if (icon) {
+          icon.classList.toggle("ti-chevron-up", expanded);
+          icon.classList.toggle("ti-chevron-down", !expanded);
+        }
+      }
+
+      function expandInvalidAncestors(control) {
+        [control.closest(".ad-block"), control.closest(".adgroup-block"), control.closest(".campaign-block")]
+          .filter(Boolean)
+          .forEach((block) => {
+            block.classList.remove("is-collapsed");
+            setCollapseButtonState(block);
+          });
+      }
+
       function syncDerivedFields() {
         $$(".campaign-block").forEach((campaign) => {
           const objective = $(".campaign-objective", campaign).value;
           const manualCountry = $(".campaign-manual-country", campaign).value;
-          const bulkCountries = bulkCountriesFor(manualCountry);
-          $(".manual-country-preview", campaign).textContent = countryLabel(manualCountry);
-          $(".xlsx-country-preview", campaign).textContent = formatBulkCountries(bulkCountries);
+          const campaignName = $(".campaign-name", campaign).value.trim();
+          const budget = $(".campaign-budget", campaign).value;
+          const budgetType = $(".campaign-budget-type", campaign).value;
+          const launch = $(".campaign-launch", campaign).value;
+          const end = $(".campaign-end", campaign).value;
+
+          $(".summary-campaign-name", campaign).textContent = valueOrNeeded(campaignName);
+          $(".summary-campaign-objective", campaign).textContent = selectedText($(".campaign-objective", campaign));
+          $(".summary-campaign-budget", campaign).textContent = budget
+            ? `${Number(budget).toLocaleString("ko-KR")} KRW · ${budgetTypeLabel(budgetType)}`
+            : "입력 필요";
+          $(".summary-campaign-country", campaign).textContent = countryLabel(manualCountry);
+          $(".summary-campaign-schedule", campaign).textContent = scheduleSummary(launch, end);
+          setCollapseButtonState(campaign);
 
           $$(".adgroup-block", campaign).forEach((group) => {
+            const groupName = $(".adgroup-name", group).value.trim();
+            const keywords = $(".adgroup-keywords", group).value.split(",").map((item) => item.trim()).filter(Boolean);
             const manualBid = $(".adgroup-manual-bid", group).value ? Number($(".adgroup-manual-bid", group).value) : null;
+            $(".adgroup-campaign-ref", group).value = campaignName || "";
+            $(".summary-adgroup-campaign", group).textContent = valueOrNeeded(campaignName);
+            $(".summary-adgroup-name", group).textContent = valueOrNeeded(groupName);
             $(".manual-bid-preview", group).textContent = formatKrw(manualBid);
-            $(".xlsx-bid-preview", group).textContent = objective === "views"
-              ? "blank(NULL)"
-              : (manualBid ? String(manualBid) : "입력 필요");
+            $(".summary-adgroup-keywords", group).textContent = keywords.length ? keywords.join(", ") : "선택 입력";
             $(".bid-rule-help", group).textContent = objective === "views"
-              ? "Views(CPM)는 수동 입찰가를 받지만, xlsx max_bid는 빈칸으로 변환합니다."
-              : "Clicks(CPC)는 수동 입찰가를 xlsx max_bid에도 그대로 반영합니다.";
+              ? "Views(CPM) 캠페인: 수동 세팅용 입찰가를 확인하세요."
+              : "Clicks(CPC) 캠페인: 입력한 입찰가를 기준으로 세팅합니다.";
+            setCollapseButtonState(group);
+
+            $$(".ad-block", group).forEach((ad) => {
+              $(".ad-adgroup-ref", ad).value = groupName || "";
+              setCollapseButtonState(ad);
+            });
           });
         });
       }
 
       function ensureFormReady() {
         syncDerivedFields();
-        if (!$("#intake-form").reportValidity()) {
+        const invalid = $$("input, select, textarea", $("#intake-form")).find((input) => !input.checkValidity());
+        if (invalid) {
+          expandInvalidAncestors(invalid);
+          invalid.reportValidity?.();
           setStatus("form-status", "수동 세팅 기준 필수값을 먼저 입력해 주세요.", "error");
           return false;
         }
@@ -596,13 +717,40 @@
       }
 
       function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = url;
         link.download = filename;
         document.body.append(link);
         link.click();
         link.remove();
-        URL.revokeObjectURL(link.href);
+        URL.revokeObjectURL(url);
+      }
+
+      async function readErrorBody(response) {
+        const text = await response.text().catch(() => "");
+        if (!text.trim()) return {};
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { detail: text };
+        }
+      }
+
+      function serverErrorMessage(body, fallback = "요청을 처리하지 못했습니다.") {
+        const detail = body?.detail ?? body?.error ?? body?.message ?? body;
+        if (Array.isArray(detail)) {
+          const messages = detail
+            .map((item) => item?.msg || item?.message || String(item || "").trim())
+            .filter(Boolean);
+          return messages.join(" / ") || fallback;
+        }
+        if (detail && typeof detail === "object") {
+          const text = JSON.stringify(detail);
+          return text && text !== "{}" ? text : fallback;
+        }
+        const text = String(detail || "").trim();
+        return text && text !== '""' ? text : fallback;
       }
 
       async function postJson(url, data) {
@@ -612,8 +760,8 @@
           body: JSON.stringify(data),
         });
         if (!response.ok) {
-          const body = await response.json().catch(() => ({}));
-          throw new Error(typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || body.error || response.statusText));
+          const body = await readErrorBody(response);
+          throw new Error(serverErrorMessage(body, response.statusText || "요청 처리 중 오류가 발생했습니다."));
         }
         return response;
       }
@@ -637,6 +785,15 @@
       }
 
       $("#campaign-list").addEventListener("click", (event) => {
+        const toggle = event.target.closest(".collapse-toggle");
+        if (toggle) {
+          const block = toggle.closest(".repeat-block");
+          if (block) {
+            block.classList.toggle("is-collapsed");
+            setCollapseButtonState(block);
+          }
+          return;
+        }
         const campaign = event.target.closest(".campaign-block");
         const group = event.target.closest(".adgroup-block");
         if (event.target.closest(".add-adgroup")) addAdgroup(campaign);
@@ -663,15 +820,15 @@
         form.append("file", file);
         try {
           const response = await fetch("/intake/inspect-workbook", { method: "POST", body: form });
-          const body = await response.json();
-          if (!response.ok) throw new Error(body.detail || response.statusText);
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(serverErrorMessage(body, response.statusText || "워크북 검수 중 오류가 발생했습니다."));
           if (body.ok && body.data) populateFromWorkbook(body.data);
           const summary = Object.entries(body.sheets || {})
             .map(([name, sheet]) => `${name}: ${sheet.rows}행`)
             .join(" / ");
           setStatus("import-status", `${body.ok ? "검수 통과" : "확인 필요"} - ${summary}`, body.ok ? "ok" : "error");
         } catch (error) {
-          setStatus("import-status", error.message, "error");
+          setStatus("import-status", error.message || "워크북 검수 중 오류가 발생했습니다.", "error");
         }
       });
 
@@ -684,7 +841,7 @@
           downloadBlob(blob, `openai_ads_bulk_upload_${new Date().toISOString().slice(0, 10)}.xlsx`);
           setStatus("form-status", "xlsx 워크북을 생성했습니다.", "ok");
         } catch (error) {
-          setStatus("form-status", error.message, "error");
+          setStatus("form-status", error.message || "xlsx 워크북 생성에 실패했습니다.", "error");
         }
       });
 
@@ -697,7 +854,7 @@
           const body = await response.json();
           setStatus("form-status", `접수 완료: ${body.receipt_number} / ${body.submitted_at_kst} KST`, "ok");
         } catch (error) {
-          setStatus("form-status", error.message, "error");
+          setStatus("form-status", error.message || "내부 시트 저장에 실패했습니다.", "error");
         }
       });
 

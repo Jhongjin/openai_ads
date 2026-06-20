@@ -453,6 +453,11 @@ body.dev-console :focus-visible {
   box-shadow: 0 0 0 3px rgb(215 25 32 / 13%);
 }
 
+.control[readonly] {
+  background: #f7f4ee;
+  color: var(--oa-muted);
+}
+
 .control[type="file"] {
   padding: 8px;
 }
@@ -1068,6 +1073,14 @@ body.dev-console :focus-visible {
   padding: 14px;
 }
 
+.repeat-block.is-collapsed > .repeat-body {
+  display: none;
+}
+
+.collapse-toggle .ti {
+  font-size: 16px;
+}
+
 .nested {
   border-left: 4px solid var(--oa-teal);
   padding-left: 12px;
@@ -1096,6 +1109,12 @@ body.dev-console :focus-visible {
   padding: 12px;
 }
 
+.input-summary {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 64%), transparent),
+    #faf7ef;
+}
+
 .mapping-item {
   min-width: 0;
   display: grid;
@@ -1118,12 +1137,42 @@ body.dev-console :focus-visible {
   overflow-wrap: anywhere;
 }
 
+.mapping-wide {
+  grid-column: 1 / -1;
+}
+
+.summary-title {
+  margin: 0;
+  color: var(--oa-red-dark);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .mapping-help {
   grid-column: 1 / -1;
   margin: 2px 0 0;
   color: var(--oa-muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.workbook-notice {
+  display: grid;
+  gap: 4px;
+  max-width: 900px;
+  border-left: 4px solid var(--oa-red);
+  background: #fff8f0;
+  padding: 10px 12px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.workbook-notice strong {
+  color: var(--oa-ink);
+  font-size: 13px;
 }
 
 .status-line {
