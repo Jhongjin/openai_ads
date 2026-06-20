@@ -759,6 +759,171 @@ body.dev-console :focus-visible {
   line-height: 1.45;
 }
 
+.surface-dark .timeline-item span {
+  color: #aab3c4;
+}
+
+.ads-reference {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.ads-ref-head {
+  display: grid;
+  gap: 4px;
+}
+
+.ads-ref-head .eyebrow {
+  margin-bottom: 0;
+}
+
+.ads-ref-head strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.ads-ref-head span {
+  color: #aab3c4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ref-mode {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--oa-radius-sm);
+  background: rgb(255 255 255 / 6%);
+  overflow: hidden;
+}
+
+.ref-mode summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 11px;
+}
+
+.ref-mode summary::-webkit-details-marker {
+  display: none;
+}
+
+.ref-mode summary span {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.ref-mode summary em {
+  color: #cfd7e6;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.ref-mode-muted summary em {
+  color: #ffb9bd;
+}
+
+.ads-manager-mini {
+  margin: 0 10px 10px;
+  border: 1px solid #d7dbe2;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  color: #111827;
+  overflow: hidden;
+}
+
+.mini-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #e6e8ee;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mini-title .ti {
+  color: #5c6678;
+  font-size: 15px;
+}
+
+.mini-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 9px 10px 0;
+}
+
+.mini-steps span {
+  display: block;
+  border-radius: 999px;
+  background: #eef0f4;
+  color: #687084;
+  padding: 5px 6px;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.mini-steps .is-active {
+  background: #111827;
+  color: #fff;
+}
+
+.mini-stage {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+}
+
+.mini-field {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e1e4ea;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fafafa;
+}
+
+.mini-field span {
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.mini-field strong {
+  color: #111827;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.feed-reference {
+  margin: 0 10px 10px;
+  border: 1px dashed rgb(255 255 255 / 18%);
+  border-radius: var(--oa-radius-sm);
+  padding: 10px;
+  color: #aab3c4;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feed-reference p {
+  margin: 0 0 8px;
+}
+
+.feed-reference ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 17px;
+}
+
 .repeat-list {
   display: grid;
   gap: 14px;
