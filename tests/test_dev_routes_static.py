@@ -95,6 +95,19 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="manual-rag-create"', admin)
         self.assertIn('id="admin-view-manualRag"', admin)
         self.assertIn("/api/admin/manual-rag", admin)
+        self.assertIn('select class="control" id="manual-rag-category"', admin)
+        self.assertIn("MANUAL_RAG_CATEGORIES", admin)
+        for category in [
+            "계정·런칭",
+            "입찰·예산",
+            "청구·세금",
+            "롤아웃·인벤토리",
+            "랜딩·크롤러",
+            "정책·제한업종",
+            "전환·권한",
+            "플랫폼·지원",
+        ]:
+            self.assertIn(category, admin)
         self.assertIn('id="mail-prev"', admin)
         self.assertIn('id="mail-next"', admin)
         self.assertIn('id="mail-page-info"', admin)

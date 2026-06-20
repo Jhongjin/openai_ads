@@ -29,6 +29,16 @@ GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2"
 MANUAL_RAG_COLLECTION = "kr_ops"
 MANUAL_RAG_SOURCE_PREFIX = "manual-rag:"
 MANUAL_RAG_SOURCE_URL_PREFIX = "internal://manual-rag/"
+MANUAL_RAG_CATEGORIES = (
+    "계정·런칭",
+    "입찰·예산",
+    "청구·세금",
+    "롤아웃·인벤토리",
+    "랜딩·크롤러",
+    "정책·제한업종",
+    "전환·권한",
+    "플랫폼·지원",
+)
 
 
 DEFAULT_NOTICE: dict[str, Any] = {
@@ -2132,6 +2142,11 @@ def _manual_rag_source_url(item_id: str) -> str:
     return f"{MANUAL_RAG_SOURCE_URL_PREFIX}{item_id}"
 
 
+def _normalize_manual_rag_category(value: str) -> str:
+    text = str(value or "").strip()
+    return text if text in MANUAL_RAG_CATEGORIES else MANUAL_RAG_CATEGORIES[0]
+
+
 def _manual_rag_content(*, title: str, category: str, source_note: str, content: str) -> str:
     parts = [
         "# 관리자 직접 입력 RAG",
@@ -2257,7 +2272,7 @@ def list_manual_rag_items(*, include_deleted: bool = False, limit: int = 200) ->
 
 def create_manual_rag_item(payload: dict[str, Any]) -> dict[str, Any]:
     title = str(payload.get("title") or "").strip()[:300]
-    category = str(payload.get("category") or "").strip()[:120]
+    category = _normalize_manual_rag_category(str(payload.get("category") or "").strip()[:120])
     source_note = str(payload.get("source_note") or "").strip()[:1000]
     content = str(payload.get("content") or "").strip()
     if len(title) < 2:
@@ -2308,7 +2323,7 @@ def create_manual_rag_item(payload: dict[str, Any]) -> dict[str, Any]:
 def update_manual_rag_item(item_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     item_id = str(item_id or "").strip()
     title = str(payload.get("title") or "").strip()[:300]
-    category = str(payload.get("category") or "").strip()[:120]
+    category = _normalize_manual_rag_category(str(payload.get("category") or "").strip()[:120])
     source_note = str(payload.get("source_note") or "").strip()[:1000]
     content = str(payload.get("content") or "").strip()
     if not item_id:

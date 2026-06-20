@@ -520,7 +520,16 @@
                     </div>
                     <div class="manual-rag-form">
                       <input class="control" id="manual-rag-title" type="text" placeholder="제목 예: 2026-06-20 OpenAI 담당자 확인 - 국가 타겟팅" />
-                      <input class="control" id="manual-rag-category" type="text" placeholder="카테고리 예: 캠페인 세팅 / 정책 운영 / 픽셀" />
+                      <select class="control" id="manual-rag-category" aria-label="RAG 카테고리">
+                        <option value="계정·런칭">계정·런칭</option>
+                        <option value="입찰·예산">입찰·예산</option>
+                        <option value="청구·세금">청구·세금</option>
+                        <option value="롤아웃·인벤토리">롤아웃·인벤토리</option>
+                        <option value="랜딩·크롤러">랜딩·크롤러</option>
+                        <option value="정책·제한업종">정책·제한업종</option>
+                        <option value="전환·권한">전환·권한</option>
+                        <option value="플랫폼·지원">플랫폼·지원</option>
+                      </select>
                       <input class="control" id="manual-rag-source-note" type="text" placeholder="출처 메모 예: OpenAI 담당자 메일, Slack, 회의록" />
                       <textarea class="textarea" id="manual-rag-content" placeholder="RAG에 반영할 내용을 관리자가 확인 가능한 문장으로 정리해 주세요."></textarea>
                       <button class="btn-command" type="button" id="manual-rag-create">
@@ -600,6 +609,16 @@
       let mailPage = 1;
       const MAIL_REVIEW_PAGE_SIZE = 10;
       let manualRagItems = [];
+      const MANUAL_RAG_CATEGORIES = [
+        "계정·런칭",
+        "입찰·예산",
+        "청구·세금",
+        "롤아웃·인벤토리",
+        "랜딩·크롤러",
+        "정책·제한업종",
+        "전환·권한",
+        "플랫폼·지원",
+      ];
       const GUIDE_LAYOUT_VERSION = 5;
       const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
       const adminGuideDecks = {
@@ -2461,6 +2480,17 @@
         };
       }
 
+      function normalizeManualRagCategory(value = "") {
+        return MANUAL_RAG_CATEGORIES.includes(value) ? value : MANUAL_RAG_CATEGORIES[0];
+      }
+
+      function manualRagCategoryOptions(selected = "") {
+        const current = normalizeManualRagCategory(selected);
+        return MANUAL_RAG_CATEGORIES.map((category) => `
+          <option value="${escapeHtml(category)}" ${category === current ? "selected" : ""}>${escapeHtml(category)}</option>
+        `).join("");
+      }
+
       async function createManualRagItem() {
         const payload = manualRagPayloadFromForm();
         if (!payload.title || !payload.content) {
@@ -2477,7 +2507,7 @@
           });
           if (data.ok === false) throw new Error(data.error || "직접 입력 RAG 반영에 실패했습니다.");
           $("#manual-rag-title").value = "";
-          $("#manual-rag-category").value = "";
+          $("#manual-rag-category").value = MANUAL_RAG_CATEGORIES[0];
           $("#manual-rag-source-note").value = "";
           $("#manual-rag-content").value = "";
           setStatus("manual-rag-create-status", "직접 입력한 내용을 RAG에 반영했습니다.", "ok");
@@ -2493,13 +2523,15 @@
       function renderManualRagList() {
         const root = $("#manual-rag-list");
         if (!root) return;
-        root.innerHTML = manualRagItems.map((item) => `
+        root.innerHTML = manualRagItems.map((item) => {
+          const category = normalizeManualRagCategory(item.category || "");
+          return `
           <article class="manual-rag-item" data-manual-rag-id="${escapeHtml(item.id || "")}">
             <div class="manual-rag-item-head">
               <div>
                 <span class="status-pill ${item.status === "deleted" ? "is-muted" : "is-live"}">${escapeHtml(item.status === "deleted" ? "삭제됨" : "활성")}</span>
                 <h3>${escapeHtml(item.title || "(제목 없음)")}</h3>
-                <p>${escapeHtml(item.category || "운영 커뮤니케이션")} · 마지막 반영 ${escapeHtml(item.last_indexed_at || "-")}</p>
+                <p>${escapeHtml(category)} · 마지막 반영 ${escapeHtml(item.last_indexed_at || "-")}</p>
               </div>
               <div class="row-actions">
                 <button class="btn-secondary" type="button" data-manual-rag-action="reindex">
@@ -2519,7 +2551,7 @@
               </label>
               <label>
                 카테고리
-                <input class="control manual-rag-category" type="text" value="${escapeHtml(item.category || "")}" />
+                <select class="control manual-rag-category" aria-label="RAG 카테고리">${manualRagCategoryOptions(category)}</select>
               </label>
               <label>
                 출처 메모
@@ -2531,7 +2563,8 @@
               <textarea class="textarea manual-rag-content">${escapeHtml(item.content || "")}</textarea>
             </label>
           </article>
-        `).join("") || '<p class="status-line">직접 입력한 RAG 항목이 없습니다.</p>';
+        `;
+        }).join("") || '<p class="status-line">직접 입력한 RAG 항목이 없습니다.</p>';
       }
 
       function manualRagPayloadFromItem(card) {
