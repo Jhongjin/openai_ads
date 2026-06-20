@@ -76,6 +76,10 @@
               <i class="ti ti-key"></i>
               <span>API 키</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="performance">
+              <i class="ti ti-chart-dots"></i>
+              <span>성과 대시보드</span>
+            </button>
             <button class="rail-button" type="button" data-admin-view="official">
               <i class="ti ti-refresh-dot"></i>
               <span>공식 문서 동기화</span>
@@ -461,6 +465,97 @@
               </div>
             </section>
 
+            <section class="view" id="admin-view-performance">
+              <section class="surface performance-surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">Ads API 성과 대시보드</h2>
+                    <p class="surface-copy">등록된 광고주 API 키 또는 공통 환경변수로 OpenAI Ads Insights 성과를 조회합니다.</p>
+                  </div>
+                  <div class="doc-actions">
+                    <a class="btn-secondary" href="https://developers.openai.com/ads/api-overview" target="_blank" rel="noopener">API 개요</a>
+                    <a class="btn-secondary" href="https://developers.openai.com/ads/api-reference/insights" target="_blank" rel="noopener">Insights 문서</a>
+                  </div>
+                </div>
+                <div class="surface-body stack">
+                  <div class="performance-controls">
+                    <label>
+                      광고주
+                      <select class="control" id="performance-advertiser-select">
+                        <option value="">공통 환경변수</option>
+                      </select>
+                    </label>
+                    <label>
+                      시작일
+                      <input class="control" id="performance-start-date" type="date" />
+                    </label>
+                    <label>
+                      종료일
+                      <input class="control" id="performance-end-date" type="date" />
+                    </label>
+                    <button class="btn-command" type="button" id="refresh-performance-dashboard">
+                      <i class="ti ti-refresh"></i>
+                      성과 새로고침
+                    </button>
+                    <span class="status-line" id="performance-status"></span>
+                  </div>
+                  <div class="performance-config-note" id="performance-setup" hidden></div>
+                  <div class="performance-kpi-grid">
+                    <div class="metric"><span>노출</span><strong id="performance-kpi-impressions">0</strong></div>
+                    <div class="metric"><span>클릭</span><strong id="performance-kpi-clicks">0</strong></div>
+                    <div class="metric"><span>소진액</span><strong id="performance-kpi-spend">0원</strong></div>
+                    <div class="metric"><span>CTR</span><strong id="performance-kpi-ctr">0.00%</strong></div>
+                    <div class="metric"><span>CPC</span><strong id="performance-kpi-cpc">0원</strong></div>
+                    <div class="metric"><span>CPM</span><strong id="performance-kpi-cpm">0원</strong></div>
+                    <div class="metric"><span>전환수</span><strong id="performance-kpi-conversions">0</strong></div>
+                    <div class="metric"><span>전환값</span><strong id="performance-kpi-conversion-value">0원</strong></div>
+                    <div class="metric"><span>CPA</span><strong id="performance-kpi-cpa">0원</strong></div>
+                    <div class="metric"><span>ROAS</span><strong id="performance-kpi-roas">-</strong></div>
+                  </div>
+                  <div class="performance-dashboard-layout">
+                    <section class="performance-panel">
+                      <div class="performance-panel-head">
+                        <div>
+                          <h3>캠페인 현황</h3>
+                          <p>선택 기간에 조회된 캠페인 단위 성과입니다.</p>
+                        </div>
+                        <span class="status-line" id="performance-campaign-count">0개 캠페인</span>
+                      </div>
+                      <div class="table-scroll">
+                        <table class="data-grid performance-table">
+                          <thead>
+                            <tr><th>캠페인</th><th>상태</th><th>노출</th><th>클릭</th><th>소진액</th><th>CTR</th><th>전환</th><th>CPA</th><th>ROAS</th><th>상세</th></tr>
+                          </thead>
+                          <tbody id="performance-campaign-rows">
+                            <tr><td colspan="10">성과 데이터를 불러오는 중입니다.</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                    <section class="performance-panel" id="performance-detail-panel">
+                      <div class="performance-panel-head">
+                        <div>
+                          <h3>상세 성과</h3>
+                          <p>캠페인의 상세 버튼을 누르면 광고그룹 성과가 표시되고, 광고그룹 상세를 누르면 소재별 수치를 확인합니다.</p>
+                        </div>
+                      </div>
+                      <div id="performance-detail-summary"></div>
+                      <div class="table-scroll">
+                        <table class="data-grid performance-table">
+                          <thead>
+                            <tr><th>항목</th><th>상태</th><th>노출</th><th>클릭</th><th>소진액</th><th>전환</th><th>CPA</th><th>ROAS</th><th>상세</th></tr>
+                          </thead>
+                          <tbody id="performance-detail-rows">
+                            <tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </section>
+            </section>
+
             <section class="view" id="admin-view-official">
               <section class="surface">
                 <div class="surface-head">
@@ -628,6 +723,7 @@
         notice: ["공지 관리", "운영 화면 첫 진입 안내 문구를 수정합니다."],
         guides: ["안내자료 편집", "광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드를 수정합니다."],
         ads: ["API 키", "광고주별 Ads API 키를 등록하고 상태를 확인합니다."],
+        performance: ["운영 성과 대시보드", "광고주 API 키 기반으로 Ads 성과를 조회합니다."],
         official: ["공식 문서 동기화", "공식 문서 변경 감지 로그를 검토합니다."],
         mail: ["지식베이스 검토함", "메일 기반 지식베이스 반영 후보를 검토합니다."],
         campaignIntakes: ["접수 캠페인 운영 보드", "구글 시트 접수 정보를 실제 캠페인 세팅 순서로 확인합니다."],
@@ -645,6 +741,7 @@
       let adsKeyQuery = "";
       let adsKeySort = "asc";
       let editingAdsName = "";
+      let adsDashboardData = null;
       const ADS_KEY_PAGE_SIZE = 10;
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
@@ -2274,6 +2371,7 @@
         adsKeyItems = Array.isArray(data.items) ? data.items : [];
         adsKeyPage = 1;
         renderAdsKeyRows();
+        renderPerformanceAdvertiserSelect();
       }
 
       function filteredAdsKeyItems() {
@@ -2380,6 +2478,198 @@
         resetAdsKeyForm();
         await loadAdsKeys();
         setStatus("ads-status", wasEditing ? "API 키 수정 완료" : "API 키 저장 완료", "ok");
+      }
+
+      function formatMoney(value) {
+        return `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
+      }
+
+      function formatRate(value) {
+        const number = Number(value || 0);
+        const percent = Math.abs(number) <= 1 ? number * 100 : number;
+        return `${percent.toFixed(2)}%`;
+      }
+
+      function formatMultiplier(value) {
+        const number = Number(value || 0);
+        return number ? `${number.toFixed(2)}x` : "-";
+      }
+
+      function conversionMetric(value, formatter = formatNumber) {
+        if (adsDashboardData && adsDashboardData.conversion_metrics_available === false) return "-";
+        return formatter(value);
+      }
+
+      function adsStatusPill(value) {
+        const label = String(value || "상태 미확인").trim();
+        const className = label.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") || "unknown";
+        return `<span class="ads-status-pill ${escapeHtml(className)}">${escapeHtml(label)}</span>`;
+      }
+
+      function isoDateWithOffset(daysOffset) {
+        const date = new Date();
+        date.setDate(date.getDate() + daysOffset);
+        return date.toISOString().slice(0, 10);
+      }
+
+      function setDefaultPerformanceDates() {
+        const startInput = $("#performance-start-date");
+        const endInput = $("#performance-end-date");
+        if (startInput && !startInput.value) startInput.value = isoDateWithOffset(-7);
+        if (endInput && !endInput.value) endInput.value = isoDateWithOffset(0);
+      }
+
+      function renderPerformanceAdvertiserSelect() {
+        const select = $("#performance-advertiser-select");
+        if (!select) return;
+        const previousValue = select.value || "";
+        select.innerHTML = '<option value="">공통 환경변수</option>';
+        adsKeyItems.forEach((item) => {
+          if (!item.enabled || !item.has_ads_api_key) return;
+          const option = document.createElement("option");
+          option.value = item.advertiser_name || "";
+          option.textContent = item.advertiser_name || "이름 없음";
+          select.appendChild(option);
+        });
+        if (Array.from(select.options).some((option) => option.value === previousValue)) {
+          select.value = previousValue;
+        }
+      }
+
+      function renderPerformanceKpis(summary = {}) {
+        $("#performance-kpi-impressions").textContent = formatNumber(summary.impressions);
+        $("#performance-kpi-clicks").textContent = formatNumber(summary.clicks);
+        $("#performance-kpi-spend").textContent = formatMoney(summary.spend);
+        $("#performance-kpi-ctr").textContent = formatRate(summary.ctr);
+        $("#performance-kpi-cpc").textContent = formatMoney(summary.cpc);
+        $("#performance-kpi-cpm").textContent = formatMoney(summary.cpm);
+        $("#performance-kpi-conversions").textContent = conversionMetric(summary.conversions);
+        $("#performance-kpi-conversion-value").textContent = conversionMetric(summary.conversion_value, formatMoney);
+        $("#performance-kpi-cpa").textContent = conversionMetric(summary.cost_per_conversion, formatMoney);
+        $("#performance-kpi-roas").textContent = conversionMetric(summary.roas, formatMultiplier);
+      }
+
+      function renderPerformanceCampaignRows(rows = []) {
+        const body = $("#performance-campaign-rows");
+        const count = $("#performance-campaign-count");
+        if (count) count.textContent = `${formatNumber(rows.length)}개 캠페인`;
+        body.innerHTML = "";
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="10">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
+          return;
+        }
+        rows.forEach((row) => {
+          const disabled = row.id ? "" : "disabled";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span class="muted-text">${escapeHtml(row.id || "id 없음")}</span></td>
+            <td>${adsStatusPill(row.status)}</td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
+            <td><button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="campaign" data-performance-detail-id="${escapeHtml(row.id || "")}" ${disabled}>광고그룹</button></td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      function renderPerformanceDetail(detail) {
+        const summary = $("#performance-detail-summary");
+        const body = $("#performance-detail-rows");
+        summary.innerHTML = "";
+        body.innerHTML = "";
+        if (!detail || !Array.isArray(detail.rows)) {
+          body.innerHTML = '<tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>';
+          return;
+        }
+        const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
+        const total = detail.total || {};
+        summary.innerHTML = `
+          <div class="performance-detail-summary">
+            <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatNumber(detail.rows.length)}</strong></div>
+            <div class="metric"><span>클릭</span><strong>${formatNumber(total.clicks)}</strong></div>
+            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+            <div class="metric"><span>전환수</span><strong>${conversionMetric(total.conversions)}</strong></div>
+          </div>
+        `;
+        if (!detail.rows.length) {
+          body.innerHTML = `<tr><td colspan="9">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
+          return;
+        }
+        detail.rows.forEach((row) => {
+          const canDrillDown = detail.aggregation_level === "ad_group" && row.id;
+          const action = canDrillDown
+            ? `<button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="ad_group" data-performance-detail-id="${escapeHtml(row.id)}">소재</button>`
+            : "-";
+          const secondary = detail.aggregation_level === "ad"
+            ? `${escapeHtml(row.ad_group_name || "")}<br>${escapeHtml(row.review_status || "")}`
+            : escapeHtml(row.id || "id 없음");
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span class="muted-text">${secondary}</span></td>
+            <td>${adsStatusPill(row.status || row.review_status)}</td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
+            <td>${action}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      function renderPerformanceDashboard(data) {
+        adsDashboardData = data;
+        const setup = $("#performance-setup");
+        if (!data.ok) {
+          renderPerformanceKpis({});
+          renderPerformanceCampaignRows([]);
+          renderPerformanceDetail(null);
+          setup.hidden = false;
+          setup.textContent = data.configured === false
+            ? "광고주별 Ads API 키를 등록하거나 OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 실시간 성과를 조회할 수 있습니다."
+            : `${data.error || "Ads API 조회에 실패했습니다."}${data.detail ? ` · ${data.detail}` : ""}`;
+          setStatus("performance-status", data.configured === false ? "API 키 대기 중" : "조회 실패", "error");
+          return;
+        }
+        setup.hidden = true;
+        setup.textContent = "";
+        renderPerformanceKpis(data.campaign_total || data.account || {});
+        renderPerformanceCampaignRows(data.campaigns || []);
+        renderPerformanceDetail(data.detail || null);
+        const range = data.range || {};
+        const advertiser = data.advertiser_name ? ` · ${data.advertiser_name}` : "";
+        if (data.warning) {
+          setStatus("performance-status", `${range.start_date || ""} ~ ${range.end_date || ""} 기본 성과 갱신${advertiser} · ${data.warning}`, "warning");
+          return;
+        }
+        const conversionNote = data.conversion_metrics_available === false
+          ? " · 전환 필드는 현재 API 응답에서 제공되지 않아 비워 두었습니다."
+          : "";
+        setStatus("performance-status", `${range.start_date || ""} ~ ${range.end_date || ""} 성과 갱신${advertiser}${conversionNote}`, "ok");
+      }
+
+      async function loadPerformanceDashboard(detailScope = "", detailId = "") {
+        setDefaultPerformanceDates();
+        setStatus("performance-status", "Ads API 성과를 불러오는 중입니다.");
+        const params = new URLSearchParams({
+          start_date: $("#performance-start-date").value,
+          end_date: $("#performance-end-date").value,
+        });
+        const advertiserName = $("#performance-advertiser-select")?.value || "";
+        if (advertiserName) params.set("advertiser_name", advertiserName);
+        if (detailScope && detailId) {
+          params.set("detail_scope", detailScope);
+          params.set("detail_id", detailId);
+        }
+        const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
+        renderPerformanceDashboard(data);
       }
 
       function renderOfficialPagination(meta = {}) {
@@ -2944,6 +3234,10 @@
         if (currentView === "notice") await loadNotice();
         if (currentView === "guides") await loadGuides();
         if (currentView === "ads") await loadAdsKeys();
+        if (currentView === "performance") {
+          await loadAdsKeys();
+          await loadPerformanceDashboard();
+        }
         if (currentView === "official") await loadOfficialChanges();
         if (currentView === "mail") await loadMailReview();
         if (currentView === "campaignIntakes") await loadCampaignIntakes();
@@ -2963,6 +3257,7 @@
           loadCampaignIntakes(),
           loadManualRagItems(),
         ]);
+        await loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
       }
 
       $("#login-button").addEventListener("click", async () => {
@@ -3073,6 +3368,26 @@
         if (actionButton.dataset.adsAction === "delete") {
           deleteAdsKey(advertiserName).catch((error) => setStatus("ads-status", error.message, "error"));
         }
+      });
+      $("#refresh-performance-dashboard").addEventListener("click", () => {
+        loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
+      });
+      $("#performance-advertiser-select").addEventListener("change", () => {
+        loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
+      });
+      $("#performance-start-date").addEventListener("change", () => {
+        loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
+      });
+      $("#performance-end-date").addEventListener("change", () => {
+        loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
+      });
+      ["performance-campaign-rows", "performance-detail-rows"].forEach((id) => {
+        $(`#${id}`).addEventListener("click", (event) => {
+          const button = event.target.closest("[data-performance-detail-scope]");
+          if (!button) return;
+          loadPerformanceDashboard(button.dataset.performanceDetailScope || "", button.dataset.performanceDetailId || "")
+            .catch((error) => setStatus("performance-status", error.message, "error"));
+        });
       });
       ["notice-title", "notice-source-label", "notice-source-url", "notice-bg"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderNoticePreview);
