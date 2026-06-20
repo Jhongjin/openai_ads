@@ -17,6 +17,8 @@ from rag_chatbot.config import load_settings
 
 
 KST = timezone(timedelta(hours=9))
+GUIDE_LAYOUT_VERSION = 5
+GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2"
 
 
 DEFAULT_NOTICE: dict[str, Any] = {
@@ -46,7 +48,11 @@ DEFAULT_NOTICE: dict[str, Any] = {
 
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
-    "layout": {"version": 4, "decks": {}},
+    "layout": {
+        "version": GUIDE_LAYOUT_VERSION,
+        "fingerprint": GUIDE_LAYOUT_FINGERPRINT,
+        "decks": {},
+    },
     "items": [
         {
             "key": "advertiser.hero.title",
@@ -1130,9 +1136,10 @@ def _clean_slide_layout(value: Any) -> dict[str, Any]:
         version = int(value.get("version") or 0)
     except (TypeError, ValueError):
         version = 0
+    fingerprint = re.sub(r"[^a-zA-Z0-9_.:-]", "", str(value.get("fingerprint") or "")).strip()[:120]
     raw_decks = value.get("decks", {})
     if not isinstance(raw_decks, dict):
-        return {"version": version, "decks": {}}
+        return {"version": version, "fingerprint": fingerprint, "decks": {}}
     decks: dict[str, Any] = {}
     for deck_key in ("advertiser", "setup", "pixel"):
         raw_deck = raw_decks.get(deck_key, {})
@@ -1176,21 +1183,28 @@ def _clean_slide_layout(value: Any) -> dict[str, Any]:
             }
             slides.append({key: val for key, val in slide.items() if val not in ("", [], None)})
         decks[deck_key] = {"slides": slides}
-    return {"version": version, "decks": decks}
+    return {"version": version, "fingerprint": fingerprint, "decks": decks}
 
 
 def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     source = payload or {}
     base = json.loads(json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False))
-    base["layout"] = _clean_slide_layout(source.get("layout"))
+    layout = _clean_slide_layout(source.get("layout"))
+    is_current_layout = (
+        layout.get("version") == GUIDE_LAYOUT_VERSION
+        and layout.get("fingerprint") == GUIDE_LAYOUT_FINGERPRINT
+    )
+    base["layout"] = layout if is_current_layout else json.loads(
+        json.dumps(DEFAULT_SLIDE_CONTENT["layout"], ensure_ascii=False)
+    )
     incoming_items = {
         str(item.get("key") or ""): item
-        for item in source.get("items", [])
+        for item in (source.get("items", []) if is_current_layout else [])
         if isinstance(item, dict)
     }
     incoming_images = {
         str(item.get("key") or ""): item
-        for item in source.get("images", [])
+        for item in (source.get("images", []) if is_current_layout else [])
         if isinstance(item, dict)
     }
 

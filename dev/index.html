@@ -379,7 +379,8 @@
         guideUpdatedAt: "",
       };
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
-      const GUIDE_LAYOUT_VERSION = 4;
+      const GUIDE_LAYOUT_VERSION = 5;
+      const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
 
       const guideDecks = {
         advertiser: {
@@ -918,7 +919,10 @@
 
       function applyGuideLayout(layout) {
         resetGuideDecks();
-        if (layout?.version !== GUIDE_LAYOUT_VERSION) {
+        if (
+          layout?.version !== GUIDE_LAYOUT_VERSION
+          || layout?.fingerprint !== GUIDE_LAYOUT_FINGERPRINT
+        ) {
           normalizeGuideDeckEditKeys();
           return;
         }

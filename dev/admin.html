@@ -519,7 +519,8 @@
       let adsKeySort = "asc";
       let editingAdsName = "";
       const ADS_KEY_PAGE_SIZE = 10;
-      const GUIDE_LAYOUT_VERSION = 4;
+      const GUIDE_LAYOUT_VERSION = 5;
+      const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
       const adminGuideDecks = {
         advertiser: {
           label: "광고주 안내 자료",
@@ -1057,7 +1058,10 @@
 
       function applyAdminGuideLayout(layout) {
         resetAdminGuideDecks();
-        if (layout?.version !== GUIDE_LAYOUT_VERSION) {
+        if (
+          layout?.version !== GUIDE_LAYOUT_VERSION
+          || layout?.fingerprint !== GUIDE_LAYOUT_FINGERPRINT
+        ) {
           normalizeAdminGuideDeckEditKeys();
           return;
         }
@@ -1861,6 +1865,7 @@
       function guideLayoutPayload() {
         return {
           version: GUIDE_LAYOUT_VERSION,
+          fingerprint: GUIDE_LAYOUT_FINGERPRINT,
           decks: Object.fromEntries(
             Object.entries(adminGuideDecks).map(([deckKey, deck]) => [
               deckKey,

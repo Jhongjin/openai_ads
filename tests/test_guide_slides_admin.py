@@ -46,7 +46,8 @@ class GuideSlidesAdminTests(unittest.TestCase):
                     }
                 ],
                 "layout": {
-                    "version": 4,
+                    "version": 5,
+                    "fingerprint": "production-guide-decks-20260620-v2",
                     "decks": {
                         "advertiser": {
                             "slides": [
@@ -83,7 +84,8 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(saved.status_code, 200)
             body = saved.json()
             self.assertEqual(body["storage"], "memory")
-            self.assertEqual(body["layout"]["version"], 4)
+            self.assertEqual(body["layout"]["version"], 5)
+            self.assertEqual(body["layout"]["fingerprint"], "production-guide-decks-20260620-v2")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["kicker"], "테스트 키커")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["fieldRows"][0][0], "필드명")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["images"][0]["key"], "campaign_preview")
@@ -92,6 +94,30 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["cards"][0][6], "User-agent: OAI-AdsBot")
             self.assertTrue(any(item["value"] == "테스트 안내자료 제목" for item in body["items"]))
             self.assertTrue(any(item.get("caption") == "테스트 캡션" for item in body["images"]))
+
+    def test_stale_guide_layout_and_items_are_ignored(self) -> None:
+        from admin_store import _merged_slide_content
+
+        merged = _merged_slide_content(
+            {
+                "layout": {
+                    "version": 4,
+                    "decks": {
+                        "advertiser": {
+                            "slides": [{"kicker": "이전 자료", "title": "구버전 슬라이드"}]
+                        }
+                    },
+                },
+                "items": [{"key": "advertiser.hero.title", "value": "구버전 제목"}],
+                "images": [{"key": "campaign_step1", "value": "/old.png"}],
+            }
+        )
+
+        self.assertEqual(merged["layout"]["version"], 5)
+        self.assertEqual(merged["layout"]["fingerprint"], "production-guide-decks-20260620-v2")
+        self.assertEqual(merged["layout"]["decks"], {})
+        self.assertTrue(any(item["key"] == "advertiser.hero.title" and item["value"] == "ChatGPT 광고 집행 준비 안내" for item in merged["items"]))
+        self.assertTrue(any(item["key"] == "campaign_step1" and item["value"] != "/old.png" for item in merged["images"]))
 
     def test_admin_guide_image_upload_requires_admin_and_storage(self) -> None:
         client = TestClient(app)
