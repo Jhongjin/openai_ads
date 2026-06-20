@@ -305,7 +305,10 @@
     <template id="campaign-template">
       <section class="repeat-block campaign-block">
         <div class="repeat-head">
-          <strong>캠페인</strong>
+          <strong class="block-heading">
+            <span class="block-sequence campaign-sequence">캠페인 1</span>
+            <span class="block-subtitle">캠페인 세팅</span>
+          </strong>
           <div class="button-row">
             <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
               <i class="ti ti-chevron-up"></i>
@@ -397,7 +400,10 @@
     <template id="adgroup-template">
       <section class="repeat-block nested adgroup-block">
         <div class="repeat-head">
-          <strong>광고그룹</strong>
+          <strong class="block-heading">
+            <span class="block-sequence adgroup-sequence">광고그룹 1-1</span>
+            <span class="block-subtitle">상위 캠페인 연결</span>
+          </strong>
           <div class="button-row">
             <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
               <i class="ti ti-chevron-up"></i>
@@ -456,7 +462,10 @@
     <template id="ad-template">
       <section class="repeat-block nested nested-ad ad-block">
         <div class="repeat-head">
-          <strong>소재</strong>
+          <strong class="block-heading">
+            <span class="block-sequence ad-sequence">소재 1-1-1</span>
+            <span class="block-subtitle">상위 광고그룹 연결</span>
+          </strong>
           <div class="button-row">
             <button class="btn-plain collapse-toggle" type="button" aria-expanded="true">
               <i class="ti ti-chevron-up"></i>
@@ -537,6 +546,14 @@
       const reviewCancel = document.getElementById("review-cancel");
       const reviewConfirm = document.getElementById("review-confirm");
       let pendingSubmissionPayload = null;
+      const campaignThemes = [
+        { accent: "#d71920", border: "#f0b3b8", tint: "#fff4f4" },
+        { accent: "#255f99", border: "#b9cfe4", tint: "#f1f7ff" },
+        { accent: "#087a75", border: "#a6d8d4", tint: "#effbf9" },
+        { accent: "#7a4a11", border: "#dfc6a2", tint: "#fff7eb" },
+        { accent: "#4f46a5", border: "#c8c3ee", tint: "#f6f4ff" },
+        { accent: "#19704f", border: "#acd9c4", tint: "#f0fbf5" },
+      ];
       const countryLabels = {
         ALL: "전체",
         US: "미국",
@@ -586,6 +603,19 @@
 
       function campaignBlocks() {
         return $$(".campaign-block", campaignRoot);
+      }
+
+      function applyCampaignTheme(block, campaignIndex) {
+        const theme = campaignThemes[campaignIndex % campaignThemes.length];
+        block.style.setProperty("--block-accent", theme.accent);
+        block.style.setProperty("--block-border", theme.border);
+        block.style.setProperty("--block-tint", theme.tint);
+      }
+
+      function setSequenceLabel(block, selector, label) {
+        const target = $(selector, block);
+        if (target) target.textContent = label;
+        block.dataset.sequenceLabel = label;
       }
 
       function isSafeWorkbookName(value) {
@@ -690,7 +720,10 @@
       }
 
       function syncDerivedFields() {
-        campaignBlocks().forEach((campaign) => {
+        campaignBlocks().forEach((campaign, campaignIndex) => {
+          const campaignNumber = campaignIndex + 1;
+          applyCampaignTheme(campaign, campaignIndex);
+          setSequenceLabel(campaign, ".campaign-sequence", `캠페인 ${campaignNumber}`);
           const objective = $(".campaign-objective", campaign).value;
           const manualCountry = $(".campaign-manual-country", campaign).value;
           const campaignName = $(".campaign-name", campaign).value.trim();
@@ -708,7 +741,10 @@
           $(".summary-campaign-schedule", campaign).textContent = scheduleSummary(launch, end);
           setCollapseButtonState(campaign);
 
-          $$(".adgroup-block", campaign).forEach((group) => {
+          $$(".adgroup-block", campaign).forEach((group, groupIndex) => {
+            const groupNumber = groupIndex + 1;
+            applyCampaignTheme(group, campaignIndex);
+            setSequenceLabel(group, ".adgroup-sequence", `광고그룹 ${campaignNumber}-${groupNumber}`);
             const groupName = $(".adgroup-name", group).value.trim();
             const keywords = $(".adgroup-keywords", group).value.split(",").map((item) => item.trim()).filter(Boolean);
             const manualBid = $(".adgroup-manual-bid", group).value ? Number($(".adgroup-manual-bid", group).value) : null;
@@ -722,7 +758,9 @@
               : "Clicks(CPC) 캠페인: 입력한 입찰가를 기준으로 세팅합니다.";
             setCollapseButtonState(group);
 
-            $$(".ad-block", group).forEach((ad) => {
+            $$(".ad-block", group).forEach((ad, adIndex) => {
+              applyCampaignTheme(ad, campaignIndex);
+              setSequenceLabel(ad, ".ad-sequence", `소재 ${campaignNumber}-${groupNumber}-${adIndex + 1}`);
               const adName = $(".ad-name", ad).value.trim();
               const title = $(".ad-title", ad).value.trim();
               const copy = $(".ad-copy", ad).value.trim();
@@ -741,35 +779,69 @@
         });
       }
 
-      function ensureFormReady() {
-        syncDerivedFields();
-        $$("input, select, textarea", $("#intake-form")).forEach((input) => input.setCustomValidity(""));
-        const invalid = $$("input, select, textarea", $("#intake-form")).find((input) => !input.checkValidity());
-        if (invalid) {
-          expandInvalidAncestors(invalid);
-          invalid.reportValidity?.();
-          setStatus("form-status", "수동 세팅 기준 필수값을 먼저 입력해 주세요.", "error");
-          return false;
-        }
+      function validateNameFields() {
         const campaignNames = new Set();
         const adgroupNames = new Set();
         const adNames = new Set();
         for (const campaign of campaignBlocks()) {
           const campaignNameInput = $(".campaign-name", campaign);
           const campaignName = campaignNameInput.value.trim();
-          if (campaignName.length < 3) {
+          if (campaignName && campaignName.length < 3) {
             focusInvalid(campaignNameInput, "캠페인명은 최소 3자 이상 입력해 주세요.");
             return false;
           }
-          if (!isSafeWorkbookName(campaignName)) {
+          if (campaignName && !isSafeWorkbookName(campaignName)) {
             focusInvalid(campaignNameInput, "캠페인명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
             return false;
           }
-          if (campaignNames.has(campaignName)) {
+          if (campaignName && campaignNames.has(campaignName)) {
             focusInvalid(campaignNameInput, `캠페인명 "${campaignName}"이 중복되었습니다.`);
             return false;
           }
-          campaignNames.add(campaignName);
+          if (campaignName) campaignNames.add(campaignName);
+
+          for (const group of $$(".adgroup-block", campaign)) {
+            const groupNameInput = $(".adgroup-name", group);
+            const groupName = groupNameInput.value.trim();
+            if (groupName && groupName.length < 3) {
+              focusInvalid(groupNameInput, "광고그룹명은 최소 3자 이상 입력해 주세요.");
+              return false;
+            }
+            if (groupName && !isSafeWorkbookName(groupName)) {
+              focusInvalid(groupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+              return false;
+            }
+            if (groupName && adgroupNames.has(groupName)) {
+              focusInvalid(groupNameInput, `광고그룹명 "${groupName}"이 중복되었습니다.`);
+              return false;
+            }
+            if (groupName) adgroupNames.add(groupName);
+
+            for (const ad of $$(".ad-block", group)) {
+              const adNameInput = $(".ad-name", ad);
+              const adName = adNameInput.value.trim();
+              if (adName && adName.length < 3) {
+                focusInvalid(adNameInput, "소재명은 최소 3자 이상 입력해 주세요.");
+                return false;
+              }
+              if (adName && !isSafeWorkbookName(adName)) {
+                focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
+                return false;
+              }
+              if (adName && adNames.has(adName)) {
+                focusInvalid(adNameInput, `소재명 "${adName}"이 중복되었습니다.`);
+                return false;
+              }
+              if (adName) adNames.add(adName);
+            }
+          }
+        }
+        return true;
+      }
+
+      function validateDerivedFields() {
+        for (const campaign of campaignBlocks()) {
+          const campaignName = $(".campaign-name", campaign).value.trim();
           const launch = $(".campaign-launch", campaign).value;
           const end = $(".campaign-end", campaign).value;
           if (launch && end && end < launch) {
@@ -778,38 +850,7 @@
           }
 
           for (const group of $$(".adgroup-block", campaign)) {
-            const groupNameInput = $(".adgroup-name", group);
-            const groupName = groupNameInput.value.trim();
-            if (groupName.length < 3) {
-              focusInvalid(groupNameInput, "광고그룹명은 최소 3자 이상 입력해 주세요.");
-              return false;
-            }
-            if (!isSafeWorkbookName(groupName)) {
-              focusInvalid(groupNameInput, "광고그룹명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
-              return false;
-            }
-            if (adgroupNames.has(groupName)) {
-              focusInvalid(groupNameInput, `광고그룹명 "${groupName}"이 중복되었습니다.`);
-              return false;
-            }
-            adgroupNames.add(groupName);
-
             for (const ad of $$(".ad-block", group)) {
-              const adNameInput = $(".ad-name", ad);
-              const adName = adNameInput.value.trim();
-              if (adName.length < 3) {
-                focusInvalid(adNameInput, "소재명은 최소 3자 이상 입력해 주세요.");
-                return false;
-              }
-              if (!isSafeWorkbookName(adName)) {
-                focusInvalid(adNameInput, "소재명은 한글, 영문, 숫자, 공백, 하이픈(-), 언더스코어(_)만 사용해 주세요. 점(.), 슬래시(/), 괄호, 이모지는 제외합니다.");
-                return false;
-              }
-              if (adNames.has(adName)) {
-                focusInvalid(adNameInput, `소재명 "${adName}"이 중복되었습니다.`);
-                return false;
-              }
-              adNames.add(adName);
               if (!isHttpUrl($(".ad-link", ad).value)) {
                 focusInvalid($(".ad-link", ad), "랜딩 URL은 http:// 또는 https://로 시작하는 정상 URL 형식이어야 합니다.");
                 return false;
@@ -822,6 +863,20 @@
           }
         }
         return true;
+      }
+
+      function ensureFormReady() {
+        syncDerivedFields();
+        $$("input, select, textarea", $("#intake-form")).forEach((input) => input.setCustomValidity(""));
+        if (!validateNameFields()) return false;
+        const invalid = $$("input, select, textarea", $("#intake-form")).find((input) => !input.checkValidity());
+        if (invalid) {
+          expandInvalidAncestors(invalid);
+          invalid.reportValidity?.();
+          setStatus("form-status", "수동 세팅 기준 필수값을 먼저 입력해 주세요.", "error");
+          return false;
+        }
+        return validateDerivedFields();
       }
 
       function addAd(group, data = {}) {
