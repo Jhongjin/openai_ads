@@ -46,6 +46,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
 
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
+    "layout": {"decks": {}},
     "items": [
         {
             "key": "advertiser.hero.title",
@@ -995,9 +996,67 @@ def _clean_slide_image_url(value: Any, fallback: str) -> str:
     return fallback
 
 
+def _clean_slide_key(value: Any) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.:-]", "", str(value or "")).strip()[:120]
+
+
+def _clean_slide_cards(value: Any) -> list[list[str]]:
+    cards: list[list[str]] = []
+    if not isinstance(value, list):
+        return cards
+    for raw_card in value[:24]:
+        if not isinstance(raw_card, list):
+            continue
+        title = _clean_slide_text(raw_card[0] if len(raw_card) > 0 else "", fallback="새 박스 제목")[:300]
+        body = _clean_slide_text(raw_card[1] if len(raw_card) > 1 else "", multiline=True, fallback="내용을 입력해 주세요.")[:1200]
+        body_key = _clean_slide_key(raw_card[2] if len(raw_card) > 2 else "")
+        title_key = _clean_slide_key(raw_card[3] if len(raw_card) > 3 else "")
+        cards.append([title, body, body_key, title_key])
+    return cards
+
+
+def _clean_slide_layout(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {"decks": {}}
+    raw_decks = value.get("decks", {})
+    if not isinstance(raw_decks, dict):
+        return {"decks": {}}
+    decks: dict[str, Any] = {}
+    for deck_key in ("advertiser", "setup", "pixel"):
+        raw_deck = raw_decks.get(deck_key, {})
+        if not isinstance(raw_deck, dict):
+            continue
+        raw_slides = raw_deck.get("slides", [])
+        if not isinstance(raw_slides, list):
+            continue
+        slides: list[dict[str, Any]] = []
+        for raw_slide in raw_slides[:40]:
+            if not isinstance(raw_slide, dict):
+                continue
+            slide = {
+                "kicker": _clean_slide_text(raw_slide.get("kicker"), fallback=""),
+                "kickerKey": _clean_slide_key(raw_slide.get("kickerKey")),
+                "title": _clean_slide_text(raw_slide.get("title"), fallback="새 슬라이드 제목"),
+                "titleKey": _clean_slide_key(raw_slide.get("titleKey")),
+                "subtitle": _clean_slide_text(raw_slide.get("subtitle"), multiline=True, fallback=""),
+                "subtitleKey": _clean_slide_key(raw_slide.get("subtitleKey")),
+                "callout": _clean_slide_text(raw_slide.get("callout"), multiline=True, fallback=""),
+                "calloutKey": _clean_slide_key(raw_slide.get("calloutKey")),
+                "footer": _clean_slide_text(raw_slide.get("footer"), fallback=""),
+                "code": _clean_slide_text(raw_slide.get("code"), multiline=True, fallback="")[:1200],
+                "codeKey": _clean_slide_key(raw_slide.get("codeKey")),
+                "imageKey": _clean_slide_key(raw_slide.get("imageKey")),
+                "cards": _clean_slide_cards(raw_slide.get("cards")),
+            }
+            slides.append({key: val for key, val in slide.items() if val not in ("", [], None)})
+        decks[deck_key] = {"slides": slides}
+    return {"decks": decks}
+
+
 def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     source = payload or {}
     base = json.loads(json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False))
+    base["layout"] = _clean_slide_layout(source.get("layout"))
     incoming_items = {
         str(item.get("key") or ""): item
         for item in source.get("items", [])

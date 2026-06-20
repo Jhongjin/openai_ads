@@ -586,6 +586,7 @@
         Object.entries(guideDecks).forEach(([deckKey, deck]) => {
           (deck.slides || []).forEach((slide, slideIndex) => {
             const slideKey = `${deckKey}.slide${slideIndex + 1}`;
+            if (slide.kicker && !slide.kickerKey) slide.kickerKey = `${slideKey}.kicker`;
             if (slide.title && !slide.titleKey) slide.titleKey = `${slideKey}.title`;
             if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
             if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
@@ -601,6 +602,25 @@
             });
           });
         });
+      }
+
+      const guideDeckDefaults = JSON.parse(JSON.stringify(guideDecks));
+
+      function resetGuideDecks() {
+        Object.entries(guideDeckDefaults).forEach(([deckKey, deck]) => {
+          if (!guideDecks[deckKey]) return;
+          guideDecks[deckKey].slides = JSON.parse(JSON.stringify(deck.slides || []));
+        });
+      }
+
+      function applyGuideLayout(layout) {
+        resetGuideDecks();
+        const decks = layout?.decks || {};
+        Object.entries(decks).forEach(([deckKey, deckLayout]) => {
+          if (!guideDecks[deckKey] || !Array.isArray(deckLayout?.slides) || !deckLayout.slides.length) return;
+          guideDecks[deckKey].slides = JSON.parse(JSON.stringify(deckLayout.slides));
+        });
+        normalizeGuideDeckEditKeys();
       }
 
       normalizeGuideDeckEditKeys();
@@ -1103,6 +1123,7 @@
       }
 
       function renderGuideSlide(slide, index, total) {
+        const kicker = slide.kickerKey ? guideText(slide.kickerKey, slide.kicker) : slide.kicker;
         const title = slide.titleKey ? guideText(slide.titleKey, slide.title) : slide.title;
         const subtitle = slide.subtitleKey ? guideText(slide.subtitleKey, slide.subtitle) : slide.subtitle;
         const callout = slide.calloutKey ? guideText(slide.calloutKey, slide.callout) : slide.callout;
@@ -1111,7 +1132,7 @@
         const body = `
           <div class="dev-slide-main${hasMedia ? " has-media" : ""}">
             <div class="dev-slide-copy">
-              ${slide.kicker ? `<p class="dev-slide-kicker">${escapeHtml(slide.kicker)}</p>` : ""}
+              ${kicker ? `<p class="dev-slide-kicker">${escapeHtml(kicker)}</p>` : ""}
               <h4>${escapeHtml(title || "")}</h4>
               ${subtitle ? `<p class="dev-slide-subtitle">${escapeHtml(subtitle)}</p>` : ""}
               ${slide.cards?.length ? `<div class="dev-slide-grid">${renderGuideCards(slide.cards)}</div>` : ""}
@@ -1168,6 +1189,7 @@
           state.guideText = new Map(items.map((item) => [item.key, item.value || item.default || ""]));
           state.guideImages = new Map(images.map((item) => [item.key, item]));
           state.guideUpdatedAt = data.updated_at || "";
+          applyGuideLayout(data.layout);
           renderGuideDeck();
         } catch (error) {
           $("#guide-deck").innerHTML = `<div class="empty-pane">${escapeHtml(error.message)}</div>`;

@@ -132,8 +132,9 @@ class SlideContentItemRequest(BaseModel):
 
 
 class SlideContentRequest(BaseModel):
-    items: list[SlideContentItemRequest] = Field(default_factory=list, max_length=240)
-    images: list[SlideContentItemRequest] = Field(default_factory=list, max_length=80)
+    items: list[SlideContentItemRequest] = Field(default_factory=list, max_length=700)
+    images: list[SlideContentItemRequest] = Field(default_factory=list, max_length=120)
+    layout: dict[str, Any] | None = Field(default_factory=dict)
 
 
 class MailReviewUpdateRequest(BaseModel):

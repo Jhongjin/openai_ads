@@ -35,6 +35,28 @@ class GuideSlidesAdminTests(unittest.TestCase):
                         "caption": "테스트 캡션",
                     }
                 ],
+                "layout": {
+                    "decks": {
+                        "advertiser": {
+                            "slides": [
+                                {
+                                    "kicker": "테스트 키커",
+                                    "kickerKey": "advertiser.custom.kicker",
+                                    "title": "테스트 슬라이드",
+                                    "titleKey": "advertiser.custom.title",
+                                    "cards": [
+                                        [
+                                            "테스트 박스",
+                                            "테스트 내용",
+                                            "advertiser.custom.card.body",
+                                            "advertiser.custom.card.title",
+                                        ]
+                                    ],
+                                }
+                            ]
+                        }
+                    }
+                },
             }
             saved = client.post(
                 "/api/admin/guide-slides",
@@ -44,6 +66,7 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(saved.status_code, 200)
             body = saved.json()
             self.assertEqual(body["storage"], "memory")
+            self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["kicker"], "테스트 키커")
             self.assertTrue(any(item["value"] == "테스트 안내자료 제목" for item in body["items"]))
             self.assertTrue(any(item.get("caption") == "테스트 캡션" for item in body["images"]))
 

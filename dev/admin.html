@@ -368,7 +368,10 @@
                       <p class="eyebrow" id="admin-guide-kicker">Advertiser Deck</p>
                       <h3 class="surface-title" id="admin-guide-title">광고주 안내 자료</h3>
                     </div>
-                    <span class="tag tag-blue" id="admin-guide-updated">loading</span>
+                    <div class="guide-admin-actions">
+                      <button class="btn-secondary" type="button" id="add-admin-guide-slide">슬라이드 추가</button>
+                      <span class="tag tag-blue" id="admin-guide-updated">loading</span>
+                    </div>
                   </div>
                   <div class="guide-admin-deck" id="admin-guide-deck" aria-live="polite">
                     <div class="empty-pane">안내자료를 불러오는 중입니다.</div>
@@ -692,6 +695,7 @@
         Object.entries(adminGuideDecks).forEach(([deckKey, deck]) => {
           (deck.slides || []).forEach((slide, slideIndex) => {
             const slideKey = `${deckKey}.slide${slideIndex + 1}`;
+            if (slide.kicker && !slide.kickerKey) slide.kickerKey = `${slideKey}.kicker`;
             if (slide.title && !slide.titleKey) slide.titleKey = `${slideKey}.title`;
             if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
             if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
@@ -707,6 +711,25 @@
             });
           });
         });
+      }
+
+      const adminGuideDeckDefaults = JSON.parse(JSON.stringify(adminGuideDecks));
+
+      function resetAdminGuideDecks() {
+        Object.entries(adminGuideDeckDefaults).forEach(([deckKey, deck]) => {
+          if (!adminGuideDecks[deckKey]) return;
+          adminGuideDecks[deckKey].slides = JSON.parse(JSON.stringify(deck.slides || []));
+        });
+      }
+
+      function applyAdminGuideLayout(layout) {
+        resetAdminGuideDecks();
+        const decks = layout?.decks || {};
+        Object.entries(decks).forEach(([deckKey, deckLayout]) => {
+          if (!adminGuideDecks[deckKey] || !Array.isArray(deckLayout?.slides)) return;
+          adminGuideDecks[deckKey].slides = JSON.parse(JSON.stringify(deckLayout.slides));
+        });
+        normalizeAdminGuideDeckEditKeys();
       }
 
       normalizeAdminGuideDeckEditKeys();
@@ -1185,7 +1208,8 @@
 
       function renderAdminGuideCards(cards = [], deckKey, slide, slideIndex) {
         return cards.map(([title, body, bodyKey, titleKey], cardIndex) => `
-          <div class="dev-slide-item admin-guide-editable-card">
+          <div class="dev-slide-item admin-guide-editable-card" data-guide-card="${cardIndex}">
+            <button class="admin-guide-card-action" type="button" data-guide-action="remove-card" aria-label="박스 삭제">삭제</button>
             ${renderGuideEditableText(
               titleKey,
               title,
@@ -1219,10 +1243,6 @@
             <figcaption>${escapeHtml(image.caption)}</figcaption>
             <div class="admin-guide-image-tools">
               <label>
-                이미지 URL 교체
-                <input class="control admin-guide-image-url" value="${escapeHtml(image.src)}" placeholder="https://... 또는 /images/guide/name.png" />
-              </label>
-              <label>
                 이미지 파일 업로드
                 <input class="control admin-guide-image-file" type="file" accept="image/png,image/jpeg,image/webp" />
                 <span class="admin-guide-upload-status">업로드 후 저장 버튼을 눌러 반영합니다.</span>
@@ -1241,10 +1261,14 @@
       }
 
       function renderAdminGuideSlide(slide, index, total, deckKey) {
+        const kickerKey = slide.kickerKey;
         const titleKey = slide.titleKey;
         const subtitleKey = slide.subtitleKey;
         const calloutKey = slide.calloutKey;
         const codeKey = slide.codeKey;
+        const kicker = kickerKey
+          ? renderGuideEditableText(kickerKey, slide.kicker, `${slide.kicker || `슬라이드 ${index + 1}`} 빨간 상단 텍스트`, deckKey, "dev-slide-kicker", "p")
+          : (slide.kicker ? `<p class="dev-slide-kicker">${escapeHtml(slide.kicker)}</p>` : "");
         const title = titleKey
           ? renderGuideEditableText(titleKey, slide.title, `${slide.kicker || `슬라이드 ${index + 1}`} 제목`, deckKey, "", "h4")
           : "";
@@ -1261,10 +1285,16 @@
 
         return `
           <section class="dev-slide-card admin-guide-slide-card" data-guide-slide="${index + 1}">
+            <div class="admin-guide-slide-tools">
+              <button type="button" class="btn-plain" data-guide-action="move-slide-up" ${index === 0 ? "disabled" : ""}>위로</button>
+              <button type="button" class="btn-plain" data-guide-action="move-slide-down" ${index === total - 1 ? "disabled" : ""}>아래로</button>
+              <button type="button" class="btn-secondary" data-guide-action="add-card">박스 추가</button>
+              <button type="button" class="btn-danger" data-guide-action="remove-slide" ${total <= 1 ? "disabled" : ""}>슬라이드 삭제</button>
+            </div>
             <span class="dev-slide-update">최종 업데이트: ${escapeHtml(slideContent.updated_at || "-")}</span>
             <div class="dev-slide-main${hasMedia ? " has-media" : ""}">
               <div class="dev-slide-copy">
-                ${slide.kicker ? `<p class="dev-slide-kicker">${escapeHtml(slide.kicker)}</p>` : ""}
+                ${kicker}
                 ${title || (slide.title ? `<h4>${escapeHtml(slide.title)}</h4>` : "")}
                 ${subtitle}
                 ${slide.cards?.length ? `<div class="dev-slide-grid">${renderAdminGuideCards(slide.cards, deckKey, slide, index)}</div>` : ""}
@@ -1319,6 +1349,163 @@
         hydrateAdminGuideDeckImages();
       }
 
+      function createGuideId(prefix) {
+        return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+      }
+
+      function currentGuideDeck() {
+        return adminGuideDecks[activeGuideDeck] || adminGuideDecks.advertiser;
+      }
+
+      function normalizeSlideForLayout(slide) {
+        const normalized = {};
+        [
+          "kicker",
+          "kickerKey",
+          "title",
+          "titleKey",
+          "subtitle",
+          "subtitleKey",
+          "callout",
+          "calloutKey",
+          "footer",
+          "code",
+          "codeKey",
+          "imageKey",
+        ].forEach((key) => {
+          if (slide[key]) normalized[key] = slide[key];
+        });
+        normalized.cards = (slide.cards || []).map(([title, body, bodyKey, titleKey]) => [
+          title || "새 박스 제목",
+          body || "내용을 입력해 주세요.",
+          bodyKey || "",
+          titleKey || "",
+        ]);
+        return normalized;
+      }
+
+      function guideLayoutPayload() {
+        return {
+          decks: Object.fromEntries(
+            Object.entries(adminGuideDecks).map(([deckKey, deck]) => [
+              deckKey,
+              { slides: (deck.slides || []).map(normalizeSlideForLayout) },
+            ]),
+          ),
+        };
+      }
+
+      function collectGuidePayloadKeys() {
+        const textKeys = new Set();
+        const imageKeys = new Set();
+        Object.values(adminGuideDecks).forEach((deck) => {
+          (deck.slides || []).forEach((slide) => {
+            ["kickerKey", "titleKey", "subtitleKey", "calloutKey", "codeKey"].forEach((key) => {
+              if (slide[key]) textKeys.add(slide[key]);
+            });
+            if (slide.imageKey) imageKeys.add(slide.imageKey);
+            (slide.cards || []).forEach((card) => {
+              if (card[2]) textKeys.add(card[2]);
+              if (card[3]) textKeys.add(card[3]);
+            });
+          });
+        });
+        return { textKeys, imageKeys };
+      }
+
+      function hydrateGuidePayloadItems() {
+        Object.entries(adminGuideDecks).forEach(([deckKey, deck]) => {
+          (deck.slides || []).forEach((slide, slideIndex) => {
+            const labelPrefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
+            if (slide.kickerKey) ensureGuideTextItem(slide.kickerKey, slide.kicker, `${labelPrefix} 빨간 상단 텍스트`, deckKey);
+            if (slide.titleKey) ensureGuideTextItem(slide.titleKey, slide.title, `${labelPrefix} 제목`, deckKey);
+            if (slide.subtitleKey) ensureGuideTextItem(slide.subtitleKey, slide.subtitle, `${labelPrefix} 부제`, deckKey, true);
+            if (slide.calloutKey) ensureGuideTextItem(slide.calloutKey, slide.callout, `${labelPrefix} 강조 문구`, deckKey, true);
+            if (slide.codeKey) ensureGuideTextItem(slide.codeKey, slide.code, `${labelPrefix} 코드`, deckKey, true);
+            if (slide.imageKey) ensureGuideImageItem(slide.imageKey, slide.title || slide.imageKey, deckKey);
+            (slide.cards || []).forEach(([title, body, bodyKey, titleKey], cardIndex) => {
+              if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 카드 ${cardIndex + 1} 제목`, deckKey);
+              if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 카드 ${cardIndex + 1} 내용`, deckKey, true);
+            });
+          });
+        });
+      }
+
+      function addGuideCard(slideIndex) {
+        const deck = currentGuideDeck();
+        const slide = deck.slides?.[slideIndex];
+        if (!slide) return;
+        const id = createGuideId("card");
+        const baseKey = `${activeGuideDeck}.custom.${id}`;
+        slide.cards = Array.isArray(slide.cards) ? slide.cards : [];
+        slide.cards.push(["새 박스 제목", "내용을 입력해 주세요.", `${baseKey}.body`, `${baseKey}.title`]);
+        renderGuideEditor();
+      }
+
+      function removeGuideCard(slideIndex, cardIndex) {
+        const deck = currentGuideDeck();
+        const slide = deck.slides?.[slideIndex];
+        if (!slide || !Array.isArray(slide.cards)) return;
+        if (!window.confirm("이 박스를 삭제할까요?")) return;
+        slide.cards.splice(cardIndex, 1);
+        renderGuideEditor();
+      }
+
+      function addGuideSlide() {
+        const deck = currentGuideDeck();
+        const id = createGuideId("slide");
+        const baseKey = `${activeGuideDeck}.custom.${id}`;
+        deck.slides = Array.isArray(deck.slides) ? deck.slides : [];
+        deck.slides.push({
+          kicker: "새 슬라이드",
+          kickerKey: `${baseKey}.kicker`,
+          title: "새 슬라이드 제목",
+          titleKey: `${baseKey}.title`,
+          subtitle: "설명을 입력해 주세요.",
+          subtitleKey: `${baseKey}.subtitle`,
+          cards: [
+            ["새 박스 제목", "내용을 입력해 주세요.", `${baseKey}.card1.body`, `${baseKey}.card1.title`],
+            ["새 박스 제목", "내용을 입력해 주세요.", `${baseKey}.card2.body`, `${baseKey}.card2.title`],
+          ],
+          footer: "OpenAI Ads 운영 워크벤치 · KT Nasmedia",
+        });
+        renderGuideEditor();
+        window.setTimeout(() => {
+          $(`#admin-guide-deck [data-guide-slide="${deck.slides.length}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+      }
+
+      function removeGuideSlide(slideIndex) {
+        const deck = currentGuideDeck();
+        if (!deck.slides || deck.slides.length <= 1) return;
+        if (!window.confirm("이 슬라이드를 삭제할까요?")) return;
+        deck.slides.splice(slideIndex, 1);
+        renderGuideEditor();
+      }
+
+      function moveGuideSlide(slideIndex, direction) {
+        const deck = currentGuideDeck();
+        const targetIndex = slideIndex + direction;
+        if (!deck.slides || targetIndex < 0 || targetIndex >= deck.slides.length) return;
+        const [slide] = deck.slides.splice(slideIndex, 1);
+        deck.slides.splice(targetIndex, 0, slide);
+        renderGuideEditor();
+      }
+
+      function handleGuideDeckAction(button) {
+        const slideElement = button.closest("[data-guide-slide]");
+        const slideIndex = Number(slideElement?.dataset.guideSlide || 1) - 1;
+        const action = button.dataset.guideAction;
+        if (action === "add-card") addGuideCard(slideIndex);
+        if (action === "remove-card") {
+          const cardElement = button.closest("[data-guide-card]");
+          removeGuideCard(slideIndex, Number(cardElement?.dataset.guideCard || 0));
+        }
+        if (action === "remove-slide") removeGuideSlide(slideIndex);
+        if (action === "move-slide-up") moveGuideSlide(slideIndex, -1);
+        if (action === "move-slide-down") moveGuideSlide(slideIndex, 1);
+      }
+
       function editableTextValue(element) {
         const multiline = element.dataset.guideMultiline === "true";
         const raw = (element.innerText || element.textContent || "").replace(/\u00a0/g, " ");
@@ -1347,10 +1534,6 @@
         if (!figure || !item) return;
         const image = $("img", figure);
         const caption = $("figcaption", figure);
-        if (input.classList.contains("admin-guide-image-url")) {
-          item.value = input.value.trim();
-          if (image) image.src = item.value || item.default || "";
-        }
         if (input.classList.contains("admin-guide-image-alt")) {
           item.alt = input.value.trim();
           if (image) image.alt = item.alt || item.label || item.key;
@@ -1369,7 +1552,6 @@
         if (!figure || !item || !file) return;
 
         const status = $(".admin-guide-upload-status", figure);
-        const urlInput = $(".admin-guide-image-url", figure);
         const image = $("img", figure);
         if (status) status.textContent = "이미지 업로드 중입니다...";
         input.disabled = true;
@@ -1389,7 +1571,6 @@
           item.value = body.image_url;
           item.alt = item.alt || file.name;
           item.caption = item.caption || file.name;
-          if (urlInput) urlInput.value = body.image_url;
           if (image) image.src = body.image_url;
           if (status) status.textContent = `${body.width}×${body.height} 업로드 완료`;
           setStatus("guide-status", "이미지 업로드 완료. 안내자료 저장 버튼을 눌러 최종 반영해 주세요.", "ok");
@@ -1407,11 +1588,14 @@
 
       async function loadGuides() {
         slideContent = await adminFetch("/api/admin/guide-slides");
+        applyAdminGuideLayout(slideContent.layout);
         renderGuideEditor();
       }
 
       function readGuidePayload() {
-        const items = guideItems().filter((item) => item.key).map((item) => ({
+        hydrateGuidePayloadItems();
+        const { textKeys, imageKeys } = collectGuidePayloadKeys();
+        const items = guideItems().filter((item) => item.key && textKeys.has(item.key)).map((item) => ({
           key: item.key,
           deck: item.deck || "custom",
           label: item.label || item.key,
@@ -1419,7 +1603,7 @@
           value: item.value || "",
           multiline: Boolean(item.multiline),
         }));
-        const images = guideImages().filter((item) => item.key).map((item) => ({
+        const images = guideImages().filter((item) => item.key && imageKeys.has(item.key)).map((item) => ({
           key: item.key,
           deck: item.deck || "custom",
           label: item.label || item.key,
@@ -1428,7 +1612,7 @@
           alt: item.alt || item.label || item.key,
           caption: item.caption || item.label || item.key,
         }));
-        return { items, images };
+        return { items, images, layout: guideLayoutPayload() };
       }
 
       async function saveGuides() {
@@ -1557,16 +1741,21 @@
       $("#analytics-period").addEventListener("change", () => loadAnalytics().catch((error) => console.error(error)));
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
+      $("#add-admin-guide-slide").addEventListener("click", addGuideSlide);
       $("#admin-guide-tabs").addEventListener("click", (event) => {
         const button = event.target.closest("[data-admin-guide-deck]");
         if (!button) return;
         activeGuideDeck = button.dataset.adminGuideDeck || "advertiser";
         renderGuideEditor();
       });
+      $("#admin-guide-deck").addEventListener("click", (event) => {
+        const actionButton = event.target.closest("[data-guide-action]");
+        if (actionButton) handleGuideDeckAction(actionButton);
+      });
       $("#admin-guide-deck").addEventListener("input", (event) => {
         const editable = event.target.closest("[data-guide-text-key]");
         if (editable) updateGuideTextFromEditable(editable);
-        const imageInput = event.target.closest(".admin-guide-image-url, .admin-guide-image-alt, .admin-guide-image-caption");
+        const imageInput = event.target.closest(".admin-guide-image-alt, .admin-guide-image-caption");
         if (imageInput) updateGuideImageFromInput(imageInput);
       });
       $("#admin-guide-deck").addEventListener("change", (event) => {
