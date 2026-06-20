@@ -46,7 +46,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
 
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
-    "layout": {"version": 3, "decks": {}},
+    "layout": {"version": 4, "decks": {}},
     "items": [
         {
             "key": "advertiser.hero.title",

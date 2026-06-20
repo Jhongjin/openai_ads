@@ -46,7 +46,7 @@ class GuideSlidesAdminTests(unittest.TestCase):
                     }
                 ],
                 "layout": {
-                    "version": 3,
+                    "version": 4,
                     "decks": {
                         "advertiser": {
                             "slides": [
@@ -83,7 +83,7 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(saved.status_code, 200)
             body = saved.json()
             self.assertEqual(body["storage"], "memory")
-            self.assertEqual(body["layout"]["version"], 3)
+            self.assertEqual(body["layout"]["version"], 4)
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["kicker"], "테스트 키커")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["fieldRows"][0][0], "필드명")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["images"][0]["key"], "campaign_preview")

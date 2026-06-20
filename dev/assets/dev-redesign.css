@@ -1508,9 +1508,9 @@ body.dev-console :focus-visible {
 .dev-slide-deck .slide-card {
   position: relative;
   display: flex;
-  overflow: hidden;
+  overflow: visible;
   min-height: 640px;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: auto;
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid #cfd6df;
@@ -3507,6 +3507,15 @@ body.dev-console :focus-visible {
 
   body.dev-guide-print {
     background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.dev-guide-print *,
+  body.dev-guide-print *::before,
+  body.dev-guide-print *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body.dev-guide-print .rail,
@@ -3554,6 +3563,7 @@ body.dev-console :focus-visible {
     page-break-after: always;
     break-after: page;
     break-inside: avoid;
+    overflow: hidden;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -3682,8 +3692,17 @@ body.dev-console :focus-visible {
   }
 
   body.dev-guide-print .crawler-code {
+    background: #111827 !important;
+    color: #f9fafb !important;
     font-size: 8.4pt;
     line-height: 1.28;
+  }
+
+  body.dev-guide-print .pixel-code,
+  body.dev-guide-print .dev-slide-code,
+  body.dev-guide-print .dev-card-code {
+    background: #111827 !important;
+    color: #f9fafb !important;
   }
 
   body.dev-guide-print .guide-two-column {
