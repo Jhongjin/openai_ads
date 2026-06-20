@@ -104,6 +104,23 @@ def _kr_ops_confirmed_source_payload() -> list[dict[str, Any]]:
             "source_url": "internal://kr_ops/openai-criteo-confirmed-2026-06",
             "source_updated_at": "2026-06-17",
             "source_updated_at_is_fallback": False,
+        },
+        *_openai_cbt_email_source_payload(),
+    ]
+
+
+def _openai_cbt_email_source_payload() -> list[dict[str, Any]]:
+    return [
+        {
+            "collection": "kr_ops",
+            "score": 1.0,
+            "source_tier": "kr_ops",
+            "title": "OpenAI CBT 담당자 Q&A 승인 요약 (2026-06-12~2026-06-19)",
+            "source_url": "internal://kr_ops/openai-cbt-email-approved-summary-2026-06-19",
+            "source_updated_at": "2026-06-19",
+            "source_updated_at_is_fallback": False,
+            "source_tag": "openai_contact_summary",
+            "trust_label": "OpenAI 담당자 커뮤니케이션 요약",
         }
     ]
 
@@ -200,13 +217,30 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
     if _contains_any(lowered, ("account spend cap", "spend cap", "계정 spend cap", "계정 cap", "계정 캡", "계정 한도")):
         return (
             "Account Spend Cap은 계정 단위 lifetime spend cap입니다. OpenAI 팀이 설정하며 대행사나 광고주가 직접 설정할 수 없고, "
-            "월 단위 cap도 아닙니다. 런칭 시 전 계정 한도를 상향 예정이며 이후 캠페인 단위 예산 제어(campaign-level budget control) 도입 예정입니다. "
-            "상세는 추후 OpenAI 공지 대상이며, 최소 집행 약정과는 별개 개념입니다. 이 내용은 변동 가능성이 있습니다."
+            "월 단위 cap도 아닙니다. OpenAI 담당자 커뮤니케이션 요약 기준 한국 파일럿 계정 전체에는 KRW 40,000,000이 적용됩니다. "
+            "이를 초과하려는 광고주는 광고주명, 요청 한도, 캠페인 기간, 예상 집행 근거를 포함해 케이스별 검토를 요청해야 합니다. "
+            "최소 집행 약정과는 별개 개념이며 베타 단계 운영값은 변동 가능성이 있습니다."
         )
 
     if _contains_any(lowered, ("추가 광고주", "광고주 추가", "계정 provisioning", "프로비저닝", "기존 27개사", "27개사", "tracker")):
         return (
             "기존 27개사 외 추가 광고주는 tracker에 기입한 뒤 이메일로 통보하면 OpenAI가 추가 Ads Manager 계정을 provisioning합니다."
+        )
+
+    if _contains_any(lowered, ("트래커 제출", "광고주를 트래커", "트래커에 광고주", "제출하면")) and _contains_any(
+        lowered,
+        ("집행 의무", "집행 필수", "의무", "필수"),
+    ):
+        return (
+            "트래커에 광고주를 제출하는 것만으로 캠페인 집행 의무가 발생하지 않습니다. "
+            "현 단계 트래커 제출은 광고주 검토, Order Form 준비, Ads Manager 계정 생성 목적이며, "
+            "상업적 집행 의무는 Order Form 프로세스를 통해 별도로 처리됩니다."
+        )
+
+    if _contains_any(lowered, ("order form", "계정 접속", "계정 접근", "프로비저닝", "런칭 전", "세팅 가능")):
+        return (
+            "Order Form 서명 완료 후 OpenAI가 광고주 계정을 프로비저닝하고 이메일 접근 권한을 부여합니다. "
+            "런칭 전에도 계정 접속과 캠페인 세팅은 가능하지만 실제 광고 노출은 한국 런칭일부터 시작됩니다."
         )
 
     if "슬라이드" in lowered and _contains_any(lowered, ("최소 집행", "최소 예산", "금액")):
@@ -248,7 +282,7 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
     if _contains_any(lowered, ("vat", "부가세", "세금", "세금id", "tax", "brn", "사업자등록")):
         return "VAT는 한국 사업자등록번호(BRN)/세금ID 제공 시 0%, 미제공 시 10%로 적용됩니다."
 
-    if _contains_any(lowered, ("트래커", "트래킹", "픽셀", "tracker", "전환 추적", "conversion")):
+    if _contains_any(lowered, ("트래킹", "픽셀", "tracker", "전환 추적", "conversion", "컨버전")):
         return (
             "전환 추적(트래커)은 노출/클릭 캠페인에서는 필수는 아니지만 강력 권장됩니다. "
             "향후 전환 최적화 캠페인은 전환 추적 설정이 필요합니다."
@@ -301,9 +335,9 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
                 "단, 추후 변경될 수 있습니다. 미집행 계정 페널티는 없고 실제 집행분만 청구됩니다."
             )
         return (
-            "OpenAI 인보이스는 나스미디어가 광고 계정 전체를 통합해 단일 인보이스를 발행하고, "
-            "인보이스 내 광고주별 집행금액을 개별 표기합니다. 실제 집행분 기준 익월 첫 영업일 7일 이내 발행되며, "
-            "미집행 계정 페널티는 없고 실제 집행분만 청구됩니다."
+            "OpenAI 인보이스는 월별 실제 집행 기준으로 다음 달 영업일 기준 7일 이내 발행됩니다. "
+            "OpenAI OpCo 미국 법인 명의의 표준 PDF 인보이스이며 한국 세금계산서는 아닙니다. "
+            "인보이스에는 광고주별 집행금액이 별도 라인 항목으로 포함되고, 미집행 계정에는 패널티 없이 실제 집행분만 청구됩니다."
         )
 
     if _contains_any(lowered, ("예산 한도", "캠페인 예산 제어", "campaign-level budget", "한도 변경")):
@@ -333,14 +367,35 @@ def _kr_ops_confirmed_answer(question: str) -> str | None:
             "크리테오 경유는 캠페인 브리프와 소재를 전달하면 크리테오가 직접 세팅해 안정적으로 운영할 수 있습니다."
         )
 
-    if _contains_any(lowered, ("문제", "이슈", "문의", "헬프센터", "support", "지원")):
+    if _contains_any(lowered, ("어드민", "관리자", "admin", "권한", "몇 명", "몇명")):
+        return "한 광고 계정에 부여할 수 있는 어드민 계정 수 제한은 없습니다. 트래커에 기재된 이메일 주소 각각에 어드민 권한을 부여할 수 있습니다."
+
+    if _contains_any(lowered, ("spend data", "집행 데이터", "실시간", "반영", "업데이트")):
+        return "캠페인 라이브 후 spend data는 현재 3~5시간 간격으로 업데이트됩니다. OpenAI는 더 자주 업데이트되도록 개선 중입니다."
+
+    if _contains_any(lowered, ("default ad url", "기본 광고 url", "기본 url")):
+        return (
+            "Default Ad URL은 광고그룹 레벨에서 새 광고의 랜딩 URL 기본값을 채우는 필드입니다. "
+            "각 광고에서 개별 수정 가능하며, 실제 클릭 이동 URL은 개별 광고 소재에 저장된 URL입니다. 입력하지 않아도 캠페인 세팅은 진행됩니다."
+        )
+
+    if _contains_any(lowered, ("해외 타겟", "해외 타기팅", "해외 타겟팅", "locations", "국가 타겟")):
+        return (
+            "CBT 기간 중 한국 광고주도 해외 타겟팅 캠페인을 집행할 수 있습니다. 캠페인 레벨의 위치를 조정하면 되며, "
+            "현재 광고 출시 국가는 미국, 캐나다, 호주, 뉴질랜드, 영국, 일본, 한국으로 한정됩니다."
+        )
+
+    if _contains_any(lowered, ("feed", "피드", "usd", "krw 선택", "통화")):
+        return "Tools > Feed 메뉴에서 통화가 USD로만 표시되고 KRW 선택이 불가한 이슈는 현재 OpenAI 확인 요청 중인 미해결 항목입니다."
+
+    if _contains_any(lowered, ("문제", "이슈", "문의", "헬프센터", "support", "지원", "ads-support", "ads-korea")):
         if is_criteo:
             return "크리테오 경유 운영 중 개별 이슈는 크리테오 코리아 담당자 측과 확인해 처리합니다."
-        return "OpenAI 직접 운영 문제는 ChatGPT Ads 헬프센터를 참고하거나 ads-support@openai.com으로 문의합니다. 단, 글로벌 소통 구조라 시간이 소요될 수 있습니다."
+        return "OpenAI 직접 운영 문제는 ChatGPT Ads 헬프센터를 참고하거나 ads-support@openai.com으로 문의하고 ads-korea@openai.com을 CC에 포함합니다. 글로벌 소통 구조라 시간이 소요될 수 있습니다."
 
     if _contains_any(lowered, ("런칭", "런칭일", "일정", "오픈", "출시", "정식")):
         return (
-            "한국 런칭은 2026년 6월 18일 확정입니다. 시차로 계정별 실제 적용 시점은 다를 수 있습니다. "
+            "한국 롤아웃은 미국 PDT 기준 2026년 6월 18일 오후 1시에 시작됩니다. 시차로 계정별 실제 적용 시점은 다를 수 있습니다. "
             "정식 오픈은 7월 중순 예정(셀프서브)이며, 크리테오는 2026년 6월 18일 정식 런칭으로 CBT 개념은 아닙니다."
         )
 

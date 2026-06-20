@@ -59,9 +59,10 @@ class QaGuardrailTests(unittest.TestCase):
     def test_tracker_uses_confirmed_kr_ops(self) -> None:
         result = answer_question("트래커 제출은 집행 필수야?")
 
-        self.assertIn("필수는 아니지만", result["answer"])
-        self.assertIn("전환 최적화 캠페인", result["answer"])
+        self.assertIn("집행 의무가 발생하지 않습니다", result["answer"])
+        self.assertIn("Order Form", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+        self.assertEqual(result["sources"][1]["source_tag"], "openai_contact_summary")
 
     def test_confirmed_billing_modes(self) -> None:
         result = answer_question("OpenAI 직접과 크리테오 입찰 과금 방식 알려줘")
@@ -90,10 +91,29 @@ class QaGuardrailTests(unittest.TestCase):
         self.assertIn("계정 단위 lifetime spend cap", result["answer"])
         self.assertIn("OpenAI 팀이 설정", result["answer"])
         self.assertIn("월 단위 cap도 아닙니다", result["answer"])
-        self.assertIn("전 계정 한도를 상향 예정", result["answer"])
+        self.assertIn("KRW 40,000,000", result["answer"])
         self.assertIn("최소 집행 약정과는 별개", result["answer"])
         self.assertNotIn("400만원", result["answer"])
         self.assertEqual(result["sources"][0]["source_tier"], "kr_ops")
+
+    def test_openai_contact_summary_support_route(self) -> None:
+        result = answer_question("OpenAI Ads 지원 문의는 어디로 보내야 해?")
+
+        self.assertIn("ads-support@openai.com", result["answer"])
+        self.assertIn("ads-korea@openai.com", result["answer"])
+        self.assertEqual(result["sources"][1]["source_tag"], "openai_contact_summary")
+
+    def test_spend_data_update_interval_uses_openai_contact_summary(self) -> None:
+        result = answer_question("집행 데이터는 실시간 반영돼?")
+
+        self.assertIn("3~5시간", result["answer"])
+        self.assertEqual(result["sources"][1]["source_tag"], "openai_contact_summary")
+
+    def test_default_ad_url_uses_openai_contact_summary(self) -> None:
+        result = answer_question("Default Ad URL은 반드시 입력해야 해?")
+
+        self.assertIn("입력하지 않아도 캠페인 세팅은 진행", result["answer"])
+        self.assertEqual(result["sources"][1]["source_tag"], "openai_contact_summary")
 
     def test_budget_minimum_values_are_soft_uncertain_guidance(self) -> None:
         result = answer_question("일예산 최소 KRW 25,000이 확정이야? 총예산 최소값도 알려줘")

@@ -339,6 +339,49 @@ body.dev-console :focus-visible {
   align-items: start;
 }
 
+.workspace.is-qa-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace.is-qa-mode .workbench {
+  order: 1;
+}
+
+.workspace.is-qa-mode .inspector {
+  order: 2;
+}
+
+.workspace.is-qa-mode .inspector .surface-head {
+  padding: 14px 16px 0;
+}
+
+.workspace.is-qa-mode .inspector .surface-body {
+  display: grid;
+  grid-template-columns: minmax(220px, .55fr) minmax(0, 1.25fr) minmax(180px, auto);
+  gap: 12px;
+  align-items: stretch;
+  padding: 14px 16px;
+}
+
+.workspace.is-qa-mode .inspector .timeline {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace.is-qa-mode .inspector .timeline-item {
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.workspace.is-qa-mode .inspector .timeline-index {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.workspace.is-qa-mode .inspector .status-line {
+  align-self: center;
+  margin: 0;
+}
+
 .workbench,
 .inspector,
 .surface {
@@ -388,6 +431,11 @@ body.dev-console :focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.qa-layout {
+  grid-template-columns: minmax(320px, .72fr) minmax(520px, 1.28fr);
+  gap: 18px;
 }
 
 .grid-3 {
@@ -580,6 +628,127 @@ body.dev-console :focus-visible {
 
 .answer-pane p {
   margin: 0 0 10px;
+}
+
+.faq-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border-top: 1px solid var(--oa-line);
+  padding-top: 18px;
+}
+
+.faq-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.faq-head h3 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.faq-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.faq-category {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  color: var(--oa-muted);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.faq-category:hover,
+.faq-category.is-active {
+  transform: translateY(-1px);
+  border-color: #ffc9cc;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+}
+
+.faq-category span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faq-category b {
+  flex: 0 0 auto;
+  font-family: var(--oa-mono);
+  font-size: 12px;
+}
+
+.faq-list {
+  display: grid;
+  gap: 8px;
+}
+
+.faq-item {
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  overflow: hidden;
+}
+
+.faq-item.is-open {
+  border-color: #d7b8a2;
+  background: #fffdf8;
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--oa-ink);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-question .ti {
+  flex: 0 0 auto;
+  color: var(--oa-red);
+  font-size: 16px;
+}
+
+.faq-answer {
+  border-top: 1px solid var(--oa-line);
+  background:
+    linear-gradient(135deg, rgb(215 25 32 / 4%), transparent 42%),
+    #fffaf1;
+  color: var(--oa-muted);
+  padding: 12px 14px 14px;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .source-list {
@@ -1452,6 +1621,19 @@ body.dev-console :focus-visible {
   .metric-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .workspace.is-qa-mode .inspector .surface-body,
+  .workspace.is-qa-mode .inspector .timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .qa-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -1482,6 +1664,7 @@ body.dev-console :focus-visible {
   .grid-2,
   .grid-3,
   .review-grid,
+  .faq-categories,
   .guide-masonry,
   .image-strip,
   .editor-row,
