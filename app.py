@@ -9,6 +9,7 @@ from uuid import uuid4
 from typing import Any
 
 import httpx
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -170,6 +171,12 @@ PAGE_LABELS = {
     "pixelGuide": "픽셀 설치 가이드",
 }
 
+GUIDE_DECK_PANELS = {
+    "advertiser": "slides-panel",
+    "setup": "setup-guide-panel",
+    "pixel": "pixel-guide-panel",
+}
+
 
 def _admin_password() -> str:
     return os.getenv("ADMIN_PASSWORD") or "nas2026@"
@@ -183,6 +190,18 @@ def _require_admin(request: Request) -> None:
 
 def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
     return exc.errors(include_url=False, include_input=False, include_context=False)
+
+
+def _production_guide_decks() -> dict[str, str]:
+    source = project_root() / "templates" / "index.html"
+    soup = BeautifulSoup(source.read_text(encoding="utf-8"), "html.parser")
+    decks: dict[str, str] = {}
+    for deck_key, panel_id in GUIDE_DECK_PANELS.items():
+        deck = soup.select_one(f"#{panel_id} .slide-deck")
+        if deck is None:
+            raise HTTPException(status_code=500, detail=f"{panel_id} 안내자료 슬라이드를 찾을 수 없습니다.")
+        decks[deck_key] = deck.decode_contents()
+    return decks
 
 
 @app.get("/health")
@@ -287,6 +306,11 @@ def public_guide_slides() -> dict[str, Any]:
     from admin_store import get_slide_content
 
     return get_slide_content()
+
+
+@app.get("/api/guide-deck-html", include_in_schema=False)
+def public_guide_deck_html() -> dict[str, Any]:
+    return {"decks": _production_guide_decks()}
 
 
 @app.get("/api/admin/guide-slides", include_in_schema=False)

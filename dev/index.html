@@ -375,6 +375,7 @@
         guideDeck: "advertiser",
         guideText: new Map(),
         guideImages: new Map(),
+        guideDeckHtml: new Map(),
         guideUpdatedAt: "",
       };
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
@@ -1582,12 +1583,35 @@
       }
 
       function hydrateGuideDeckImages() {
-        $$("#guide-deck .dev-guide-image-frame img").forEach((image) => {
-          const frame = image.closest(".dev-guide-image-frame");
+        $$("#guide-deck .dev-guide-image-frame img, #guide-deck [data-guide-image]").forEach((image) => {
+          const frame = image.closest(".dev-guide-image-frame, .guide-image-frame");
           image.addEventListener("load", () => frame?.classList.add("has-image"), { once: true });
           image.addEventListener("error", () => frame?.classList.add("is-missing"), { once: true });
           if (image.complete && image.naturalWidth) frame?.classList.add("has-image");
         });
+      }
+
+      function applyProductionGuideOverrides() {
+        const deckElement = $("#guide-deck");
+        deckElement.querySelectorAll(".slide-update-date").forEach((element) => {
+          element.textContent = state.guideUpdatedAt || "-";
+        });
+        deckElement.querySelectorAll("[data-guide-text]").forEach((element) => {
+          const key = element.getAttribute("data-guide-text");
+          if (!key) return;
+          element.textContent = guideText(key, element.textContent.trim());
+        });
+        deckElement.querySelectorAll("[data-guide-image]").forEach((image) => {
+          const key = image.getAttribute("data-guide-image-key");
+          if (!key) return;
+          const item = guideImage(key);
+          image.setAttribute("src", item.src);
+          image.setAttribute("alt", item.alt);
+          const figure = image.closest("figure");
+          const caption = figure?.querySelector(".guide-caption, figcaption");
+          if (caption) caption.textContent = item.caption;
+        });
+        hydrateGuideDeckImages();
       }
 
       function renderGuideDeck() {
@@ -1600,19 +1624,28 @@
         $("#guide-kicker").textContent = deck.kicker;
         $("#guide-title").textContent = deck.label;
         $("#guide-updated").textContent = state.guideUpdatedAt || "ready";
+        const productionHtml = state.guideDeckHtml.get(state.guideDeck);
+        if (productionHtml) {
+          $("#guide-deck").innerHTML = productionHtml;
+          applyProductionGuideOverrides();
+          return;
+        }
         $("#guide-deck").innerHTML = deck.slides.map((slide, index) => renderGuideSlide(slide, index, deck.slides.length)).join("");
         hydrateGuideDeckImages();
       }
 
       async function loadGuides() {
         try {
-          const data = await fetchJson("/api/guide-slides");
+          const [data, deckHtml] = await Promise.all([
+            fetchJson("/api/guide-slides"),
+            fetchJson("/api/guide-deck-html"),
+          ]);
           const items = Array.isArray(data.items) ? data.items : [];
           const images = Array.isArray(data.images) ? data.images : [];
           state.guideText = new Map(items.map((item) => [item.key, item.value || item.default || ""]));
           state.guideImages = new Map(images.map((item) => [item.key, item]));
+          state.guideDeckHtml = new Map(Object.entries(deckHtml.decks || {}));
           state.guideUpdatedAt = data.updated_at || "";
-          applyGuideLayout(data.layout);
           renderGuideDeck();
         } catch (error) {
           $("#guide-deck").innerHTML = `<div class="empty-pane">${escapeHtml(error.message)}</div>`;
