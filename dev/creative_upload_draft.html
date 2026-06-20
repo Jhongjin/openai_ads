@@ -246,10 +246,6 @@
                 <h2 class="surface-title">캠페인 / 광고그룹 / 소재</h2>
                 <p class="surface-copy">한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용해야 벌크 업로드 오류를 줄일 수 있습니다.</p>
               </div>
-              <button class="btn-secondary" type="button" id="add-campaign">
-                <i class="ti ti-plus"></i>
-                캠페인 추가
-              </button>
             </div>
             <div class="surface-body">
               <div class="repeat-list" id="campaign-list"></div>
@@ -314,7 +310,7 @@
               <i class="ti ti-chevron-up"></i>
               <span>접기</span>
             </button>
-            <button class="btn-plain add-adgroup" type="button">광고그룹 추가</button>
+            <button class="btn-plain add-campaign" type="button">캠페인 추가</button>
             <button class="btn-danger remove-campaign" type="button">삭제</button>
           </div>
         </div>
@@ -409,7 +405,7 @@
               <i class="ti ti-chevron-up"></i>
               <span>접기</span>
             </button>
-            <button class="btn-plain add-ad" type="button">소재 추가</button>
+            <button class="btn-plain add-adgroup" type="button">광고그룹 추가</button>
             <button class="btn-danger remove-adgroup" type="button">삭제</button>
           </div>
         </div>
@@ -471,6 +467,7 @@
               <i class="ti ti-chevron-up"></i>
               <span>접기</span>
             </button>
+            <button class="btn-plain add-ad" type="button">소재그룹 추가</button>
             <button class="btn-danger remove-ad" type="button">삭제</button>
           </div>
         </div>
@@ -879,27 +876,35 @@
         return validateDerivedFields();
       }
 
-      function addAd(group, data = {}) {
+      function addAd(group, data = {}, insertAfter = null) {
         const ad = template("ad-template");
         $(".ad-name", ad).value = data.ad_name || "";
         $(".ad-title", ad).value = data.title || "";
         $(".ad-copy", ad).value = data.copy || "";
         $(".ad-link", ad).value = data.link || "";
         $(".ad-image", ad).value = data.image_link || "";
-        $(".ad-list", group).append(ad);
+        if (insertAfter) {
+          insertAfter.after(ad);
+        } else {
+          $(".ad-list", group).append(ad);
+        }
       }
 
-      function addAdgroup(campaign, data = {}, ads = [{}]) {
+      function addAdgroup(campaign, data = {}, ads = [{}], insertAfter = null) {
         const group = template("adgroup-template");
         $(".adgroup-name", group).value = data.adgroup_name || "";
         $(".adgroup-manual-bid", group).value = data.manual_max_bid || data.max_bid || "";
         $(".adgroup-keywords", group).value = Array.isArray(data.keywords) ? data.keywords.join(", ") : "";
         ads.forEach((ad) => addAd(group, ad));
-        $(".adgroup-list", campaign).append(group);
+        if (insertAfter) {
+          insertAfter.after(group);
+        } else {
+          $(".adgroup-list", campaign).append(group);
+        }
         syncDerivedFields();
       }
 
-      function addCampaign(data = {}, adgroups = [{ adgroup: {}, ads: [{}] }]) {
+      function addCampaign(data = {}, adgroups = [{ adgroup: {}, ads: [{}] }], insertAfter = null) {
         const campaign = template("campaign-template");
         $(".campaign-name", campaign).value = data.campaign_name || "";
         $(".campaign-budget", campaign).value = data.budget_max || "";
@@ -909,7 +914,11 @@
         $(".campaign-end", campaign).value = data.end_date || "";
         $(".campaign-manual-country", campaign).value = data.manual_target_country || countryFromBulk(data.target_countries);
         adgroups.forEach((group) => addAdgroup(campaign, group.adgroup || group, group.ads || [{}]));
-        $("#campaign-list").append(campaign);
+        if (insertAfter) {
+          insertAfter.after(campaign);
+        } else {
+          $("#campaign-list").append(campaign);
+        }
         syncDerivedFields();
       }
 
@@ -1183,8 +1192,20 @@
         }
         const campaign = event.target.closest(".campaign-block");
         const group = event.target.closest(".adgroup-block");
-        if (event.target.closest(".add-adgroup")) addAdgroup(campaign);
-        if (event.target.closest(".add-ad") && group) addAd(group);
+        const ad = event.target.closest(".ad-block");
+        if (event.target.closest(".add-campaign") && campaign) {
+          addCampaign({}, [{ adgroup: {}, ads: [{}] }], campaign);
+          return;
+        }
+        if (event.target.closest(".add-adgroup") && group) {
+          addAdgroup(campaign, {}, [{}], group);
+          return;
+        }
+        if (event.target.closest(".add-ad") && group && ad) {
+          addAd(group, {}, ad);
+          syncDerivedFields();
+          return;
+        }
         if (event.target.closest(".remove-ad")) event.target.closest(".ad-block").remove();
         if (event.target.closest(".remove-adgroup")) group.remove();
         if (event.target.closest(".remove-campaign")) {
@@ -1196,8 +1217,6 @@
 
       $("#campaign-list").addEventListener("input", syncDerivedFields);
       $("#campaign-list").addEventListener("change", syncDerivedFields);
-
-      $("#add-campaign").addEventListener("click", () => addCampaign());
 
       $("#workbook-file").addEventListener("change", async () => {
         const file = $("#workbook-file").files?.[0];

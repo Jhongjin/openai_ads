@@ -49,6 +49,11 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("campaign-manual-country", intake)
         self.assertIn("adgroup-manual-bid", intake)
         self.assertIn("collapse-toggle", intake)
+        self.assertIn('class="btn-plain add-campaign"', intake)
+        self.assertIn('class="btn-plain add-adgroup"', intake)
+        self.assertIn('class="btn-plain add-ad"', intake)
+        self.assertIn("소재그룹 추가", intake)
+        self.assertIn("insertAfter.after", intake)
         self.assertIn("campaign-sequence", intake)
         self.assertIn("adgroup-sequence", intake)
         self.assertIn("ad-sequence", intake)
@@ -107,6 +112,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertNotIn("대한민국은 수동 세팅에서는 선택하고", intake)
         self.assertNotIn("xlsx target_countries", intake)
         self.assertNotIn("xlsx max_bid", intake)
+        self.assertNotIn('id="add-campaign"', intake)
+        self.assertNotIn('$("#add-campaign")', intake)
 
     def test_dev_redesign_css_asset_is_available(self) -> None:
         client = TestClient(app)
