@@ -40,9 +40,10 @@ MANUAL_RAG_CATEGORIES = (
     "플랫폼·지원",
 )
 CAMPAIGN_INTAKE_STATUSES = {
-    "ready": "준비",
+    "ready": "대기",
     "in_progress": "진행중",
     "done": "완료",
+    "canceled": "취소",
 }
 
 
@@ -961,8 +962,21 @@ def _ensure_tables() -> None:
                     created_at_utc timestamptz NOT NULL DEFAULT now(),
                     updated_at_utc timestamptz NOT NULL DEFAULT now(),
                     CONSTRAINT campaign_intake_ops_status_check
-                        CHECK (status IN ('ready', 'in_progress', 'done'))
+                        CHECK (status IN ('ready', 'in_progress', 'done', 'canceled'))
                 )
+                """
+            )
+            cur.execute(
+                f"""
+                ALTER TABLE {schema}.campaign_intake_ops
+                DROP CONSTRAINT IF EXISTS campaign_intake_ops_status_check
+                """
+            )
+            cur.execute(
+                f"""
+                ALTER TABLE {schema}.campaign_intake_ops
+                ADD CONSTRAINT campaign_intake_ops_status_check
+                CHECK (status IN ('ready', 'in_progress', 'done', 'canceled'))
                 """
             )
             cur.execute(

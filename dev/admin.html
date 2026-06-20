@@ -581,9 +581,10 @@
                       상태
                       <select class="control" id="campaign-intake-status-filter">
                         <option value="all">전체 상태</option>
-                        <option value="ready">준비</option>
+                        <option value="ready">대기</option>
                         <option value="in_progress">진행중</option>
                         <option value="done">완료</option>
+                        <option value="canceled">취소</option>
                       </select>
                     </label>
                     <p class="status-line" id="campaign-intake-status">접수 목록을 불러오는 중입니다.</p>
@@ -653,9 +654,10 @@
       let campaignIntakeQuery = "";
       let campaignIntakeStatusFilter = "all";
       const CAMPAIGN_INTAKE_STATUSES = {
-        ready: "준비",
+        ready: "대기",
         in_progress: "진행중",
         done: "완료",
+        canceled: "취소",
       };
       let manualRagItems = [];
       const MANUAL_RAG_CATEGORIES = [
@@ -2529,6 +2531,12 @@
         return [item.owner_headquarters, item.owner_office, item.owner_team].filter(Boolean).join(" / ");
       }
 
+      function intakeSubmittedAtDisplay(value) {
+        const text = String(value ?? "").trim();
+        const match = text.match(/^\d{4}-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+        return match ? `${match[1]}-${match[2]} ${match[3]}:${match[4]}` : intakeValue(text);
+      }
+
       function intakeCopyButton(value, label) {
         const text = String(value ?? "").trim();
         if (!text) {
@@ -2630,7 +2638,7 @@
         return ads.map((ad, adIndex) => `
           <details class="intake-section intake-ad-section" open>
             <summary>
-              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i></span>
+              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">소재 ${campaignIndex + 1}-${adgroupIndex + 1}-${adIndex + 1}</span>
               <strong>${escapeHtml(intakeValue(ad.ad_name, `소재 ${adIndex + 1}`))}</strong>
             </summary>
@@ -2652,7 +2660,7 @@
         return adgroups.map((adgroup, adgroupIndex) => `
           <details class="intake-section intake-adgroup-section" open>
             <summary>
-              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i></span>
+              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">광고그룹 ${campaignIndex + 1}-${adgroupIndex + 1}</span>
               <strong>${escapeHtml(intakeValue(adgroup.adgroup_name, `광고그룹 ${adgroupIndex + 1}`))}</strong>
             </summary>
@@ -2676,7 +2684,7 @@
         return campaigns.map((campaign, campaignIndex) => `
           <details class="intake-section intake-campaign-section" open>
             <summary>
-              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i></span>
+              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="intake-step-badge">캠페인 ${campaignIndex + 1}</span>
               <strong>${escapeHtml(intakeValue(campaign.campaign_name, `캠페인 ${campaignIndex + 1}`))}</strong>
             </summary>
@@ -2716,43 +2724,29 @@
             <span>소속</span>
             <span>운영자</span>
             <span>상태</span>
-            <span>구조</span>
-            <span>비고</span>
+            <span>운영 메모</span>
           </div>
         `;
         root.innerHTML = header + items.map((item) => `
           <details class="campaign-intake-record" data-receipt="${escapeHtml(item.receipt_number || "")}" open>
             <summary class="campaign-intake-summary">
-              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i></span>
+              <span class="intake-toggle" aria-hidden="true"><i class="ti ti-chevron-right"></i><span class="intake-toggle-label"></span></span>
               <span class="campaign-intake-receipt">${escapeHtml(intakeValue(item.receipt_number, "접수번호 없음"))}</span>
-              <span>${escapeHtml(intakeValue(item.submitted_at_kst, "제출시각 없음"))}</span>
+              <span>${escapeHtml(intakeSubmittedAtDisplay(item.submitted_at_kst))}</span>
               <span>${escapeHtml(intakeValue(item.advertiser_name, "광고주 없음"))}</span>
               <span>${escapeHtml(intakeValue(item.sales_owner, "담당자 없음"))}</span>
               <span>${escapeHtml(intakeValue(intakeTeamName(item), "소속 없음"))}</span>
-              <span>${escapeHtml(intakeValue(item.operator_name, "-"))}</span>
-              <span class="campaign-intake-status-pill">${escapeHtml(item.status_label || CAMPAIGN_INTAKE_STATUSES[item.status] || "준비")}</span>
-              <span>캠페인 ${formatNumber(item.campaign_count || 0)} · 광고그룹 ${formatNumber(item.adgroup_count || 0)} · 소재 ${formatNumber(item.ad_count || 0)}</span>
-              <span>${escapeHtml(intakeValue(item.note, "-"))}</span>
+              <span>
+                <input class="control campaign-intake-operator campaign-intake-inline-control" data-intake-inline="operator" value="${escapeHtml(item.operator_name || "")}" placeholder="운영자" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" />
+              </span>
+              <span>
+                <select class="control campaign-intake-status-select campaign-intake-inline-control" data-intake-inline="status" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()">${intakeStatusOptions(item.status || "ready")}</select>
+              </span>
+              <span>
+                <input class="control campaign-intake-memo campaign-intake-inline-control" data-intake-inline="memo" value="${escapeHtml(item.memo || "")}" placeholder="운영 메모" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" />
+              </span>
             </summary>
             <div class="campaign-intake-detail">
-              <div class="campaign-intake-ops">
-                <label>
-                  운영자명
-                  <input class="control campaign-intake-operator" value="${escapeHtml(item.operator_name || "")}" placeholder="실제 캠페인 세팅 담당자" />
-                </label>
-                <label>
-                  상태
-                  <select class="control campaign-intake-status-select">${intakeStatusOptions(item.status || "ready")}</select>
-                </label>
-                <label>
-                  운영 메모
-                  <input class="control campaign-intake-memo" value="${escapeHtml(item.memo || "")}" placeholder="세팅 중 특이사항" />
-                </label>
-                <button class="btn-command" type="button" data-intake-action="save">
-                  <i class="ti ti-device-floppy"></i>
-                  운영 저장
-                </button>
-              </div>
               <div class="campaign-intake-tree">
                 ${renderIntakeCampaigns(item.campaigns || [], item.receipt_number || "")}
               </div>
@@ -2772,7 +2766,7 @@
         setStatus("campaign-intake-status", message, data.ok === false ? "error" : "ok");
       }
 
-      async function saveCampaignIntakeOps(card) {
+      async function saveCampaignIntakeOps(card, renderAfterSave = false) {
         const receiptNumber = card?.dataset.receipt || "";
         if (!receiptNumber) return;
         const payload = {
@@ -2781,8 +2775,6 @@
           status: card.querySelector(".campaign-intake-status-select")?.value || "ready",
           memo: card.querySelector(".campaign-intake-memo")?.value.trim() || "",
         };
-        const button = card.querySelector("[data-intake-action='save']");
-        setButtonBusy(button, true, "저장 중");
         setStatus("campaign-intake-status", `${receiptNumber} 운영 상태를 저장하는 중입니다.`);
         try {
           const data = await adminFetch("/api/admin/campaign-intakes/update", {
@@ -2797,12 +2789,10 @@
             item.status_label = updated.status_label || CAMPAIGN_INTAKE_STATUSES[payload.status];
             item.memo = updated.memo || payload.memo;
           }
-          renderCampaignIntakeList();
+          if (renderAfterSave) renderCampaignIntakeList();
           setStatus("campaign-intake-status", `${receiptNumber} 운영 상태 저장 완료`, "ok");
         } catch (error) {
           setStatus("campaign-intake-status", error.message, "error");
-        } finally {
-          setButtonBusy(button, false);
         }
       }
 
@@ -3128,6 +3118,10 @@
         renderCampaignIntakeList();
       });
       $("#campaign-intake-list").addEventListener("click", async (event) => {
+        if (event.target.closest("[data-intake-inline]")) {
+          event.stopPropagation();
+          return;
+        }
         const copyButton = event.target.closest("[data-intake-value]");
         if (copyButton) {
           event.preventDefault();
@@ -3142,9 +3136,24 @@
           }
           return;
         }
-        const saveButton = event.target.closest("[data-intake-action='save']");
-        if (saveButton) {
-          saveCampaignIntakeOps(saveButton.closest("[data-receipt]"));
+      });
+      $("#campaign-intake-list").addEventListener("change", (event) => {
+        const statusSelect = event.target.closest(".campaign-intake-status-select");
+        if (statusSelect) {
+          saveCampaignIntakeOps(statusSelect.closest("[data-receipt]"), campaignIntakeStatusFilter !== "all");
+        }
+      });
+      $("#campaign-intake-list").addEventListener("blur", (event) => {
+        const inlineInput = event.target.closest(".campaign-intake-operator, .campaign-intake-memo");
+        if (inlineInput) {
+          saveCampaignIntakeOps(inlineInput.closest("[data-receipt]"));
+        }
+      }, true);
+      $("#campaign-intake-list").addEventListener("keydown", (event) => {
+        const inlineInput = event.target.closest(".campaign-intake-operator, .campaign-intake-memo");
+        if (inlineInput && event.key === "Enter") {
+          event.preventDefault();
+          inlineInput.blur();
         }
       });
       $("#manual-rag-create").addEventListener("click", () => createManualRagItem());

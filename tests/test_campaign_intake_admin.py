@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from admin_store import _build_campaign_intake_items, list_campaign_intake_items
+from admin_store import CAMPAIGN_INTAKE_STATUSES, _build_campaign_intake_items, list_campaign_intake_items
 from app import app
 
 
@@ -105,6 +105,17 @@ class CampaignIntakeAdminTests(unittest.TestCase):
             )
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["item"]["receipt_number"], "KT-OAI-1")
+
+    def test_campaign_intake_status_labels_match_ops_workflow(self) -> None:
+        self.assertEqual(
+            CAMPAIGN_INTAKE_STATUSES,
+            {
+                "ready": "대기",
+                "in_progress": "진행중",
+                "done": "완료",
+                "canceled": "취소",
+            },
+        )
 
     def test_campaign_intake_list_reports_old_apps_script_action_clearly(self) -> None:
         with patch("admin_store._post_intake_webhook", return_value={"ok": False, "error": "campaigns is required"}):
