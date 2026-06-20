@@ -46,7 +46,7 @@ DEFAULT_NOTICE: dict[str, Any] = {
 
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
-    "layout": {"decks": {}},
+    "layout": {"version": 2, "decks": {}},
     "items": [
         {
             "key": "advertiser.hero.title",
@@ -1015,12 +1015,121 @@ def _clean_slide_cards(value: Any) -> list[list[str]]:
     return cards
 
 
+def _clean_slide_pairs(value: Any, *, max_items: int = 32) -> list[list[str]]:
+    rows: list[list[str]] = []
+    if not isinstance(value, list):
+        return rows
+    for raw_row in value[:max_items]:
+        if not isinstance(raw_row, list) or len(raw_row) < 2:
+            continue
+        rows.append(
+            [
+                _clean_slide_text(raw_row[0], fallback="")[:300],
+                _clean_slide_text(raw_row[1], multiline=True, fallback="")[:1200],
+            ]
+        )
+    return [row for row in rows if row[0] or row[1]]
+
+
+def _clean_slide_string_list(value: Any, *, max_items: int = 20) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [
+        text
+        for text in (_clean_slide_text(item, multiline=True, fallback="")[:800] for item in value[:max_items])
+        if text
+    ]
+
+
+def _clean_slide_images(value: Any) -> list[dict[str, str]]:
+    images: list[dict[str, str]] = []
+    if not isinstance(value, list):
+        return images
+    for raw_image in value[:12]:
+        if not isinstance(raw_image, dict):
+            continue
+        key = _clean_slide_key(raw_image.get("key"))
+        if not key:
+            continue
+        image: dict[str, str] = {"key": key}
+        caption = _clean_slide_text(raw_image.get("caption"), fallback="")
+        class_name = re.sub(r"[^a-zA-Z0-9_ -]", "", str(raw_image.get("className") or "")).strip()[:80]
+        if caption:
+            image["caption"] = caption
+        if class_name:
+            image["className"] = class_name
+        images.append(image)
+    return images
+
+
+def _clean_slide_overview(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    columns = []
+    raw_columns = value.get("columns")
+    if isinstance(raw_columns, list):
+        for raw_column in raw_columns[:4]:
+            column = _clean_slide_string_list(raw_column, max_items=12)
+            if column:
+                columns.append(column)
+    if not columns:
+        return {}
+    return {
+        "title": _clean_slide_text(value.get("title"), fallback="핵심 정보"),
+        "columns": columns,
+    }
+
+
+def _clean_slide_copy_guide(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    rows = []
+    raw_rows = value.get("rows")
+    if isinstance(raw_rows, list):
+        for raw_row in raw_rows[:20]:
+            if isinstance(raw_row, list):
+                row = [_clean_slide_text(cell, multiline=True, fallback="")[:600] for cell in raw_row[:4]]
+                if any(row):
+                    rows.append(row)
+    if not rows:
+        return {}
+    columns = _clean_slide_string_list(value.get("columns"), max_items=4) or ["구분", "좋은 예", "아쉬운 예"]
+    return {
+        "title": _clean_slide_text(value.get("title"), fallback="가이드"),
+        "columns": columns,
+        "rows": rows,
+    }
+
+
+def _clean_slide_code_blocks(value: Any) -> list[dict[str, str]]:
+    blocks: list[dict[str, str]] = []
+    if not isinstance(value, list):
+        return blocks
+    for raw_block in value[:8]:
+        if not isinstance(raw_block, dict):
+            continue
+        code = _clean_slide_text(raw_block.get("code"), multiline=True, fallback="")[:3000]
+        if not code:
+            continue
+        blocks.append(
+            {
+                "title": _clean_slide_text(raw_block.get("title"), fallback="코드"),
+                "code": code,
+            }
+        )
+    return blocks
+
+
 def _clean_slide_layout(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
-        return {"decks": {}}
+        return {"version": 0, "decks": {}}
+    try:
+        version = int(value.get("version") or 0)
+    except (TypeError, ValueError):
+        version = 0
     raw_decks = value.get("decks", {})
     if not isinstance(raw_decks, dict):
-        return {"decks": {}}
+        return {"version": version, "decks": {}}
     decks: dict[str, Any] = {}
     for deck_key in ("advertiser", "setup", "pixel"):
         raw_deck = raw_decks.get(deck_key, {})
@@ -1046,11 +1155,25 @@ def _clean_slide_layout(value: Any) -> dict[str, Any]:
                 "code": _clean_slide_text(raw_slide.get("code"), multiline=True, fallback="")[:1200],
                 "codeKey": _clean_slide_key(raw_slide.get("codeKey")),
                 "imageKey": _clean_slide_key(raw_slide.get("imageKey")),
+                "imageCaption": _clean_slide_text(raw_slide.get("imageCaption"), fallback=""),
+                "imageFrameClass": re.sub(r"[^a-zA-Z0-9_ -]", "", str(raw_slide.get("imageFrameClass") or "")).strip()[:80],
+                "gridClass": re.sub(r"[^a-zA-Z0-9_ -]", "", str(raw_slide.get("gridClass") or "")).strip()[:80],
+                "channelNote": _clean_slide_text(raw_slide.get("channelNote"), multiline=True, fallback=""),
+                "note": _clean_slide_text(raw_slide.get("note"), multiline=True, fallback=""),
+                "sourceNote": _clean_slide_text(raw_slide.get("sourceNote"), multiline=True, fallback=""),
+                "fieldRows": _clean_slide_pairs(raw_slide.get("fieldRows")),
+                "processCards": _clean_slide_pairs(raw_slide.get("processCards")),
+                "eventCards": _clean_slide_pairs(raw_slide.get("eventCards")),
+                "listItems": _clean_slide_string_list(raw_slide.get("listItems")),
+                "images": _clean_slide_images(raw_slide.get("images")),
+                "overview": _clean_slide_overview(raw_slide.get("overview")),
+                "copyGuide": _clean_slide_copy_guide(raw_slide.get("copyGuide")),
+                "codeBlocks": _clean_slide_code_blocks(raw_slide.get("codeBlocks")),
                 "cards": _clean_slide_cards(raw_slide.get("cards")),
             }
             slides.append({key: val for key, val in slide.items() if val not in ("", [], None)})
         decks[deck_key] = {"slides": slides}
-    return {"decks": decks}
+    return {"version": version, "decks": decks}
 
 
 def _merged_slide_content(payload: dict[str, Any] | None = None) -> dict[str, Any]:

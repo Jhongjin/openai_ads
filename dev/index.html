@@ -378,6 +378,7 @@
         guideUpdatedAt: "",
       };
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
+      const GUIDE_LAYOUT_VERSION = 2;
 
       const guideDecks = {
         advertiser: {
@@ -604,6 +605,305 @@
         });
       }
 
+      function applyRichGuideDeckDefaults(targetDecks) {
+        targetDecks.advertiser.slides = [
+          {
+            kicker: "OpenAI ChatGPT Ads 베타 기준",
+            titleKey: "advertiser.hero.title",
+            title: "ChatGPT 광고 집행 준비 안내",
+            subtitleKey: "advertiser.hero.subtitle",
+            subtitle: "광고주님께서 준비해주실 항목",
+            footer: "케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr · OpenAI ChatGPT Ads 베타 기준",
+          },
+          {
+            kicker: "01 · 광고 소재",
+            titleKey: "advertiser.material.title",
+            title: "광고 소재 준비물",
+            gridClass: "three",
+            cards: [
+              ["브랜드명", "광고 상단 노출"],
+              ["로고/파비콘", "공개 직접 이미지 링크, 256×256 이상, 정사각형, 흰 배경, 원형 크롭 가능"],
+              ["광고 제목", "최대 제목 24자 / 권장 16~18자\nOpenAI 공식 워크북 기준 · 정식 오픈 시 Ads Manager 재확인"],
+              ["광고 설명", "최대 설명 48자 / 권장 32~36자\nOpenAI 공식 워크북 기준"],
+              ["크리테오 경유", "제목 30자 / 설명 60자"],
+              ["이미지", "PNG/JPG, 1:1 정사각형, 최대 1200×1200, 공개 직접 접근 링크. 로고를 메인 비주얼로 쓰지 말 것", "advertiser.material.image"],
+              ["랜딩 URL", "유효·접근 가능, 광고 내용과 관련성 높은 페이지(자사몰/외부몰 제품 페이지 가능)"],
+              ["컨텍스트 힌트(선택)", "광고그룹 단위 참고 키워드·주제. 소재 업로드 탭의 “키워드”에 입력하며 매칭 보조용입니다."],
+            ],
+            copyGuide: {
+              title: "광고 카피 작성 가이드",
+              columns: ["구분", "좋은 예", "아쉬운 예"],
+              rows: [
+                ["출발점", "사용자의 문제·상황에서 시작", "제품명·기능 정보만 나열"],
+                ["문장 구조", "필요·상황 → 해결책", "브랜드·상품명 → 기능 나열"],
+                ["예시", "건강한 저녁, 빠르게 준비하고 싶다면?", "○○ 밀키트 출시"],
+              ],
+            },
+            callout: "광고 소재·이미지·랜딩 페이지는 OpenAI 광고 정책을 준수해야 하며, 위반 시 승인이 거부될 수 있습니다.",
+            footer: "소재는 공개 접근 가능한 링크 형태로 준비해 주세요.",
+          },
+          {
+            kicker: "02 · 랜딩 페이지",
+            title: "랜딩 페이지 기술 준비",
+            gridClass: "three",
+            cards: [
+              ["1. robots.txt 허용", "OAI-AdsBot 필수 / OAI-SearchBot 권장 허용"],
+              ["2. 방화벽 allowlist", "Cloudflare·Akamai 등 웹 방화벽과 봇 차단에서 OpenAI 크롤러 차단 해제"],
+              ["3. 안티봇 예외 처리", "CAPTCHA/안티봇 로직이 랜딩 페이지 접근을 막지 않도록 예외 처리"],
+            ],
+            code: "User-agent: OAI-SearchBot\nAllow: /\nUser-agent: OAI-AdsBot\nAllow: /",
+            callout: "Cloudflare는 OAI-AdsBot 공식 허용이 완료되었습니다. 크롤러 접근 불가 시 광고 노출(delivery)이 제한될 수 있으며, robots.txt 점검은 케이티나스미디어가 지원합니다.",
+            footer: "최종 확인은 광고주 개발팀의 실제 접근 테스트가 필요합니다.",
+          },
+          {
+            kicker: "03 · 집행 조건",
+            title: "집행 조건 안내",
+            cards: [
+              ["최소 집행 약정", "400만원 / 상세 조건은 영업 담당 안내", "advertiser.condition.minimum"],
+              ["과금 방식", "OpenAI 직접 CPC·CPM / 크리테오 경유 CPM"],
+              ["초기 노출", "런칭 초기 10% 노출 후 점진 확대"],
+              ["인보이스", "케이티나스미디어 통합 단일 인보이스, 광고주별 집행금액 개별 표기"],
+            ],
+            callout: "※ 상기 집행 조건은 OpenAI ChatGPT Ads 베타 기준이며, 정책 및 금액은 변동될 수 있습니다. VAT 등 세부 정산 조건은 별도 안내드립니다.",
+            footer: "집행 전 영업 담당자가 조건을 다시 확인해 드립니다.",
+          },
+          {
+            kicker: "04 · 다음 단계",
+            title: "준비 체크리스트 & 다음 단계",
+            gridClass: "three check",
+            cards: [
+              ["소재 준비", "브랜드명, 로고/파비콘, 제목, 설명, 이미지"],
+              ["랜딩 확인", "광고 로봇 접근 허용, 방화벽 예외 처리"],
+              ["집행 조건 확인", "예산, 기간, 과금 방식, 인보이스 정보"],
+            ],
+            calloutKey: "advertiser.footer.contact",
+            callout: "문의처: 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+            footer: "OpenAI ChatGPT Ads 베타 기준으로 정책·수치가 변동될 수 있습니다.",
+          },
+        ];
+
+        targetDecks.setup.slides = [
+          {
+            kicker: "Ads Manager 세팅 프로세스",
+            titleKey: "setup.hero.title",
+            title: "광고 캠페인 세팅 가이드",
+            subtitle: "캠페인 → 광고그룹 → 광고 생성 프로세스",
+            channelNote: "광고 관리자 URL: https://ads.openai.com/",
+            processCards: [
+              ["STEP 1 · 캠페인", "캠페인명, 유형, 목표, 위치, 예산, 스케줄을 설정합니다."],
+              ["STEP 2 · 광고그룹", "광고그룹 이름, 입찰가(CPC/CPM), 기본 광고 URL을 입력합니다."],
+              ["STEP 3 · 광고 만들기", "광고 이름, URL, 헤드라인, 설명, 이미지를 등록합니다."],
+            ],
+            overview: {
+              title: "플래너에게 받아야 할 캠페인 정보 및 소재",
+              columns: [
+                ["캠페인 유형, 목표, 위치, 예산, 기간", "입찰가(CPC 최대 152,000원 / CPM 최대 100,000원)", "기본 광고 URL, 컨텍스트 힌트"],
+                ["광고 URL, 헤드라인, 설명", "헤드라인 3~50자 / 설명 3~100자", "PNG 또는 JPG, 정사각형, 최소 256×256px 권장"],
+              ],
+            },
+            footer: "케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr",
+          },
+          {
+            kicker: "STEP 1 · 캠페인",
+            titleKey: "setup.step1.title",
+            title: "캠페인 만들기",
+            fieldRows: [
+              ["캠페인 이름", "필수 · 최소 3자 이상 입력(자유롭게 설정)"],
+              ["캠페인 유형", "표준(디폴트) / 제품피드 선택 가능"],
+              ["목표", "클릭(디폴트) / 도달 / 전환(coming soon)"],
+              ["위치", "대한민국"],
+              ["예산", "일예산 또는 총예산. 총예산 설정 후 일예산 변경 가능 / 일예산 설정 후 총예산 변경 불가(금액은 변경 가능)"],
+              ["스케줄", "시작일 / 종료일 시간까지 설정 필요(GMT+9 기준)"],
+            ],
+            imageKey: "campaign_step1",
+            imageCaption: "캠페인 만들기 화면",
+            note: "캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.",
+            footer: "일예산 선택 시 최소 25,000원 세팅이 필요합니다.",
+          },
+          {
+            kicker: "STEP 2 · 광고그룹",
+            titleKey: "setup.step2.title",
+            title: "광고그룹 만들기",
+            fieldRows: [
+              ["광고그룹 이름", "필수 · 최소 3자 이상 입력(자유롭게 설정)"],
+              ["최대 입찰가", "클릭 목표 선택 시 CPC 입찰(최대 152,000원 세팅 가능 / 시스템상 4,100원부터 경쟁력 있는 비딩가로 판단). 도달 목표 선택 시 CPM 입찰(최대 100,000원 세팅 가능)"],
+              ["기본 광고 URL", "광고그룹의 새 광고 도착 URL로 사용할 기본 URL 입력 — 의미 체크 필요"],
+              ["컨텍스트 힌트", "(선택사항) 제품/서비스 관련 대화·주제·키워드 설명. 매칭에 참고되지만 정확히 일치하는 표적을 공략하기 위한 규칙은 아님"],
+            ],
+            imageKey: "campaign_step2",
+            imageCaption: "광고그룹 만들기 화면",
+            note: "캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.",
+            footer: "입찰가는 캠페인 목표에 따라 CPC 또는 CPM 기준으로 입력합니다.",
+          },
+          {
+            kicker: "STEP 3 · 광고",
+            titleKey: "setup.step3.title",
+            title: "광고 만들기",
+            fieldRows: [
+              ["광고 이름", "필수 · 최소 3자 이상 입력(자유롭게 설정)"],
+              ["광고 URL", "광고 클릭 시 사람들이 방문할 URL 입력"],
+              ["헤드라인", "최소 3자 ~ 최대 50자(한글·알파벳·숫자·띄어쓰기 모두 1자로 카운팅) · 특수문자/이모지 사용 가능"],
+              ["설명", "최소 3자 ~ 최대 100자(한글·알파벳·숫자·띄어쓰기 모두 1자로 카운팅) · 특수문자/이모지 사용 가능"],
+              ["광고 이미지", "PNG 또는 JPG 업로드 · 최상의 품질을 위해 정사각형, 최소 256×256px 권장"],
+            ],
+            imageKey: "campaign_step3",
+            imageCaption: "광고 만들기 화면",
+            note: "캡처에 실계정명/개인정보가 노출될 경우 업로드 전 마스킹을 권장합니다.",
+            footer: "헤드라인 50자/설명 100자는 Ads Manager 직접 입력 화면 기준입니다.",
+          },
+          {
+            kicker: "미리보기",
+            title: "광고 소재 미리보기",
+            fieldRows: [
+              ["① 광고 계정명", "광고 단위 상단에 노출되는 계정명"],
+              ["② 제목", "최소 3자 ~ 최대 50자(한글·알파벳·특수문자·이모지·띄어쓰기 모두 1자로 카운트)"],
+              ["③ 설명", "최소 3자 ~ 최대 100자(한글·알파벳·특수문자·이모지·띄어쓰기 모두 1자로 카운트)"],
+              ["④ 랜딩 URL", "광고 클릭 시 이동하는 URL"],
+              ["⑤ 이미지", "PNG 또는 JPG(권장 규격: 정사각형, 최소 256×256px)"],
+            ],
+            imageKey: "campaign_preview",
+            imageCaption: "광고 소재 미리보기",
+            note: "본 문서 글자수는 Ads Manager 직접 입력 화면 기준(헤드라인 50자/설명 100자)이며 접수 폼(24/48)·크리테오 경유(30/60)와는 별개 채널 기준입니다.",
+            footer: "케이티나스미디어 미디어채널실 / openai@nasmedia.co.kr",
+          },
+        ];
+
+        targetDecks.pixel.slides = [
+          {
+            kicker: "OpenAI Ads Measurement Pixel",
+            titleKey: "pixel.hero.title",
+            title: "픽셀 설치 가이드",
+            subtitle: "웹 페이지뷰·전환·이벤트 측정 설정",
+            channelNote: "본 문서는 광고주 웹사이트에 설치하는 웹 JavaScript Pixel 기준입니다. 실제 Pixel ID와 전환 이벤트명은 광고 계정에서 발급된 값으로 교체해 주세요.",
+            processCards: [
+              ["STEP 1 · 데이터 소스", "Ads Manager 전환 메뉴에서 웹 데이터 소스를 만들고 Pixel ID와 설치 코드를 발급합니다."],
+              ["STEP 2 · 웹사이트 설치", "공통 픽셀 스크립트를 모든 측정 대상 페이지의 HTML head 상단에 설치합니다."],
+              ["STEP 3 · 이벤트 연결", "페이지뷰·리드·구매 등 측정 목적에 맞는 measure 코드를 전환 시점에 호출합니다."],
+            ],
+            footer: "케이티나스미디어 · 미디어채널실 openai@nasmedia.co.kr",
+          },
+          {
+            kicker: "STEP 1 · Ads Manager",
+            title: "픽셀 발급 위치",
+            fieldRows: [
+              ["진입 경로", "광고 관리자 → 도구 → 전환 → 데이터 소스 탭"],
+              ["데이터 소스", "데이터 소스 만들기 → 이름 입력 → 유형은 웹 선택"],
+              ["발급값", "설정 코드와 Pixel ID를 복사해 광고주 개발팀에 전달"],
+              ["전환 이벤트", "전환 이벤트 탭 → 표준 이벤트 선택 또는 맞춤 이벤트 입력 → 이름·전환 기간 설정"],
+            ],
+            listItems: [
+              "하나의 웹사이트에는 공통 픽셀 스크립트를 먼저 설치하고, 각 전환 지점에는 이벤트 호출 코드를 추가합니다.",
+              "이벤트를 캠페인에 연결해야 리포팅·최적화에 전환 이벤트를 활용할 수 있습니다.",
+            ],
+            sourceNote: "참고: OpenAI JavaScript Pixel · Supported events",
+            imageKey: "pixel_step1_conversion_home",
+            imageCaption: "전환 메뉴의 데이터 소스 탭에서 픽셀을 생성합니다.",
+            footer: "광고 계정에서 발급된 Pixel ID를 설치 코드의 PIXEL_ID 자리에 넣어야 합니다.",
+          },
+          {
+            kicker: "STEP 1-B · 데이터 소스 생성",
+            title: "웹 픽셀 만들기와 코드 복사",
+            fieldRows: [
+              ["데이터 소스 이름", "광고주·사이트를 구분할 수 있는 이름으로 입력"],
+              ["유형", "현재는 웹 픽셀 기준으로 안내"],
+              ["설정 코드", "웹사이트 HTML head에 넣을 공통 스크립트"],
+              ["픽셀 ID", "코드 안의 Pixel ID와 전환 이벤트 연결에 쓰이는 식별값"],
+            ],
+            note: "개발팀에는 설정 코드 전체와 Pixel ID를 함께 전달하세요. 캡처에 실계정명이나 개인정보가 있으면 공유 전 마스킹을 권장합니다.",
+            images: [
+              { key: "pixel_step2_create_source", caption: "데이터 소스 이름 입력 후 유형은 웹 선택" },
+              { key: "pixel_step3_setup_code", caption: "설정 코드와 Pixel ID를 복사해 개발팀 전달" },
+            ],
+            footer: "공통 픽셀 스크립트는 페이지당 한 번만 설치하고, 전환 이벤트 호출은 필요한 위치에 추가합니다.",
+          },
+          {
+            kicker: "STEP 2 · 공통 설치 코드",
+            titleKey: "pixel.head.title",
+            title: "웹사이트 head에 설치",
+            fieldRows: [
+              ["설치 위치", "측정할 모든 페이지의 HTML <head> 안, 가능하면 상단 가까이"],
+              ["필수 값", "pixelId: Ads Manager 데이터 소스에서 발급된 Pixel ID"],
+              ["테스트", "초기 검수 중에는 debug: true를 켜고 브라우저 콘솔에서 동작 확인"],
+              ["주의", "페이지당 공통 설치 스크립트는 1회만 추가"],
+            ],
+            note: "원본 설치 코드는 Ads Manager에서 복사한 코드를 우선 사용하세요. 아래는 개발팀 전달용 구조 예시입니다.",
+            code: '\u003cscript\u003e\n  (function (w, d, s, u) {\n    if (w.oaiq) return;\n    var q = function () { q.q.push(arguments); };\n    q.q = [];\n    w.oaiq = q;\n    var js = d.createElement(s);\n    js.async = true;\n    js.src = u;\n    var f = d.getElementsByTagName(s)[0];\n    f.parentNode.insertBefore(js, f);\n  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");\n\n  oaiq("init", {\n    pixelId: "PIXEL_ID",\n    debug: true\n  });\n\u003c/script\u003e',
+            footer: "개인정보 매칭값을 추가할 경우 원문 이메일·전화번호를 보내지 말고 공식 문서의 해시 규칙을 따라야 합니다.",
+          },
+          {
+            kicker: "STEP 3-A · 페이지뷰 측정",
+            title: "랜딩·콘텐츠 조회 이벤트",
+            eventCards: [
+              ["page_viewed", "광고 랜딩 페이지, 가격 안내, 이벤트 페이지처럼 중요한 페이지가 로드될 때 사용합니다."],
+              ["contents_viewed", "상품 상세, 콘텐츠, 리스트 항목 등 특정 대상 조회를 별도로 측정할 때 사용합니다."],
+              ["contents[] 값", "id, name, content_type에는 광고주 내부 페이지·상품 식별값을 넣습니다."],
+              ["설치 위치", "공통 픽셀 init 이후, 해당 페이지 로드 시점 또는 콘텐츠 노출 시점에 호출합니다."],
+            ],
+            code: 'oaiq("measure", "page_viewed", {\n  type: "contents"\n});\n\noaiq("measure", "contents_viewed", {\n  type: "contents",\n  contents: [{\n    id: "landing_page",\n    name: "Summer landing",\n    content_type: "page"\n  }]\n});',
+            images: [
+              { key: "pixel_step4_create_event", caption: "표준 이벤트에서 페이지 조회 선택 후 전환 생성" },
+              { key: "pixel_step5_event_code", caption: "전환이 발생하는 페이지에 이벤트 호출 코드 추가" },
+            ],
+            footer: "페이지 로드 자체는 page_viewed, 특정 상품·콘텐츠 조회는 contents_viewed로 구분합니다.",
+          },
+          {
+            kicker: "STEP 3-B · 전환 측정",
+            title: "구매·문의·가입 완료 이벤트",
+            eventCards: [
+              ["order_created", "구매 완료 페이지 또는 결제 성공 콜백에서 호출합니다. 금액은 정수로 전달합니다."],
+              ["lead_created", "상담 신청, 문의 제출, 견적 요청 등 리드 폼 제출 완료 시 사용합니다."],
+              ["registration_completed", "회원가입, 이벤트 등록 등 등록 완료 플로우에 사용합니다."],
+              ["appointment_scheduled", "예약·상담·데모 일정 확정 시 사용합니다."],
+            ],
+            code: 'oaiq("measure", "lead_created", {\n  type: "customer_action"\n});\n\noaiq("measure", "registration_completed", {\n  type: "customer_action"\n});\n\noaiq("measure", "order_created", {\n  type: "contents",\n  amount: 59000,\n  currency: "KRW"\n}, {\n  event_id: "order_12345"\n});',
+            note: "구매 금액을 넣을 때는 amount와 currency를 함께 전달합니다. 구매 완료, 문의 완료, 예약 완료처럼 실제 성과가 확정되는 시점에 호출해 주세요.",
+            footer: "amount와 quantity는 숫자 정수로 넣고, amount를 넣을 때는 currency도 함께 넣습니다.",
+          },
+          {
+            kicker: "STEP 3-C · 맞춤 이벤트 & QA",
+            title: "표준 이벤트가 없을 때",
+            fieldRows: [
+              ["맞춤 이벤트", "표준 이벤트로 설명하기 어려운 행동만 custom으로 생성"],
+              ["이름 규칙", "1~64자, 영문/숫자/언더스코어/하이픈, 시작·끝은 영문 또는 숫자"],
+              ["중복 제거", "브라우저와 서버에서 같은 전환을 보낼 때 같은 event_id 사용"],
+              ["검수", "브라우저 콘솔 debug 로그, 전환 이벤트 탭, 이벤트 스트림에서 수신 여부 확인"],
+            ],
+            note: "페이지 코드에서는 서버 Conversions API를 직접 호출하지 말고, 브라우저에서는 JavaScript Pixel만 사용하세요.",
+            imageKey: "pixel_step6_event_list",
+            imageCaption: "전환 이벤트 탭에서 생성된 이벤트와 수신 여부를 확인합니다.",
+            code: 'oaiq("measure", "custom", { type: "custom" }, {\n  custom_event_name: "quote_requested"\n});',
+            footer: "베타 기준으로 화면과 기능명이 바뀔 수 있습니다. 최종 검수는 Ads Manager와 공식 문서를 재확인해 주세요.",
+          },
+          {
+            kicker: "STEP 4 · GTM 가이드",
+            titleKey: "pixel.gtm.title",
+            title: "GTM 삽입 방법",
+            fieldRows: [
+              ["목적", "웹사이트에 Google Tag Manager(GTM)를 삽입하여 OpenAI 픽셀 및 이벤트 태그를 관리할 수 있도록 설정합니다."],
+              ["삽입 위치", "모든 페이지의 <head>와 <body> 최상단"],
+              ["필요 정보", "GTM 컨테이너 ID (예: GTM-XXXXXXX)"],
+              ["주의 사항", "GTM 스크립트는 수정 없이 그대로 삽입해야 하며, 여러 번 삽입 시 데이터 중복이 발생할 수 있습니다."],
+            ],
+            imageKey: "pixel_step7_gtm_workspace",
+            imageCaption: "GTM 컨테이너 ID는 Google Tag Manager 작업공간에서 확인할 수 있습니다.",
+            note: "사이트 전체에 GTM을 설치해야 모든 페이지에서 OpenAI Pixel 태그가 정상적으로 동작합니다.",
+            codeBlocks: [
+              {
+                title: "<head>에 삽입",
+                code: '\u003c!-- Google Tag Manager --\u003e\n\u003cscript\u003e(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({\n"gtm.start": new Date().getTime(), event:"gtm.js"\n});var f=d.getElementsByTagName(s)[0],\nj=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";\nj.async=true;j.src="https://www.googletagmanager.com/gtm.js?id="+i+dl;\nf.parentNode.insertBefore(j,f);\n})(window,document,"script","dataLayer","GTM-XXXXXXX");\u003c/script\u003e\n\u003c!-- End Google Tag Manager --\u003e',
+              },
+              {
+                title: "<body> 최상단에 삽입",
+                code: '\u003c!-- Google Tag Manager (noscript) --\u003e\n\u003cnoscript\u003e\u003ciframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"\nheight="0" width="0" style="display:none;visibility:hidden"\u003e\u003c/iframe\u003e\u003c/noscript\u003e\n\u003c!-- End Google Tag Manager (noscript) --\u003e',
+              },
+            ],
+            calloutKey: "pixel.footer.support",
+            callout: "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다. 관련 문의: adso@nasmedia.co.kr",
+          },
+        ];
+      }
+
+      applyRichGuideDeckDefaults(guideDecks);
       const guideDeckDefaults = JSON.parse(JSON.stringify(guideDecks));
 
       function resetGuideDecks() {
@@ -615,6 +915,10 @@
 
       function applyGuideLayout(layout) {
         resetGuideDecks();
+        if (layout?.version !== GUIDE_LAYOUT_VERSION) {
+          normalizeGuideDeckEditKeys();
+          return;
+        }
         const decks = layout?.decks || {};
         Object.entries(decks).forEach(([deckKey, deckLayout]) => {
           if (!guideDecks[deckKey] || !Array.isArray(deckLayout?.slides) || !deckLayout.slides.length) return;
@@ -1108,17 +1412,118 @@
         `).join("");
       }
 
-      function renderGuideImage(key) {
+      function renderGuideFieldRows(rows = []) {
+        if (!Array.isArray(rows) || !rows.length) return "";
+        return `
+          <div class="dev-guide-field-table">
+            ${rows.map(([label, value]) => `
+              <div class="dev-guide-field-row">
+                <strong>${escapeHtml(label)}</strong>
+                <span>${escapeHtml(value)}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderGuideList(items = []) {
+        if (!Array.isArray(items) || !items.length) return "";
+        return `<ul class="dev-guide-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      }
+
+      function renderGuideProcessCards(cards = []) {
+        if (!Array.isArray(cards) || !cards.length) return "";
+        return `
+          <div class="dev-guide-process-grid">
+            ${cards.map(([title, body]) => `
+              <div class="dev-guide-step-card">
+                <strong>${escapeHtml(title)}</strong>
+                <span>${escapeHtml(body)}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderGuideOverview(overview) {
+        if (!overview || !Array.isArray(overview.columns)) return "";
+        return `
+          <div class="dev-guide-overview">
+            <strong>${escapeHtml(overview.title || "핵심 정보")}</strong>
+            <div class="dev-guide-overview-grid">
+              ${overview.columns.map((items) => `
+                <ul>${(items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderGuideCopyGuide(copyGuide) {
+        if (!copyGuide || !Array.isArray(copyGuide.rows) || !copyGuide.rows.length) return "";
+        const columns = copyGuide.columns || ["구분", "좋은 예", "아쉬운 예"];
+        return `
+          <div class="dev-copy-guide">
+            <h5>${escapeHtml(copyGuide.title || "가이드")}</h5>
+            <div class="dev-copy-guide-table" style="--guide-columns:${columns.length}">
+              ${columns.map((column) => `<div class="head">${escapeHtml(column)}</div>`).join("")}
+              ${copyGuide.rows.flatMap((row) => columns.map((_, index) => `<div>${escapeHtml(row?.[index] || "")}</div>`)).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderGuideEventCards(cards = []) {
+        if (!Array.isArray(cards) || !cards.length) return "";
+        return `
+          <div class="dev-pixel-event-grid">
+            ${cards.map(([title, body]) => `
+              <div class="dev-pixel-event-card">
+                <strong>${escapeHtml(title)}</strong>
+                <span>${escapeHtml(body)}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderGuideImage(imageInput) {
+        const key = typeof imageInput === "string" ? imageInput : imageInput?.key;
         if (!key) return "";
+        const caption = typeof imageInput === "object" ? imageInput.caption : "";
         const image = guideImage(key);
         return `
           <figure class="dev-guide-figure">
-            <div class="dev-guide-image-frame">
+            <div class="dev-guide-image-frame ${escapeHtml(typeof imageInput === "object" ? imageInput.className || "" : "")}">
               <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}" loading="lazy" />
               <div class="dev-guide-placeholder">관리자 콘솔에서 이미지를 수정할 수 있습니다.</div>
             </div>
-            <figcaption>${escapeHtml(image.caption)}</figcaption>
+            <figcaption>${escapeHtml(caption || image.caption)}</figcaption>
           </figure>
+        `;
+      }
+
+      function renderGuideCodeBlocks(blocks = []) {
+        if (!Array.isArray(blocks) || !blocks.length) return "";
+        return `
+          <div class="dev-guide-code-grid">
+            ${blocks.map((block) => `
+              <div>
+                <p class="dev-guide-caption">${escapeHtml(block.title || "코드")}</p>
+                <pre class="dev-slide-code">${escapeHtml(block.code || "")}</pre>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function renderGuideMedia(slide, code = "") {
+        const images = Array.isArray(slide.images) && slide.images.length
+          ? slide.images
+          : (slide.imageKey ? [{ key: slide.imageKey, caption: slide.imageCaption, className: slide.imageFrameClass }] : []);
+        return `
+          ${images.map((image) => renderGuideImage(image)).join("")}
+          ${code ? `<pre class="dev-slide-code">${escapeHtml(code)}</pre>` : ""}
         `;
       }
 
@@ -1128,23 +1533,34 @@
         const subtitle = slide.subtitleKey ? guideText(slide.subtitleKey, slide.subtitle) : slide.subtitle;
         const callout = slide.calloutKey ? guideText(slide.calloutKey, slide.callout) : slide.callout;
         const code = slide.codeKey ? guideText(slide.codeKey, slide.code) : slide.code;
-        const hasMedia = Boolean(slide.imageKey || code);
+        const media = renderGuideMedia(slide, code);
+        const extraCodeBlocks = renderGuideCodeBlocks(slide.codeBlocks);
+        const hasMedia = Boolean(media.trim());
         const body = `
           <div class="dev-slide-main${hasMedia ? " has-media" : ""}">
             <div class="dev-slide-copy">
               ${kicker ? `<p class="dev-slide-kicker">${escapeHtml(kicker)}</p>` : ""}
               <h4>${escapeHtml(title || "")}</h4>
               ${subtitle ? `<p class="dev-slide-subtitle">${escapeHtml(subtitle)}</p>` : ""}
-              ${slide.cards?.length ? `<div class="dev-slide-grid">${renderGuideCards(slide.cards)}</div>` : ""}
+              ${slide.channelNote ? `<p class="dev-guide-channel-note">${escapeHtml(slide.channelNote)}</p>` : ""}
+              ${renderGuideProcessCards(slide.processCards)}
+              ${renderGuideOverview(slide.overview)}
+              ${renderGuideFieldRows(slide.fieldRows)}
+              ${renderGuideEventCards(slide.eventCards)}
+              ${slide.cards?.length ? `<div class="dev-slide-grid ${escapeHtml(slide.gridClass || "")}">${renderGuideCards(slide.cards)}</div>` : ""}
+              ${renderGuideCopyGuide(slide.copyGuide)}
+              ${renderGuideList(slide.listItems)}
+              ${slide.sourceNote ? `<p class="dev-guide-source-note">${escapeHtml(slide.sourceNote)}</p>` : ""}
+              ${slide.note ? `<p class="dev-guide-note">${escapeHtml(slide.note)}</p>` : ""}
               ${callout ? `<p class="dev-slide-callout">${escapeHtml(callout)}</p>` : ""}
             </div>
             ${hasMedia ? `
               <div class="dev-slide-media">
-                ${renderGuideImage(slide.imageKey)}
-                ${code ? `<pre class="dev-slide-code">${escapeHtml(code)}</pre>` : ""}
+                ${media}
               </div>
             ` : ""}
           </div>
+          ${extraCodeBlocks}
         `;
         return `
           <section class="dev-slide-card">
