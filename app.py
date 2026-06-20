@@ -176,6 +176,10 @@ def _require_admin(request: Request) -> None:
         raise HTTPException(status_code=403, detail="관리자 비밀번호가 올바르지 않습니다.")
 
 
+def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
+    return exc.errors(include_url=False, include_input=False, include_context=False)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -449,7 +453,7 @@ async def intake(request: Request) -> IntakeResponse:
     except ValidationError as exc:
         raise HTTPException(
             status_code=400,
-            detail=exc.errors(include_url=False, include_input=False),
+            detail=_validation_error_details(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -471,7 +475,7 @@ async def intake_workbook(request: Request) -> StreamingResponse:
     except ValidationError as exc:
         raise HTTPException(
             status_code=400,
-            detail=exc.errors(include_url=False, include_input=False),
+            detail=_validation_error_details(exc),
         ) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
