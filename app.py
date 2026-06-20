@@ -305,7 +305,7 @@ def admin_analytics(request: Request) -> dict[str, Any]:
     from admin_store import get_visit_analytics
 
     _require_admin(request)
-    return get_visit_analytics()
+    return get_visit_analytics(request.query_params.get("period", "30"))
 
 
 @app.get("/api/admin/ads-api-keys", include_in_schema=False)
@@ -412,6 +412,12 @@ def chat(request: ChatRequest) -> ChatResponse:
         from rag_chatbot.qa import answer_question
 
         result = answer_question(request.question)
+        try:
+            from admin_store import record_chat_question
+
+            record_chat_question(request.question, result.get("answer", ""), result.get("sources", []))
+        except Exception:
+            pass
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return ChatResponse(**result)

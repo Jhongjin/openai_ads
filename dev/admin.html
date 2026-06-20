@@ -121,9 +121,21 @@
 
           <div class="content">
             <section class="view is-active" id="admin-view-analytics">
+              <div class="admin-toolbar">
+                <label class="field-inline" for="analytics-period">
+                  <span>기간</span>
+                  <select id="analytics-period">
+                    <option value="7">최근 7일</option>
+                    <option value="30" selected>최근 30일</option>
+                    <option value="90">최근 90일</option>
+                    <option value="all">전체 기간</option>
+                  </select>
+                </label>
+                <span class="toolbar-note" id="analytics-period-note">기간별 방문·버튼·질문 데이터를 집계합니다.</span>
+              </div>
               <div class="metric-strip">
                 <div class="metric">
-                  <span>누적 방문</span>
+                  <span>기간 방문</span>
                   <strong id="metric-total">-</strong>
                 </div>
                 <div class="metric">
@@ -131,7 +143,7 @@
                   <strong id="metric-today">-</strong>
                 </div>
                 <div class="metric">
-                  <span>추적 페이지</span>
+                  <span>추적 항목</span>
                   <strong id="metric-pages">-</strong>
                 </div>
                 <div class="metric">
@@ -139,12 +151,12 @@
                   <strong id="metric-storage">-</strong>
                 </div>
               </div>
-              <div class="admin-grid">
+              <div class="analytics-chart-grid">
                 <section class="surface">
                   <div class="surface-head">
                     <div>
                       <h2 class="surface-title">방문 추이</h2>
-                      <p class="surface-copy">최근 일자별 방문량입니다.</p>
+                      <p class="surface-copy" id="visit-chart-caption">선택 기간의 일자별 페이지 방문입니다.</p>
                     </div>
                   </div>
                   <div class="surface-body">
@@ -154,20 +166,61 @@
                 <section class="surface">
                   <div class="surface-head">
                     <div>
+                      <h2 class="surface-title">방문 구성</h2>
+                      <p class="surface-copy">페이지와 다운로드 버튼의 사용 비중입니다.</p>
+                    </div>
+                  </div>
+                  <div class="surface-body">
+                    <div class="chart-box" id="visit-pie-chart"></div>
+                  </div>
+                </section>
+              </div>
+              <div class="analytics-table-grid">
+                <section class="surface">
+                  <div class="surface-head">
+                    <div>
                       <h2 class="surface-title">페이지별 지표</h2>
-                      <p class="surface-copy">누적 방문 기준으로 정렬됩니다.</p>
+                      <p class="surface-copy">선택 기간의 페이지 방문 기준으로 정렬됩니다.</p>
                     </div>
                   </div>
                   <div class="surface-body table-scroll">
                     <table class="data-grid">
                       <thead>
-                        <tr><th>페이지</th><th>누적</th><th>오늘</th></tr>
+                        <tr><th>페이지</th><th>기간</th><th>오늘</th><th>마지막 방문</th></tr>
                       </thead>
-                      <tbody id="analytics-rows"></tbody>
+                      <tbody id="analytics-page-rows"></tbody>
+                    </table>
+                  </div>
+                </section>
+                <section class="surface">
+                  <div class="surface-head">
+                    <div>
+                      <h2 class="surface-title">버튼·다운로드 지표</h2>
+                      <p class="surface-copy">PDF 저장, CSV/XLSX 다운로드 같은 클릭 이벤트입니다.</p>
+                    </div>
+                  </div>
+                  <div class="surface-body table-scroll">
+                    <table class="data-grid">
+                      <thead>
+                        <tr><th>버튼</th><th>기간</th><th>오늘</th><th>마지막 실행</th></tr>
+                      </thead>
+                      <tbody id="analytics-download-rows"></tbody>
                     </table>
                   </div>
                 </section>
               </div>
+              <section class="surface question-analytics-surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">질문 카테고리</h2>
+                    <p class="surface-copy">AI 답변 내용과 질문 키워드를 기준으로 사용자의 주요 문의를 묶어 보여줍니다.</p>
+                  </div>
+                  <span class="badge-soft" id="question-total">0건</span>
+                </div>
+                <div class="surface-body">
+                  <div class="question-category-list" id="question-category-list"></div>
+                </div>
+              </section>
             </section>
 
             <section class="view" id="admin-view-notice">
@@ -346,6 +399,8 @@
       let slideContent = { items: [], images: [] };
       let currentView = "analytics";
       let visitChart = null;
+      let visitPieChart = null;
+      let openQuestionCategory = null;
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -390,21 +445,61 @@
         });
       }
 
-      function renderChart(series) {
+      function formatNumber(value) {
+        return Number(value || 0).toLocaleString("ko-KR");
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return date.toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" });
+      }
+
+      function normalizeSeries(series) {
+        const periodValue = $("#analytics-period")?.value || "30";
+        if (periodValue === "all") {
+          return (series || []).map((item) => ({
+            date: String(item.date || item.visit_date || "").slice(0, 10),
+            count: Number(item.total_count || item.count || 0),
+          })).filter((item) => item.date);
+        }
+        const days = Number(periodValue || 30);
+        const values = new Map(
+          (series || []).map((item) => [
+            String(item.date || item.visit_date || "").slice(0, 10),
+            Number(item.total_count || item.count || 0),
+          ]),
+        );
+        const points = [];
+        const today = new Date();
+        for (let index = days - 1; index >= 0; index -= 1) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - index);
+          const key = date.toISOString().slice(0, 10);
+          points.push({ date: key, count: values.get(key) || 0 });
+        }
+        return points;
+      }
+
+      function renderVisitChart(series) {
         const element = $("#visit-chart");
         if (!window.echarts || !element) return;
         visitChart = visitChart || echarts.init(element);
+        const points = normalizeSeries(series);
+        $("#visit-chart-caption").textContent = points.length ? `${points.length}개 일자 기준 페이지 방문입니다.` : "표시할 방문 데이터가 없습니다.";
         visitChart.setOption({
           grid: { left: 38, right: 18, top: 28, bottom: 32 },
           tooltip: { trigger: "axis" },
           xAxis: {
             type: "category",
-            data: series.map((item) => item.date),
+            data: points.map((item) => item.date.slice(5)),
             axisLabel: { color: "#687084" },
             axisLine: { lineStyle: { color: "#d9d3c8" } },
           },
           yAxis: {
             type: "value",
+            minInterval: 1,
             axisLabel: { color: "#687084" },
             splitLine: { lineStyle: { color: "#ebe5db" } },
           },
@@ -416,28 +511,114 @@
             lineStyle: { width: 4, color: "#d71920" },
             itemStyle: { color: "#d71920" },
             areaStyle: { color: "rgba(215,25,32,.11)" },
-            data: series.map((item) => item.total_count),
+            data: points.map((item) => item.count),
           }],
         });
       }
 
+      function renderPieChart(items) {
+        const element = $("#visit-pie-chart");
+        if (!window.echarts || !element) return;
+        visitPieChart = visitPieChart || echarts.init(element);
+        const data = (items || []).map((item) => ({
+          name: item.name || "-",
+          value: Number(item.value || 0),
+          eventType: item.event_type || "page",
+        })).filter((item) => item.value > 0);
+        visitPieChart.setOption({
+          color: ["#d71920", "#101828", "#0f766e", "#f59e0b", "#2563eb", "#7c3aed", "#64748b", "#db2777"],
+          tooltip: {
+            trigger: "item",
+            formatter: (item) => `${escapeHtml(item.name)}<br>${formatNumber(item.value)}건 (${item.percent}%)`,
+          },
+          legend: {
+            orient: "vertical",
+            right: 0,
+            top: "middle",
+            type: "scroll",
+            textStyle: { color: "#4b5563", fontWeight: 700 },
+          },
+          series: [{
+            name: "방문 구성",
+            type: "pie",
+            radius: ["42%", "70%"],
+            center: ["38%", "50%"],
+            avoidLabelOverlap: true,
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 13, fontWeight: 900 } },
+            data: data.length ? data : [{ name: "데이터 없음", value: 1, itemStyle: { color: "#d9d3c8" } }],
+          }],
+        });
+      }
+
+      function renderAnalyticsRows(selector, items, emptyMessage) {
+        const body = $(selector);
+        if (!body) return;
+        body.innerHTML = (items || []).map((item) => `
+          <tr>
+            <td><strong>${escapeHtml(item.page_label || item.page)}</strong><br><span class="muted-code">${escapeHtml(item.page || "")}</span></td>
+            <td>${formatNumber(item.total_count)}</td>
+            <td>${formatNumber(item.today_count)}<br><span class="muted-code">${escapeHtml(item.today_date || "")}</span></td>
+            <td>${escapeHtml(formatDateTime(item.last_seen_at))}</td>
+          </tr>
+        `).join("") || `<tr><td colspan="4">${escapeHtml(emptyMessage)}</td></tr>`;
+      }
+
+      function renderQuestionCategories(questions) {
+        const root = $("#question-category-list");
+        const categories = questions?.categories || [];
+        $("#question-total").textContent = `${formatNumber(questions?.total || 0)}건`;
+        if (!root) return;
+        if (!categories.length) {
+          root.innerHTML = '<div class="empty-state">아직 저장된 Q&A 질문 로그가 없습니다.</div>';
+          return;
+        }
+        root.innerHTML = categories.map((category) => {
+          const isOpen = openQuestionCategory === category.category;
+          const questionsHtml = (category.questions || []).map((item) => `
+            <li>
+              <div>
+                <strong>${escapeHtml(item.question)}</strong>
+                <p>${escapeHtml(item.answer_excerpt || "답변 요약이 아직 없습니다.")}</p>
+                ${item.source_summary ? `<small>근거: ${escapeHtml(item.source_summary)}</small>` : ""}
+              </div>
+              <span>${formatNumber(item.count)}회</span>
+            </li>
+          `).join("");
+          return `
+            <article class="question-category ${isOpen ? "is-open" : ""}">
+              <button type="button" class="question-category-head" data-question-category="${escapeHtml(category.category)}">
+                <span>
+                  <strong>${escapeHtml(category.label)}</strong>
+                  <small>최근 ${escapeHtml(formatDateTime(category.latest_at))}</small>
+                </span>
+                <em>${formatNumber(category.count)}건</em>
+              </button>
+              <div class="question-category-body" ${isOpen ? "" : "hidden"}>
+                <ul class="question-examples">${questionsHtml || "<li>세부 질문이 없습니다.</li>"}</ul>
+              </div>
+            </article>
+          `;
+        }).join("");
+      }
+
       async function loadAnalytics() {
-        const data = await adminFetch("/api/admin/analytics");
-        const items = data.items || [];
-        const total = items.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
-        const today = items.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
+        const period = $("#analytics-period")?.value || "30";
+        const data = await adminFetch(`/api/admin/analytics?period=${encodeURIComponent(period)}`);
+        const pageItems = data.page_items || [];
+        const downloadItems = data.download_items || [];
+        const total = pageItems.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
+        const today = pageItems.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
         $("#metric-total").textContent = total.toLocaleString("ko-KR");
         $("#metric-today").textContent = today.toLocaleString("ko-KR");
-        $("#metric-pages").textContent = String(items.length);
+        $("#metric-pages").textContent = formatNumber(pageItems.length + downloadItems.length);
         $("#metric-storage").textContent = data.storage || "-";
-        $("#analytics-rows").innerHTML = items.map((item) => `
-          <tr>
-            <td>${escapeHtml(item.page_label || item.page)}</td>
-            <td>${Number(item.total_count || 0).toLocaleString("ko-KR")}</td>
-            <td>${Number(item.today_count || 0).toLocaleString("ko-KR")}</td>
-          </tr>
-        `).join("") || '<tr><td colspan="3">방문 데이터가 없습니다.</td></tr>';
-        renderChart(data.series || []);
+        $("#analytics-period-note").textContent = `${data.period?.label || "선택 기간"} · ${data.period?.start_date || ""} ~ ${data.period?.end_date || ""}`;
+        renderVisitChart(data.series || []);
+        renderPieChart(data.pie_items || []);
+        renderAnalyticsRows("#analytics-page-rows", pageItems, "선택 기간의 페이지 방문 데이터가 없습니다.");
+        renderAnalyticsRows("#analytics-download-rows", downloadItems, "선택 기간의 버튼·다운로드 데이터가 없습니다.");
+        renderQuestionCategories(data.questions || { total: 0, categories: [] });
       }
 
       function renderNoticePreview() {
@@ -626,6 +807,7 @@
         });
       });
       $("#refresh-current").addEventListener("click", () => refreshCurrent().catch((error) => console.error(error)));
+      $("#analytics-period").addEventListener("change", () => loadAnalytics().catch((error) => console.error(error)));
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
@@ -654,8 +836,17 @@
           setStatus("mail-status", error.message, "error");
         }
       });
+      $("#question-category-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-question-category]");
+        if (!button) return;
+        openQuestionCategory = openQuestionCategory === button.dataset.questionCategory ? null : button.dataset.questionCategory;
+        loadAnalytics().catch((error) => console.error(error));
+      });
 
-      window.addEventListener("resize", () => visitChart?.resize());
+      window.addEventListener("resize", () => {
+        visitChart?.resize();
+        visitPieChart?.resize();
+      });
 
       if (adminPassword) {
         $("#admin-password").value = adminPassword;

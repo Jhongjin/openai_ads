@@ -1209,6 +1209,7 @@
       $("#landing-run").addEventListener("click", runLanding);
       $("#favicon-run").addEventListener("click", runFavicon);
       $("#landing-csv").addEventListener("click", () => {
+        trackVisit("landing-csv", "CSV 다운로드 · OAI-AdsBot 랜딩 점검");
         downloadCsv(
           "oai_adsbot_landing_check.csv",
           ["input_url", "badge", "reason", "campaign_impact", "action"],
@@ -1216,6 +1217,7 @@
         );
       });
       $("#favicon-csv").addEventListener("click", () => {
+        trackVisit("favicon-csv", "CSV 다운로드 · 로고·파비콘 소재 점검");
         downloadCsv(
           "openai_ads_logo_favicon_check.csv",
           ["input_url", "badge", "size", "format", "background", "campaign_impact", "action"],
