@@ -931,6 +931,16 @@ body.dev-console :focus-visible {
   overflow-wrap: anywhere;
 }
 
+.setting-action {
+  justify-self: end;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .ads-manager-mini {
   margin: 0 10px 10px;
   border: 1px solid #d7dbe2;
