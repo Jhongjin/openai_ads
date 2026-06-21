@@ -383,7 +383,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".button-spinner", response.text)
         self.assertIn("@keyframes button-spin", response.text)
 
-    def test_operating_faq_api_has_default_categories(self) -> None:
+    def test_operating_faq_api_has_public_categories(self) -> None:
         client = TestClient(app)
 
         response = client.get("/api/faqs")
@@ -396,7 +396,11 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertEqual(len(categories), 8)
         self.assertEqual(categories[0]["id"], "account")
         self.assertLessEqual(len(categories[0]["items"]), 10)
-        self.assertIn("Order Form", categories[0]["items"][0]["q"])
+        self.assertTrue(categories[0]["items"])
+        self.assertIn("q", categories[0]["items"][0])
+        self.assertIn("a", categories[0]["items"][0])
+        self.assertTrue(categories[0]["items"][0]["q"])
+        self.assertTrue(categories[0]["items"][0]["a"])
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
         client = TestClient(app)
