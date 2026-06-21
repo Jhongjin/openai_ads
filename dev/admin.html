@@ -166,8 +166,8 @@
                   <strong id="metric-pages">-</strong>
                 </div>
                 <div class="metric">
-                  <span>저장소</span>
-                  <strong id="metric-storage">-</strong>
+                  <span>기간 질문</span>
+                  <strong id="metric-questions">-</strong>
                 </div>
               </div>
               <div class="analytics-chart-grid">
@@ -234,7 +234,14 @@
                     <h2 class="surface-title">질문 카테고리</h2>
                     <p class="surface-copy">AI 답변 내용과 질문 키워드를 기준으로 사용자의 주요 문의를 묶어 보여줍니다.</p>
                   </div>
-                  <span class="badge-soft" id="question-total">0건</span>
+                  <div class="question-head-actions">
+                    <span class="badge-soft" id="question-total">0건</span>
+                    <div class="mini-pagination" aria-label="질문 카테고리 페이지">
+                      <button type="button" id="question-page-prev">이전</button>
+                      <span id="question-page-note">1 / 1</span>
+                      <button type="button" id="question-page-next">다음</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="surface-body">
                   <div class="question-category-list" id="question-category-list"></div>
@@ -742,6 +749,8 @@
       let visitChart = null;
       let visitPieChart = null;
       let openQuestionCategory = null;
+      let questionCategoryPage = 0;
+      const QUESTION_CATEGORY_PAGE_SIZE = 6;
       let activeGuideDeck = "advertiser";
       let adsKeyItems = [];
       let adsKeyPage = 1;
@@ -1509,13 +1518,24 @@
       function renderQuestionCategories(questions) {
         const root = $("#question-category-list");
         const categories = questions?.categories || [];
-        $("#question-total").textContent = `${formatNumber(questions?.total || 0)}건`;
+        const totalQuestions = Number(questions?.total || 0);
+        const totalPages = Math.max(1, Math.ceil(categories.length / QUESTION_CATEGORY_PAGE_SIZE));
+        questionCategoryPage = Math.min(questionCategoryPage, totalPages - 1);
+        $("#question-total").textContent = `${formatNumber(totalQuestions)}건 · ${formatNumber(categories.length)}개`;
+        $("#metric-questions").textContent = formatNumber(totalQuestions);
+        $("#question-page-note").textContent = `${formatNumber(questionCategoryPage + 1)} / ${formatNumber(totalPages)}`;
+        $("#question-page-prev").disabled = questionCategoryPage <= 0;
+        $("#question-page-next").disabled = questionCategoryPage >= totalPages - 1;
         if (!root) return;
         if (!categories.length) {
           root.innerHTML = '<div class="empty-state">아직 저장된 Q&A 질문 로그가 없습니다.</div>';
           return;
         }
-        root.innerHTML = categories.map((category) => {
+        const visibleCategories = categories.slice(
+          questionCategoryPage * QUESTION_CATEGORY_PAGE_SIZE,
+          questionCategoryPage * QUESTION_CATEGORY_PAGE_SIZE + QUESTION_CATEGORY_PAGE_SIZE,
+        );
+        const rows = visibleCategories.map((category) => {
           const isOpen = openQuestionCategory === category.category;
           const questionsHtml = (category.questions || []).map((item) => `
             <li>
@@ -1527,21 +1547,41 @@
               <span>${formatNumber(item.count)}회</span>
             </li>
           `).join("");
+          const topQuestion = (category.questions || [])[0]?.question || "세부 질문 없음";
           return `
-            <article class="question-category ${isOpen ? "is-open" : ""}">
-              <button type="button" class="question-category-head" data-question-category="${escapeHtml(category.category)}">
-                <span>
+            <tr class="question-category-row ${isOpen ? "is-open" : ""}">
+              <td>
+                <button type="button" class="question-category-toggle" data-question-category="${escapeHtml(category.category)}">
                   <strong>${escapeHtml(category.label)}</strong>
                   <small>최근 ${escapeHtml(formatDateTime(category.latest_at))}</small>
-                </span>
-                <em>${formatNumber(category.count)}건</em>
-              </button>
-              <div class="question-category-body" ${isOpen ? "" : "hidden"}>
+                </button>
+              </td>
+              <td>${formatNumber(category.count)}건</td>
+              <td>${escapeHtml(topQuestion)}</td>
+              <td><span class="question-row-state">${isOpen ? "접기" : "보기"}</span></td>
+            </tr>
+            <tr class="question-category-detail ${isOpen ? "is-open" : ""}" ${isOpen ? "" : "hidden"}>
+              <td colspan="4">
                 <ul class="question-examples">${questionsHtml || "<li>세부 질문이 없습니다.</li>"}</ul>
-              </div>
-            </article>
+              </td>
+            </tr>
           `;
         }).join("");
+        root.innerHTML = `
+          <div class="question-category-table-shell">
+            <table class="question-category-table">
+              <thead>
+                <tr>
+                  <th>카테고리</th>
+                  <th>질문 수</th>
+                  <th>대표 질문</th>
+                  <th>상세</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
       }
 
       async function loadAnalytics() {
@@ -1554,7 +1594,7 @@
         $("#metric-total").textContent = total.toLocaleString("ko-KR");
         $("#metric-today").textContent = today.toLocaleString("ko-KR");
         $("#metric-pages").textContent = formatNumber(pageItems.length + downloadItems.length);
-        $("#metric-storage").textContent = data.storage || "-";
+        $("#metric-questions").textContent = formatNumber(data.questions?.total || 0);
         $("#analytics-period-note").textContent = `${data.period?.label || "선택 기간"} · ${data.period?.start_date || ""} ~ ${data.period?.end_date || ""}`;
         renderVisitChart(data.series || []);
         renderPieChart(data.pie_items || []);
@@ -3290,7 +3330,11 @@
         });
       });
       $("#refresh-current").addEventListener("click", () => refreshCurrent().catch((error) => console.error(error)));
-      $("#analytics-period").addEventListener("change", () => loadAnalytics().catch((error) => console.error(error)));
+      $("#analytics-period").addEventListener("change", () => {
+        questionCategoryPage = 0;
+        openQuestionCategory = null;
+        loadAnalytics().catch((error) => console.error(error));
+      });
       $("#official-refresh").addEventListener("click", () => {
         officialPage = 1;
         loadOfficialChanges(1).catch((error) => setStatus("official-status", error.message, "error"));
@@ -3522,6 +3566,16 @@
         const button = event.target.closest("[data-question-category]");
         if (!button) return;
         openQuestionCategory = openQuestionCategory === button.dataset.questionCategory ? null : button.dataset.questionCategory;
+        loadAnalytics().catch((error) => console.error(error));
+      });
+      $("#question-page-prev").addEventListener("click", () => {
+        questionCategoryPage = Math.max(0, questionCategoryPage - 1);
+        openQuestionCategory = null;
+        loadAnalytics().catch((error) => console.error(error));
+      });
+      $("#question-page-next").addEventListener("click", () => {
+        questionCategoryPage += 1;
+        openQuestionCategory = null;
         loadAnalytics().catch((error) => console.error(error));
       });
 
