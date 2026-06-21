@@ -249,25 +249,6 @@ body.dev-console :focus-visible {
   margin-top: 18px;
 }
 
-.creative-intake-page .context-footer {
-  gap: 5px;
-  margin-top: 24px;
-  padding-top: 14px;
-  padding-bottom: 2px;
-  border-top-color: rgb(255 255 255 / 10%);
-}
-
-.creative-intake-page .context-footer span,
-.creative-intake-page .context-footer a {
-  font-size: 10.5px;
-  line-height: 1.45;
-}
-
-.creative-intake-page .context-footer small {
-  max-width: 220px;
-  font-size: 9.5px;
-}
-
 .stage {
   min-width: 0;
   display: grid;
@@ -3694,6 +3675,51 @@ body.dev-console.modal-open {
 .context-panel {
   position: sticky;
   top: 20px;
+}
+
+.creative-intake-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius);
+  background: #fff;
+  padding: 14px 16px;
+  color: var(--oa-muted);
+  box-shadow: 0 16px 34px rgb(15 23 42 / 6%);
+}
+
+.creative-intake-footer-brand {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  min-width: min(100%, 260px);
+}
+
+.creative-intake-footer strong {
+  color: var(--oa-ink);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.creative-intake-footer span,
+.creative-intake-footer a,
+.creative-intake-footer small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.creative-intake-footer a {
+  color: var(--oa-red-dark);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.creative-intake-footer a:hover {
+  text-decoration: underline;
 }
 
 .timeline {
