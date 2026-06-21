@@ -233,6 +233,10 @@ body.dev-console :focus-visible {
   text-wrap: balance;
 }
 
+.stage-title span {
+  display: block;
+}
+
 .login-panel .page-title,
 .context-panel .page-title {
   font-size: clamp(32px, 3.5vw, 48px);
@@ -287,7 +291,7 @@ body.dev-console :focus-visible {
   display: block;
   margin-top: 6px;
   color: var(--oa-ink);
-  font-family: var(--oa-mono);
+  font-family: var(--oa-font);
   font-size: clamp(23px, 2.5vw, 34px);
   font-weight: 900;
   line-height: 1;
@@ -527,6 +531,12 @@ body.dev-console :focus-visible {
   border-color: var(--oa-red);
   color: #fff;
   box-shadow: 0 8px 18px rgb(215 25 32 / 18%);
+}
+
+.btn-command,
+.btn-command:visited,
+.btn-command i {
+  color: #fff;
 }
 
 .btn-secondary {
@@ -2960,6 +2970,13 @@ body.dev-console :focus-visible {
   color: var(--oa-muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.timeline-item .timeline-index {
+  margin-top: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .surface-dark .timeline-item span {
