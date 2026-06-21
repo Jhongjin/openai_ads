@@ -241,7 +241,7 @@ async def _operating_faq_scheduler() -> None:
 @app.on_event("startup")
 async def start_operating_faq_scheduler() -> None:
     global _faq_scheduler_task
-    if os.getenv("DISABLE_FAQ_SCHEDULER", "").lower() in {"1", "true", "yes"}:
+    if os.getenv("ENABLE_IN_PROCESS_FAQ_SCHEDULER", "").lower() not in {"1", "true", "yes"}:
         return
     if _faq_scheduler_task is None or _faq_scheduler_task.done():
         _faq_scheduler_task = asyncio.create_task(_operating_faq_scheduler())
@@ -327,7 +327,7 @@ def analytics_visit(request: VisitRequest) -> dict[str, Any]:
 def public_operating_faqs() -> dict[str, Any]:
     from admin_store import list_operating_faqs
 
-    return list_operating_faqs(auto_refresh=True)
+    return list_operating_faqs(auto_refresh=False)
 
 
 @app.post("/api/admin/faqs/refresh", include_in_schema=False)

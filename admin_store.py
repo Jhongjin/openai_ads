@@ -652,8 +652,9 @@ def _faq_candidate(
     if category not in FAQ_CATEGORY_LABELS:
         category = _faq_category_for_text(question, answer)
     updated_at = _faq_datetime(source_updated_at)
+    identity = f"{category}|{question}|{source_ref}"
     return {
-        "id": f"{source_type}-{content_hash(f'{category}|{question}|{source_ref}')[:16]}",
+        "id": f"{source_type}-{content_hash('operating-faq', identity)[:16]}",
         "category": category,
         "category_label": FAQ_CATEGORY_LABELS.get(category, FAQ_CATEGORY_LABELS["support"]),
         "question_key": _faq_question_key(question),
@@ -1103,7 +1104,12 @@ def _connect():
     settings = load_settings()
     if not settings.supabase_db_url:
         raise RuntimeError("SUPABASE_DB_URL is not configured.")
-    return psycopg.connect(settings.supabase_db_url, prepare_threshold=None)
+    return psycopg.connect(
+        settings.supabase_db_url,
+        prepare_threshold=None,
+        connect_timeout=5,
+        options="-c statement_timeout=5000",
+    )
 
 
 def _mail_webhook_config() -> tuple[str, str]:
@@ -2833,11 +2839,9 @@ def list_operating_faqs(*, auto_refresh: bool = True) -> dict[str, Any]:
     if auto_refresh:
         refresh_operating_faqs(force=False)
     try:
-        _ensure_tables()
         schema = _schema()
         with _connect() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                _seed_operating_faqs(cur, schema)
                 cur.execute(
                     f"""
                     SELECT id, category, category_label, question, answer, source_type,
