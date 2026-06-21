@@ -171,6 +171,12 @@
               </details>
             </section>
           </div>
+          <footer class="rail-footer context-footer">
+            <strong>kt nasmedia</strong>
+            <span>OpenAI Ads Creative Intake</span>
+            <a href="mailto:openai@nasmedia.co.kr">openai@nasmedia.co.kr</a>
+            <small>Copyright © kt nasmedia Co., Ltd. All Rights Reserved.</small>
+          </footer>
         </aside>
 
         <main class="stack" id="builder">
@@ -185,7 +191,19 @@
             <div class="surface-body stack">
               <div class="field">
                 <label for="workbook-file">.xlsx 파일</label>
-                <input class="control" id="workbook-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <div class="file-upload-field">
+                  <input class="sr-only file-upload-input" id="workbook-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                  <label class="file-upload-card" for="workbook-file">
+                    <span class="file-upload-icon" aria-hidden="true">
+                      <i class="ti ti-file-spreadsheet"></i>
+                    </span>
+                    <span class="file-upload-copy">
+                      <strong>워크북 파일 선택</strong>
+                      <small id="workbook-file-name">공식 템플릿 .xlsx 파일을 선택하세요.</small>
+                    </span>
+                    <span class="file-upload-action">찾아보기</span>
+                  </label>
+                </div>
               </div>
               <p class="status-line" id="import-status">.xlsx 파일을 선택하면 검수 결과가 표시됩니다.</p>
             </div>
@@ -1245,6 +1263,7 @@
 
       $("#workbook-file").addEventListener("change", async () => {
         const file = $("#workbook-file").files?.[0];
+        $("#workbook-file-name").textContent = file ? file.name : "공식 템플릿 .xlsx 파일을 선택하세요.";
         if (!file) return;
         setStatus("import-status", "업로드 파일을 확인하고 있습니다.");
         const form = new FormData();

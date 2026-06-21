@@ -93,11 +93,21 @@
           </div>
 
           <div class="rail-section">
-            <span class="rail-label">운영 메뉴</span>
-            <a class="rail-link" href="/dev/creative-upload-draft">
+            <span class="rail-label">접수 메뉴</span>
+            <a
+              class="rail-link admin-gated-link is-disabled"
+              href="#"
+              aria-disabled="true"
+              data-admin-required-link
+              data-admin-href="/dev/creative-upload-draft"
+            >
               <i class="ti ti-table-import"></i>
               <span>소재 접수</span>
             </a>
+          </div>
+
+          <div class="rail-section">
+            <span class="rail-label">운영 메뉴</span>
             <a class="rail-link" href="/dev/admin">
               <i class="ti ti-adjustments-cog"></i>
               <span>관리자</span>
@@ -107,6 +117,13 @@
               <span>운영 화면 보기</span>
             </a>
           </div>
+
+          <footer class="rail-footer">
+            <strong>kt nasmedia</strong>
+            <span>OpenAI Ads Operating Center</span>
+            <a href="mailto:openai@nasmedia.co.kr">openai@nasmedia.co.kr</a>
+            <small>Copyright © kt nasmedia Co., Ltd. All Rights Reserved.</small>
+          </footer>
         </aside>
 
         <main class="stage" id="main-workspace">
@@ -122,7 +139,13 @@
               </p>
             </div>
             <div class="head-actions">
-              <a class="btn-secondary" href="/dev/creative-upload-draft">
+              <a
+                class="btn-secondary admin-gated-link is-disabled"
+                href="#"
+                aria-disabled="true"
+                data-admin-required-link
+                data-admin-href="/dev/creative-upload-draft"
+              >
                 <i class="ti ti-table-import"></i>
                 소재 접수
               </a>
@@ -141,11 +164,11 @@
               </div>
               <div class="metric">
                 <span>URL 점검</span>
-                <strong>가능</strong>
+                <strong class="status-indicator is-on">ON</strong>
               </div>
               <div class="metric">
                 <span>이미지 점검</span>
-                <strong>가능</strong>
+                <strong class="status-indicator is-on">ON</strong>
               </div>
               <div class="metric">
                 <span>안내자료</span>
@@ -406,8 +429,8 @@
         landing: {
           title: "랜딩 URL 접근 점검",
           copy: "OpenAI 광고 로봇이 랜딩 페이지에 접근할 수 있는지 사전에 확인합니다.",
-          badge: "URL",
-          metric: "URL",
+          badge: "URL Checker",
+          metric: "URL Checker",
           inspectorTitle: "랜딩 점검 준비",
           inspectorCopy: "여러 URL은 줄바꿈으로 넣고 점검 시작을 누르세요.",
           flow: [
@@ -426,8 +449,8 @@
         favicon: {
           title: "이미지·파비콘 규격 점검",
           copy: "이미지 크기, 배경, 형식 조건을 확인해 소재 교체 필요 여부를 판단합니다.",
-          badge: "IMG",
-          metric: "IMG",
+          badge: "IMG Checker",
+          metric: "IMG Checker",
           inspectorTitle: "이미지 검수 준비",
           inspectorCopy: "favicon, logo 이미지 URL을 넣고 결과를 CSV로 저장할 수 있습니다.",
           flow: [
@@ -446,8 +469,8 @@
         guides: {
           title: "광고주 전달용 안내자료",
           copy: "광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드를 한 화면에서 확인합니다.",
-          badge: "DOC",
-          metric: "DOC",
+          badge: "GUIDE",
+          metric: "GUIDE",
           inspectorTitle: "안내자료 검토",
           inspectorCopy: "광고주 안내, 캠페인 세팅, 픽셀 설치 문구를 한 화면에서 확인합니다.",
           flow: [
@@ -477,6 +500,7 @@
         guideUpdatedAt: "",
       };
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
+      const ADMIN_SESSION_KEY = "openaiAdsAdminPassword";
       const ENTRY_NOTICE_STORAGE_KEY = "openai-ads-dev-entry-notice";
       const defaultEntryNotice = {
         title: "📢 OpenAI 광고 집행 의뢰 안내",
@@ -1289,6 +1313,25 @@
         element.textContent = message || "";
       }
 
+      function hasAdminSession() {
+        try {
+          return Boolean(window.sessionStorage.getItem(ADMIN_SESSION_KEY));
+        } catch {
+          return false;
+        }
+      }
+
+      function updateAdminGatedLinks() {
+        const active = hasAdminSession();
+        $$("[data-admin-required-link]").forEach((link) => {
+          const target = link.dataset.adminHref || "#";
+          link.classList.toggle("is-disabled", !active);
+          link.setAttribute("aria-disabled", active ? "false" : "true");
+          link.href = active ? target : "#";
+          link.title = active ? "" : "관리자 로그인 후 사용할 수 있습니다.";
+        });
+      }
+
       function todayInKst() {
         const parts = new Intl.DateTimeFormat("en-CA", {
           timeZone: "Asia/Seoul",
@@ -2023,6 +2066,13 @@
       $$(".rail-button[data-view-button]").forEach((button) => {
         button.addEventListener("click", () => setView(button.dataset.viewButton));
       });
+      document.addEventListener("click", (event) => {
+        const link = event.target.closest("[data-admin-required-link]");
+        if (!link || !link.classList.contains("is-disabled")) return;
+        event.preventDefault();
+        setStatus("관리자 로그인 후 소재 접수 메뉴를 사용할 수 있습니다.", "warning");
+      });
+      window.addEventListener("focus", updateAdminGatedLinks);
       $("#faq-categories").addEventListener("click", (event) => {
         const button = event.target.closest("[data-faq-category]");
         if (!button) return;
@@ -2068,6 +2118,7 @@
       });
 
       renderInspectorMeta(views.qa);
+      updateAdminGatedLinks();
       renderFaq();
       loadGuides();
       $("#entry-notice-close").addEventListener("click", closeEntryNotice);
