@@ -3056,7 +3056,7 @@ body.dev-console :focus-visible {
   font-size: 13px;
 }
 
-.timeline-item span {
+.timeline-item div > span {
   display: block;
   margin-top: 3px;
   color: var(--oa-muted);
@@ -3065,13 +3065,17 @@ body.dev-console :focus-visible {
 }
 
 .timeline-item .timeline-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 0;
   color: #fff;
   font-size: 12px;
   line-height: 1;
+  text-align: center;
 }
 
-.surface-dark .timeline-item span {
+.surface-dark .timeline-item div > span {
   color: #aab3c4;
 }
 

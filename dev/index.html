@@ -326,11 +326,11 @@
                   </section>
                   <section class="inspector-reliability" aria-labelledby="faq-update-title">
                     <span class="inspector-label">답변 기준</span>
-                    <h3 id="faq-update-title">Q&A와 FAQ는 이렇게 관리됩니다</h3>
+                    <h3 id="faq-update-title">Q&A와 FAQ는 이렇게 구분합니다</h3>
                     <ul>
                       <li><strong>Q&A</strong>는 확인된 공식 문서와 내부 운영 기준을 우선 근거로 답변합니다.</li>
-                      <li><strong>FAQ</strong>는 공식 문서 변경, 관리자 RAG, 반복 문의를 기준으로 주기적으로 갱신합니다.</li>
-                      <li>기존 FAQ와 비슷한 내용은 최신 근거가 확인될 때만 업데이트합니다.</li>
+                      <li><strong>FAQ</strong>는 사전에 검토한 핵심 운영 기준만 고정 노출합니다.</li>
+                      <li>변경 가능성이 있는 내용은 답변의 출처와 확인 필요 항목으로 따로 안내합니다.</li>
                     </ul>
                   </section>
                 </div>
@@ -1216,41 +1216,6 @@
         renderFaqList();
       }
 
-      function normalizeFaqCategories(payload) {
-        const categories = Array.isArray(payload?.categories) ? payload.categories : [];
-        return categories
-          .map((category) => ({
-            id: String(category.id || "").trim(),
-            label: String(category.label || "").trim(),
-            items: Array.isArray(category.items)
-              ? category.items
-                  .map((item) => ({
-                    q: String(item.q || item.question || "").trim(),
-                    a: String(item.a || item.answer || "").trim(),
-                  }))
-                  .filter((item) => item.q && item.a)
-                  .slice(0, 10)
-              : [],
-          }))
-          .filter((category) => category.id && category.label);
-      }
-
-      async function loadFaqs() {
-        try {
-          const data = await fetchJson("/api/faqs");
-          const categories = normalizeFaqCategories(data);
-          if (!categories.length) return;
-          faqCategories = categories;
-          if (!faqCategories.some((category) => category.id === state.faqCategory)) {
-            state.faqCategory = faqCategories[0].id;
-            state.openFaqId = null;
-          }
-          renderFaq();
-        } catch (error) {
-          console.warn("FAQ load failed", error);
-        }
-      }
-
       function renderAnswer(payload) {
         const sources = Array.isArray(payload.sources) ? payload.sources : [];
         const paragraphs = String(payload.answer || "답변이 없습니다.")
@@ -1779,7 +1744,6 @@
       });
 
       renderFaq();
-      loadFaqs();
       loadGuides();
       trackVisit("qa", "정책·운영 기준 Q&A");
     </script>

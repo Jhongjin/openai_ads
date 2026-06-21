@@ -635,6 +635,17 @@ def _default_faq_response(storage: dict[str, str] | None = None) -> dict[str, An
     }
 
 
+def list_static_operating_faqs() -> dict[str, Any]:
+    """Return the reviewed default FAQ only; crawled or generated updates are excluded."""
+    return {
+        "ok": True,
+        "categories": _public_faq_categories(_default_faq_rows()),
+        "updated_at": "",
+        "refresh_interval_hours": 0,
+        **_storage_info("static"),
+    }
+
+
 def _faq_candidate(
     *,
     category: str,

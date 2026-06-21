@@ -39,8 +39,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("광고 정책 및 운영 FAQ", home)
         self.assertIn("Account Spend Cap", home)
         self.assertIn("renderFaq", home)
-        self.assertIn("loadFaqs", home)
-        self.assertIn("/api/faqs", home)
+        self.assertNotIn("loadFaqs", home)
+        self.assertNotIn("/api/faqs", home)
         self.assertIn("qa-input-panel", home)
         self.assertIn("data-faq-category", home)
         self.assertIn("data-faq-id", home)
@@ -392,6 +392,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         payload = response.json()
         self.assertTrue(payload["ok"])
         self.assertIn("refresh_interval_hours", payload)
+        self.assertEqual(payload["refresh_interval_hours"], 0)
+        self.assertEqual(payload["storage"], "static")
         categories = payload["categories"]
         self.assertEqual(len(categories), 8)
         self.assertEqual(categories[0]["id"], "account")
@@ -399,7 +401,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertTrue(categories[0]["items"])
         self.assertIn("q", categories[0]["items"][0])
         self.assertIn("a", categories[0]["items"][0])
-        self.assertTrue(categories[0]["items"][0]["q"])
+        self.assertIn("Order Form", categories[0]["items"][0]["q"])
         self.assertTrue(categories[0]["items"][0]["a"])
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
