@@ -120,6 +120,11 @@ class NoticeConfigRequest(BaseModel):
     enabled: bool = True
 
 
+class MenuSettingsRequest(BaseModel):
+    menus: dict[str, bool] = Field(default_factory=dict)
+    guide_decks: dict[str, bool] = Field(default_factory=dict)
+
+
 class SlideContentItemRequest(BaseModel):
     key: str = Field(..., min_length=1, max_length=120)
     value: str = Field(default="", max_length=1200)
@@ -301,6 +306,13 @@ def public_notice() -> dict[str, Any]:
     return get_notice_config()
 
 
+@app.get("/api/menu-settings", include_in_schema=False)
+def public_menu_settings() -> dict[str, Any]:
+    from admin_store import get_menu_settings
+
+    return get_menu_settings()
+
+
 @app.post("/api/analytics/visit", include_in_schema=False)
 def analytics_visit(request: VisitRequest) -> dict[str, Any]:
     from admin_store import record_page_visit
@@ -431,6 +443,22 @@ def update_admin_notice(request: Request, notice: NoticeConfigRequest) -> dict[s
 
     _require_admin(request)
     return save_notice_config(notice.model_dump())
+
+
+@app.get("/api/admin/menu-settings", include_in_schema=False)
+def admin_menu_settings(request: Request) -> dict[str, Any]:
+    from admin_store import get_menu_settings
+
+    _require_admin(request)
+    return get_menu_settings()
+
+
+@app.post("/api/admin/menu-settings", include_in_schema=False)
+def update_admin_menu_settings(request: Request, settings: MenuSettingsRequest) -> dict[str, Any]:
+    from admin_store import save_menu_settings
+
+    _require_admin(request)
+    return save_menu_settings(settings.model_dump())
 
 
 @app.get("/api/guide-slides", include_in_schema=False)

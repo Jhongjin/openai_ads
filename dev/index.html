@@ -74,19 +74,19 @@
 
           <div class="rail-section" role="tablist" aria-label="업무 도구">
             <span class="rail-label">운영 도구</span>
-            <button class="rail-button is-active" type="button" data-view-button="qa">
+            <button class="rail-button is-active" type="button" data-view-button="qa" data-menu-key="qa">
               <i class="ti ti-message-circle"></i>
               <span>광고 정책 Q&A</span>
             </button>
-            <button class="rail-button" type="button" data-view-button="landing">
+            <button class="rail-button" type="button" data-view-button="landing" data-menu-key="landing">
               <i class="ti ti-world-search"></i>
               <span>랜딩 URL 점검</span>
             </button>
-            <button class="rail-button" type="button" data-view-button="favicon">
+            <button class="rail-button" type="button" data-view-button="favicon" data-menu-key="favicon">
               <i class="ti ti-photo-check"></i>
               <span>이미지·파비콘 점검</span>
             </button>
-            <button class="rail-button" type="button" data-view-button="guides">
+            <button class="rail-button" type="button" data-view-button="guides" data-menu-key="guides">
               <i class="ti ti-file-description"></i>
               <span>광고주 안내자료</span>
             </button>
@@ -100,6 +100,7 @@
               aria-disabled="true"
               data-admin-required-link
               data-admin-href="/dev/creative-upload-draft"
+              data-menu-key="creative"
             >
               <i class="ti ti-table-import"></i>
               <span>소재 접수</span>
@@ -145,6 +146,7 @@
                 aria-disabled="true"
                 data-admin-required-link
                 data-admin-href="/dev/creative-upload-draft"
+                data-menu-key="creative"
               >
                 <i class="ti ti-table-import"></i>
                 소재 접수
@@ -499,6 +501,24 @@
         guideDeckHtml: new Map(),
         guideUpdatedAt: "",
       };
+      const defaultMenuSettings = {
+        menus: {
+          qa: true,
+          landing: true,
+          favicon: true,
+          guides: true,
+          creative: true,
+        },
+        guide_decks: {
+          advertiser: true,
+          setup: true,
+          pixel: true,
+        },
+        updated_at: "",
+      };
+      state.menuSettings = typeof structuredClone === "function"
+        ? structuredClone(defaultMenuSettings)
+        : JSON.parse(JSON.stringify(defaultMenuSettings));
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
       const ADMIN_SESSION_KEY = "openaiAdsAdminPassword";
       const ENTRY_NOTICE_STORAGE_KEY = "openai-ads-dev-entry-notice";
@@ -1330,6 +1350,92 @@
           link.href = active ? target : "#";
           link.title = active ? "" : "관리자 로그인 후 사용할 수 있습니다.";
         });
+        applyMenuVisibility();
+      }
+
+      function normalizeMenuSettings(data = {}) {
+        const next = JSON.parse(JSON.stringify(defaultMenuSettings));
+        const menus = data.menus && typeof data.menus === "object" ? data.menus : {};
+        const guideDecks = data.guide_decks && typeof data.guide_decks === "object" ? data.guide_decks : {};
+        Object.keys(next.menus).forEach((key) => {
+          next.menus[key] = menus[key] === undefined ? next.menus[key] : Boolean(menus[key]);
+        });
+        Object.keys(next.guide_decks).forEach((key) => {
+          next.guide_decks[key] = guideDecks[key] === undefined ? next.guide_decks[key] : Boolean(guideDecks[key]);
+        });
+        next.updated_at = data.updated_at || "";
+        return next;
+      }
+
+      function isMenuAvailable(key) {
+        if (key === "guides" && !hasAdminSession()) {
+          const hasVisibleDeck = Object.values(state.menuSettings.guide_decks).some(Boolean);
+          if (!hasVisibleDeck) return false;
+        }
+        return hasAdminSession() || state.menuSettings.menus[key] !== false;
+      }
+
+      function isGuideDeckAvailable(key) {
+        return hasAdminSession() || state.menuSettings.guide_decks[key] !== false;
+      }
+
+      function firstAvailableView() {
+        return ["qa", "landing", "favicon", "guides"].find((key) => isMenuAvailable(key)) || "qa";
+      }
+
+      function firstAvailableGuideDeck() {
+        return ["advertiser", "setup", "pixel"].find((key) => isGuideDeckAvailable(key)) || "advertiser";
+      }
+
+      function applyGuideDeckVisibility() {
+        const admin = hasAdminSession();
+        $$("#guide-tabs [data-guide-deck]").forEach((button) => {
+          const key = button.dataset.guideDeck;
+          const isEnabled = state.menuSettings.guide_decks[key] !== false;
+          const visible = isEnabled || admin;
+          button.hidden = !visible;
+          button.disabled = !visible;
+          button.classList.toggle("is-admin-visible-disabled", admin && !isEnabled);
+          button.setAttribute("aria-disabled", visible ? "false" : "true");
+          button.title = admin && !isEnabled ? "일반 사용자에게는 비활성화된 안내자료입니다." : "";
+        });
+        if (!isGuideDeckAvailable(state.guideDeck)) {
+          state.guideDeck = firstAvailableGuideDeck();
+          renderGuideDeck();
+        }
+      }
+
+      function applyMenuVisibility() {
+        const admin = hasAdminSession();
+        $$("[data-menu-key]").forEach((element) => {
+          const key = element.dataset.menuKey;
+          const isEnabled = state.menuSettings.menus[key] !== false;
+          const visible = isEnabled || admin || (key === "creative" && isEnabled);
+          element.hidden = !visible;
+          element.classList.toggle("is-admin-visible-disabled", admin && !isEnabled);
+          if (admin && !isEnabled) {
+            element.title = "일반 사용자에게는 비활성화된 메뉴입니다.";
+          } else if (!admin && key === "creative") {
+            element.title = "관리자 로그인 후 사용할 수 있습니다.";
+          } else {
+            element.title = "";
+          }
+        });
+        applyGuideDeckVisibility();
+        if (!isMenuAvailable(state.view || "qa")) {
+          setView(firstAvailableView());
+        }
+      }
+
+      async function loadMenuSettings() {
+        try {
+          const data = await fetchJson("/api/menu-settings");
+          state.menuSettings = normalizeMenuSettings(data);
+          applyMenuVisibility();
+        } catch (error) {
+          state.menuSettings = normalizeMenuSettings(defaultMenuSettings);
+          applyMenuVisibility();
+        }
       }
 
       function todayInKst() {
@@ -1523,6 +1629,7 @@
 
       function setView(name) {
         const meta = views[name] || views.qa;
+        state.view = name;
         const workspace = $("#workspace-layout");
         workspace.classList.toggle("is-wide-mode", wideWorkspaceViews.has(name));
         workspace.classList.toggle("is-qa-mode", name === "qa");
@@ -2064,7 +2171,14 @@
       }
 
       $$(".rail-button[data-view-button]").forEach((button) => {
-        button.addEventListener("click", () => setView(button.dataset.viewButton));
+        button.addEventListener("click", () => {
+          const view = button.dataset.viewButton;
+          if (!isMenuAvailable(view)) {
+            setStatus("현재 일반 사용자에게 비활성화된 메뉴입니다.", "warning");
+            return;
+          }
+          setView(view);
+        });
       });
       document.addEventListener("click", (event) => {
         const link = event.target.closest("[data-admin-required-link]");
@@ -2089,6 +2203,10 @@
       $("#guide-tabs").addEventListener("click", (event) => {
         const button = event.target.closest("[data-guide-deck]");
         if (!button) return;
+        if (!isGuideDeckAvailable(button.dataset.guideDeck)) {
+          setStatus("현재 일반 사용자에게 비활성화된 안내자료입니다.", "warning");
+          return;
+        }
         state.guideDeck = button.dataset.guideDeck;
         renderGuideDeck();
       });
@@ -2120,6 +2238,7 @@
       renderInspectorMeta(views.qa);
       updateAdminGatedLinks();
       renderFaq();
+      loadMenuSettings();
       loadGuides();
       $("#entry-notice-close").addEventListener("click", closeEntryNotice);
       $("#entry-notice-confirm").addEventListener("click", closeEntryNotice);

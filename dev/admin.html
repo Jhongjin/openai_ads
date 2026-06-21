@@ -99,6 +99,10 @@
               <i class="ti ti-file-pencil"></i>
               <span>안내자료 편집</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="menuSettings">
+              <i class="ti ti-adjustments-check"></i>
+              <span>메뉴 노출 관리</span>
+            </button>
           </div>
 
           <div class="rail-section">
@@ -425,6 +429,109 @@
                     <div class="empty-pane">안내자료를 불러오는 중입니다.</div>
                   </div>
                   <p class="status-line" id="guide-status"></p>
+                </div>
+              </section>
+            </section>
+
+            <section class="view" id="admin-view-menuSettings">
+              <section class="surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">메뉴 노출 관리</h2>
+                    <p class="surface-copy">일반 사용자에게 노출할 운영 메뉴를 선택합니다. 관리자 세션에서는 비활성 메뉴도 검수용으로 계속 접근할 수 있습니다.</p>
+                  </div>
+                  <button class="btn-secondary" type="button" id="reload-menu-settings">
+                    <i class="ti ti-refresh"></i>
+                    설정 불러오기
+                  </button>
+                </div>
+                <div class="surface-body stack">
+                  <div class="menu-settings-note">
+                    <strong>적용 기준</strong>
+                    <span>OFF 항목은 일반 사용자 화면에서 숨겨집니다. 관리자 세션이 있는 브라우저에서는 OFF 배지와 함께 표시되어 사전 검수와 복구가 가능합니다.</span>
+                  </div>
+
+                  <div class="menu-settings-section">
+                    <div>
+                      <h3>운영 화면 메뉴</h3>
+                      <p>좌측 운영 도구와 접수 메뉴의 노출 여부를 관리합니다.</p>
+                    </div>
+                    <div class="menu-toggle-grid" id="menu-settings-form">
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-menu-setting="qa" />
+                        <span>
+                          <strong>광고 정책 Q&A</strong>
+                          <small>정책·운영 질문 답변 화면</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-menu-setting="landing" />
+                        <span>
+                          <strong>랜딩 URL 점검</strong>
+                          <small>크롤러 접근 가능성 점검</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-menu-setting="favicon" />
+                        <span>
+                          <strong>이미지·파비콘 점검</strong>
+                          <small>소재 이미지 규격 점검</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-menu-setting="guides" />
+                        <span>
+                          <strong>광고주 안내자료</strong>
+                          <small>안내자료 슬라이드 보기</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-menu-setting="creative" />
+                        <span>
+                          <strong>소재 접수</strong>
+                          <small>관리자 세션 전용 접수 페이지</small>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="menu-settings-section">
+                    <div>
+                      <h3>광고주 안내자료 탭</h3>
+                      <p>안내자료 메뉴 내부의 세 개 자료 탭을 개별로 제어합니다.</p>
+                    </div>
+                    <div class="menu-toggle-grid" id="guide-deck-settings-form">
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-guide-deck-setting="advertiser" />
+                        <span>
+                          <strong>광고주 안내 자료</strong>
+                          <small>집행 준비 안내 슬라이드</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-guide-deck-setting="setup" />
+                        <span>
+                          <strong>캠페인 세팅 가이드</strong>
+                          <small>Ads Manager 입력 순서 안내</small>
+                        </span>
+                      </label>
+                      <label class="menu-toggle-card">
+                        <input type="checkbox" data-guide-deck-setting="pixel" />
+                        <span>
+                          <strong>픽셀 설치 가이드</strong>
+                          <small>웹 픽셀·이벤트 측정 안내</small>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="button-row">
+                    <button class="btn-primary" type="button" id="save-menu-settings">
+                      <i class="ti ti-device-floppy"></i>
+                      메뉴 설정 저장
+                    </button>
+                  </div>
+                  <p class="status-line" id="menu-settings-status"></p>
                 </div>
               </section>
             </section>
@@ -813,6 +920,7 @@
         analytics: ["방문 지표", "페이지 방문, 다운로드, 질문 흐름을 확인합니다."],
         notice: ["공지 관리", "운영 화면 첫 진입 안내 문구를 수정합니다."],
         guides: ["안내자료 편집", "광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드를 수정합니다."],
+        menuSettings: ["메뉴 노출 관리", "일반 사용자에게 공개할 운영 메뉴와 안내자료 탭을 관리합니다."],
         ads: ["광고주 API 키", "광고주별 Ads API 키를 등록하고 조회 상태를 확인합니다."],
         performance: ["Ads 성과 대시보드", "광고주 API 키 기반으로 Ads 성과를 조회합니다."],
         official: ["공식 문서 변경 로그", "공식 문서 변경 감지 결과를 검토합니다."],
@@ -823,6 +931,24 @@
       };
       let adminPassword = sessionStorage.getItem("openaiAdsAdminPassword") || "";
       let slideContent = { items: [], images: [] };
+      const defaultMenuSettings = {
+        menus: {
+          qa: true,
+          landing: true,
+          favicon: true,
+          guides: true,
+          creative: true,
+        },
+        guide_decks: {
+          advertiser: true,
+          setup: true,
+          pixel: true,
+        },
+        updated_at: "",
+      };
+      let menuSettings = typeof structuredClone === "function"
+        ? structuredClone(defaultMenuSettings)
+        : JSON.parse(JSON.stringify(defaultMenuSettings));
       let currentView = "analytics";
       let visitChart = null;
       let visitPieChart = null;
@@ -1495,6 +1621,70 @@
         $$(".view[id^='admin-view-']").forEach((view) => {
           view.classList.toggle("is-active", view.id === `admin-view-${name}`);
         });
+      }
+
+      function normalizeMenuSettings(data = {}) {
+        const next = JSON.parse(JSON.stringify(defaultMenuSettings));
+        const menus = data.menus && typeof data.menus === "object" ? data.menus : {};
+        const guideDecks = data.guide_decks && typeof data.guide_decks === "object" ? data.guide_decks : {};
+        Object.keys(next.menus).forEach((key) => {
+          next.menus[key] = menus[key] === undefined ? next.menus[key] : Boolean(menus[key]);
+        });
+        Object.keys(next.guide_decks).forEach((key) => {
+          next.guide_decks[key] = guideDecks[key] === undefined ? next.guide_decks[key] : Boolean(guideDecks[key]);
+        });
+        next.updated_at = data.updated_at || "";
+        return next;
+      }
+
+      function renderMenuSettingsForm() {
+        $$("[data-menu-setting]").forEach((input) => {
+          input.checked = menuSettings.menus[input.dataset.menuSetting] !== false;
+        });
+        $$("[data-guide-deck-setting]").forEach((input) => {
+          input.checked = menuSettings.guide_decks[input.dataset.guideDeckSetting] !== false;
+        });
+        const updated = menuSettings.updated_at ? `마지막 저장: ${menuSettings.updated_at}` : "설정을 불러왔습니다.";
+        setStatus("menu-settings-status", updated, "ok");
+      }
+
+      function readMenuSettingsForm() {
+        const payload = JSON.parse(JSON.stringify(defaultMenuSettings));
+        $$("[data-menu-setting]").forEach((input) => {
+          payload.menus[input.dataset.menuSetting] = Boolean(input.checked);
+        });
+        $$("[data-guide-deck-setting]").forEach((input) => {
+          payload.guide_decks[input.dataset.guideDeckSetting] = Boolean(input.checked);
+        });
+        return payload;
+      }
+
+      async function loadMenuSettings() {
+        const data = await adminFetch("/api/admin/menu-settings", {
+          loadingMessage: "메뉴 설정을 불러오는 중입니다.",
+        });
+        menuSettings = normalizeMenuSettings(data);
+        renderMenuSettingsForm();
+      }
+
+      async function saveMenuSettings() {
+        const button = $("#save-menu-settings");
+        setButtonBusy(button, true, "저장 중...");
+        setStatus("menu-settings-status", "메뉴 설정 저장 중입니다.");
+        try {
+          const data = await adminFetch("/api/admin/menu-settings", {
+            method: "POST",
+            body: JSON.stringify(readMenuSettingsForm()),
+            loadingMessage: "메뉴 설정을 저장하는 중입니다.",
+          });
+          menuSettings = normalizeMenuSettings(data);
+          renderMenuSettingsForm();
+          setStatus("menu-settings-status", "메뉴 노출 설정을 저장했습니다. 사용자 화면 새로고침 후 반영됩니다.", "ok");
+        } catch (error) {
+          setStatus("menu-settings-status", error.message, "error");
+        } finally {
+          setButtonBusy(button, false);
+        }
       }
 
       function formatNumber(value) {
@@ -3556,6 +3746,7 @@
         if (currentView === "analytics") await loadAnalytics();
         if (currentView === "notice") await loadNotice();
         if (currentView === "guides") await loadGuides();
+        if (currentView === "menuSettings") await loadMenuSettings();
         if (currentView === "ads") await loadAdsKeys();
         if (currentView === "performance") {
           await loadAdsKeys();
@@ -3575,6 +3766,7 @@
           loadAnalytics(),
           loadNotice(),
           loadGuides(),
+          loadMenuSettings(),
           loadAdsKeys(),
           loadOfficialChanges(),
           loadMailReview(),
@@ -3639,6 +3831,8 @@
       });
       $("#save-notice").addEventListener("click", () => saveNotice().catch((error) => setStatus("notice-status", error.message, "error")));
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
+      $("#reload-menu-settings").addEventListener("click", () => loadMenuSettings().catch((error) => setStatus("menu-settings-status", error.message, "error")));
+      $("#save-menu-settings").addEventListener("click", () => saveMenuSettings());
       $("#add-admin-guide-slide").addEventListener("click", addGuideSlide);
       $("#admin-guide-tabs").addEventListener("click", (event) => {
         const button = event.target.closest("[data-admin-guide-deck]");

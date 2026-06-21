@@ -24,6 +24,51 @@ class DevRoutesStaticTests(unittest.TestCase):
                 self.assertIn('/dev-assets/dev-redesign.css', response.text)
                 self.assertIn("@tabler/core", response.text)
 
+    def test_menu_settings_api_controls_public_visibility(self) -> None:
+        client = TestClient(app)
+        headers = {"x-admin-password": "nas2026@"}
+        defaults = {
+            "menus": {
+                "qa": True,
+                "landing": True,
+                "favicon": True,
+                "guides": True,
+                "creative": True,
+            },
+            "guide_decks": {
+                "advertiser": True,
+                "setup": True,
+                "pixel": True,
+            },
+        }
+
+        self.assertEqual(client.get("/api/admin/menu-settings").status_code, 403)
+        public_response = client.get("/api/menu-settings")
+        self.assertEqual(public_response.status_code, 200)
+        self.assertIn("menus", public_response.json())
+        self.assertIn("guide_decks", public_response.json())
+
+        try:
+            response = client.post(
+                "/api/admin/menu-settings",
+                headers=headers,
+                json={
+                    "menus": {"qa": False, "landing": True, "favicon": True, "guides": True, "creative": False},
+                    "guide_decks": {"advertiser": True, "setup": False, "pixel": False},
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            payload = response.json()
+            self.assertFalse(payload["menus"]["qa"])
+            self.assertFalse(payload["menus"]["creative"])
+            self.assertFalse(payload["guide_decks"]["setup"])
+
+            public_payload = client.get("/api/menu-settings").json()
+            self.assertFalse(public_payload["menus"]["qa"])
+            self.assertFalse(public_payload["guide_decks"]["pixel"])
+        finally:
+            client.post("/api/admin/menu-settings", headers=headers, json=defaults)
+
     def test_dev_pages_use_new_command_center_markup(self) -> None:
         client = TestClient(app)
 
@@ -44,6 +89,11 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("/api/notice", home)
         self.assertIn("initEntryNotice", home)
         self.assertIn('data-view-button="qa"', home)
+        self.assertIn('data-menu-key="qa"', home)
+        self.assertIn('data-menu-key="creative"', home)
+        self.assertIn("/api/menu-settings", home)
+        self.assertIn("loadMenuSettings", home)
+        self.assertIn("is-admin-visible-disabled", home)
         self.assertIn("URL Checker", home)
         self.assertIn("IMG Checker", home)
         self.assertIn("GUIDE", home)
@@ -88,6 +138,13 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("pixel_step6_event_list", home)
         self.assertIn("GTM 컨테이너 ID", home)
         self.assertIn('id="admin-app"', admin)
+        self.assertIn('data-admin-view="menuSettings"', admin)
+        self.assertIn('id="admin-view-menuSettings"', admin)
+        self.assertIn('id="menu-settings-form"', admin)
+        self.assertIn('id="guide-deck-settings-form"', admin)
+        self.assertIn('id="save-menu-settings"', admin)
+        self.assertIn("/api/admin/menu-settings", admin)
+        self.assertIn("관리자 세션에서는 비활성 메뉴도 검수용으로 계속 접근", admin)
         self.assertIn("echarts@5", admin)
         self.assertIn('id="notice-toolbar"', admin)
         self.assertIn('id="notice-editor"', admin)

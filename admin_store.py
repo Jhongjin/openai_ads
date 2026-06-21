@@ -208,6 +208,22 @@ DEFAULT_NOTICE: dict[str, Any] = {
     "enabled": True,
 }
 
+DEFAULT_MENU_SETTINGS: dict[str, Any] = {
+    "updated_at": "2026-06-21",
+    "menus": {
+        "qa": True,
+        "landing": True,
+        "favicon": True,
+        "guides": True,
+        "creative": True,
+    },
+    "guide_decks": {
+        "advertiser": True,
+        "setup": True,
+        "pixel": True,
+    },
+}
+
 DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
     "updated_at": "2026-06-17",
     "layout": {
@@ -346,6 +362,7 @@ DEFAULT_SLIDE_CONTENT: dict[str, Any] = {
 
 
 _memory_notice = DEFAULT_NOTICE.copy()
+_memory_menu_settings = json.loads(json.dumps(DEFAULT_MENU_SETTINGS, ensure_ascii=False))
 _memory_slide_content = json.loads(json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False))
 _memory_visits: dict[str, dict[str, Any]] = {}
 _memory_visit_days: dict[str, int] = {}
@@ -1316,6 +1333,16 @@ def _ensure_tables() -> None:
             )
             cur.execute(
                 f"""
+                CREATE TABLE IF NOT EXISTS {schema}.admin_menu_settings (
+                    id text PRIMARY KEY,
+                    updated_at text NOT NULL,
+                    content jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    updated_at_utc timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
                 CREATE TABLE IF NOT EXISTS {schema}.page_visits (
                     page text PRIMARY KEY,
                     page_label text NOT NULL,
@@ -1571,6 +1598,19 @@ def _ensure_tables() -> None:
                     json.dumps(DEFAULT_SLIDE_CONTENT, ensure_ascii=False),
                 ),
             )
+            cur.execute(
+                f"""
+                INSERT INTO {schema}.admin_menu_settings
+                    (id, updated_at, content)
+                VALUES
+                    ('main', %s, %s::jsonb)
+                ON CONFLICT (id) DO NOTHING
+                """,
+                (
+                    DEFAULT_MENU_SETTINGS["updated_at"],
+                    json.dumps(DEFAULT_MENU_SETTINGS, ensure_ascii=False),
+                ),
+            )
     _db_ready = True
 
 
@@ -1737,6 +1777,83 @@ def save_notice_config(payload: dict[str, Any]) -> dict[str, Any]:
         return {**notice, **_storage_info("supabase")}
     except Exception as exc:
         return {**notice, **_storage_info("memory", str(exc))}
+
+
+def _menu_bool(value: Any, default: bool = True) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() not in {"0", "false", "off", "no", "disabled"}
+    return bool(value)
+
+
+def _merged_menu_settings(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    source = payload or {}
+    base = json.loads(json.dumps(DEFAULT_MENU_SETTINGS, ensure_ascii=False))
+    menus = source.get("menus") if isinstance(source.get("menus"), dict) else {}
+    guide_decks = source.get("guide_decks") if isinstance(source.get("guide_decks"), dict) else {}
+    for key, default in DEFAULT_MENU_SETTINGS["menus"].items():
+        base["menus"][key] = _menu_bool(menus.get(key), bool(default))
+    for key, default in DEFAULT_MENU_SETTINGS["guide_decks"].items():
+        base["guide_decks"][key] = _menu_bool(guide_decks.get(key), bool(default))
+    base["updated_at"] = str(source.get("updated_at") or base["updated_at"] or _today_kst())
+    return base
+
+
+def get_menu_settings() -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    SELECT content, updated_at
+                    FROM {schema}.admin_menu_settings
+                    WHERE id = 'main'
+                    """
+                )
+                row = cur.fetchone()
+        if not row:
+            return {**_merged_menu_settings(DEFAULT_MENU_SETTINGS), **_storage_info("memory")}
+        content, updated_at = row
+        merged = _merged_menu_settings(content or {})
+        merged["updated_at"] = str(updated_at or merged["updated_at"])
+        return {**merged, **_storage_info("supabase")}
+    except Exception as exc:
+        return {**_merged_menu_settings(_memory_menu_settings), **_storage_info("memory", str(exc))}
+
+
+def save_menu_settings(payload: dict[str, Any]) -> dict[str, Any]:
+    content = _merged_menu_settings({**payload, "updated_at": _today_kst()})
+
+    global _memory_menu_settings
+    _memory_menu_settings = json.loads(json.dumps(content, ensure_ascii=False))
+
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.admin_menu_settings
+                        (id, updated_at, content, updated_at_utc)
+                    VALUES
+                        ('main', %s, %s::jsonb, now())
+                    ON CONFLICT (id) DO UPDATE SET
+                        updated_at = EXCLUDED.updated_at,
+                        content = EXCLUDED.content,
+                        updated_at_utc = now()
+                    """,
+                    (
+                        content["updated_at"],
+                        json.dumps(content, ensure_ascii=False),
+                    ),
+                )
+        return {**content, **_storage_info("supabase")}
+    except Exception as exc:
+        return {**content, **_storage_info("memory", str(exc))}
 
 
 def _clean_slide_text(value: Any, *, multiline: bool = False, fallback: str = "") -> str:
