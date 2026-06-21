@@ -144,6 +144,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="menu-settings-form"', admin)
         self.assertIn('id="guide-deck-settings-form"', admin)
         self.assertIn('id="save-menu-settings"', admin)
+        self.assertIn("menu-save-button", admin)
         self.assertIn("/api/admin/menu-settings", admin)
         self.assertIn("관리자 세션에서는 비활성 메뉴도 검수용으로 계속 접근", admin)
         self.assertIn("echarts@5", admin)

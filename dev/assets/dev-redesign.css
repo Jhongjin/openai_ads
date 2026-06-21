@@ -760,6 +760,7 @@ body.dev-console :focus-visible {
 }
 
 .btn-command,
+.btn-primary,
 .btn-secondary,
 .btn-plain,
 .btn-danger {
@@ -791,9 +792,19 @@ body.dev-console :focus-visible {
 }
 
 .btn-command,
+.btn-primary,
 .btn-command:visited,
+.btn-primary:visited,
+.btn-primary i,
 .btn-command i {
   color: #fff;
+}
+
+.btn-primary {
+  background: var(--oa-red);
+  border-color: var(--oa-red);
+  color: #fff;
+  box-shadow: 0 10px 22px rgb(215 25 32 / 18%);
 }
 
 .btn-secondary {
@@ -815,6 +826,7 @@ body.dev-console :focus-visible {
 }
 
 .btn-command:hover,
+.btn-primary:hover,
 .btn-secondary:hover,
 .btn-plain:hover,
 .btn-danger:hover {
@@ -828,13 +840,15 @@ body.dev-console :focus-visible {
 }
 
 .btn-command:disabled,
+.btn-primary:disabled,
 .btn-secondary:disabled {
   cursor: not-allowed;
   opacity: .52;
   transform: none;
 }
 
-.btn-command.is-busy {
+.btn-command.is-busy,
+.btn-primary.is-busy {
   opacity: .82;
 }
 
@@ -4495,6 +4509,39 @@ body.dev-console.modal-open {
   margin: 4px 0 0;
   color: var(--oa-muted);
   font-size: 13px;
+}
+
+.menu-settings-actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.menu-save-button {
+  min-height: 44px;
+  border-radius: 9px;
+  padding: 0 18px;
+  font-size: 14px;
+  letter-spacing: .01em;
+  box-shadow: 0 14px 28px rgb(215 25 32 / 20%);
+}
+
+.menu-save-button:hover {
+  background: var(--oa-red-dark);
+  border-color: var(--oa-red-dark);
+  box-shadow: 0 16px 32px rgb(215 25 32 / 24%);
+}
+
+.menu-save-button:focus-visible {
+  outline: 3px solid rgb(215 25 32 / 18%);
+  outline-offset: 3px;
+}
+
+.menu-save-button:disabled {
+  box-shadow: none;
+}
+
+.menu-save-button i {
+  font-size: 17px;
 }
 
 .menu-toggle-grid {
