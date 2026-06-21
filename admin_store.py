@@ -180,6 +180,7 @@ CAMPAIGN_INTAKE_STATUSES = {
     "done": "완료",
     "canceled": "취소",
 }
+CAMPAIGN_INTAKE_STATUS_BY_LABEL = {label: key for key, label in CAMPAIGN_INTAKE_STATUSES.items()}
 
 
 DEFAULT_NOTICE: dict[str, Any] = {
@@ -2966,7 +2967,14 @@ def _receipt_from_row(row: dict[str, Any]) -> str:
 
 def _campaign_intake_status_item(row: dict[str, Any] | None) -> dict[str, Any]:
     row = row or {}
-    status = str(row.get("status") or "ready").strip()
+    raw_status = str(row.get("status") or "").strip()
+    status = (
+        raw_status
+        if raw_status in CAMPAIGN_INTAKE_STATUSES
+        else CAMPAIGN_INTAKE_STATUS_BY_LABEL.get(raw_status)
+        or CAMPAIGN_INTAKE_STATUS_BY_LABEL.get(str(row.get("status_label") or "").strip())
+        or "ready"
+    )
     if status not in CAMPAIGN_INTAKE_STATUSES:
         status = "ready"
     return {
@@ -2976,6 +2984,23 @@ def _campaign_intake_status_item(row: dict[str, Any] | None) -> dict[str, Any]:
         "memo": str(row.get("memo") or "").strip(),
         "updated_at_utc": _iso_value(row.get("updated_at_utc")),
     }
+
+
+def _campaign_intake_settings_ops(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    ops_state: dict[str, dict[str, Any]] = {}
+    for row in _sheet_rows(payload, "settings"):
+        receipt = _receipt_from_row(row)
+        if not receipt:
+            continue
+        status_value = _sheet_value(row, "status", "status_label", "상태")
+        status = status_value if status_value in CAMPAIGN_INTAKE_STATUSES else CAMPAIGN_INTAKE_STATUS_BY_LABEL.get(status_value, "ready")
+        ops_state[receipt] = {
+            "operator_name": _sheet_value(row, "operator_name", "운영자"),
+            "status": status,
+            "memo": _sheet_value(row, "memo", "운영 메모", "비고"),
+            "updated_at_utc": _sheet_value(row, "updated_at_utc", "수정시각"),
+        }
+    return ops_state
 
 
 def _campaign_intake_sort_value(item: dict[str, Any]) -> tuple[str, str]:
@@ -3165,12 +3190,13 @@ def list_campaign_intake_items() -> dict[str, Any]:
             raise RuntimeError(error_message)
         receipts = {
             _receipt_from_row(row)
-            for sheet_name in ("campaigns", "adgroups", "ads", "ops_meta")
+            for sheet_name in ("campaigns", "adgroups", "ads", "ops_meta", "settings")
             for row in _sheet_rows(payload, sheet_name)
         }
         receipts.discard("")
         ops_state, storage = _load_campaign_intake_ops(receipts)
-        items = _build_campaign_intake_items(payload, ops_state)
+        settings_ops = _campaign_intake_settings_ops(payload)
+        items = _build_campaign_intake_items(payload, {**settings_ops, **ops_state})
         return {
             "ok": True,
             "items": items,
@@ -3226,14 +3252,42 @@ def update_campaign_intake_ops(payload: dict[str, Any]) -> dict[str, Any]:
                     (receipt_number, operator_name, status, memo),
                 )
                 row = dict(cur.fetchone())
-        return {"ok": True, "item": {"receipt_number": receipt_number, **_campaign_intake_status_item(row)}, **_storage_info("supabase")}
-    except Exception as exc:
-        _memory_campaign_intake_ops[receipt_number] = row
+        item = {"receipt_number": receipt_number, **_campaign_intake_status_item(row)}
         return {
             "ok": True,
-            "item": {"receipt_number": receipt_number, **_campaign_intake_status_item(row)},
+            "item": item,
+            **_sync_campaign_intake_settings(item),
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        _memory_campaign_intake_ops[receipt_number] = row
+        item = {"receipt_number": receipt_number, **_campaign_intake_status_item(row)}
+        return {
+            "ok": True,
+            "item": item,
+            **_sync_campaign_intake_settings(item),
             **_storage_info("memory", str(exc)),
         }
+
+
+def _sync_campaign_intake_settings(item: dict[str, Any]) -> dict[str, Any]:
+    try:
+        payload = {
+            "action": "campaign_intake_settings_update",
+            "setting": {
+                "receipt_number": item.get("receipt_number") or "",
+                "operator_name": item.get("operator_name") or "",
+                "status": item.get("status") or "ready",
+                "status_label": item.get("status_label") or CAMPAIGN_INTAKE_STATUSES.get(str(item.get("status") or "ready"), "대기"),
+                "memo": item.get("memo") or "",
+            },
+        }
+        response = _post_intake_webhook(payload)
+        if response.get("ok") is False:
+            raise RuntimeError(str(response.get("error") or "settings sheet sync failed"))
+        return {"sheet_sync": True}
+    except Exception as exc:
+        return {"sheet_sync": False, "sheet_sync_error": str(exc)}
 
 
 def list_mail_review_rows(*, status_filter: str = "", limit: int = 10, page: int = 1) -> dict[str, Any]:

@@ -5,7 +5,13 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from admin_store import CAMPAIGN_INTAKE_STATUSES, _build_campaign_intake_items, list_campaign_intake_items
+from admin_store import (
+    CAMPAIGN_INTAKE_STATUSES,
+    _build_campaign_intake_items,
+    _campaign_intake_settings_ops,
+    list_campaign_intake_items,
+    update_campaign_intake_ops,
+)
 from app import app
 
 
@@ -85,6 +91,44 @@ class CampaignIntakeAdminTests(unittest.TestCase):
         self.assertEqual(item["campaigns"][0]["adgroups"][0]["adgroup_name"], "광고그룹1")
         self.assertEqual(item["campaigns"][0]["adgroups"][0]["ads"][0]["ad_name"], "소재1")
 
+    def test_settings_sheet_rows_can_seed_ops_state(self) -> None:
+        payload = {
+            "sheets": {
+                "ops_meta": [
+                    {
+                        "receipt_number": "KT-OAI-20260621-001",
+                        "submitted_at_kst": "2026-06-21 01:27:23",
+                        "advertiser_name": "나이키",
+                        "sales_owner": "김건모",
+                        "owner_headquarters": "1본부",
+                        "owner_office": "1실",
+                        "owner_team": "1팀",
+                    }
+                ],
+                "campaigns": [
+                    {
+                        "receipt_number": "KT-OAI-20260621-001",
+                        "campaign_name": "캠페인1",
+                    }
+                ],
+                "settings": [
+                    {
+                        "접수번호": "KT-OAI-20260621-001",
+                        "운영자": "전홍진",
+                        "상태": "진행중",
+                        "운영 메모": "운영 메모",
+                    }
+                ],
+            }
+        }
+
+        items = _build_campaign_intake_items(payload, _campaign_intake_settings_ops(payload))
+
+        self.assertEqual(items[0]["operator_name"], "전홍진")
+        self.assertEqual(items[0]["status"], "in_progress")
+        self.assertEqual(items[0]["status_label"], "진행중")
+        self.assertEqual(items[0]["memo"], "운영 메모")
+
     def test_campaign_intake_admin_endpoints_are_admin_only(self) -> None:
         client = TestClient(app)
         headers = {"x-admin-password": "nas2026@"}
@@ -124,6 +168,29 @@ class CampaignIntakeAdminTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("Apps Script", result["error"])
         self.assertIn("새 버전", result["error"])
+
+    def test_campaign_intake_ops_update_syncs_settings_sheet(self) -> None:
+        with (
+            patch("admin_store._ensure_tables", side_effect=RuntimeError("db unavailable")),
+            patch("admin_store._post_intake_webhook", return_value={"ok": True}) as webhook,
+        ):
+            result = update_campaign_intake_ops(
+                {
+                    "receipt_number": "KT-OAI-20260621-001",
+                    "operator_name": "전홍진",
+                    "status": "in_progress",
+                    "memo": "운영 메모",
+                }
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["sheet_sync"])
+        payload = webhook.call_args.args[0]
+        self.assertEqual(payload["action"], "campaign_intake_settings_update")
+        self.assertEqual(payload["setting"]["receipt_number"], "KT-OAI-20260621-001")
+        self.assertEqual(payload["setting"]["operator_name"], "전홍진")
+        self.assertEqual(payload["setting"]["status_label"], "진행중")
+        self.assertEqual(payload["setting"]["memo"], "운영 메모")
 
 
 if __name__ == "__main__":

@@ -37,6 +37,23 @@ const SHEET_COLUMNS = {
     { key: "owner_team", header: "팀" },
     { key: "note", header: "비고" },
   ],
+  settings: [
+    { key: "receipt_number", header: "접수번호" },
+    { key: "submitted_at_kst", header: "제출시각" },
+    { key: "advertiser_name", header: "광고주" },
+    { key: "sales_owner", header: "담당자" },
+    { key: "owner_department", header: "소속" },
+    { key: "operator_name", header: "운영자" },
+    { key: "status_label", header: "상태" },
+    { key: "memo", header: "운영 메모" },
+  ],
+};
+
+const SETTING_STATUS_LABELS = {
+  ready: "대기",
+  in_progress: "진행중",
+  done: "완료",
+  canceled: "취소",
 };
 
 function doPost(e) {
@@ -49,6 +66,10 @@ function doPost(e) {
 
     if (payload.action === "campaign_intake_list") {
       return jsonResponse_(campaignIntakeList_(payload));
+    }
+
+    if (payload.action === "campaign_intake_settings_update") {
+      return jsonResponse_(updateCampaignIntakeSetting_(payload));
     }
 
     const data = payload.data || {};
@@ -89,6 +110,7 @@ function doPost(e) {
       appendRows_("adgroups", adgroupsForSheet.map(withReceipt));
       appendRows_("ads", ads.map(withReceipt));
       appendRows_("ops_meta", [opsMeta]);
+      upsertSettingRow_(buildSettingRow_(receiptNumber, submittedAtKst, ops, "", "ready", ""));
 
       const mailResult = notifyOps_(receiptNumber, submittedAtKst, ops, campaigns, adgroups, ads);
 
@@ -120,16 +142,18 @@ function appendRows_(sheetName, rows) {
   if (!rows.length) return;
   const columns = SHEET_COLUMNS[sheetName];
   const sheet = ensureSheet_(sheetName, columns);
-  const values = rows.map((row) =>
-    columns.map((column) => {
-      const value = row[column.key];
-      if (Array.isArray(value) || (value && typeof value === "object")) {
-        return JSON.stringify(value);
-      }
-      return value == null ? "" : value;
-    }),
-  );
+  const values = rows.map((row) => rowValues_(columns, row));
   sheet.getRange(sheet.getLastRow() + 1, 1, values.length, columns.length).setValues(values);
+}
+
+function rowValues_(columns, row) {
+  return columns.map((column) => {
+    const value = row[column.key];
+    if (Array.isArray(value) || (value && typeof value === "object")) {
+      return JSON.stringify(value);
+    }
+    return value == null ? "" : value;
+  });
 }
 
 function campaignIntakeList_() {
@@ -140,8 +164,88 @@ function campaignIntakeList_() {
       adgroups: readSheetRows_("adgroups"),
       ads: readSheetRows_("ads"),
       ops_meta: readSheetRows_("ops_meta"),
+      settings: readSheetRows_("settings"),
     },
   };
+}
+
+function updateCampaignIntakeSetting_(payload) {
+  const setting = payload.setting || {};
+  const receiptNumber = String(setting.receipt_number || setting.receiptNumber || "").trim();
+  if (!receiptNumber) {
+    return { ok: false, error: "receipt_number is required" };
+  }
+
+  const updated = upsertSettingRow_({
+    receipt_number: receiptNumber,
+    operator_name: setting.operator_name || "",
+    status_label: statusLabel_(setting.status || setting.status_label || setting.statusLabel || "ready"),
+    memo: setting.memo || "",
+  });
+  return { ok: true, row: updated.row, receiptNumber };
+}
+
+function upsertSettingRow_(setting) {
+  const columns = SHEET_COLUMNS.settings;
+  const sheet = ensureSheet_("settings", columns);
+  const receiptNumber = String(setting.receipt_number || "").trim();
+  const existing = findSettingRow_(sheet, receiptNumber);
+  const merged = Object.assign({}, existing.item || {}, setting);
+  if (setting.status || setting.status_label || setting.statusLabel) {
+    merged.status_label = statusLabel_(setting.status || setting.status_label || setting.statusLabel);
+  }
+  const values = rowValues_(columns, merged);
+  if (existing.row > 0) {
+    sheet.getRange(existing.row, 1, 1, columns.length).setValues([values]);
+    return { row: existing.row, item: merged };
+  }
+  const nextRow = sheet.getLastRow() + 1;
+  sheet.getRange(nextRow, 1, 1, columns.length).setValues([values]);
+  return { row: nextRow, item: merged };
+}
+
+function findSettingRow_(sheet, receiptNumber) {
+  const columns = SHEET_COLUMNS.settings;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { row: 0, item: null };
+  const values = sheet.getRange(2, 1, lastRow - 1, columns.length).getValues();
+  for (let index = 0; index < values.length; index += 1) {
+    const item = {};
+    columns.forEach((column, columnIndex) => {
+      item[column.key] = normalizeSheetCell_(values[index][columnIndex]);
+    });
+    if (String(item.receipt_number || "").trim() === receiptNumber) {
+      return { row: index + 2, item };
+    }
+  }
+  return { row: 0, item: null };
+}
+
+function buildSettingRow_(receiptNumber, submittedAtKst, ops, operatorName, status, memo) {
+  return {
+    receipt_number: receiptNumber,
+    submitted_at_kst: submittedAtKst,
+    advertiser_name: ops.advertiser_name || "",
+    sales_owner: ops.sales_owner || "",
+    owner_department: ownerDepartment_(ops),
+    operator_name: operatorName || "",
+    status_label: statusLabel_(status),
+    memo: memo || "",
+  };
+}
+
+function ownerDepartment_(ops) {
+  return [ops.owner_headquarters, ops.owner_office, ops.owner_team]
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function statusLabel_(status) {
+  const raw = String(status || "").trim();
+  if (SETTING_STATUS_LABELS[raw]) return SETTING_STATUS_LABELS[raw];
+  if (Object.keys(SETTING_STATUS_LABELS).some((key) => SETTING_STATUS_LABELS[key] === raw)) return raw;
+  return SETTING_STATUS_LABELS.ready;
 }
 
 function readSheetRows_(sheetName) {
@@ -206,8 +310,15 @@ function ensureSheet_(sheetName, columns) {
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.setFrozenRows(1);
-  if (sheetName === "ops_meta" && sheet.getMaxColumns() > headers.length) {
+  if ((sheetName === "ops_meta" || sheetName === "settings") && sheet.getMaxColumns() > headers.length) {
     sheet.deleteColumns(headers.length + 1, sheet.getMaxColumns() - headers.length);
+  }
+  if (sheetName === "settings") {
+    const statusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(Object.keys(SETTING_STATUS_LABELS).map((key) => SETTING_STATUS_LABELS[key]), true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 7, Math.max(1, sheet.getMaxRows() - 1), 1).setDataValidation(statusRule);
   }
   return sheet;
 }
@@ -220,6 +331,10 @@ function syncHeadersNow() {
 
 function syncOpsMetaHeaderNow() {
   ensureSheet_("ops_meta", SHEET_COLUMNS.ops_meta);
+}
+
+function syncSettingsHeaderNow() {
+  ensureSheet_("settings", SHEET_COLUMNS.settings);
 }
 
 function normalizeRows_(rows) {
