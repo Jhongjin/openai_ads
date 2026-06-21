@@ -1103,7 +1103,7 @@ def _connect():
     settings = load_settings()
     if not settings.supabase_db_url:
         raise RuntimeError("SUPABASE_DB_URL is not configured.")
-    return psycopg.connect(settings.supabase_db_url)
+    return psycopg.connect(settings.supabase_db_url, prepare_threshold=None)
 
 
 def _mail_webhook_config() -> tuple[str, str]:
