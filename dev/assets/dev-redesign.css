@@ -984,7 +984,45 @@ body.dev-console :focus-visible {
 }
 
 .ads-key-table {
-  min-width: 760px;
+  table-layout: fixed;
+}
+
+.ads-key-table th:nth-child(1),
+.ads-key-table td:nth-child(1) {
+  width: 38%;
+}
+
+.ads-key-table th:nth-child(2),
+.ads-key-table td:nth-child(2),
+.ads-key-table th:nth-child(3),
+.ads-key-table td:nth-child(3) {
+  width: 18%;
+}
+
+.ads-key-table th:nth-child(4),
+.ads-key-table td:nth-child(4) {
+  width: 64px;
+  text-align: center;
+}
+
+.ads-key-table th:nth-child(5),
+.ads-key-table td:nth-child(5) {
+  width: 112px;
+}
+
+.ads-key-table td {
+  overflow-wrap: anywhere;
+}
+
+.ads-key-table .row-actions {
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.ads-key-table .btn-plain,
+.ads-key-table .btn-danger {
+  min-width: 0;
+  padding: 5px 7px;
 }
 
 .performance-surface .surface-head {
@@ -1589,11 +1627,6 @@ body.dev-console :focus-visible {
   .intake-kv-table th {
     width: 128px;
   }
-}
-
-.ads-key-table th:first-child,
-.ads-key-table td:first-child {
-  min-width: 210px;
 }
 
 .btn-secondary:disabled,
