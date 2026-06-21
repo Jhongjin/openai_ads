@@ -27,26 +27,13 @@ class DevRoutesStaticTests(unittest.TestCase):
     def test_menu_settings_api_controls_public_visibility(self) -> None:
         client = TestClient(app)
         headers = {"x-admin-password": "nas2026@"}
-        defaults = {
-            "menus": {
-                "qa": True,
-                "landing": True,
-                "favicon": True,
-                "guides": True,
-                "creative": True,
-            },
-            "guide_decks": {
-                "advertiser": True,
-                "setup": True,
-                "pixel": True,
-            },
-        }
 
         self.assertEqual(client.get("/api/admin/menu-settings").status_code, 403)
         public_response = client.get("/api/menu-settings")
         self.assertEqual(public_response.status_code, 200)
         self.assertIn("menus", public_response.json())
         self.assertIn("guide_decks", public_response.json())
+        original_settings = client.get("/api/admin/menu-settings", headers=headers).json()
 
         try:
             response = client.post(
@@ -67,7 +54,7 @@ class DevRoutesStaticTests(unittest.TestCase):
             self.assertFalse(public_payload["menus"]["qa"])
             self.assertFalse(public_payload["guide_decks"]["pixel"])
         finally:
-            client.post("/api/admin/menu-settings", headers=headers, json=defaults)
+            client.post("/api/admin/menu-settings", headers=headers, json=original_settings)
 
     def test_menu_settings_fail_closed_until_api_loads(self) -> None:
         client = TestClient(app)
@@ -161,6 +148,10 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="guide-deck-settings-form"', admin)
         self.assertIn('id="save-menu-settings"', admin)
         self.assertIn("menu-save-button", admin)
+        self.assertIn("coerceMenuSetting", admin)
+        self.assertIn("syncMenuToggleCards", admin)
+        self.assertIn("menuSettingsLoaded", admin)
+        self.assertIn("메뉴 설정을 먼저 불러온 뒤 저장해 주세요.", admin)
         self.assertIn("/api/admin/menu-settings", admin)
         self.assertIn("관리자 세션에서는 비활성 메뉴도 검수용으로 계속 접근", admin)
         self.assertIn("echarts@5", admin)

@@ -4573,6 +4573,21 @@ body.dev-console.modal-open {
   background: #fffafa;
 }
 
+.menu-toggle-card.is-disabled {
+  border-color: #d9e2ef;
+  background: #f8fafc;
+}
+
+.menu-toggle-card.is-disabled:hover {
+  border-color: #cbd5e1;
+  background: #f6f8fb;
+}
+
+.menu-toggle-card.is-disabled strong,
+.menu-toggle-card.is-disabled small {
+  color: #64748b;
+}
+
 .menu-toggle-card input {
   width: 18px;
   height: 18px;

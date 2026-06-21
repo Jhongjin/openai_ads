@@ -933,22 +933,23 @@
       let slideContent = { items: [], images: [] };
       const defaultMenuSettings = {
         menus: {
-          qa: true,
-          landing: true,
-          favicon: true,
-          guides: true,
-          creative: true,
+          qa: false,
+          landing: false,
+          favicon: false,
+          guides: false,
+          creative: false,
         },
         guide_decks: {
-          advertiser: true,
-          setup: true,
-          pixel: true,
+          advertiser: false,
+          setup: false,
+          pixel: false,
         },
         updated_at: "",
       };
       let menuSettings = typeof structuredClone === "function"
         ? structuredClone(defaultMenuSettings)
         : JSON.parse(JSON.stringify(defaultMenuSettings));
+      let menuSettingsLoaded = false;
       let currentView = "analytics";
       let visitChart = null;
       let visitPieChart = null;
@@ -1658,27 +1659,51 @@
         });
       }
 
+      function coerceMenuSetting(value, fallback = false) {
+        if (value === true || value === 1) return true;
+        if (value === false || value === 0) return false;
+        if (typeof value === "string") {
+          const normalized = value.trim().toLowerCase();
+          if (["true", "1", "on", "yes", "enabled"].includes(normalized)) return true;
+          if (["false", "0", "off", "no", "disabled"].includes(normalized)) return false;
+        }
+        return fallback;
+      }
+
       function normalizeMenuSettings(data = {}) {
         const next = JSON.parse(JSON.stringify(defaultMenuSettings));
         const menus = data.menus && typeof data.menus === "object" ? data.menus : {};
         const guideDecks = data.guide_decks && typeof data.guide_decks === "object" ? data.guide_decks : {};
         Object.keys(next.menus).forEach((key) => {
-          next.menus[key] = menus[key] === undefined ? next.menus[key] : Boolean(menus[key]);
+          next.menus[key] = menus[key] === undefined ? next.menus[key] : coerceMenuSetting(menus[key], next.menus[key]);
         });
         Object.keys(next.guide_decks).forEach((key) => {
-          next.guide_decks[key] = guideDecks[key] === undefined ? next.guide_decks[key] : Boolean(guideDecks[key]);
+          next.guide_decks[key] = guideDecks[key] === undefined ? next.guide_decks[key] : coerceMenuSetting(guideDecks[key], next.guide_decks[key]);
         });
         next.updated_at = data.updated_at || "";
         return next;
       }
 
+      function syncMenuToggleCards() {
+        $$("[data-menu-setting], [data-guide-deck-setting]").forEach((input) => {
+          const card = input.closest(".menu-toggle-card");
+          if (!card) return;
+          card.classList.toggle("is-enabled", Boolean(input.checked));
+          card.classList.toggle("is-disabled", !input.checked);
+          card.dataset.enabled = input.checked ? "true" : "false";
+        });
+      }
+
       function renderMenuSettingsForm() {
         $$("[data-menu-setting]").forEach((input) => {
-          input.checked = menuSettings.menus[input.dataset.menuSetting] !== false;
+          input.checked = coerceMenuSetting(menuSettings.menus[input.dataset.menuSetting], false);
+          input.defaultChecked = input.checked;
         });
         $$("[data-guide-deck-setting]").forEach((input) => {
-          input.checked = menuSettings.guide_decks[input.dataset.guideDeckSetting] !== false;
+          input.checked = coerceMenuSetting(menuSettings.guide_decks[input.dataset.guideDeckSetting], false);
+          input.defaultChecked = input.checked;
         });
+        syncMenuToggleCards();
         const updated = menuSettings.updated_at ? `마지막 저장: ${menuSettings.updated_at}` : "설정을 불러왔습니다.";
         setStatus("menu-settings-status", updated, "ok");
       }
@@ -1695,14 +1720,20 @@
       }
 
       async function loadMenuSettings() {
+        menuSettingsLoaded = false;
         const data = await adminFetch("/api/admin/menu-settings", {
           loadingMessage: "메뉴 설정을 불러오는 중입니다.",
         });
         menuSettings = normalizeMenuSettings(data);
+        menuSettingsLoaded = true;
         renderMenuSettingsForm();
       }
 
       async function saveMenuSettings() {
+        if (!menuSettingsLoaded) {
+          setStatus("메뉴 설정을 먼저 불러온 뒤 저장해 주세요.", "error");
+          return;
+        }
         const button = $("#save-menu-settings");
         setButtonBusy(button, true, "저장 중...");
         setStatus("menu-settings-status", "메뉴 설정 저장 중입니다.");
@@ -3868,6 +3899,8 @@
       $("#save-guides").addEventListener("click", () => saveGuides().catch((error) => setStatus("guide-status", error.message, "error")));
       $("#reload-menu-settings").addEventListener("click", () => loadMenuSettings().catch((error) => setStatus("menu-settings-status", error.message, "error")));
       $("#save-menu-settings").addEventListener("click", () => saveMenuSettings());
+      $("#menu-settings-form").addEventListener("change", syncMenuToggleCards);
+      $("#guide-deck-settings-form").addEventListener("change", syncMenuToggleCards);
       $("#add-admin-guide-slide").addEventListener("click", addGuideSlide);
       $("#admin-guide-tabs").addEventListener("click", (event) => {
         const button = event.target.closest("[data-admin-guide-deck]");
