@@ -95,11 +95,9 @@
           <div class="rail-section">
             <span class="rail-label">접수 메뉴</span>
             <a
-              class="rail-link admin-gated-link is-disabled"
-              href="#"
-              aria-disabled="true"
-              data-admin-required-link
-              data-admin-href="/dev/creative-upload-draft"
+              class="rail-link"
+              href="/dev/creative-upload-draft"
+              aria-disabled="false"
               data-menu-key="creative"
             >
               <i class="ti ti-table-import"></i>
@@ -141,11 +139,9 @@
             </div>
             <div class="head-actions">
               <a
-                class="btn-secondary admin-gated-link is-disabled"
-                href="#"
-                aria-disabled="true"
-                data-admin-required-link
-                data-admin-href="/dev/creative-upload-draft"
+                class="btn-secondary"
+                href="/dev/creative-upload-draft"
+                aria-disabled="false"
                 data-menu-key="creative"
               >
                 <i class="ti ti-table-import"></i>
@@ -1342,14 +1338,6 @@
       }
 
       function updateAdminGatedLinks() {
-        const active = hasAdminSession();
-        $$("[data-admin-required-link]").forEach((link) => {
-          const target = link.dataset.adminHref || "#";
-          link.classList.toggle("is-disabled", !active);
-          link.setAttribute("aria-disabled", active ? "false" : "true");
-          link.href = active ? target : "#";
-          link.title = active ? "" : "관리자 로그인 후 사용할 수 있습니다.";
-        });
         applyMenuVisibility();
       }
 
@@ -1410,13 +1398,11 @@
         $$("[data-menu-key]").forEach((element) => {
           const key = element.dataset.menuKey;
           const isEnabled = state.menuSettings.menus[key] !== false;
-          const visible = isEnabled || admin || (key === "creative" && isEnabled);
+          const visible = isEnabled || admin;
           element.hidden = !visible;
           element.classList.toggle("is-admin-visible-disabled", admin && !isEnabled);
           if (admin && !isEnabled) {
             element.title = "일반 사용자에게는 비활성화된 메뉴입니다.";
-          } else if (!admin && key === "creative") {
-            element.title = "관리자 로그인 후 사용할 수 있습니다.";
           } else {
             element.title = "";
           }
@@ -2179,12 +2165,6 @@
           }
           setView(view);
         });
-      });
-      document.addEventListener("click", (event) => {
-        const link = event.target.closest("[data-admin-required-link]");
-        if (!link || !link.classList.contains("is-disabled")) return;
-        event.preventDefault();
-        setStatus("관리자 로그인 후 소재 접수 메뉴를 사용할 수 있습니다.", "warning");
       });
       window.addEventListener("focus", updateAdminGatedLinks);
       $("#faq-categories").addEventListener("click", (event) => {
