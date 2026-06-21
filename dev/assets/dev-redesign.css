@@ -249,6 +249,25 @@ body.dev-console :focus-visible {
   margin-top: 18px;
 }
 
+.creative-intake-page .context-footer {
+  gap: 5px;
+  margin-top: 24px;
+  padding-top: 14px;
+  padding-bottom: 2px;
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+.creative-intake-page .context-footer span,
+.creative-intake-page .context-footer a {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.creative-intake-page .context-footer small {
+  max-width: 220px;
+  font-size: 9.5px;
+}
+
 .stage {
   min-width: 0;
   display: grid;
@@ -4135,6 +4154,15 @@ body.dev-console.modal-open {
   font-family: var(--oa-mono);
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.creative-intake-page .mapping-item strong {
+  font-family: var(--oa-font);
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.45;
+  letter-spacing: 0;
+  word-break: keep-all;
 }
 
 .mapping-wide {
