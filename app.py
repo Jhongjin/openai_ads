@@ -30,6 +30,8 @@ app.mount(
     name="dev-assets",
 )
 
+_faq_scheduler_task: asyncio.Task | None = None
+
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
@@ -223,6 +225,28 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+async def _operating_faq_scheduler() -> None:
+    interval_seconds = max(3600, int(os.getenv("FAQ_REFRESH_INTERVAL_SECONDS", "86400") or "86400"))
+    await asyncio.sleep(5)
+    while True:
+        try:
+            from admin_store import refresh_operating_faqs
+
+            await asyncio.to_thread(refresh_operating_faqs, force=False)
+        except Exception:
+            pass
+        await asyncio.sleep(interval_seconds)
+
+
+@app.on_event("startup")
+async def start_operating_faq_scheduler() -> None:
+    global _faq_scheduler_task
+    if os.getenv("DISABLE_FAQ_SCHEDULER", "").lower() in {"1", "true", "yes"}:
+        return
+    if _faq_scheduler_task is None or _faq_scheduler_task.done():
+        _faq_scheduler_task = asyncio.create_task(_operating_faq_scheduler())
+
+
 def _index_file() -> FileResponse:
     return FileResponse(project_root() / "templates" / "index.html")
 
@@ -297,6 +321,33 @@ def analytics_visit(request: VisitRequest) -> dict[str, Any]:
     page = raw_page[:80] or "root"
     label = (request.label or "").strip()[:120] or PAGE_LABELS.get(page, page)
     return record_page_visit(page, label)
+
+
+@app.get("/api/faqs", include_in_schema=False)
+def public_operating_faqs() -> dict[str, Any]:
+    from admin_store import list_operating_faqs
+
+    return list_operating_faqs(auto_refresh=True)
+
+
+@app.post("/api/admin/faqs/refresh", include_in_schema=False)
+def admin_refresh_operating_faqs(request: Request) -> dict[str, Any]:
+    from admin_store import refresh_operating_faqs
+
+    _require_admin(request)
+    return refresh_operating_faqs(force=True)
+
+
+@app.post("/api/cron/faqs", include_in_schema=False)
+def cron_refresh_operating_faqs(request: Request) -> dict[str, Any]:
+    from admin_store import refresh_operating_faqs
+
+    cron_secret = os.getenv("CRON_SECRET", "").strip()
+    if cron_secret:
+        expected = f"Bearer {cron_secret}"
+        if request.headers.get("authorization", "") != expected:
+            raise HTTPException(status_code=401, detail="cron authorization failed")
+    return refresh_operating_faqs(force=True)
 
 
 @app.get("/api/admin/notice", include_in_schema=False)

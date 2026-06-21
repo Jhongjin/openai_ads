@@ -39,6 +39,141 @@ MANUAL_RAG_CATEGORIES = (
     "전환·권한",
     "플랫폼·지원",
 )
+FAQ_REFRESH_INTERVAL_HOURS = int(os.getenv("FAQ_REFRESH_INTERVAL_HOURS", "24") or "24")
+FAQ_CATEGORIES: tuple[dict[str, str], ...] = (
+    {"id": "account", "label": "계정·런칭"},
+    {"id": "bid", "label": "입찰·예산"},
+    {"id": "billing", "label": "청구·세금"},
+    {"id": "rollout", "label": "롤아웃·인벤토리"},
+    {"id": "landing", "label": "랜딩·크롤러"},
+    {"id": "policy", "label": "정책·제한업종"},
+    {"id": "measurement", "label": "전환·권한"},
+    {"id": "support", "label": "플랫폼·지원"},
+)
+FAQ_CATEGORY_BY_LABEL = {item["label"]: item["id"] for item in FAQ_CATEGORIES}
+FAQ_CATEGORY_LABELS = {item["id"]: item["label"] for item in FAQ_CATEGORIES}
+QUESTION_TO_FAQ_CATEGORY = {
+    "budget": "bid",
+    "creative": "policy",
+    "landing": "landing",
+    "measurement": "measurement",
+    "campaign_setup": "account",
+    "policy": "policy",
+    "ops": "support",
+    "general": "support",
+}
+FAQ_CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "account": ("계정", "런칭", "launch", "order form", "terms", "provision", "접근", "권한", "캠페인 생성", "campaign setup"),
+    "bid": ("입찰", "예산", "bid", "budget", "spend", "cpc", "cpm", "금액", "최소 집행"),
+    "billing": ("청구", "세금", "invoice", "billing", "vat", "brn", "정산", "인보이스"),
+    "rollout": ("롤아웃", "인벤토리", "inventory", "criteo", "10%", "국가", "출시", "타겟"),
+    "landing": ("랜딩", "url", "crawler", "크롤러", "robots", "oai-adsbot", "oai-searchbot", "방화벽", "allowlist"),
+    "policy": ("정책", "제한", "업종", "심사", "승인", "거절", "소재", "이미지", "카피", "creative", "policy"),
+    "measurement": ("전환", "권한", "픽셀", "pixel", "conversion", "event", "gtm", "측정", "api"),
+    "support": ("지원", "플랫폼", "문의", "troubleshooting", "faq", "error", "문제", "담당자", "support", "sso", "scim"),
+}
+DEFAULT_OPERATING_FAQS: dict[str, list[dict[str, str]]] = {
+    "account": [
+        {
+            "question": "Order Form 서명 후 Ads Manager 계정은 언제 접근 가능한가요?",
+            "answer": "Order Form 서명 완료 후 OpenAI가 광고주 계정을 프로비저닝하고 이메일에 접근 권한을 부여합니다. 런칭 전에도 계정 접속과 캠페인 세팅은 가능하지만 실제 광고 노출은 한국 런칭일부터 시작됩니다.",
+        },
+        {
+            "question": "트래커에 광고주를 제출하면 집행 의무가 생기나요?",
+            "answer": "아닙니다. 현 단계 트래커 제출은 광고주 검토, Order Form 준비, Ads Manager 계정 생성 목적이며 상업적 집행 의무는 Order Form 프로세스를 통해 별도로 처리됩니다.",
+        },
+        {
+            "question": "추가 광고주는 언제든 신청할 수 있나요?",
+            "answer": "초기 마감 이후에도 rolling basis로 추가 제출과 검토가 가능합니다. 트래커 시트에 광고주를 추가하고 이메일로 OpenAI에 알려 계정 생성을 요청합니다.",
+        },
+        {
+            "question": "Terms Signed 칸을 나스미디어가 직접 체크해야 하나요?",
+            "answer": "별도 조치는 필요 없습니다. OpenAI가 Order Form 서명을 확인한 뒤 프로비저닝을 시작하며, Terms Signed 항목은 OpenAI 내부 확인용으로 운영됩니다.",
+        },
+    ],
+    "bid": [
+        {
+            "question": "입찰가는 캠페인 단위인가요, 광고그룹 단위인가요?",
+            "answer": "캠페인 단위에서는 총예산 또는 일예산을 설정하고, 광고그룹 단위에서 최대 CPC 또는 최대 CPM 입찰가를 설정합니다. 한국 계정의 입찰 통화는 KRW입니다.",
+        },
+        {
+            "question": "CPM 최대 입찰가는 고정인가요?",
+            "answer": "고정이 아닙니다. OpenAI 담당자 회신 기준 CPM 최대 입찰가는 필요에 따라 직접 조정할 수 있습니다.",
+        },
+        {
+            "question": "입찰가를 올리면 딜리버리가 좋아지나요?",
+            "answer": "최대 입찰가 상향은 딜리버리 개선에 도움이 될 수 있습니다. 다만 경매는 관련성 가중 2차가 방식이므로 노출량 증가를 보장하는 의미는 아닙니다.",
+        },
+        {
+            "question": "Account Spend Cap은 월 기준 한도인가요?",
+            "answer": "월 기준이 아니라 광고주 계정의 lifetime 지출 한도입니다. 한국 파일럿 계정은 KRW 40,000,000이 적용되며, 초과 한도는 요청 시 케이스별 검토가 필요합니다.",
+        },
+    ],
+    "billing": [
+        {
+            "question": "인보이스는 언제 발행되나요?",
+            "answer": "월별 실제 집행 기준으로 발행되며, 다음 달 영업일 기준 7일 이내에 발행됩니다.",
+        },
+        {
+            "question": "미집행 광고주에게도 최소 집행금액이 청구되나요?",
+            "answer": "아닙니다. 실제 집행된 금액만 청구되며, 캠페인 미집행 계정에 대한 패널티는 없습니다.",
+        },
+        {
+            "question": "한국 세금계산서가 발행되나요?",
+            "answer": "OpenAI OpCo 명의의 표준 PDF 인보이스가 발행되며, 한국 세금계산서는 아닙니다. VAT 처리는 Order Form 및 청구 프로세스 기준으로 확인합니다.",
+        },
+    ],
+    "rollout": [
+        {
+            "question": "초기 10% 롤아웃은 어떤 의미인가요?",
+            "answer": "한국 내 광고 노출 가능한 Free 및 Go 이용자 풀의 10%부터 시작해 단계적으로 확대한다는 의미입니다.",
+        },
+        {
+            "question": "Criteo 경유 캠페인은 10% 제한에서 제외되나요?",
+            "answer": "아닙니다. 10% 롤아웃은 Criteo 경유를 포함한 시장 내 모든 광고주에게 동일하게 적용됩니다.",
+        },
+    ],
+    "landing": [
+        {
+            "question": "트래커 URL은 꼭 공식 홈페이지여야 하나요?",
+            "answer": "정책 검토 용도이므로 광고주 공식 홈페이지가 이상적입니다. Ads Manager의 개별 광고 랜딩 URL은 별도로 지정할 수 있습니다.",
+        },
+        {
+            "question": "크롤러 접근이 안 되면 어떻게 되나요?",
+            "answer": "URL 설정 자체는 가능할 수 있지만, OpenAI 크롤러가 랜딩 URL에 접근할 수 있어야 광고 게재가 가능합니다. 접근 실패 시 집행이 제한됩니다.",
+        },
+    ],
+    "policy": [
+        {
+            "question": "금융 서비스는 모두 제한인가요?",
+            "answer": "초기 파일럿 기준 예금계좌, 신용카드, 보험, 자동차 대출/리스, 모기지, 투자/증권/로보어드바이저 등은 승인 가능 세부 카테고리로 안내되었습니다.",
+        },
+        {
+            "question": "트래커에 등록된 광고주는 모두 승인된 건가요?",
+            "answer": "아닙니다. 실제 정책 검토는 계정 프로비저닝 단계에서 진행되며, 문제가 생기면 OpenAI가 별도로 안내합니다.",
+        },
+    ],
+    "measurement": [
+        {
+            "question": "Click 또는 Reach 목적에서도 전환 트래킹이 필수인가요?",
+            "answer": "필수는 아니지만 강력히 권장됩니다. 향후 Conversion 최적화 캠페인은 전환 트래킹 설정이 필수입니다.",
+        },
+        {
+            "question": "한 광고 계정에 어드민을 몇 명까지 부여할 수 있나요?",
+            "answer": "제한은 없습니다. 트래커에 기재된 이메일 주소 각각에 어드민 권한을 부여할 수 있습니다.",
+        },
+    ],
+    "support": [
+        {
+            "question": "집행 데이터는 실시간으로 반영되나요?",
+            "answer": "현재는 3~5시간 간격으로 업데이트됩니다. OpenAI는 더 자주 업데이트되도록 개선 중입니다.",
+        },
+        {
+            "question": "지원 문의는 어디로 보내야 하나요?",
+            "answer": "ads-support@openai.com으로 문의하고 ads-korea@openai.com을 CC에 포함합니다. 광고주 측 마케터의 직접 문의도 가능합니다.",
+        },
+    ],
+}
 CAMPAIGN_INTAKE_STATUSES = {
     "ready": "대기",
     "in_progress": "진행중",
@@ -217,6 +352,8 @@ _memory_visit_events: list[dict[str, Any]] = []
 _memory_chat_questions: list[dict[str, Any]] = []
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
+_memory_operating_faq_items: dict[str, dict[str, Any]] = {}
+_memory_operating_faq_refreshed_at = ""
 _db_ready = False
 
 
@@ -368,6 +505,251 @@ def categorize_chat_question(question: str, answer: str = "") -> dict[str, str]:
         if any(str(keyword).lower() in text for keyword in rule["keywords"]):
             return {"category": rule["category"], "label": rule["label"]}
     return {"category": "general", "label": "기타"}
+
+
+def _faq_category_for_text(*values: Any) -> str:
+    text = " ".join(str(value or "") for value in values).lower()
+    scores = {
+        category: sum(1 for keyword in keywords if keyword.lower() in text)
+        for category, keywords in FAQ_CATEGORY_KEYWORDS.items()
+    }
+    category, score = max(scores.items(), key=lambda item: item[1])
+    return category if score > 0 else "support"
+
+
+def _faq_category_from_manual(value: Any, fallback_text: str = "") -> str:
+    category_text = str(value or "").strip()
+    if category_text in FAQ_CATEGORY_LABELS:
+        return category_text
+    if category_text in FAQ_CATEGORY_BY_LABEL:
+        return FAQ_CATEGORY_BY_LABEL[category_text]
+    return _faq_category_for_text(category_text, fallback_text)
+
+
+def _clean_faq_text(value: Any, limit: int = 900) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    return text[:limit].rstrip()
+
+
+def _faq_question_key(value: Any) -> str:
+    text = str(value or "").lower()
+    text = re.sub(r"[\[\]{}()<>\"'`~!@#$%^&*_+=|\\:;,.?/·ㆍ，。！？]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:180] or f"faq-{uuid.uuid4().hex[:12]}"
+
+
+def _faq_tokens(value: Any) -> set[str]:
+    tokens = re.findall(r"[가-힣A-Za-z0-9]+", str(value or "").lower())
+    return {token for token in tokens if len(token) >= 2}
+
+
+def _faq_similarity(left: Any, right: Any) -> float:
+    left_tokens = _faq_tokens(left)
+    right_tokens = _faq_tokens(right)
+    if not left_tokens or not right_tokens:
+        return 0.0
+    return len(left_tokens & right_tokens) / max(1, len(left_tokens | right_tokens))
+
+
+def _faq_datetime(value: Any = None) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    text = str(value or "").strip()
+    if text:
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    return datetime.now(timezone.utc)
+
+
+def _seed_faq_updated_at() -> datetime:
+    return datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def _public_faq_categories(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {item["id"]: [] for item in FAQ_CATEGORIES}
+    for row in rows:
+        category = str(row.get("category") or "support")
+        if category not in grouped:
+            category = "support"
+        question = _clean_faq_text(row.get("question"), 300)
+        answer = _clean_faq_text(row.get("answer"), 1200)
+        if not question or not answer:
+            continue
+        grouped[category].append(
+            {
+                "q": question,
+                "a": answer,
+                "source_type": str(row.get("source_type") or "seed"),
+                "source_summary": str(row.get("source_summary") or "").strip(),
+                "updated_at": _iso_value(row.get("updated_at_utc") or row.get("source_updated_at")),
+                "frequency": int(row.get("frequency") or 1),
+            }
+        )
+
+    categories: list[dict[str, Any]] = []
+    for category in FAQ_CATEGORIES:
+        items = grouped.get(category["id"], [])[:10]
+        categories.append({"id": category["id"], "label": category["label"], "items": items})
+    return categories
+
+
+def _default_faq_rows() -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seed_time = _seed_faq_updated_at().isoformat()
+    for category in FAQ_CATEGORIES:
+        category_id = category["id"]
+        for index, item in enumerate(DEFAULT_OPERATING_FAQS.get(category_id, [])):
+            question = item["question"]
+            rows.append(
+                {
+                    "id": f"seed-{category_id}-{index + 1}",
+                    "category": category_id,
+                    "category_label": category["label"],
+                    "question_key": _faq_question_key(question),
+                    "question": question,
+                    "answer": item["answer"],
+                    "source_type": "seed",
+                    "source_ref": "internal://default-operating-faq",
+                    "source_summary": "기본 운영 FAQ",
+                    "frequency": 1,
+                    "status": "active",
+                    "source_updated_at": seed_time,
+                    "updated_at_utc": seed_time,
+                }
+            )
+    return rows
+
+
+def _default_faq_response(storage: dict[str, str] | None = None) -> dict[str, Any]:
+    rows = list(_memory_operating_faq_items.values()) or _default_faq_rows()
+    return {
+        "ok": True,
+        "categories": _public_faq_categories(rows),
+        "updated_at": _memory_operating_faq_refreshed_at,
+        "refresh_interval_hours": FAQ_REFRESH_INTERVAL_HOURS,
+        **(storage or _storage_info("memory")),
+    }
+
+
+def _faq_candidate(
+    *,
+    category: str,
+    question: str,
+    answer: str,
+    source_type: str,
+    source_ref: str,
+    source_summary: str = "",
+    frequency: int = 1,
+    source_updated_at: Any = None,
+) -> dict[str, Any] | None:
+    question = _clean_faq_text(question, 300)
+    answer = _clean_faq_text(answer, 1200)
+    if not question or not answer:
+        return None
+    if category not in FAQ_CATEGORY_LABELS:
+        category = _faq_category_for_text(question, answer)
+    updated_at = _faq_datetime(source_updated_at)
+    return {
+        "id": f"{source_type}-{content_hash(f'{category}|{question}|{source_ref}')[:16]}",
+        "category": category,
+        "category_label": FAQ_CATEGORY_LABELS.get(category, FAQ_CATEGORY_LABELS["support"]),
+        "question_key": _faq_question_key(question),
+        "question": question,
+        "answer": answer,
+        "source_type": source_type,
+        "source_ref": str(source_ref or "")[:500],
+        "source_summary": str(source_summary or "")[:500],
+        "frequency": max(1, int(frequency or 1)),
+        "status": "active",
+        "source_updated_at": updated_at,
+        "updated_at_utc": updated_at,
+    }
+
+
+def _short_official_title(value: Any) -> str:
+    title = re.sub(r"\s*\|\s*OpenAI.*$", "", str(value or "공식 문서")).strip()
+    return title[:80] or "공식 문서"
+
+
+def _manual_question(title: str) -> str:
+    title = _clean_faq_text(title, 180)
+    if title.endswith("?") or title.endswith("나요") or title.endswith("까요"):
+        return title
+    return f"{title} 기준은 어떻게 적용하나요?"
+
+
+def _memory_seed_operating_faqs() -> None:
+    if _memory_operating_faq_items:
+        return
+    for row in _default_faq_rows():
+        _memory_operating_faq_items[row["id"]] = row
+
+
+def _memory_refresh_operating_faqs(force: bool = False) -> dict[str, Any]:
+    global _memory_operating_faq_refreshed_at
+    _memory_seed_operating_faqs()
+    now = datetime.now(timezone.utc)
+    if _memory_operating_faq_refreshed_at and not force:
+        last = _faq_datetime(_memory_operating_faq_refreshed_at)
+        if now - last < timedelta(hours=FAQ_REFRESH_INTERVAL_HOURS):
+            return {"ok": True, "refreshed": False, "updated_at": _memory_operating_faq_refreshed_at}
+
+    candidates: list[dict[str, Any]] = []
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in _memory_chat_questions:
+        mapped_category = QUESTION_TO_FAQ_CATEGORY.get(str(row.get("category") or "general"), "support")
+        question = str(row.get("question") or "")
+        key = (mapped_category, _faq_question_key(question))
+        bucket = grouped.setdefault(
+            key,
+            {
+                "category": mapped_category,
+                "question": question,
+                "answer": str(row.get("answer_excerpt") or ""),
+                "frequency": 0,
+                "latest_at": row.get("created_at") or datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        bucket["frequency"] += 1
+        latest_at = _iso_value(row.get("created_at"))
+        if latest_at >= str(bucket.get("latest_at") or ""):
+            bucket["latest_at"] = latest_at
+            bucket["answer"] = str(row.get("answer_excerpt") or bucket["answer"])
+
+    for item in grouped.values():
+        if int(item.get("frequency") or 0) < 2:
+            continue
+        candidate = _faq_candidate(
+            category=item["category"],
+            question=item["question"],
+            answer=item["answer"],
+            source_type="user_question",
+            source_ref="memory://chat-question",
+            source_summary=f"사용자 Q&A {item['frequency']}회 문의",
+            frequency=int(item["frequency"]),
+            source_updated_at=item.get("latest_at"),
+        )
+        if candidate:
+            candidates.append(candidate)
+
+    for candidate in candidates:
+        existing_key = None
+        for item_id, existing in _memory_operating_faq_items.items():
+            if existing.get("category") != candidate["category"]:
+                continue
+            if existing.get("question_key") == candidate["question_key"] or _faq_similarity(existing.get("question"), candidate["question"]) >= 0.58:
+                existing_key = item_id
+                break
+        if existing_key:
+            _memory_operating_faq_items[existing_key].update(candidate, id=existing_key)
+        else:
+            _memory_operating_faq_items[candidate["id"]] = candidate
+
+    _memory_operating_faq_refreshed_at = now.isoformat()
+    return {"ok": True, "refreshed": True, "candidate_count": len(candidates), "updated_at": _memory_operating_faq_refreshed_at}
 
 
 MAIL_REVIEW_STATUSES = {
@@ -888,6 +1270,45 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE INDEX IF NOT EXISTS chat_question_logs_category_date_idx
                 ON {schema}.chat_question_logs (category, asked_date DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.operating_faq_items (
+                    id text PRIMARY KEY,
+                    category text NOT NULL,
+                    category_label text NOT NULL,
+                    question_key text NOT NULL,
+                    question text NOT NULL,
+                    answer text NOT NULL,
+                    source_type text NOT NULL DEFAULT 'seed',
+                    source_ref text NOT NULL DEFAULT '',
+                    source_summary text NOT NULL DEFAULT '',
+                    frequency integer NOT NULL DEFAULT 1,
+                    status text NOT NULL DEFAULT 'active',
+                    source_updated_at timestamptz NOT NULL DEFAULT now(),
+                    created_at_utc timestamptz NOT NULL DEFAULT now(),
+                    updated_at_utc timestamptz NOT NULL DEFAULT now(),
+                    CONSTRAINT operating_faq_items_status_check
+                        CHECK (status IN ('active', 'deleted')),
+                    CONSTRAINT operating_faq_items_category_key_unique
+                        UNIQUE (category, question_key)
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS operating_faq_items_category_updated_idx
+                ON {schema}.operating_faq_items (category, status, updated_at_utc DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.operating_faq_refresh_state (
+                    id text PRIMARY KEY,
+                    refreshed_at_utc timestamptz NOT NULL DEFAULT now(),
+                    source_summary text NOT NULL DEFAULT ''
+                )
                 """
             )
             cur.execute(
@@ -2111,6 +2532,349 @@ def list_official_guide_changes(
             "error": str(exc),
             **_storage_info("memory", str(exc)),
         }
+
+
+def _faq_needs_refresh(cur: Any, schema: str) -> bool:
+    cur.execute(
+        f"""
+        SELECT refreshed_at_utc
+        FROM {schema}.operating_faq_refresh_state
+        WHERE id = 'main'
+        """
+    )
+    row = cur.fetchone()
+    if not row:
+        return True
+    refreshed_at = row["refreshed_at_utc"] if isinstance(row, dict) else row[0]
+    return datetime.now(timezone.utc) - _faq_datetime(refreshed_at) >= timedelta(hours=FAQ_REFRESH_INTERVAL_HOURS)
+
+
+def _seed_operating_faqs(cur: Any, schema: str) -> int:
+    count = 0
+    for row in _default_faq_rows():
+        cur.execute(
+            f"""
+            INSERT INTO {schema}.operating_faq_items
+                (id, category, category_label, question_key, question, answer, source_type,
+                 source_ref, source_summary, frequency, status, source_updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', %s)
+            ON CONFLICT (category, question_key) DO NOTHING
+            """,
+            (
+                row["id"],
+                row["category"],
+                row["category_label"],
+                row["question_key"],
+                row["question"],
+                row["answer"],
+                row["source_type"],
+                row["source_ref"],
+                row["source_summary"],
+                row["frequency"],
+                _faq_datetime(row["source_updated_at"]),
+            ),
+        )
+        count += int(cur.rowcount or 0)
+    return count
+
+
+def _official_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
+    cur.execute(
+        f"""
+        SELECT
+            c.id,
+            c.title,
+            c.source_url,
+            c.change_type,
+            c.detected_at,
+            c.summary,
+            (
+                SELECT d.content
+                FROM {schema}.documents d
+                WHERE d.collection = 'official'
+                  AND (
+                    d.metadata->>'source_identity' = c.source_identity
+                    OR d.source_url = c.source_url
+                  )
+                ORDER BY d.chunk_index ASC
+                LIMIT 1
+            ) AS document_content
+        FROM {schema}.official_guide_changes c
+        ORDER BY c.detected_at DESC, c.id DESC
+        LIMIT 80
+        """
+    )
+    candidates: list[dict[str, Any]] = []
+    for row in cur.fetchall():
+        row = dict(row)
+        title = _short_official_title(row.get("title"))
+        content = row.get("document_content") or ""
+        summary = str(row.get("summary") or "").strip()
+        if not summary:
+            summary = summarize_official_document_change(
+                title=title,
+                content=content,
+                change_type=str(row.get("change_type") or "updated"),
+            )
+        category = _faq_category_for_text(title, summary, content)
+        candidate = _faq_candidate(
+            category=category,
+            question=f"{title} 문서에서 {FAQ_CATEGORY_LABELS[category]} 관련 확인할 점은 무엇인가요?",
+            answer=summary,
+            source_type="official",
+            source_ref=str(row.get("source_url") or f"official-change:{row.get('id')}"),
+            source_summary=f"공식 문서 변경 로그 · {title}",
+            frequency=1,
+            source_updated_at=row.get("detected_at"),
+        )
+        if candidate:
+            candidates.append(candidate)
+    return candidates
+
+
+def _manual_rag_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
+    cur.execute(
+        f"""
+        SELECT id, title, category, source_note, content, updated_at_utc
+        FROM {schema}.admin_manual_rag_items
+        WHERE status = 'active'
+        ORDER BY updated_at_utc DESC
+        LIMIT 120
+        """
+    )
+    candidates: list[dict[str, Any]] = []
+    for row in cur.fetchall():
+        row = dict(row)
+        title = _clean_faq_text(row.get("title"), 220)
+        content = _clean_faq_text(row.get("content"), 1100)
+        if not title or not content:
+            continue
+        category = _faq_category_from_manual(row.get("category"), f"{title} {content}")
+        candidate = _faq_candidate(
+            category=category,
+            question=_manual_question(title),
+            answer=content,
+            source_type="manual_rag",
+            source_ref=f"manual-rag:{row.get('id')}",
+            source_summary=str(row.get("source_note") or "관리자 직접 입력 지식"),
+            frequency=1,
+            source_updated_at=row.get("updated_at_utc"),
+        )
+        if candidate:
+            candidates.append(candidate)
+    return candidates
+
+
+def _chat_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
+    cur.execute(
+        f"""
+        SELECT category, category_label, question, answer_excerpt, source_summary, created_at
+        FROM {schema}.chat_question_logs
+        WHERE created_at >= now() - interval '90 days'
+        ORDER BY created_at DESC
+        LIMIT 800
+        """
+    )
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in cur.fetchall():
+        row = dict(row)
+        category = QUESTION_TO_FAQ_CATEGORY.get(str(row.get("category") or "general"), "support")
+        question = _clean_faq_text(row.get("question"), 300)
+        if not question:
+            continue
+        key = (category, _faq_question_key(question))
+        bucket = grouped.setdefault(
+            key,
+            {
+                "category": category,
+                "question": question,
+                "answer": str(row.get("answer_excerpt") or ""),
+                "source_summary": str(row.get("source_summary") or ""),
+                "frequency": 0,
+                "latest_at": row.get("created_at"),
+            },
+        )
+        bucket["frequency"] += 1
+        if _faq_datetime(row.get("created_at")) >= _faq_datetime(bucket.get("latest_at")):
+            bucket["latest_at"] = row.get("created_at")
+            bucket["answer"] = str(row.get("answer_excerpt") or bucket["answer"])
+            bucket["source_summary"] = str(row.get("source_summary") or bucket["source_summary"])
+
+    candidates: list[dict[str, Any]] = []
+    for item in grouped.values():
+        if int(item.get("frequency") or 0) < 2:
+            continue
+        answer = _clean_faq_text(item.get("answer"), 1100)
+        if not answer:
+            continue
+        candidate = _faq_candidate(
+            category=item["category"],
+            question=item["question"],
+            answer=answer,
+            source_type="user_question",
+            source_ref=f"chat-question:{_faq_question_key(item['question'])}",
+            source_summary=f"사용자 Q&A {item['frequency']}회 문의 · {item.get('source_summary') or '답변 로그 기준'}",
+            frequency=int(item["frequency"]),
+            source_updated_at=item.get("latest_at"),
+        )
+        if candidate:
+            candidates.append(candidate)
+    return candidates
+
+
+def _apply_faq_candidates(cur: Any, schema: str, candidates: list[dict[str, Any]]) -> int:
+    cur.execute(
+        f"""
+        SELECT id, category, question_key, question, source_updated_at
+        FROM {schema}.operating_faq_items
+        WHERE status = 'active'
+        """
+    )
+    existing = [dict(row) for row in cur.fetchall()]
+    updated = 0
+    for candidate in candidates:
+        matched_id = ""
+        for row in existing:
+            if row.get("category") != candidate["category"]:
+                continue
+            if row.get("question_key") == candidate["question_key"] or _faq_similarity(row.get("question"), candidate["question"]) >= 0.58:
+                matched_id = str(row.get("id") or "")
+                candidate["question_key"] = str(row.get("question_key") or candidate["question_key"])
+                break
+        row_id = matched_id or candidate["id"]
+        cur.execute(
+            f"""
+            INSERT INTO {schema}.operating_faq_items AS faq
+                (id, category, category_label, question_key, question, answer, source_type,
+                 source_ref, source_summary, frequency, status, source_updated_at, updated_at_utc)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', %s, now())
+            ON CONFLICT (category, question_key) DO UPDATE SET
+                question = CASE
+                    WHEN faq.source_updated_at <= EXCLUDED.source_updated_at
+                         OR faq.source_type = 'seed'
+                    THEN EXCLUDED.question
+                    ELSE faq.question
+                END,
+                answer = CASE
+                    WHEN faq.source_updated_at <= EXCLUDED.source_updated_at
+                         OR faq.source_type = 'seed'
+                    THEN EXCLUDED.answer
+                    ELSE faq.answer
+                END,
+                source_type = EXCLUDED.source_type,
+                source_ref = EXCLUDED.source_ref,
+                source_summary = EXCLUDED.source_summary,
+                frequency = GREATEST(faq.frequency, EXCLUDED.frequency),
+                source_updated_at = GREATEST(faq.source_updated_at, EXCLUDED.source_updated_at),
+                updated_at_utc = now(),
+                status = 'active'
+            """,
+            (
+                row_id,
+                candidate["category"],
+                candidate["category_label"],
+                candidate["question_key"],
+                candidate["question"],
+                candidate["answer"],
+                candidate["source_type"],
+                candidate["source_ref"],
+                candidate["source_summary"],
+                candidate["frequency"],
+                _faq_datetime(candidate["source_updated_at"]),
+            ),
+        )
+        updated += 1
+    return updated
+
+
+def refresh_operating_faqs(*, force: bool = False) -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                if not force and not _faq_needs_refresh(cur, schema):
+                    return {"ok": True, "refreshed": False, **_storage_info("supabase")}
+                seeded = _seed_operating_faqs(cur, schema)
+                candidates = [
+                    *_official_faq_candidates(cur, schema),
+                    *_manual_rag_faq_candidates(cur, schema),
+                    *_chat_faq_candidates(cur, schema),
+                ]
+                applied = _apply_faq_candidates(cur, schema, candidates)
+                summary = (
+                    f"seed={seeded}, official/manual/question candidates={len(candidates)}, "
+                    f"applied={applied}"
+                )
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.operating_faq_refresh_state
+                        (id, refreshed_at_utc, source_summary)
+                    VALUES ('main', now(), %s)
+                    ON CONFLICT (id) DO UPDATE SET
+                        refreshed_at_utc = now(),
+                        source_summary = EXCLUDED.source_summary
+                    """,
+                    (summary,),
+                )
+        return {
+            "ok": True,
+            "refreshed": True,
+            "candidate_count": len(candidates),
+            "applied_count": applied,
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        fallback = _memory_refresh_operating_faqs(force=force)
+        return {**fallback, **_storage_info("memory", str(exc))}
+
+
+def list_operating_faqs(*, auto_refresh: bool = True) -> dict[str, Any]:
+    if auto_refresh:
+        refresh_operating_faqs(force=False)
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                _seed_operating_faqs(cur, schema)
+                cur.execute(
+                    f"""
+                    SELECT id, category, category_label, question, answer, source_type,
+                           source_summary, frequency, source_updated_at, updated_at_utc
+                    FROM {schema}.operating_faq_items
+                    WHERE status = 'active'
+                    ORDER BY
+                        category,
+                        CASE source_type
+                            WHEN 'official' THEN 1
+                            WHEN 'manual_rag' THEN 2
+                            WHEN 'user_question' THEN 3
+                            ELSE 4
+                        END,
+                        source_updated_at DESC,
+                        updated_at_utc DESC
+                    """
+                )
+                rows = [dict(row) for row in cur.fetchall()]
+                cur.execute(
+                    f"""
+                    SELECT refreshed_at_utc
+                    FROM {schema}.operating_faq_refresh_state
+                    WHERE id = 'main'
+                    """
+                )
+                state = cur.fetchone()
+        return {
+            "ok": True,
+            "categories": _public_faq_categories(rows),
+            "updated_at": _iso_value(state["refreshed_at_utc"]) if state else "",
+            "refresh_interval_hours": FAQ_REFRESH_INTERVAL_HOURS,
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        _memory_refresh_operating_faqs(force=False)
+        return _default_faq_response(_storage_info("memory", str(exc)))
 
 
 def _normalize_sheet_key(value: Any) -> str:

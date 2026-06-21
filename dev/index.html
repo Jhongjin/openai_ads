@@ -127,7 +127,7 @@
                 <div class="surface-body">
                   <article class="view is-active" id="view-qa">
                     <div class="grid-2 qa-layout">
-                      <div class="stack">
+                      <div class="stack qa-input-panel">
                         <div class="field">
                           <label for="qa-question">질문</label>
                           <textarea
@@ -933,7 +933,7 @@
 
       normalizeGuideDeckEditKeys();
 
-      const faqCategories = [
+      let faqCategories = [
         {
           id: "account",
           label: "계정·런칭",
@@ -1182,14 +1182,16 @@
         $("#faq-list").innerHTML = items.map((item, index) => {
           const id = `${category.id}-${index}`;
           const isOpen = state.openFaqId === id;
+          const question = item.q || item.question || "";
+          const answer = item.a || item.answer || "";
           return `
             <article class="faq-item${isOpen ? " is-open" : ""}">
               <button class="faq-question" type="button" aria-expanded="${isOpen}" data-faq-id="${escapeHtml(id)}">
-                <span>${escapeHtml(item.q)}</span>
+                <span>${escapeHtml(question)}</span>
                 <i class="ti ${isOpen ? "ti-chevron-up" : "ti-chevron-down"}"></i>
               </button>
               <div class="faq-answer" ${isOpen ? "" : "hidden"}>
-                ${escapeHtml(item.a)}
+                ${escapeHtml(answer)}
               </div>
             </article>
           `;
@@ -1199,6 +1201,41 @@
       function renderFaq() {
         renderFaqCategories();
         renderFaqList();
+      }
+
+      function normalizeFaqCategories(payload) {
+        const categories = Array.isArray(payload?.categories) ? payload.categories : [];
+        return categories
+          .map((category) => ({
+            id: String(category.id || "").trim(),
+            label: String(category.label || "").trim(),
+            items: Array.isArray(category.items)
+              ? category.items
+                  .map((item) => ({
+                    q: String(item.q || item.question || "").trim(),
+                    a: String(item.a || item.answer || "").trim(),
+                  }))
+                  .filter((item) => item.q && item.a)
+                  .slice(0, 10)
+              : [],
+          }))
+          .filter((category) => category.id && category.label);
+      }
+
+      async function loadFaqs() {
+        try {
+          const data = await fetchJson("/api/faqs");
+          const categories = normalizeFaqCategories(data);
+          if (!categories.length) return;
+          faqCategories = categories;
+          if (!faqCategories.some((category) => category.id === state.faqCategory)) {
+            state.faqCategory = faqCategories[0].id;
+            state.openFaqId = null;
+          }
+          renderFaq();
+        } catch (error) {
+          console.warn("FAQ load failed", error);
+        }
       }
 
       function renderAnswer(payload) {
@@ -1729,6 +1766,7 @@
       });
 
       renderFaq();
+      loadFaqs();
       loadGuides();
       trackVisit("qa", "정책·운영 기준 Q&A");
     </script>

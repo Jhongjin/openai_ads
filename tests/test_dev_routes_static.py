@@ -39,6 +39,9 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("광고 정책 및 운영 FAQ", home)
         self.assertIn("Account Spend Cap", home)
         self.assertIn("renderFaq", home)
+        self.assertIn("loadFaqs", home)
+        self.assertIn("/api/faqs", home)
+        self.assertIn("qa-input-panel", home)
         self.assertIn("data-faq-category", home)
         self.assertIn("data-faq-id", home)
         self.assertIn("캠페인 영향", home)
@@ -316,6 +319,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".workspace.is-wide-mode", response.text)
         self.assertIn(".workspace.is-qa-mode", response.text)
         self.assertIn(".qa-layout", response.text)
+        self.assertIn(".qa-input-panel", response.text)
+        self.assertIn("position: sticky", response.text)
         self.assertIn(".faq-panel", response.text)
         self.assertIn(".faq-item.is-open", response.text)
         self.assertIn(".impact-cell", response.text)
@@ -377,6 +382,21 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".ads-key-table", response.text)
         self.assertIn(".button-spinner", response.text)
         self.assertIn("@keyframes button-spin", response.text)
+
+    def test_operating_faq_api_has_default_categories(self) -> None:
+        client = TestClient(app)
+
+        response = client.get("/api/faqs")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertIn("refresh_interval_hours", payload)
+        categories = payload["categories"]
+        self.assertEqual(len(categories), 8)
+        self.assertEqual(categories[0]["id"], "account")
+        self.assertLessEqual(len(categories[0]["items"]), 10)
+        self.assertIn("Order Form", categories[0]["items"][0]["q"])
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
         client = TestClient(app)
