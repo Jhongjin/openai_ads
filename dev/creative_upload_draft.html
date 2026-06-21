@@ -20,6 +20,13 @@
     <link rel="stylesheet" href="/dev-assets/dev-redesign.css" />
   </head>
   <body class="dev-console">
+    <div class="global-loading" id="global-loading" aria-live="polite" aria-hidden="true">
+      <div class="global-loading-bar"></div>
+      <div class="global-loading-badge" role="status">
+        <span class="button-spinner" aria-hidden="true"></span>
+        <span id="global-loading-text">데이터를 처리하는 중입니다.</span>
+      </div>
+    </div>
     <a class="sr-only" href="#builder">본문으로 이동</a>
     <div class="shell">
       <div class="split">
@@ -568,6 +575,19 @@
         element.textContent = message || "";
       }
 
+      let globalLoadingDepth = 0;
+
+      function setGlobalLoading(isLoading, message = "데이터를 처리하는 중입니다.") {
+        const root = $("#global-loading");
+        if (!root) return;
+        globalLoadingDepth = Math.max(0, globalLoadingDepth + (isLoading ? 1 : -1));
+        const label = $("#global-loading-text");
+        if (label && message) label.textContent = message;
+        const visible = globalLoadingDepth > 0;
+        root.classList.toggle("is-active", visible);
+        root.setAttribute("aria-hidden", visible ? "false" : "true");
+      }
+
       function template(id) {
         return document.getElementById(id).content.firstElementChild.cloneNode(true);
       }
@@ -1093,7 +1113,7 @@
         closeReviewModal();
         setStatus("form-status", "내부 시트에 저장하고 담당자 알림을 요청하고 있습니다.");
         try {
-          const response = await postJson("/intake", pendingSubmissionPayload);
+          const response = await postJson("/intake", pendingSubmissionPayload, "내부 시트에 저장하고 알림을 요청하는 중입니다.");
           const body = await response.json();
           const mailNotice = body.mail_sent === false && body.mail_error
             ? ` · 메일 발송 실패: ${body.mail_error}`
@@ -1149,17 +1169,22 @@
         return text && text !== '""' ? text : fallback;
       }
 
-      async function postJson(url, data) {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        if (!response.ok) {
-          const body = await readErrorBody(response);
-          throw new Error(serverErrorMessage(body, response.statusText || "요청 처리 중 오류가 발생했습니다."));
+      async function postJson(url, data, loadingMessage = "요청을 처리하는 중입니다.") {
+        setGlobalLoading(true, loadingMessage);
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (!response.ok) {
+            const body = await readErrorBody(response);
+            throw new Error(serverErrorMessage(body, response.statusText || "요청 처리 중 오류가 발생했습니다."));
+          }
+          return response;
+        } finally {
+          setGlobalLoading(false);
         }
-        return response;
       }
 
       function populateFromWorkbook(data) {
@@ -1224,6 +1249,7 @@
         setStatus("import-status", "업로드 파일을 확인하고 있습니다.");
         const form = new FormData();
         form.append("file", file);
+        setGlobalLoading(true, "업로드 파일을 점검하는 중입니다.");
         try {
           const response = await fetch("/intake/inspect-workbook", { method: "POST", body: form });
           const body = await response.json().catch(() => ({}));
@@ -1235,6 +1261,8 @@
           setStatus("import-status", `${body.ok ? "검수 통과" : "확인 필요"} - ${summary}`, body.ok ? "ok" : "error");
         } catch (error) {
           setStatus("import-status", error.message || "업로드 파일 검수 중 오류가 발생했습니다.", "error");
+        } finally {
+          setGlobalLoading(false);
         }
       });
 
@@ -1242,7 +1270,7 @@
         if (!ensureFormReady()) return;
         setStatus("form-status", "Ads Manager 업로드 파일을 생성하고 있습니다.");
         try {
-          const response = await postJson("/intake/workbook", payload());
+          const response = await postJson("/intake/workbook", payload(), "Ads Manager 업로드 파일을 생성하는 중입니다.");
           const blob = await response.blob();
           downloadBlob(blob, `openai_ads_bulk_upload_${new Date().toISOString().slice(0, 10)}.xlsx`);
           setStatus("form-status", "업로드용 .xlsx 파일을 생성했습니다.", "ok");

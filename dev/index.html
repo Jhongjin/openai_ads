@@ -20,6 +20,13 @@
     <link rel="stylesheet" href="/dev-assets/dev-redesign.css" />
   </head>
   <body class="dev-console">
+    <div class="global-loading" id="global-loading" aria-live="polite" aria-hidden="true">
+      <div class="global-loading-bar"></div>
+      <div class="global-loading-badge" role="status">
+        <span class="button-spinner" aria-hidden="true"></span>
+        <span id="global-loading-text">데이터를 불러오는 중입니다.</span>
+      </div>
+    </div>
     <a class="sr-only" href="#main-workspace">본문으로 이동</a>
     <div class="shell">
       <div class="app-frame">
@@ -1184,17 +1191,36 @@
           .filter(Boolean);
       }
 
+      let globalLoadingDepth = 0;
+
+      function setGlobalLoading(isLoading, message = "데이터를 불러오는 중입니다.") {
+        const root = $("#global-loading");
+        if (!root) return;
+        globalLoadingDepth = Math.max(0, globalLoadingDepth + (isLoading ? 1 : -1));
+        const label = $("#global-loading-text");
+        if (label && message) label.textContent = message;
+        const visible = globalLoadingDepth > 0;
+        root.classList.toggle("is-active", visible);
+        root.setAttribute("aria-hidden", visible ? "false" : "true");
+      }
+
       async function fetchJson(url, options = {}) {
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-          },
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.detail || body.error || response.statusText);
-        return body;
+        const { headers = {}, loadingMessage = "데이터를 불러오는 중입니다.", ...fetchOptions } = options;
+        setGlobalLoading(true, loadingMessage);
+        try {
+          const response = await fetch(url, {
+            ...fetchOptions,
+            headers: {
+              "Content-Type": "application/json",
+              ...headers,
+            },
+          });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.detail || body.error || response.statusText);
+          return body;
+        } finally {
+          setGlobalLoading(false);
+        }
       }
 
       function setStatus(message, type = "") {

@@ -684,6 +684,81 @@ body.dev-console :focus-visible {
   }
 }
 
+.global-loading {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.global-loading.is-active {
+  opacity: 1;
+}
+
+.global-loading-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  overflow: hidden;
+  background: rgb(215 25 32 / 12%);
+}
+
+.global-loading-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, var(--oa-red), transparent);
+  animation: global-loading-slide 1.1s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+.global-loading-badge {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius);
+  background: #fff;
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 850;
+  box-shadow: var(--oa-shadow-soft);
+  transform: translateY(-8px);
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.global-loading.is-active .global-loading-badge {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.global-loading-badge .button-spinner {
+  flex: 0 0 auto;
+  border-color: rgb(215 25 32 / 24%);
+  border-top-color: var(--oa-red);
+}
+
+@keyframes global-loading-slide {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(260%);
+  }
+}
+
 .view {
   display: none;
 }

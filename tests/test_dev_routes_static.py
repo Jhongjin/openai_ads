@@ -31,6 +31,11 @@ class DevRoutesStaticTests(unittest.TestCase):
         admin = client.get("/dev/admin").text
         intake = client.get("/dev/creative-upload-draft").text
 
+        for page in (home, admin, intake):
+            self.assertIn('id="global-loading"', page)
+            self.assertIn("setGlobalLoading", page)
+            self.assertIn("loadingMessage", page)
+
         self.assertIn('class="app-frame"', home)
         self.assertIn('data-view-button="qa"', home)
         self.assertIn('id="workspace-layout"', home)
@@ -137,6 +142,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="official-next"', admin)
         self.assertIn('id="official-page-info"', admin)
         self.assertIn("한 페이지에 15개씩 표시합니다.", admin)
+        self.assertIn("RAG 검색에는 요약이 아니라 수집된 원문 본문이 청크 단위로 반영", admin)
         self.assertIn('OFFICIAL_PAGE_SIZE = 15', admin)
         self.assertIn('page: String(officialPage)', admin)
         self.assertIn('id="admin-guide-tabs"', admin)
@@ -399,6 +405,10 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".ads-key-table", response.text)
         self.assertIn(".button-spinner", response.text)
         self.assertIn("@keyframes button-spin", response.text)
+        self.assertIn(".global-loading", response.text)
+        self.assertIn(".global-loading-bar", response.text)
+        self.assertIn(".global-loading-badge", response.text)
+        self.assertIn("@keyframes global-loading-slide", response.text)
 
     def test_operating_faq_api_has_public_categories(self) -> None:
         client = TestClient(app)

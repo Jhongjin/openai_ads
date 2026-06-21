@@ -30,8 +30,29 @@ Set bids, URLs, and targeting context.
         self.assertFalse(is_generic_official_summary(summary))
         self.assertIn("첫 캠페인 생성 절차", summary)
         self.assertIn("캠페인 목표", summary)
+        self.assertIn("운영 확인", summary)
         self.assertIn("캠페인 설정", summary)
         self.assertNotIn("Create a campaign", summary)
+
+    def test_summary_includes_operational_check_for_sso(self) -> None:
+        summary = summarize_official_document_change(
+            title="Setting up and troubleshooting SSO and SCIM for Ads Manager",
+            content="""
+# Setting up and troubleshooting SSO and SCIM for Ads Manager
+
+## Before you begin
+Make sure organization owners can manage identity provider settings.
+
+## How ads roles work
+Users need the right Ads Manager role before they can access campaign setup.
+""",
+            change_type="updated",
+        )
+
+        self.assertIn("Ads Manager SSO/SCIM 설정 기준", summary)
+        self.assertIn("계정 생성·초대·권한 부여", summary)
+        self.assertIn("Ads 권한 구조", summary)
+        self.assertNotIn("Make sure organization", summary)
 
     def test_generic_summary_detection(self) -> None:
         self.assertTrue(is_generic_official_summary(GENERIC_UPDATED_SUMMARY))
