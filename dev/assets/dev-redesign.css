@@ -1666,6 +1666,9 @@ body.dev-console :focus-visible {
 }
 
 .guide-tab {
+  --guide-color: var(--oa-red-dark);
+  --guide-hover-bg: #fff5f5;
+  --guide-hover-border: #ffb3b8;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1681,29 +1684,61 @@ body.dev-console :focus-visible {
   cursor: pointer;
 }
 
+.guide-tab[data-guide-deck="advertiser"],
+.guide-tab[data-admin-guide-deck="advertiser"] {
+  --guide-color: #9b1c22;
+  --guide-hover-bg: #fff5f5;
+  --guide-hover-border: #f2a5aa;
+}
+
+.guide-tab[data-guide-deck="setup"],
+.guide-tab[data-admin-guide-deck="setup"] {
+  --guide-color: var(--oa-blue);
+  --guide-hover-bg: #f1f7ff;
+  --guide-hover-border: #9fc3eb;
+}
+
+.guide-tab[data-guide-deck="pixel"],
+.guide-tab[data-admin-guide-deck="pixel"] {
+  --guide-color: var(--oa-teal);
+  --guide-hover-bg: #effcf9;
+  --guide-hover-border: #8fd3c9;
+}
+
 .guide-tab span {
   display: grid;
   place-items: center;
   width: 34px;
   height: 26px;
-  border: 1px solid #ffc9cc;
+  border: 1px solid color-mix(in srgb, var(--guide-color) 34%, #fff);
   border-radius: 5px;
-  color: var(--oa-red);
+  color: var(--guide-color);
   font-family: var(--oa-mono);
   font-size: 11px;
   font-weight: 950;
 }
 
-.guide-tab.is-active,
 .guide-tab:hover {
-  border-color: #b21d25;
-  background: #ab2026;
+  border-color: var(--guide-hover-border);
+  background: var(--guide-hover-bg);
+  color: var(--guide-color);
+}
+
+.guide-tab.is-active {
+  border-color: var(--guide-color);
+  background: var(--guide-color);
   color: #fff;
 }
 
-.guide-tab.is-active span,
 .guide-tab:hover span {
+  border-color: color-mix(in srgb, var(--guide-color) 42%, #fff);
+  background: #fff;
+  color: var(--guide-color);
+}
+
+.guide-tab.is-active span {
   border-color: rgb(255 255 255 / 48%);
+  background: rgb(255 255 255 / 14%);
   color: #fff;
 }
 
