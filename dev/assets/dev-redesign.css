@@ -3,13 +3,7 @@
   The screens in /dev use this stylesheet before they replace production.
 */
 
-@font-face {
-  font-family: "Pretendard Variable";
-  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/woff2/PretendardVariable.woff2") format("woff2-variations");
-  font-weight: 45 920;
-  font-style: normal;
-  font-display: swap;
-}
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css");
 
 :root {
   --oa-bg: #f4f6fa;
@@ -757,6 +751,223 @@ body.dev-console :focus-visible {
   to {
     transform: translateX(260%);
   }
+}
+
+body.dev-console.modal-open {
+  overflow: hidden;
+}
+
+.entry-notice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgb(17 24 39 / 68%), rgb(17 24 39 / 54%)),
+    rgb(17 24 39 / 60%);
+  backdrop-filter: blur(10px);
+}
+
+.entry-notice-overlay[hidden] {
+  display: none;
+}
+
+.entry-notice-modal {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100dvh - 48px));
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px 18px;
+  overflow: auto;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 34px 90px rgb(0 0 0 / 34%);
+  padding: 24px;
+}
+
+.entry-notice-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--oa-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--oa-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.entry-notice-close:hover {
+  border-color: #ffc9cc;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+  transform: translateY(-1px);
+}
+
+.entry-notice-mark {
+  width: 54px;
+  height: 54px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #ffd5d8;
+  border-radius: 12px;
+  background: #fff4f4;
+  color: var(--oa-red);
+  font-size: 26px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%);
+}
+
+.entry-notice-head {
+  min-width: 0;
+  padding-right: 42px;
+}
+
+.entry-notice-head .eyebrow {
+  margin-bottom: 8px;
+}
+
+.entry-notice-head h2 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 950;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.entry-notice-head span {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid #ffd5d8;
+  border-radius: 999px;
+  background: #fff8f8;
+  padding: 5px 10px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.entry-notice-head strong {
+  color: var(--oa-red-dark);
+}
+
+.entry-notice-body,
+.entry-notice-source,
+.entry-notice-actions {
+  grid-column: 1 / -1;
+}
+
+.entry-notice-body {
+  border-top: 1px solid var(--oa-line);
+  padding-top: 18px;
+}
+
+.entry-notice-content {
+  color: #344054;
+  font-size: 15px;
+  line-height: 1.68;
+}
+
+.entry-notice-content ul,
+.entry-notice-content ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.entry-notice-content li::marker {
+  color: var(--oa-red);
+}
+
+.entry-notice-content p {
+  margin: 0 0 12px;
+}
+
+.entry-notice-content strong,
+.entry-notice-content b {
+  color: var(--oa-ink);
+  font-weight: 950;
+}
+
+.entry-notice-content a {
+  color: #155eef;
+  font-weight: 900;
+}
+
+.entry-notice-content h2 {
+  margin: 4px 0 12px;
+  color: var(--oa-ink);
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.entry-notice-content blockquote {
+  margin: 14px 0;
+  border-left: 4px solid var(--oa-red);
+  background: #fff5f5;
+  padding: 12px 14px;
+  color: #344054;
+  font-weight: 800;
+}
+
+.entry-notice-source {
+  margin: 0;
+  border: 1px solid #f0d9c7;
+  border-left: 4px solid var(--oa-red);
+  border-radius: var(--oa-radius-sm);
+  background: #fffaf5;
+  padding: 11px 12px;
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.entry-notice-source a {
+  color: var(--oa-red-dark);
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.entry-notice-source a:hover {
+  text-decoration: underline;
+}
+
+.entry-notice-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.entry-notice-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oa-muted);
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.entry-notice-skip input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--oa-red);
 }
 
 .view {
@@ -4552,6 +4763,37 @@ body.dev-console :focus-visible {
 }
 
 @media (max-width: 720px) {
+  .entry-notice-overlay {
+    align-items: start;
+    padding: 14px;
+  }
+
+  .entry-notice-modal {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    max-height: calc(100dvh - 28px);
+    padding: 20px;
+  }
+
+  .entry-notice-mark {
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .entry-notice-head {
+    padding-right: 38px;
+  }
+
+  .entry-notice-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .entry-notice-actions .btn-command {
+    width: 100%;
+  }
+
   .shell {
     width: calc(100% - 16px);
     padding-top: 8px;
@@ -4622,6 +4864,10 @@ body.dev-console :focus-visible {
   @page {
     size: A4 landscape;
     margin: 0;
+  }
+
+  .entry-notice-overlay {
+    display: none !important;
   }
 
   body.dev-guide-print {

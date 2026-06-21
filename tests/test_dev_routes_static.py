@@ -37,6 +37,12 @@ class DevRoutesStaticTests(unittest.TestCase):
             self.assertIn("loadingMessage", page)
 
         self.assertIn('class="app-frame"', home)
+        self.assertIn('id="entry-notice"', home)
+        self.assertIn('id="entry-notice-content"', home)
+        self.assertIn('id="entry-notice-skip"', home)
+        self.assertIn("오늘 더 이상 보지 않기", home)
+        self.assertIn("/api/notice", home)
+        self.assertIn("initEntryNotice", home)
         self.assertIn('data-view-button="qa"', home)
         self.assertIn('id="workspace-layout"', home)
         self.assertIn("is-wide-mode", home)
@@ -409,6 +415,10 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".global-loading-bar", response.text)
         self.assertIn(".global-loading-badge", response.text)
         self.assertIn("@keyframes global-loading-slide", response.text)
+        self.assertIn(".entry-notice-overlay", response.text)
+        self.assertIn(".entry-notice-modal", response.text)
+        self.assertIn(".entry-notice-content", response.text)
+        self.assertIn(".entry-notice-actions", response.text)
 
     def test_operating_faq_api_has_public_categories(self) -> None:
         client = TestClient(app)

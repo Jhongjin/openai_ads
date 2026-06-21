@@ -27,6 +27,39 @@
         <span id="global-loading-text">데이터를 불러오는 중입니다.</span>
       </div>
     </div>
+    <div class="entry-notice-overlay" id="entry-notice" aria-hidden="true" hidden>
+      <section
+        class="entry-notice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="entry-notice-title"
+        aria-describedby="entry-notice-desc"
+        tabindex="-1"
+      >
+        <button class="entry-notice-close" id="entry-notice-close" type="button" aria-label="공지 닫기">
+          <i class="ti ti-x"></i>
+        </button>
+        <div class="entry-notice-mark" aria-hidden="true">
+          <i class="ti ti-speakerphone"></i>
+        </div>
+        <div class="entry-notice-head">
+          <p class="eyebrow">운영 공지</p>
+          <h2 id="entry-notice-title">OpenAI 광고 집행 의뢰 안내</h2>
+          <span>최종 업데이트: <strong id="entry-notice-date">-</strong></span>
+        </div>
+        <div class="entry-notice-body" id="entry-notice-desc">
+          <div class="entry-notice-content" id="entry-notice-content"></div>
+        </div>
+        <p class="entry-notice-source" id="entry-notice-source"></p>
+        <div class="entry-notice-actions">
+          <label class="entry-notice-skip">
+            <input id="entry-notice-skip" type="checkbox" />
+            <span>오늘 더 이상 보지 않기</span>
+          </label>
+          <button class="btn-command" id="entry-notice-confirm" type="button">확인하고 시작하기</button>
+        </div>
+      </section>
+    </div>
     <a class="sr-only" href="#main-workspace">본문으로 이동</a>
     <div class="shell">
       <div class="app-frame">
@@ -444,6 +477,31 @@
         guideUpdatedAt: "",
       };
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
+      const ENTRY_NOTICE_STORAGE_KEY = "openai-ads-dev-entry-notice";
+      const defaultEntryNotice = {
+        title: "📢 OpenAI 광고 집행 의뢰 안내",
+        updated_at: "2026-06-17",
+        modal_background: "#ffffff",
+        body_html: `
+          <ul>
+            <li><strong>글자수</strong> — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자</li>
+            <li><strong>이미지</strong> — 1:1 정사각형, 640×640~1200×1200, PNG/JPG, 공개 직접접근 링크, 로고를 메인 비주얼로 쓰지 말 것</li>
+            <li><strong>랜딩</strong> — OpenAI 크롤러(OAI-AdsBot) 접근 허용 필수, 차단 시 노출 제한 가능</li>
+            <li><strong>청구</strong> — 청구 통화 KRW 고정 / 시간대 Asia/Seoul</li>
+            <li><strong>문의</strong> — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr</li>
+          </ul>
+        `,
+        bullets: [
+          "글자수 — 제목 24자 / 설명 48자 최대, 권장 제목 16~18자 / 설명 32~36자, 크리테오 경유 제목 30자 / 설명 60자",
+          "이미지 — 1:1 정사각형, 640×640~1200×1200, PNG/JPG, 공개 직접접근 링크, 로고를 메인 비주얼로 쓰지 말 것",
+          "랜딩 — OpenAI 크롤러(OAI-AdsBot) 접근 허용 필수, 차단 시 노출 제한 가능",
+          "청구 — 청구 통화 KRW 고정 / 시간대 Asia/Seoul",
+          "문의 — 케이티나스미디어 미디어채널실 openai@nasmedia.co.kr",
+        ],
+        source_label: "OpenAI Ads Guide 기준으로 하루 2회 최신 정보를 자동 확인·업데이트합니다.",
+        source_url: "https://help.openai.com/en/collections/20001223-chatgpt-ads",
+        enabled: true,
+      };
       const GUIDE_LAYOUT_VERSION = 5;
       const GUIDE_LAYOUT_FINGERPRINT = "production-guide-decks-20260620-v2";
 
@@ -1192,6 +1250,8 @@
       }
 
       let globalLoadingDepth = 0;
+      let entryNoticeSignature = "";
+      let entryNoticePreviousFocus = null;
 
       function setGlobalLoading(isLoading, message = "데이터를 불러오는 중입니다.") {
         const root = $("#global-loading");
@@ -1227,6 +1287,170 @@
         const element = $("#global-status");
         element.className = `status-line ${type}`;
         element.textContent = message || "";
+      }
+
+      function todayInKst() {
+        const parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Seoul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).formatToParts(new Date());
+        const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+        return `${values.year}-${values.month}-${values.day}`;
+      }
+
+      function entryNoticeDismissValue() {
+        return `${todayInKst()}|${entryNoticeSignature}`;
+      }
+
+      function appendEntryNoticeLine(list, line) {
+        const li = document.createElement("li");
+        const separator = line.includes(" — ") ? " — " : line.includes(" - ") ? " - " : "";
+        if (separator) {
+          const [label, ...rest] = line.split(separator);
+          const strong = document.createElement("strong");
+          strong.textContent = label.trim();
+          li.appendChild(strong);
+          li.append(` ${separator} ${rest.join(separator).trim()}`);
+        } else {
+          li.textContent = line;
+        }
+        list.appendChild(li);
+      }
+
+      function renderEntryNotice(notice) {
+        const config = { ...defaultEntryNotice, ...(notice || {}) };
+        const modal = $("#entry-notice");
+        const dialog = $(".entry-notice-modal");
+        const bodyHtml = config.body_html || "";
+
+        if (modal) modal.dataset.enabled = config.enabled === false ? "false" : "true";
+        if (dialog) dialog.style.background = config.modal_background || defaultEntryNotice.modal_background;
+        $("#entry-notice-title").textContent = config.title || defaultEntryNotice.title;
+        $("#entry-notice-date").textContent = config.updated_at || defaultEntryNotice.updated_at;
+        entryNoticeSignature = `${config.updated_at || ""}|${config.title || ""}|${bodyHtml || (config.bullets || []).join("|")}`;
+
+        const source = $("#entry-notice-source");
+        source.textContent = "";
+        const link = document.createElement("a");
+        link.href = config.source_url || defaultEntryNotice.source_url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.textContent = "OpenAI Ads Guide";
+        source.appendChild(link);
+        const sourceLabel = config.source_label || defaultEntryNotice.source_label;
+        source.append(` ${sourceLabel.replace(/^OpenAI Ads Guide\s*/i, "")}`);
+
+        const content = $("#entry-notice-content");
+        content.innerHTML = "";
+        if (bodyHtml) {
+          content.innerHTML = bodyHtml;
+        } else {
+          const list = document.createElement("ul");
+          (config.bullets || defaultEntryNotice.bullets).forEach((line) => appendEntryNoticeLine(list, line));
+          content.appendChild(list);
+        }
+        return config;
+      }
+
+      async function loadEntryNotice() {
+        try {
+          const notice = await fetchJson("/api/notice", {
+            loadingMessage: "운영 공지를 확인하는 중입니다.",
+          });
+          return renderEntryNotice(notice);
+        } catch {
+          return renderEntryNotice(defaultEntryNotice);
+        }
+      }
+
+      function focusableInEntryNotice() {
+        const modal = $("#entry-notice");
+        if (!modal) return [];
+        return [
+          ...modal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        ].filter((element) => !element.disabled && !element.hidden && element.getClientRects().length > 0);
+      }
+
+      function openEntryNotice() {
+        const modal = $("#entry-notice");
+        const dialog = $(".entry-notice-modal");
+        const main = $("#main-workspace");
+        const confirmButton = $("#entry-notice-confirm");
+        if (!modal || !dialog) return;
+        entryNoticePreviousFocus = document.activeElement;
+        modal.hidden = false;
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        if (main) {
+          if ("inert" in main) main.inert = true;
+          main.setAttribute("aria-hidden", "true");
+        }
+        window.setTimeout(() => (confirmButton || dialog).focus(), 0);
+      }
+
+      function closeEntryNotice() {
+        const modal = $("#entry-notice");
+        const main = $("#main-workspace");
+        const skip = $("#entry-notice-skip");
+        if (!modal) return;
+        if (skip?.checked) {
+          try {
+            window.localStorage.setItem(ENTRY_NOTICE_STORAGE_KEY, entryNoticeDismissValue());
+          } catch {
+            /* localStorage may be unavailable in strict browser modes. */
+          }
+        }
+        modal.hidden = true;
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        if (main) {
+          if ("inert" in main) main.inert = false;
+          main.removeAttribute("aria-hidden");
+        }
+        if (entryNoticePreviousFocus && typeof entryNoticePreviousFocus.focus === "function") {
+          entryNoticePreviousFocus.focus();
+        }
+      }
+
+      function trapEntryNoticeFocus(event) {
+        const modal = $("#entry-notice");
+        if (!modal || modal.hidden) return;
+        if (event.key === "Escape") {
+          closeEntryNotice();
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const focusable = focusableInEntryNotice();
+        if (!focusable.length) {
+          event.preventDefault();
+          $(".entry-notice-modal")?.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      async function initEntryNotice() {
+        const notice = await loadEntryNotice();
+        if (notice.enabled === false) return;
+        let dismissed = "";
+        try {
+          dismissed = window.localStorage.getItem(ENTRY_NOTICE_STORAGE_KEY) || "";
+        } catch {
+          dismissed = "";
+        }
+        if (dismissed !== entryNoticeDismissValue()) openEntryNotice();
       }
 
       function renderInspectorMeta(meta) {
@@ -1846,6 +2070,13 @@
       renderInspectorMeta(views.qa);
       renderFaq();
       loadGuides();
+      $("#entry-notice-close").addEventListener("click", closeEntryNotice);
+      $("#entry-notice-confirm").addEventListener("click", closeEntryNotice);
+      $("#entry-notice").addEventListener("click", (event) => {
+        if (event.target === $("#entry-notice")) closeEntryNotice();
+      });
+      document.addEventListener("keydown", trapEntryNoticeFocus);
+      initEntryNotice();
       trackVisit("qa", "정책·운영 기준 Q&A");
     </script>
   </body>
