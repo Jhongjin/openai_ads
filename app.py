@@ -29,6 +29,11 @@ app.mount(
     StaticFiles(directory=project_root() / "dev" / "assets", check_dir=False),
     name="dev-assets",
 )
+app.mount(
+    "/assets",
+    StaticFiles(directory=project_root() / "dev" / "assets", check_dir=False),
+    name="assets",
+)
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
@@ -224,15 +229,29 @@ def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
 
 
 def _production_guide_decks() -> dict[str, str]:
-    source = project_root() / "templates" / "index.html"
-    soup = BeautifulSoup(source.read_text(encoding="utf-8"), "html.parser")
-    decks: dict[str, str] = {}
-    for deck_key, panel_id in GUIDE_DECK_PANELS.items():
-        deck = soup.select_one(f"#{panel_id} .slide-deck")
-        if deck is None:
-            raise HTTPException(status_code=500, detail=f"{panel_id} 안내자료 슬라이드를 찾을 수 없습니다.")
-        decks[deck_key] = deck.decode_contents()
-    return decks
+    root = project_root()
+    source_candidates = [
+        root / "templates" / "index.html",
+        root / "public" / "index.html",
+        root / "backups" / "production_pages_20260621_pre_dev_cutover" / "index.html",
+    ]
+    missing_panels: list[str] = []
+    for source in source_candidates:
+        if not source.exists():
+            continue
+        soup = BeautifulSoup(source.read_text(encoding="utf-8"), "html.parser")
+        decks: dict[str, str] = {}
+        missing_panels = []
+        for deck_key, panel_id in GUIDE_DECK_PANELS.items():
+            deck = soup.select_one(f"#{panel_id} .slide-deck")
+            if deck is None:
+                missing_panels.append(panel_id)
+                break
+            decks[deck_key] = deck.decode_contents()
+        if not missing_panels:
+            return decks
+    missing = ", ".join(missing_panels or GUIDE_DECK_PANELS.values())
+    raise HTTPException(status_code=500, detail=f"{missing} 안내자료 슬라이드를 찾을 수 없습니다.")
 
 
 @app.get("/health")

@@ -1590,21 +1590,56 @@
         if (button.dataset.defaultHtml) button.innerHTML = button.dataset.defaultHtml;
       }
 
+      async function readResponseBody(response) {
+        const text = await response.text().catch(() => "");
+        if (!text.trim()) return {};
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { detail: text };
+        }
+      }
+
+      function requestErrorMessage(body, fallback = "요청을 처리하지 못했습니다.") {
+        const detail = body?.detail ?? body?.error ?? body?.message ?? body;
+        if (Array.isArray(detail)) {
+          return detail
+            .map((item) => String(item?.msg || item?.message || item || "").trim())
+            .filter(Boolean)
+            .join(" / ") || fallback;
+        }
+        if (detail && typeof detail === "object") {
+          const text = JSON.stringify(detail);
+          return text && text !== "{}" ? text : fallback;
+        }
+        const text = String(detail || "").trim();
+        return text && text !== '""' ? text : fallback;
+      }
+
       async function adminFetch(url, options = {}) {
         const { headers = {}, loadingMessage = "관리자 데이터를 불러오는 중입니다.", ...fetchOptions } = options;
         setGlobalLoading(true, loadingMessage);
         try {
           const response = await fetch(url, {
+            credentials: "same-origin",
             ...fetchOptions,
             headers: {
+              "Accept": "application/json",
               "Content-Type": "application/json",
               "x-admin-password": adminPassword,
               ...headers,
             },
           });
-          const body = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(body.detail || body.error || response.statusText);
+          const body = await readResponseBody(response);
+          if (!response.ok) {
+            throw new Error(requestErrorMessage(body, response.statusText || "요청 처리 중 오류가 발생했습니다."));
+          }
           return body;
+        } catch (error) {
+          if (error instanceof TypeError) {
+            throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+          }
+          throw error;
         } finally {
           setGlobalLoading(false);
         }

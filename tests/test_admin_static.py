@@ -16,21 +16,22 @@ class AdminStaticTests(unittest.TestCase):
         required = [
             'id="notice-editor"',
             'contenteditable="true"',
-            'data-command="bold"',
-            'data-command="insertUnorderedList"',
+            'data-notice-command="bold"',
+            'data-notice-command="insertUnorderedList"',
             'id="visit-chart"',
             "renderVisitChart",
             "body_html",
-            'id="notice-updated"',
+            'id="notice-status"',
             'id="notice-preview"',
             'id="notice-preview-body"',
             "renderNoticePreview",
-            "안내자료 슬라이드 관리",
-            'data-admin-page="slides"',
-            'id="slide-text-editor"',
-            'id="slide-image-editor"',
-            "loadSlideContent",
-            "saveSlideContent",
+            "안내자료 슬라이드 편집",
+            'data-admin-view="guides"',
+            'id="admin-view-guides"',
+            "guide-editable-text",
+            "admin-guide-image-file",
+            "loadGuides",
+            "saveGuides",
             "/api/admin/guide-slides",
         ]
         for phrase in required:
@@ -51,16 +52,17 @@ class AdminStaticTests(unittest.TestCase):
         admin_store = (ROOT / "admin_store.py").read_text(encoding="utf-8")
 
         required_html = [
-            "OpenAI 담당자 메일 검토함",
-            "승인 요약",
-            "승인하여 RAG 반영",
-            'id="mail-review-filter"',
-            'id="mail-review-body"',
-            'id="mail-detail"',
+            "메일 검토함",
+            "지식 반영안",
+            "반영 승인",
+            'id="mail-filter"',
+            'id="mail-rows"',
+            "mail-rag-draft",
             "loadMailReview",
-            "saveMailReview",
+            'id="mail-rows"',
+            "mail-approve",
             "/api/admin/mail-review/update",
-            "RAG 반영 승인에는 승인 요약이 필요합니다.",
+            "지식 반영안이 비어 있습니다.",
         ]
         for phrase in required_html:
             self.assertIn(phrase, html)
@@ -78,11 +80,11 @@ class AdminStaticTests(unittest.TestCase):
         ingestion_py = (ROOT / "rag_chatbot" / "ingestion.py").read_text(encoding="utf-8")
 
         for phrase in [
-            "OpenAI 공식 가이드 변경 로그",
-            'id="official-change-body"',
-            'id="refresh-official-changes"',
-            'id="official-start-date-filter"',
-            'id="official-end-date-filter"',
+            "공식 문서 변경 로그",
+            'id="official-rows"',
+            'id="official-refresh"',
+            'id="official-start-date"',
+            'id="official-end-date"',
             "loadOfficialChanges",
             "/api/admin/official-changes",
         ]:
@@ -108,14 +110,14 @@ class AdminStaticTests(unittest.TestCase):
 
         for phrase in [
             "Ads API 성과 대시보드",
-            'id="ads-dashboard-status"',
-            'id="ads-advertiser-select"',
-            'id="ads-api-key-body"',
-            'id="ads-campaign-body"',
-            'id="ads-detail-card"',
+            'id="performance-status"',
+            'id="performance-advertiser-select"',
+            'id="ads-key-rows"',
+            'id="performance-campaign-rows"',
+            'id="performance-detail-panel"',
             "전환수",
             "conversion_metrics_available",
-            "loadAdsDashboard",
+            "loadPerformanceDashboard",
             "/api/admin/ads-dashboard",
             "/api/admin/ads-api-keys",
             "OPENAI_ADS_API_KEY",

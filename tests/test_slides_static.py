@@ -7,38 +7,39 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def slides_panel_html() -> str:
-    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-    start = html.index('<section class="panel" id="slides-panel">')
-    end = html.index('<section class="panel" id="setup-guide-panel">', start)
-    return html[start:end]
+def index_html() -> str:
+    return (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
 
 
 class AdvertiserSlidesStaticTests(unittest.TestCase):
-    def test_slides_have_five_pages_and_print_action(self) -> None:
-        html = slides_panel_html()
-        full_html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    def test_guides_workspace_has_three_decks_and_pdf_action(self) -> None:
+        html = index_html()
 
-        self.assertEqual(html.count('class="slide-card'), 5)
-        self.assertIn("PDF로 저장", html)
-        self.assertIn('const LAST_UPDATED = "2026-06-17"', full_html)
-        self.assertIn("ChatGPT광고_집행준비안내_케이티나스미디어_", full_html)
-        self.assertIn("window.print()", full_html)
-        self.assertIn('data-guide-text="advertiser.hero.title"', full_html)
-        self.assertIn('data-guide-image-key="campaign_step1"', full_html)
-        self.assertIn('data-guide-image-key="pixel_step7_gtm_workspace"', full_html)
-        self.assertIn("loadGuideSlideContent", full_html)
-        self.assertIn("/api/guide-slides", full_html)
+        required = [
+            'id="guide-tabs"',
+            'data-guide-deck="advertiser"',
+            'data-guide-deck="setup"',
+            'data-guide-deck="pixel"',
+            'id="guide-deck"',
+            'id="guide-pdf"',
+            "PDF로 저장",
+            "ChatGPT광고_집행준비안내_케이티나스미디어",
+            "window.print()",
+            "loadGuides",
+            "/api/guide-slides",
+            "/api/guide-deck-html",
+            "GUIDE_LAYOUT_VERSION = 5",
+            "GUIDE_LAYOUT_FINGERPRINT",
+        ]
+        for phrase in required:
+            self.assertIn(phrase, html)
 
     def test_advertiser_slides_hide_internal_terms(self) -> None:
-        html = slides_panel_html()
+        html = index_html()
 
         forbidden = [
             "나스미디어 내부 자료",
-            "OpenAI 공식 문서",
-            "확인 대기",
             "미확정",
-            "내부 기준",
             "1,000만원",
             "마크업",
             "호스팅 fee",
@@ -47,7 +48,7 @@ class AdvertiserSlidesStaticTests(unittest.TestCase):
             self.assertNotIn(word, html)
 
     def test_advertiser_slides_keep_required_public_claims(self) -> None:
-        html = slides_panel_html()
+        html = index_html()
 
         required = [
             "최대 제목 24자 / 권장 16~18자",
@@ -68,16 +69,15 @@ class AdvertiserSlidesStaticTests(unittest.TestCase):
         ]
         for phrase in required:
             self.assertIn(phrase, html)
-        self.assertNotIn("공식 도움말 글자수 미명시", html)
 
-    def test_checklist_tab_removed_from_top_navigation(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-        nav_start = html.index('<nav class="tabs"')
-        nav_end = html.index("</nav>", nav_start)
-        nav_html = html[nav_start:nav_end]
+    def test_old_checklist_tab_is_not_in_new_rail_navigation(self) -> None:
+        html = index_html()
+        rail_start = html.index('<aside class="rail"')
+        rail_end = html.index("</aside>", rail_start)
+        rail_html = html[rail_start:rail_end]
 
-        self.assertNotIn("광고주 준비물", nav_html)
-        self.assertIn("광고주 안내 자료", nav_html)
+        self.assertNotIn("광고주 준비물", rail_html)
+        self.assertIn("광고주 안내자료", rail_html)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,3395 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAI Ads 관리자</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+    <style>
+      @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
+      :root {
+        --kt-red: #ed1c24;
+        --ink: #111827;
+        --muted: #667085;
+        --line: #d6dde8;
+        --panel: #fff;
+        --soft: #f6f8fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f2f4f7;
+        color: var(--ink);
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          Roboto,
+          "Helvetica Neue",
+          "Segoe UI",
+          "Apple SD Gothic Neo",
+          "Noto Sans KR",
+          "Malgun Gothic",
+          sans-serif;
+      }
+
+      a {
+        color: #155eef;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        width: min(1360px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--kt-red);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 4vw, 38px);
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .home-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 14px;
+        color: #344054;
+        font-size: 14px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .admin-tool-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 12px;
+        color: #155eef;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .card {
+        min-width: 0;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+      }
+
+      .login-card {
+        max-width: 520px;
+        margin: 56px auto 0;
+        padding: 26px;
+      }
+
+      .section {
+        min-width: 0;
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+        gap: 18px;
+      }
+
+      .admin-shell {
+        display: grid;
+        grid-template-columns: 238px minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .admin-nav {
+        position: sticky;
+        top: 20px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px;
+        box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+      }
+
+      .admin-nav-title {
+        margin: 2px 4px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .admin-nav-item {
+        display: grid;
+        width: 100%;
+        min-height: 62px;
+        justify-items: start;
+        gap: 3px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px 12px;
+        color: #344054;
+        text-align: left;
+      }
+
+      .admin-nav-item + .admin-nav-item {
+        margin-top: 6px;
+      }
+
+      .admin-nav-item span {
+        font-size: 14px;
+        font-weight: 950;
+      }
+
+      .admin-nav-item small {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+
+      .admin-nav-item.active {
+        border-color: #fecaca;
+        border-left: 4px solid var(--kt-red);
+        background: #fff5f5;
+        color: #b42318;
+      }
+
+      .admin-pages {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .admin-page {
+        display: none;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .admin-page:not(.active) {
+        display: none !important;
+      }
+
+      .admin-page.active {
+        display: grid;
+        gap: 18px;
+      }
+
+      .admin-page.active > * {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        line-height: 1.3;
+      }
+
+      .help {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 14px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      input,
+      textarea,
+      .notice-editor {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 11px 12px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 650;
+      }
+
+      textarea,
+      .notice-editor {
+        min-height: 190px;
+        line-height: 1.55;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus,
+      .notice-editor:focus {
+        border-color: var(--kt-red);
+        box-shadow: 0 0 0 3px rgb(237 28 36 / 12%);
+        outline: none;
+      }
+
+      .field-label {
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .readonly-value {
+        min-height: 44px;
+        border: 1px dashed #cfd6df;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 11px 12px;
+        color: #344054;
+        font-weight: 850;
+      }
+
+      .editor-shell {
+        margin-bottom: 14px;
+        border: 1px solid #ccd6e3;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 12px 32px rgb(16 24 40 / 5%);
+      }
+
+      .editor-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 12px;
+      }
+
+      .toolbar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+
+      .toolbar-group::before {
+        content: attr(data-label);
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .02em;
+        margin-right: 2px;
+        white-space: nowrap;
+      }
+
+      .editor-toolbar button,
+      .editor-control {
+        min-height: 32px;
+        height: 32px;
+        border: 1px solid #d7e0ec;
+        border-radius: 7px;
+        background: #fff;
+        padding: 0 10px;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+        transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+      }
+
+      .editor-toolbar button:hover,
+      .editor-control:hover {
+        border-color: #94a3b8;
+        background: #f8fafc;
+        box-shadow: 0 4px 12px rgb(16 24 40 / 6%);
+      }
+
+      .editor-control {
+        gap: 6px;
+        min-width: max-content;
+        color: #334155;
+      }
+
+      .editor-control input[type="color"] {
+        width: 22px;
+        height: 22px;
+        min-height: auto;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .editor-control select {
+        min-height: 26px;
+        border: 0;
+        background: transparent;
+        color: #172033;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+        outline: none;
+      }
+
+      .editor-icon-button {
+        width: 32px;
+        padding: 0;
+        font-size: 14px;
+      }
+
+      .editor-clear-button {
+        color: #475569;
+      }
+
+      .notice-editor {
+        min-height: 260px;
+        border: 0;
+        border-radius: 0;
+        padding: 18px 20px;
+        overflow: auto;
+        color: #101827;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .notice-editor:empty::before {
+        content: "공지 내용을 입력해 주세요. 굵게, 목록, 링크, 이모지를 넣고 아래 미리보기에서 확인할 수 있습니다.";
+        color: #98a2b3;
+        font-style: normal;
+      }
+
+      .editor-helper {
+        margin: 0 0 10px;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .notice-editor ul,
+      .notice-editor ol {
+        margin: 8px 0;
+        padding-left: 22px;
+      }
+
+      .notice-editor p {
+        margin: 0 0 10px;
+      }
+
+      .notice-editor a {
+        color: #155eef;
+      }
+
+      .notice-editor .ql-editor {
+        min-height: 260px;
+        padding: 0;
+        color: #101827;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .notice-editor .ql-editor h2 {
+        margin: 4px 0 12px;
+        color: #0f172a;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: 0;
+      }
+
+      .notice-editor .ql-editor blockquote {
+        margin: 12px 0;
+        border-left: 4px solid var(--kt-red);
+        background: #fff7f7;
+        padding: 11px 13px;
+        color: #344054;
+        font-weight: 750;
+      }
+
+      .notice-editor .ql-editor .ql-size-small,
+      .notice-preview-body .ql-size-small {
+        font-size: 13px;
+      }
+
+      .notice-editor .ql-editor .ql-size-large,
+      .notice-preview-body .ql-size-large {
+        font-size: 18px;
+      }
+
+      .notice-editor .ql-editor .ql-size-huge,
+      .notice-preview-body .ql-size-huge {
+        font-size: 24px;
+        line-height: 1.35;
+      }
+
+      .notice-preview-wrap {
+        margin: 18px 0 14px;
+      }
+
+      .notice-preview-card {
+        border: 1px solid #ffd7da;
+        border-left: 5px solid var(--kt-red);
+        border-radius: 12px;
+        background: #fffafa;
+        padding: 18px;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+      }
+
+      .preview-eyebrow {
+        margin: 0 0 8px;
+        color: var(--kt-red);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .notice-preview-card h3 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .preview-updated {
+        display: inline-flex;
+        border-radius: 999px;
+        background: #fff1f2;
+        padding: 5px 9px;
+        color: #be123c;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .notice-preview-body {
+        margin-top: 14px;
+        color: #344054;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .notice-preview-body ul,
+      .notice-preview-body ol {
+        margin: 8px 0;
+        padding-left: 22px;
+      }
+
+      .notice-preview-body p {
+        margin: 0 0 10px;
+      }
+
+      .notice-preview-body h2 {
+        margin: 4px 0 12px;
+        color: #0f172a;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: 0;
+      }
+
+      .notice-preview-body blockquote {
+        margin: 12px 0;
+        border-left: 4px solid var(--kt-red);
+        background: #fff7f7;
+        padding: 11px 13px;
+        color: #344054;
+        font-weight: 750;
+      }
+
+      .notice-preview-source {
+        display: inline-flex;
+        margin-top: 12px;
+        color: #155eef;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .notice-preview-source[hidden] {
+        display: none;
+      }
+
+      .mail-link {
+        color: #155eef;
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .mail-link:hover {
+        text-decoration: underline;
+      }
+
+      .check-label {
+        display: inline-flex;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .check-label input {
+        width: auto;
+        min-height: auto;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: #111;
+        padding: 0 18px;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+      }
+
+      button.secondary {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #344054;
+      }
+
+      button.danger {
+        background: var(--kt-red);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .status {
+        min-height: 22px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .status.error {
+        color: #b42318;
+      }
+
+      .status.ok {
+        color: #047857;
+      }
+
+      .status.warning {
+        color: #b45309;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .admin-tool-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+        border: 1px solid #cfe0ff;
+        border-left: 4px solid #155eef;
+        border-radius: 10px;
+        background: #f8fbff;
+        padding: 14px;
+      }
+
+      .admin-tool-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 15px;
+      }
+
+      .admin-tool-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ads-dashboard-card {
+        display: grid;
+        gap: 16px;
+      }
+
+      .ads-dashboard-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .ads-doc-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .ads-doc-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        border-radius: 7px;
+        background: #fff;
+        padding: 0 10px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .ads-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+      }
+
+      .ads-controls label {
+        width: 180px;
+        margin: 0;
+      }
+
+      .ads-advertiser-control {
+        min-width: 220px;
+      }
+
+      .ads-key-manager {
+        border: 1px solid #dbe3ef;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+        padding: 18px;
+        box-shadow: 0 10px 26px rgb(16 24 40 / 4%);
+      }
+
+      details.ads-key-manager {
+        display: block;
+      }
+
+      details.ads-key-manager:not([open]) {
+        padding-bottom: 18px;
+      }
+
+      details.ads-key-manager summary {
+        cursor: pointer;
+        list-style: none;
+      }
+
+      details.ads-key-manager summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .ads-key-manager-body {
+        display: grid;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .ads-key-manager-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .ads-key-manager-head h3 {
+        margin: 0 0 5px;
+        font-size: 16px;
+      }
+
+      .ads-key-manager-head .help {
+        margin: 0;
+      }
+
+      .ads-key-summary-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .details-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        border: 1px solid #d8dee9;
+        border-radius: 999px;
+        background: #fff;
+        padding: 0 12px;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      details.ads-key-manager .details-toggle-label::before {
+        content: "키 관리 펼치기";
+      }
+
+      details.ads-key-manager[open] .details-toggle-label::before {
+        content: "키 관리 접기";
+      }
+
+      .ads-key-form {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .ads-key-form label {
+        margin: 0;
+      }
+
+      .ads-key-form .check-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .ads-key-form .check-label input {
+        width: auto;
+        min-height: auto;
+      }
+
+      .secret-mask {
+        color: #344054;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-weight: 850;
+      }
+
+      .ads-key-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .ads-key-actions button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        padding: 0 10px;
+        color: #344054;
+        font-size: 12px;
+      }
+
+      .ads-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .ads-kpi {
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .ads-kpi span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .ads-kpi strong {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink);
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .ads-dashboard-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .ads-dashboard-layout > div {
+        min-width: 0;
+      }
+
+      .ads-table-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .ads-table-title h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .ads-table button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        color: #344054;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .ads-status-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #d8dee9;
+        background: #f8fafc;
+        padding: 0 8px;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .ads-status-pill.active,
+      .ads-status-pill.enabled,
+      .ads-status-pill.approved {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .ads-status-pill.paused,
+      .ads-status-pill.pending {
+        border-color: #fedf89;
+        background: #fffaeb;
+        color: #b54708;
+      }
+
+      .ads-status-pill.rejected,
+      .ads-status-pill.archived,
+      .ads-status-pill.deleted {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #b42318;
+      }
+
+      .ads-detail-card {
+        position: static;
+        border: 1px solid #dbe3ef;
+        border-radius: 12px;
+        background: #fff;
+        padding: 18px;
+        width: 100%;
+        box-shadow: 0 10px 24px rgb(16 24 40 / 4%);
+      }
+
+      .ads-detail-card h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .ads-detail-card p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ads-config-note {
+        border-left: 4px solid #b42318;
+        background: #fef2f2;
+        padding: 12px 14px;
+        color: #991b1b;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .ads-dashboard-layout .mail-table-wrap {
+        min-height: 320px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .ads-detail-card .mail-table-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      .ads-table th,
+      .ads-table td {
+        padding: 13px 14px;
+        vertical-align: middle;
+      }
+
+      .span-full {
+        grid-column: 1 / -1;
+      }
+
+      .review-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .review-toolbar label {
+        min-width: 220px;
+        margin: 0;
+      }
+
+      select {
+        min-height: 44px;
+        border: 1px solid #cfd6df;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0 12px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 750;
+      }
+
+      .mail-review-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+        gap: 14px;
+        align-items: start;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .mail-table-wrap {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        border-radius: 10px;
+      }
+
+      .mail-table {
+        table-layout: fixed;
+        min-width: 0;
+      }
+
+      .mail-table th,
+      .mail-table td {
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .mail-table th:nth-child(1),
+      .mail-table td:nth-child(1) {
+        width: 92px;
+      }
+
+      .mail-table th:nth-child(2),
+      .mail-table td:nth-child(2) {
+        width: 38%;
+      }
+
+      .mail-table th:nth-child(4),
+      .mail-table td:nth-child(4) {
+        width: 74px;
+      }
+
+      .mail-table button {
+        min-height: 32px;
+        border: 1px solid #d8dee9;
+        background: #fff;
+        color: #344054;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .mail-status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #d8dee9;
+        background: #f8fafc;
+        padding: 0 8px;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .mail-status-chip.needs_review {
+        border-color: #fedf89;
+        background: #fffaeb;
+        color: #b54708;
+      }
+
+      .mail-status-chip.approved_for_rag {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .mail-status-chip.rejected,
+      .mail-status-chip.superseded {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #b42318;
+      }
+
+      .mail-status-chip.hold {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #155eef;
+      }
+
+      .change-log-note {
+        border-left: 4px solid #047857;
+        background: #ecfdf3;
+        padding: 12px 14px;
+        color: #047857;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .change-type-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        border: 1px solid #cfd6df;
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .change-type-chip.new {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #047857;
+      }
+
+      .change-type-chip.updated {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #155eef;
+      }
+
+      .language-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 24px;
+        border-radius: 6px;
+        background: #111827;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .mail-subject {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 900;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .mail-meta {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .mail-link {
+        overflow-wrap: anywhere;
+        word-break: break-all;
+      }
+
+      .mail-detail {
+        position: sticky;
+        top: 16px;
+        min-width: 0;
+        max-width: 100%;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 16px;
+        overflow: hidden;
+      }
+
+      .mail-detail h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .mail-detail-empty {
+        display: grid;
+        min-height: 260px;
+        place-items: center;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        color: var(--muted);
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .mail-body-preview {
+        max-width: 100%;
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+        color: #344054;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .mail-approval-box {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .mail-approval-box label {
+        margin-bottom: 0;
+      }
+
+      .mail-approval-box textarea {
+        min-height: 120px;
+      }
+
+      .mail-review-note {
+        width: 100%;
+        max-width: 100%;
+        border-left: 4px solid #155eef;
+        background: #eff6ff;
+        padding: 12px 14px;
+        color: #1d4ed8;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .sync-schedule {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        border: 1px solid #d1fadf;
+        border-left: 4px solid #12b76a;
+        border-radius: 10px;
+        background: #f6fef9;
+        padding: 12px 14px;
+        color: #054f31;
+        font-size: 13px;
+        line-height: 1.45;
+        max-width: 100%;
+      }
+
+      .sync-schedule strong {
+        margin-right: 4px;
+        font-weight: 900;
+      }
+
+      .sync-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        border: 1px solid #a6f4c5;
+        border-radius: 999px;
+        background: #fff;
+        padding: 0 9px;
+        color: #067647;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .sync-schedule em {
+        flex: 1 1 260px;
+        min-width: 0;
+        color: #067647;
+        font-style: normal;
+        font-weight: 750;
+        overflow-wrap: anywhere;
+      }
+
+      .filter-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fbfcff;
+      }
+
+      .filter-strip label {
+        flex: 0 0 180px;
+        margin: 0;
+      }
+
+      .filter-strip .help {
+        flex: 1 0 100%;
+        order: -1;
+        min-width: 0;
+        margin: 0;
+        align-self: center;
+        border-left: 4px solid #155eef;
+        border-radius: 9px;
+        background: #eff6ff;
+        padding: 10px 12px;
+        color: #1849a9;
+        font-weight: 850;
+        line-height: 1.55;
+        white-space: normal;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+
+      .filter-strip .pager {
+        flex: 0 0 auto;
+      }
+
+      .filter-strip > .actions {
+        flex: 0 0 auto;
+        margin-left: auto !important;
+      }
+
+      .pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .summary-card {
+        margin-top: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 12px;
+      }
+
+      .summary-card strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+      }
+
+      .summary-card p {
+        margin: 0;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .chart-shell {
+        margin: 14px 0 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background:
+          linear-gradient(#fff, #fff) padding-box,
+          linear-gradient(135deg, rgba(237, 28, 36, .28), rgba(21, 94, 239, .16)) border-box;
+        padding: 16px;
+        box-shadow: 0 10px 24px rgb(16 24 40 / 4%);
+      }
+
+      .analytics-subsection {
+        margin-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 16px;
+      }
+
+      .analytics-subsection h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+
+      .chart-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .chart-head span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .visit-chart {
+        display: block;
+        width: 100%;
+        height: 320px;
+        min-height: 320px;
+        overflow: visible;
+      }
+
+      .slide-editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 14px 0;
+      }
+
+      .slide-editor-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .slide-edit-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 14px;
+      }
+
+      .slide-edit-card h3 {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+
+      .slide-edit-card small {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .slide-edit-card textarea {
+        min-height: 92px;
+      }
+
+      .slide-edit-card.image-card {
+        background: #fff;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .ql-toolbar.ql-snow {
+        border: 0;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 10px 10px 0 0;
+        background: #fbfcff;
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+      }
+
+      .ql-container.ql-snow {
+        min-height: 240px;
+        border: 0;
+        font-family:
+          "Pretendard Variable",
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+        font-size: 15px;
+      }
+
+      .ql-editor {
+        min-height: 220px;
+        line-height: 1.65;
+      }
+
+      .ql-editor ul,
+      .ql-editor ol {
+        padding-left: 1.4em;
+      }
+
+      .metric {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 14px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        border-radius: 999px;
+        background: #fff1f1;
+        padding: 0 9px;
+        color: #c01018;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 1180px) {
+        .mail-review-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .mail-detail {
+          position: static;
+        }
+
+        .slide-editor-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .topbar,
+        .grid,
+        .admin-shell {
+          display: block;
+        }
+
+        .home-link {
+          margin-top: 14px;
+        }
+
+        .grid > .card + .card {
+          margin-top: 18px;
+        }
+
+        .admin-nav {
+          position: static;
+          margin-bottom: 18px;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-tool-card {
+          grid-template-columns: 1fr;
+        }
+
+        .mail-review-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .ads-dashboard-head,
+        .ads-dashboard-layout {
+          display: block;
+        }
+
+        .ads-doc-links,
+        .ads-controls {
+          margin-top: 12px;
+        }
+
+        .ads-kpi-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ads-key-form {
+          grid-template-columns: 1fr;
+        }
+
+        .ads-detail-card {
+          position: static;
+          margin-top: 16px;
+        }
+
+        .mail-detail {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">OpenAI Ads Admin</p>
+          <h1>관리자 설정</h1>
+        </div>
+        <a class="home-link" href="/">메인으로 돌아가기</a>
+      </div>
+
+      <section class="card login-card" id="login-card">
+        <h2>관리자 비밀번호</h2>
+        <p class="help">공지 팝업 문구와 페이지별 방문 횟수를 관리합니다.</p>
+        <label>
+          비밀번호
+          <input id="admin-password" type="password" autocomplete="current-password" placeholder="관리자 비밀번호 입력" />
+        </label>
+        <div class="actions">
+          <button id="login-button" type="button">접속하기</button>
+          <span class="status" id="login-status"></span>
+        </div>
+      </section>
+
+      <section class="admin-shell hidden" id="admin-panel">
+        <nav class="admin-nav" aria-label="관리자 기능">
+          <div class="admin-nav-title">관리자 메뉴</div>
+          <button class="admin-nav-item active" data-admin-page="notice" type="button">
+            <span>공지 작성</span>
+            <small>팝업 문구·가이드 링크</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="slides" type="button">
+            <span>안내자료 관리</span>
+            <small>슬라이드 문구·이미지</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="analytics" type="button">
+            <span>애널리틱스</span>
+            <small>방문·다운로드 추이</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="ads" type="button">
+            <span>Ads 성과 대시보드</span>
+            <small>API 키·라이브 현황</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="official" type="button">
+            <span>공식 가이드 변경</span>
+            <small>자동 RAG 반영 로그</small>
+          </button>
+          <button class="admin-nav-item" data-admin-page="mail" type="button">
+            <span>메일 검토함</span>
+            <small>승인 후 RAG 반영</small>
+          </button>
+        </nav>
+        <div class="admin-pages">
+        <div class="card section admin-page active" data-admin-page-panel="notice">
+          <h2>메인 공지 팝업 수정</h2>
+          <p class="help">
+            루트 페이지에 처음 진입할 때 뜨는 안내 팝업입니다. 굵게, 목록, 번호목록, 링크, 이모지를 넣고 저장 전 미리보기로 확인합니다.
+          </p>
+          <label>
+            제목
+            <input id="notice-title" type="text" />
+          </label>
+          <div style="margin-bottom: 14px;">
+            <div class="field-label">업데이트일</div>
+            <div class="readonly-value" id="notice-updated">저장 시 자동 반영</div>
+          </div>
+          <div class="field-label">공지 내용</div>
+          <p class="editor-helper">
+            팝업 본문에 노출될 실제 문구입니다. 핵심 문장만 짧게 쓰고, 굵게/목록/링크/이모지를 넣은 뒤
+            아래 미리보기에서 최종 노출 형태를 확인해 주세요.
+          </p>
+          <div class="editor-shell">
+            <div class="editor-toolbar" aria-label="공지 서식 도구">
+              <div class="toolbar-row">
+                <div class="toolbar-group" data-label="텍스트">
+                  <button type="button" data-command="bold">굵게</button>
+                  <button type="button" data-command="italic">기울임</button>
+                  <button type="button" data-command="header">소제목</button>
+                  <button type="button" data-command="blockquote">강조문</button>
+                </div>
+                <div class="toolbar-group" data-label="구조">
+                  <button type="button" data-command="insertUnorderedList">목록</button>
+                  <button type="button" data-command="insertOrderedList">번호 목록</button>
+                  <button type="button" data-command="createLink">링크</button>
+                </div>
+              </div>
+              <div class="toolbar-row">
+                <div class="toolbar-group" data-label="스타일">
+                  <label class="editor-control">
+                    글자색
+                    <input type="color" data-format="color" value="#101827" aria-label="글자색" />
+                  </label>
+                  <label class="editor-control">
+                    글 배경
+                    <input type="color" data-format="background" value="#fff1f1" aria-label="글 배경색" />
+                  </label>
+                  <label class="editor-control">
+                    공지창
+                    <input id="notice-modal-bg" type="color" value="#ffffff" aria-label="공지창 배경색" />
+                  </label>
+                  <label class="editor-control">
+                    글자크기
+                    <select data-format="size" aria-label="글자크기">
+                      <option value="">기본</option>
+                      <option value="small">작게</option>
+                      <option value="large">크게</option>
+                      <option value="huge">매우 크게</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="toolbar-group" data-label="빠른 삽입">
+                  <button type="button" class="editor-icon-button" data-emoji="📢" aria-label="확성기 이모지">📢</button>
+                  <button type="button" class="editor-icon-button" data-emoji="✅" aria-label="체크 이모지">✅</button>
+                  <button type="button" class="editor-icon-button" data-emoji="⚠️" aria-label="주의 이모지">⚠️</button>
+                  <button type="button" class="editor-icon-button" data-emoji="🔗" aria-label="링크 이모지">🔗</button>
+                  <button type="button" class="editor-clear-button" data-command="removeFormat">서식 지우기</button>
+                </div>
+              </div>
+            </div>
+            <div
+              class="notice-editor"
+              id="notice-editor"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
+            ></div>
+          </div>
+          <label>
+            OpenAI 가이드 링크 문구
+            <input id="notice-source-label" type="text" />
+          </label>
+          <label>
+            OpenAI 가이드 URL
+            <input id="notice-source-url" type="url" />
+          </label>
+          <div class="notice-preview-wrap">
+            <div class="field-label">공지 미리보기</div>
+            <article class="notice-preview-card" id="notice-preview" aria-live="polite">
+              <p class="preview-eyebrow">팝업 미리보기</p>
+              <h3 id="notice-preview-title">OpenAI 광고 집행 의뢰 안내</h3>
+              <div class="preview-updated" id="notice-preview-updated">저장 전 미리보기</div>
+              <div class="notice-preview-body" id="notice-preview-body">
+                <p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>
+              </div>
+              <a class="notice-preview-source" id="notice-preview-source" href="#" target="_blank" rel="noopener" hidden></a>
+            </article>
+            <p class="help">저장 전 실제 메인 공지 팝업에 가까운 형태로 확인합니다.</p>
+          </div>
+          <label class="check-label">
+            <input id="notice-enabled" type="checkbox" />
+            <span>공지 팝업 사용</span>
+          </label>
+          <div class="actions">
+            <button class="danger" id="save-notice" type="button">공지 저장</button>
+            <button class="secondary" id="reload-notice" type="button">다시 불러오기</button>
+            <span class="status" id="notice-status"></span>
+          </div>
+        </div>
+
+        <div class="card section admin-page" data-admin-page-panel="slides">
+          <h2>안내자료 슬라이드 관리</h2>
+          <p class="help">
+            광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드에서 자주 바뀌는 문구와 캡처 이미지를 수정합니다.
+            저장하면 공개 페이지와 PDF 출력 화면에 반영됩니다.
+          </p>
+          <div class="slide-editor-toolbar">
+            <div class="ads-doc-links" aria-label="안내자료 바로가기">
+              <a href="/#slides" target="_blank" rel="noopener">광고주 안내자료</a>
+              <a href="/#setupGuide" target="_blank" rel="noopener">캠페인 세팅 가이드</a>
+              <a href="/#pixelGuide" target="_blank" rel="noopener">픽셀 설치 가이드</a>
+            </div>
+            <div class="actions" style="margin:0;">
+              <button class="danger" id="save-slide-content" type="button">안내자료 저장</button>
+              <button class="secondary" id="reload-slide-content" type="button">다시 불러오기</button>
+              <span class="status" id="slide-content-status"></span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <strong>편집 원칙</strong>
+            <p>광고주에게 보이는 문구는 짧게 유지하고, 금액·정책 변경 가능성은 하단 주석이나 담당자 안내로 분리합니다. 이미지 URL은 `/images/guide/...` 또는 `https://` 직접 이미지 URL만 사용합니다.</p>
+          </div>
+          <h3>문구</h3>
+          <div class="slide-editor-grid" id="slide-text-editor"></div>
+          <h3 style="margin-top:18px;">이미지와 캡션</h3>
+          <div class="slide-editor-grid" id="slide-image-editor"></div>
+        </div>
+
+        <div class="card section admin-page" data-admin-page-panel="analytics">
+          <h2>페이지 방문 애널리틱스</h2>
+          <p class="help">
+            탭을 열 때마다 페이지별 방문 수가 누적됩니다. 아래 차트와 표에서 전체 추이를 확인할 수 있습니다.
+          </p>
+          <div class="summary-grid">
+            <div class="metric">
+              <span>전체 방문</span>
+              <strong id="metric-total">0</strong>
+            </div>
+            <div class="metric">
+              <span>오늘 방문</span>
+              <strong id="metric-today">0</strong>
+            </div>
+            <div class="metric">
+              <span>집계 페이지</span>
+              <strong id="metric-pages">0</strong>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="secondary" id="refresh-analytics" type="button">새로고침</button>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-head">
+              <strong>전체 방문 추이</strong>
+              <span id="chart-caption">최근 방문 데이터를 불러오는 중</span>
+            </div>
+            <div class="visit-chart" id="visit-chart" role="img" aria-label="전체 방문 추이"></div>
+          </div>
+          <div style="margin-top: 14px; overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>페이지</th>
+                  <th>전체</th>
+                  <th>오늘</th>
+                  <th>마지막 방문</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-body">
+                <tr>
+                  <td colspan="4">아직 데이터가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="analytics-subsection">
+            <h3>다운로드·버튼 이벤트</h3>
+            <p class="help">PDF 저장, 이미지 저장, XLSX 다운로드처럼 운영상 중요한 클릭 이벤트를 별도로 봅니다.</p>
+            <div style="overflow-x: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>이벤트</th>
+                    <th>전체</th>
+                    <th>오늘</th>
+                    <th>마지막 실행</th>
+                  </tr>
+                </thead>
+                <tbody id="download-analytics-body">
+                  <tr>
+                    <td colspan="4">아직 다운로드 이벤트가 없습니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="status" id="analytics-status"></p>
+        </div>
+
+        <div class="card section admin-page ads-dashboard-card" data-admin-page-panel="ads">
+          <div class="ads-dashboard-head">
+            <div>
+              <h2>Ads API 성과 대시보드</h2>
+              <p class="help">
+                OpenAI Ads Insights API로 계정·캠페인·광고그룹·광고 성과를 조회합니다.
+                API 키는 서버 환경변수에만 저장하며 관리자 화면에서만 호출합니다.
+              </p>
+            </div>
+            <div class="ads-doc-links" aria-label="OpenAI Ads API 공식 문서">
+              <a href="https://developers.openai.com/ads/api-overview" target="_blank" rel="noopener">API 개요</a>
+              <a href="https://developers.openai.com/ads/api-reference/insights" target="_blank" rel="noopener">Insights 문서</a>
+            </div>
+          </div>
+          <div class="ads-config-note hidden" id="ads-dashboard-setup"></div>
+          <div class="ads-controls">
+            <label class="ads-advertiser-control">
+              광고주
+              <select id="ads-advertiser-select">
+                <option value="">공통 환경변수</option>
+              </select>
+            </label>
+            <label>
+              시작일
+              <input id="ads-start-date" type="date" />
+            </label>
+            <label>
+              종료일
+              <input id="ads-end-date" type="date" />
+            </label>
+            <button class="secondary" id="refresh-ads-dashboard" type="button">성과 새로고침</button>
+            <span class="status" id="ads-dashboard-status"></span>
+          </div>
+          <details class="ads-key-manager">
+            <summary class="ads-key-manager-head">
+              <div>
+                <h3>광고주별 API 키 관리</h3>
+                <p class="help">
+                  광고주별 Ads API 키와 Conversion API 키를 저장합니다. 저장된 키는 화면에 원문으로 표시하지 않습니다.
+                </p>
+              </div>
+              <span class="ads-key-summary-actions">
+                <span class="status" id="ads-api-key-status"></span>
+                <span class="details-toggle-label" aria-hidden="true"></span>
+              </span>
+            </summary>
+            <div class="ads-key-manager-body">
+              <div class="ads-key-form">
+                <label>
+                  광고주명
+                  <input id="ads-key-advertiser" type="text" placeholder="예: Puradakchicken(푸라닭)" />
+                </label>
+                <label>
+                  Ads API key
+                  <input id="ads-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+                </label>
+                <label>
+                  Conversion API key
+                  <input id="ads-conversion-key-value" type="password" placeholder="sk-svcacct-..." autocomplete="off" />
+                </label>
+                <label class="check-label">
+                  <input id="ads-key-enabled" type="checkbox" checked />
+                  사용
+                </label>
+                <button class="secondary" id="save-ads-api-key" type="button">키 저장</button>
+              </div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>광고주</th>
+                      <th>Ads API key</th>
+                      <th>Conversion API key</th>
+                      <th>상태</th>
+                      <th>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-api-key-body">
+                    <tr>
+                      <td colspan="5">등록된 광고주별 키를 불러오는 중입니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+          <div class="ads-kpi-grid">
+            <div class="ads-kpi">
+              <span>노출</span>
+              <strong id="ads-kpi-impressions">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>클릭</span>
+              <strong id="ads-kpi-clicks">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>소진액</span>
+              <strong id="ads-kpi-spend">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CTR</span>
+              <strong id="ads-kpi-ctr">0.00%</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPC</span>
+              <strong id="ads-kpi-cpc">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPM</span>
+              <strong id="ads-kpi-cpm">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>전환수</span>
+              <strong id="ads-kpi-conversions">0</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>전환값</span>
+              <strong id="ads-kpi-conversion-value">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>CPA</span>
+              <strong id="ads-kpi-cpa">0원</strong>
+            </div>
+            <div class="ads-kpi">
+              <span>ROAS</span>
+              <strong id="ads-kpi-roas">-</strong>
+            </div>
+          </div>
+          <div class="ads-dashboard-layout">
+            <div>
+              <div class="ads-table-title">
+                <h3>캠페인 현황</h3>
+                <span class="status" id="ads-campaign-count"></span>
+              </div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>캠페인</th>
+                      <th>상태</th>
+                      <th>노출</th>
+                      <th>클릭</th>
+                      <th>소진액</th>
+                      <th>CTR</th>
+                      <th>전환</th>
+                      <th>CPA</th>
+                      <th>ROAS</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-campaign-body">
+                    <tr>
+                      <td colspan="10">성과 데이터를 불러오는 중입니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <aside class="ads-detail-card" id="ads-detail-card">
+              <h3>상세 성과</h3>
+              <p>캠페인의 상세 버튼을 누르면 광고그룹 성과가 표시됩니다. 광고그룹 상세를 누르면 소재별 수치를 확인합니다.</p>
+              <div id="ads-detail-summary"></div>
+              <div class="mail-table-wrap">
+                <table class="ads-table">
+                  <thead>
+                    <tr>
+                      <th>항목</th>
+                      <th>상태</th>
+                      <th>노출</th>
+                      <th>클릭</th>
+                      <th>소진액</th>
+                      <th>전환</th>
+                      <th>CPA</th>
+                      <th>ROAS</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ads-detail-body">
+                    <tr>
+                      <td colspan="9">아직 선택된 항목이 없습니다.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="card section admin-page" data-admin-page-panel="official">
+          <h2>OpenAI 공식 가이드 변경 로그</h2>
+          <p class="help">
+            GitHub Actions 재인덱싱에서 새로 발견되거나 내용 해시가 바뀐 공식 문서만 기록합니다.
+            공식 가이드 변경분은 official 컬렉션에 자동 반영됩니다.
+          </p>
+          <div class="change-log-note">
+            운영 원칙: OpenAI Help Center/Developers 문서는 하루 2회 확인하고, 동일 문서는 건너뜁니다.
+            아래 목록은 변경이 감지된 문서의 감사 로그이며 메일 검토함과 달리 별도 승인 없이 RAG에 반영됩니다.
+          </div>
+          <div class="filter-strip" style="margin-top: 16px;">
+            <label>
+              시작일
+              <input id="official-start-date-filter" type="date" />
+            </label>
+            <label>
+              종료일
+              <input id="official-end-date-filter" type="date" />
+            </label>
+            <label>
+              언어
+              <select id="official-lang-filter">
+                <option value="all">전체</option>
+                <option value="ko">KO</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+            <div class="help" style="margin: 0;">공식 문서 변경 이력은 최근 항목부터 한 페이지에 15개씩 표시됩니다.</div>
+            <div class="pager">
+              <button class="secondary" id="official-prev" type="button">이전</button>
+              <span id="official-page-info">1 / 1</span>
+              <button class="secondary" id="official-next" type="button">다음</button>
+            </div>
+            <div class="actions" style="margin: 0;">
+              <button class="secondary" id="refresh-official-changes" type="button">변경 로그 새로고침</button>
+              <span class="status" id="official-change-status"></span>
+            </div>
+          </div>
+          <div class="mail-table-wrap">
+            <table class="mail-table">
+              <thead>
+                <tr>
+                  <th>감지일</th>
+                  <th>유형</th>
+                  <th>언어</th>
+                  <th>문서</th>
+                  <th>주요 요약</th>
+                  <th>업데이트일</th>
+                </tr>
+              </thead>
+              <tbody id="official-change-body">
+                <tr>
+                  <td colspan="6">공식 가이드 변경 로그를 불러오는 중입니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card section admin-page" data-admin-page-panel="mail">
+          <h2>OpenAI 담당자 메일 검토함</h2>
+          <p class="help">
+            Daum IMAP에서 수집된 관련 메일을 검토합니다. 원문은 시트에 영구 보존하고,
+            관리자가 RAG 반영 문장을 확정한 행만 다음 자동 동기화 때 RAG에 반영됩니다.
+          </p>
+          <div class="mail-review-note">
+            운영 원칙: 모든 수집 메일을 곧바로 RAG에 넣지 않습니다. 변경 가능성이 큰 베타 정보는
+            AI 주요 요약을 먼저 검토한 뒤, 확정해도 되는 문장만 RAG 반영 문장으로 남겨 주세요.
+          </div>
+          <div class="sync-schedule" aria-label="메일 자동 수집 시간">
+            <strong>메일 자동 수집</strong>
+            <span class="sync-pill">KST 09:00</span>
+            <span class="sync-pill">KST 14:00</span>
+            <span class="sync-pill">KST 18:00</span>
+            <span class="sync-pill">KST 23:00</span>
+            <em>Daum IMAP 수집 후 Google Sheet에 누적하며, 관리자 승인 항목만 RAG에 반영합니다.</em>
+          </div>
+          <div class="summary-grid" style="margin-top: 16px;">
+            <div class="metric">
+              <span>검토 필요</span>
+              <strong id="mail-metric-needs">0</strong>
+            </div>
+            <div class="metric">
+              <span>RAG 승인</span>
+              <strong id="mail-metric-approved">0</strong>
+            </div>
+            <div class="metric">
+              <span>전체 수집</span>
+              <strong id="mail-metric-total">0</strong>
+            </div>
+          </div>
+          <div class="review-toolbar">
+            <label>
+              검토 상태
+              <select id="mail-review-filter">
+                <option value="all">전체 보기</option>
+                <option value="needs_review">검토 필요</option>
+                <option value="approved_for_rag">RAG 반영 승인</option>
+                <option value="hold">보류</option>
+                <option value="rejected">제외</option>
+                <option value="superseded">이전 내용 대체</option>
+              </select>
+            </label>
+            <div class="actions" style="margin: 0;">
+              <button class="secondary" id="refresh-mail-review" type="button">메일 목록 새로고침</button>
+              <span class="status" id="mail-review-status"></span>
+            </div>
+          </div>
+          <div class="mail-review-grid">
+            <div class="mail-table-wrap">
+              <table class="mail-table">
+                <thead>
+                  <tr>
+                    <th>상태</th>
+                    <th>메일</th>
+                    <th>요약</th>
+                    <th>작업</th>
+                  </tr>
+                </thead>
+                <tbody id="mail-review-body">
+                  <tr>
+                    <td colspan="4">메일 검토 목록을 불러오는 중입니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <aside class="mail-detail" id="mail-detail">
+              <div class="mail-detail-empty">왼쪽 목록에서 검토할 메일을 선택해 주세요.</div>
+            </aside>
+          </div>
+        </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+    <script>
+      const loginCard = document.querySelector("#login-card");
+      const adminPanel = document.querySelector("#admin-panel");
+      const adminNavButtons = Array.from(document.querySelectorAll("[data-admin-page]"));
+      const adminPages = Array.from(document.querySelectorAll("[data-admin-page-panel]"));
+      const passwordInput = document.querySelector("#admin-password");
+      const loginButton = document.querySelector("#login-button");
+      const loginStatus = document.querySelector("#login-status");
+      const noticeStatus = document.querySelector("#notice-status");
+      const analyticsStatus = document.querySelector("#analytics-status");
+      const slideContentStatus = document.querySelector("#slide-content-status");
+      const officialChangeStatus = document.querySelector("#official-change-status");
+      const mailReviewStatus = document.querySelector("#mail-review-status");
+      const adsDashboardStatus = document.querySelector("#ads-dashboard-status");
+      const adsApiKeyStatus = document.querySelector("#ads-api-key-status");
+      let officialChanges = [];
+      let mailReviewRows = [];
+      let selectedMailHash = "";
+      let adsDashboardData = null;
+      let adsApiKeys = [];
+      let slideContentData = null;
+      let noticeQuill = null;
+      let visitChart = null;
+      let officialPage = 1;
+      const officialPageSize = 15;
+      let officialPagination = { page: 1, total_pages: 1, has_previous: false, has_next: false };
+      const fields = {
+        title: document.querySelector("#notice-title"),
+        updatedAt: document.querySelector("#notice-updated"),
+        editor: document.querySelector("#notice-editor"),
+        modalBg: document.querySelector("#notice-modal-bg"),
+        sourceLabel: document.querySelector("#notice-source-label"),
+        sourceUrl: document.querySelector("#notice-source-url"),
+        enabled: document.querySelector("#notice-enabled"),
+      };
+      const previewFields = {
+        card: document.querySelector("#notice-preview"),
+        title: document.querySelector("#notice-preview-title"),
+        updated: document.querySelector("#notice-preview-updated"),
+        body: document.querySelector("#notice-preview-body"),
+        source: document.querySelector("#notice-preview-source"),
+      };
+
+      function activateAdminPage(page) {
+        const target = page || "notice";
+        adminNavButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.adminPage === target);
+        });
+        adminPages.forEach((panel) => {
+          const isActive = panel.dataset.adminPagePanel === target;
+          panel.classList.toggle("active", isActive);
+          panel.hidden = !isActive;
+        });
+        if (target === "analytics" && visitChart) {
+          window.setTimeout(() => visitChart.resize(), 60);
+        }
+        window.localStorage.setItem("openaiAdsAdminPage", target);
+      }
+
+      function password() {
+        return passwordInput.value || window.sessionStorage.getItem("openaiAdsAdminPassword") || "";
+      }
+
+      async function adminFetch(url, options = {}) {
+        const headers = new Headers(options.headers || {});
+        headers.set("x-admin-password", password());
+        if (options.body && !headers.has("content-type")) headers.set("content-type", "application/json");
+        const response = await fetch(url, { ...options, headers });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || "요청 처리 중 오류가 발생했습니다.");
+        }
+        return payload;
+      }
+
+      function setStatus(element, text, type = "") {
+        element.textContent = text || "";
+        element.className = `status ${type}`.trim();
+      }
+
+      function bulletsToHtml(bullets = []) {
+        if (!bullets.length) return "";
+        const escape = (value) =>
+          String(value).replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[char]);
+        return `<ul>${bullets.map((line) => `<li>${escape(line)}</li>`).join("")}</ul>`;
+      }
+
+      function editorTextLines() {
+        return getNoticeText()
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 20);
+      }
+
+      function initNoticeEditor() {
+        if (!fields.editor || noticeQuill || !window.Quill) return;
+        noticeQuill = new Quill("#notice-editor", {
+          theme: "snow",
+          placeholder: "공지 내용을 입력해 주세요.",
+          modules: {
+            toolbar: false,
+          },
+          formats: ["bold", "italic", "underline", "header", "blockquote", "list", "link", "color", "background", "size"],
+        });
+        noticeQuill.on("text-change", renderNoticePreview);
+      }
+
+      function getNoticeHtml() {
+        return noticeQuill ? noticeQuill.root.innerHTML : fields.editor.innerHTML;
+      }
+
+      function getNoticeText() {
+        return noticeQuill ? noticeQuill.getText() : fields.editor.innerText;
+      }
+
+      function setNoticeHtml(html) {
+        if (noticeQuill) {
+          noticeQuill.root.innerHTML = html || "";
+        } else {
+          fields.editor.innerHTML = html || "";
+        }
+      }
+
+      function insertNoticeEmoji(emoji) {
+        if (noticeQuill) {
+          const range = noticeQuill.getSelection(true) || { index: noticeQuill.getLength(), length: 0 };
+          noticeQuill.insertText(range.index, emoji);
+          noticeQuill.setSelection(range.index + emoji.length, 0);
+        } else {
+          fields.editor.focus();
+          document.execCommand("insertText", false, emoji);
+        }
+        renderNoticePreview();
+      }
+
+      function runNoticeCommand(command) {
+        if (noticeQuill) {
+          const range = noticeQuill.getSelection(true) || { index: 0, length: 0 };
+          const format = noticeQuill.getFormat(range);
+          if (command === "bold" || command === "italic" || command === "underline") {
+            noticeQuill.format(command, !format[command]);
+          } else if (command === "header") {
+            noticeQuill.format("header", format.header === 2 ? false : 2);
+          } else if (command === "blockquote") {
+            noticeQuill.format("blockquote", !format.blockquote);
+          } else if (command === "insertUnorderedList") {
+            noticeQuill.format("list", format.list === "bullet" ? false : "bullet");
+          } else if (command === "insertOrderedList") {
+            noticeQuill.format("list", format.list === "ordered" ? false : "ordered");
+          } else if (command === "createLink") {
+            const url = window.prompt("링크 URL을 입력해 주세요.");
+            if (url) noticeQuill.format("link", url);
+          } else if (command === "removeFormat") {
+            noticeQuill.removeFormat(0, noticeQuill.getLength());
+          }
+        } else if (command === "createLink") {
+          const url = window.prompt("링크 URL을 입력해 주세요.");
+          if (url) document.execCommand(command, false, url);
+        } else if (command === "header") {
+          document.execCommand("formatBlock", false, "h3");
+        } else if (command === "blockquote") {
+          document.execCommand("formatBlock", false, "blockquote");
+        } else {
+          document.execCommand(command, false, null);
+        }
+        renderNoticePreview();
+      }
+
+      function applyNoticeFormat(format, value) {
+        if (!format) return;
+        if (noticeQuill) {
+          noticeQuill.format(format, value || false);
+        } else {
+          fields.editor.focus();
+          if (format === "color") {
+            document.execCommand("foreColor", false, value);
+          } else if (format === "background") {
+            document.execCommand("hiliteColor", false, value);
+          } else if (format === "size") {
+            const legacySize = value === "small" ? "2" : value === "large" ? "5" : value === "huge" ? "6" : "3";
+            document.execCommand("fontSize", false, legacySize);
+          }
+        }
+        renderNoticePreview();
+      }
+
+      function fillNoticeForm(notice) {
+        fields.title.value = notice.title || "";
+        fields.updatedAt.textContent = notice.updated_at || "저장 시 자동 반영";
+        setNoticeHtml(notice.body_html || bulletsToHtml(notice.bullets || []));
+        fields.modalBg.value = notice.modal_background || "#ffffff";
+        fields.sourceLabel.value = notice.source_label || "";
+        fields.sourceUrl.value = notice.source_url || "";
+        fields.enabled.checked = notice.enabled !== false;
+        renderNoticePreview();
+      }
+
+      function renderNoticePreview() {
+        if (previewFields.card) previewFields.card.style.background = fields.modalBg?.value || "#fffafa";
+        previewFields.title.textContent = fields.title.value.trim() || "OpenAI 광고 집행 의뢰 안내";
+        const updatedText = fields.updatedAt.textContent.trim();
+        previewFields.updated.textContent =
+          updatedText && updatedText !== "저장 시 자동 반영" ? `최종 업데이트: ${updatedText}` : "저장 전 미리보기";
+        previewFields.body.innerHTML = getNoticeHtml().trim() || "<p>공지 내용을 입력하면 여기에 미리 표시됩니다.</p>";
+        const label = fields.sourceLabel.value.trim();
+        const url = fields.sourceUrl.value.trim();
+        if (url) {
+          previewFields.source.hidden = false;
+          previewFields.source.href = url;
+          previewFields.source.textContent = label || url;
+        } else {
+          previewFields.source.hidden = true;
+          previewFields.source.removeAttribute("href");
+          previewFields.source.textContent = "";
+        }
+      }
+
+      function readNoticeForm() {
+        return {
+          title: fields.title.value.trim(),
+          body_html: getNoticeHtml().trim(),
+          modal_background: fields.modalBg?.value || "#ffffff",
+          bullets: editorTextLines(),
+          source_label: fields.sourceLabel.value.trim(),
+          source_url: fields.sourceUrl.value.trim(),
+          enabled: fields.enabled.checked,
+        };
+      }
+
+      async function loadNotice() {
+        setStatus(noticeStatus, "공지 설정을 불러오는 중...");
+        const notice = await adminFetch("/api/admin/notice");
+        fillNoticeForm(notice);
+        setStatus(noticeStatus, "공지 설정을 불러왔습니다.", "ok");
+        if (notice.storage_error) setStatus(noticeStatus, `DB 저장소 대신 임시 저장소 사용 중: ${notice.storage_error}`, "error");
+      }
+
+      async function saveNotice() {
+        setStatus(noticeStatus, "저장 중...");
+        const notice = await adminFetch("/api/admin/notice", {
+          method: "POST",
+          body: JSON.stringify(readNoticeForm()),
+        });
+        fillNoticeForm(notice);
+        setStatus(noticeStatus, "공지 팝업이 저장되었습니다.", notice.storage === "supabase" ? "ok" : "error");
+      }
+
+      function deckLabel(deck) {
+        return {
+          advertiser: "광고주 안내자료",
+          setup: "캠페인 세팅 가이드",
+          pixel: "픽셀 설치 가이드",
+        }[deck] || deck || "공통";
+      }
+
+      function renderSlideContentEditors(data) {
+        slideContentData = data || { items: [], images: [] };
+        const textRoot = document.querySelector("#slide-text-editor");
+        const imageRoot = document.querySelector("#slide-image-editor");
+        textRoot.innerHTML = "";
+        imageRoot.innerHTML = "";
+
+        (slideContentData.items || []).forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "slide-edit-card";
+          const control = item.multiline
+            ? `<textarea data-slide-text="${escapeHtml(item.key)}">${escapeHtml(item.value || "")}</textarea>`
+            : `<input data-slide-text="${escapeHtml(item.key)}" type="text" value="${escapeHtml(item.value || "")}" />`;
+          card.innerHTML = `
+            <h3>${escapeHtml(item.label)}</h3>
+            <small>${escapeHtml(deckLabel(item.deck))} · ${escapeHtml(item.key)}</small>
+            ${control}
+          `;
+          textRoot.append(card);
+        });
+
+        (slideContentData.images || []).forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "slide-edit-card image-card";
+          card.innerHTML = `
+            <h3>${escapeHtml(item.label)}</h3>
+            <small>${escapeHtml(deckLabel(item.deck))} · ${escapeHtml(item.key)}</small>
+            <label>이미지 URL<input data-slide-image="${escapeHtml(item.key)}" data-field="value" type="url" value="${escapeHtml(item.value || "")}" /></label>
+            <label>대체 텍스트<input data-slide-image="${escapeHtml(item.key)}" data-field="alt" type="text" value="${escapeHtml(item.alt || item.label || "")}" /></label>
+            <label>캡션<input data-slide-image="${escapeHtml(item.key)}" data-field="caption" type="text" value="${escapeHtml(item.caption || item.label || "")}" /></label>
+          `;
+          imageRoot.append(card);
+        });
+      }
+
+      function readSlideContentForm() {
+        const textValues = new Map(
+          Array.from(document.querySelectorAll("[data-slide-text]")).map((input) => [
+            input.dataset.slideText,
+            input.value,
+          ]),
+        );
+        const imageValues = new Map();
+        document.querySelectorAll("[data-slide-image]").forEach((input) => {
+          const key = input.dataset.slideImage;
+          const current = imageValues.get(key) || { key };
+          current[input.dataset.field] = input.value;
+          imageValues.set(key, current);
+        });
+        return {
+          items: (slideContentData?.items || []).map((item) => ({
+            key: item.key,
+            value: textValues.get(item.key) ?? item.value ?? "",
+          })),
+          images: (slideContentData?.images || []).map((item) => ({
+            key: item.key,
+            value: imageValues.get(item.key)?.value ?? item.value ?? "",
+            alt: imageValues.get(item.key)?.alt ?? item.alt ?? "",
+            caption: imageValues.get(item.key)?.caption ?? item.caption ?? "",
+          })),
+        };
+      }
+
+      async function loadSlideContent() {
+        setStatus(slideContentStatus, "안내자료 설정을 불러오는 중...");
+        const data = await adminFetch("/api/admin/guide-slides");
+        renderSlideContentEditors(data);
+        setStatus(slideContentStatus, "안내자료 설정을 불러왔습니다.", data.storage === "supabase" ? "ok" : "error");
+      }
+
+      async function saveSlideContent() {
+        setStatus(slideContentStatus, "저장 중...");
+        const data = await adminFetch("/api/admin/guide-slides", {
+          method: "POST",
+          body: JSON.stringify(readSlideContentForm()),
+        });
+        renderSlideContentEditors(data);
+        setStatus(slideContentStatus, "안내자료 설정이 저장되었습니다.", data.storage === "supabase" ? "ok" : "error");
+      }
+
+      function isTrackedEvent(item) {
+        const page = String(item.page || "");
+        return page.startsWith("download:") || page.startsWith("action:");
+      }
+
+      function renderAnalyticsRows(bodySelector, items, emptyMessage) {
+        const body = document.querySelector(bodySelector);
+        body.innerHTML = "";
+        if (!items.length) {
+          body.innerHTML = `<tr><td colspan="4">${emptyMessage}</td></tr>`;
+          return;
+        }
+        items.forEach((item) => {
+          const tr = document.createElement("tr");
+          const lastSeen = item.last_seen_at ? new Date(item.last_seen_at).toLocaleString("ko-KR") : "-";
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(item.page_label || item.page)}</strong><br><span style="color:#667085">${escapeHtml(item.page || "")}</span></td>
+            <td>${Number(item.total_count || 0).toLocaleString("ko-KR")}</td>
+            <td>${Number(item.today_count || 0).toLocaleString("ko-KR")}<br><span style="color:#667085">${escapeHtml(item.today_date || "")}</span></td>
+            <td>${escapeHtml(lastSeen)}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      function renderAnalytics(data) {
+        const items = data.items || [];
+        const pageItems = items.filter((item) => !isTrackedEvent(item));
+        const eventItems = items.filter(isTrackedEvent);
+        const total = pageItems.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
+        const today = pageItems.reduce((sum, item) => sum + Number(item.today_count || 0), 0);
+        document.querySelector("#metric-total").textContent = total.toLocaleString("ko-KR");
+        document.querySelector("#metric-today").textContent = today.toLocaleString("ko-KR");
+        document.querySelector("#metric-pages").textContent = pageItems.length.toLocaleString("ko-KR");
+        renderVisitChart(data.series || []);
+        renderAnalyticsRows("#analytics-body", pageItems, "아직 페이지 방문 데이터가 없습니다.");
+        renderAnalyticsRows("#download-analytics-body", eventItems, "아직 다운로드 이벤트가 없습니다.");
+      }
+
+      function normalizeVisitSeries(series, days = 30) {
+        const values = new Map(
+          (series || []).map((item) => [
+            String(item.visit_date || item.date || item.day || "").slice(0, 10),
+            Number(item.total_count || item.count || 0),
+          ]),
+        );
+        const points = [];
+        const today = new Date();
+        for (let index = days - 1; index >= 0; index -= 1) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - index);
+          const key = date.toISOString().slice(0, 10);
+          points.push({ date: key, count: values.get(key) || 0 });
+        }
+        return points;
+      }
+
+      function renderVisitChart(series) {
+        const element = document.querySelector("#visit-chart");
+        const caption = document.querySelector("#chart-caption");
+        const points = normalizeVisitSeries(series, 30);
+        if (!points.some((item) => item.count > 0)) {
+          caption.textContent = "표시할 방문 데이터가 없습니다";
+          if (visitChart) {
+            visitChart.dispose();
+            visitChart = null;
+          }
+          element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#667085;font-weight:800;">아직 방문 데이터가 없습니다</div>';
+          return;
+        }
+
+        caption.textContent = `최근 ${points.length}일 기준`;
+        element.innerHTML = "";
+        if (!window.echarts) {
+          element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#667085;font-weight:800;">차트 라이브러리를 불러오지 못했습니다</div>';
+          return;
+        }
+        if (!visitChart) visitChart = window.echarts.init(element);
+        const areaGradient = window.echarts.graphic
+          ? new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(237, 28, 36, 0.24)" },
+              { offset: 1, color: "rgba(237, 28, 36, 0.02)" },
+            ])
+          : "rgba(237, 28, 36, 0.12)";
+        visitChart.setOption({
+          color: ["#ed1c24"],
+          grid: { left: 42, right: 18, top: 30, bottom: 38 },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: {
+              type: "line",
+              lineStyle: { color: "#98a2b3", width: 1, type: "dashed" },
+            },
+            backgroundColor: "#101828",
+            borderWidth: 0,
+            textStyle: {
+              color: "#fff",
+              fontFamily: "Pretendard Variable, Pretendard, sans-serif",
+              fontWeight: 800,
+            },
+            valueFormatter: (value) => Number(value || 0).toLocaleString("ko-KR"),
+          },
+          xAxis: {
+            type: "category",
+            boundaryGap: false,
+            data: points.map((item) => item.date.slice(5)),
+            axisTick: { show: false },
+            axisLine: { lineStyle: { color: "#e2e8f0" } },
+            axisLabel: { color: "#667085", fontFamily: "Pretendard Variable, Pretendard, sans-serif" },
+          },
+          yAxis: {
+            type: "value",
+            minInterval: 1,
+            splitLine: { lineStyle: { color: "#edf2f7" } },
+            axisLabel: { color: "#667085", fontFamily: "Pretendard Variable, Pretendard, sans-serif" },
+          },
+          series: [
+            {
+              name: "방문",
+              type: "line",
+              smooth: true,
+              showSymbol: points.length <= 14,
+              symbol: "circle",
+              symbolSize: 8,
+              data: points.map((item) => item.count),
+              lineStyle: { width: 3 },
+              emphasis: { focus: "series" },
+              areaStyle: { color: areaGradient },
+            },
+          ],
+        });
+      }
+
+      async function loadAnalytics() {
+        setStatus(analyticsStatus, "방문 데이터를 불러오는 중...");
+        const data = await adminFetch("/api/admin/analytics");
+        renderAnalytics(data);
+        setStatus(analyticsStatus, "방문 데이터를 갱신했습니다.", "ok");
+        if (data.storage_error) setStatus(analyticsStatus, `DB 저장소 대신 임시 저장소 사용 중: ${data.storage_error}`, "error");
+      }
+
+      function formatMetricNumber(value) {
+        return Number(value || 0).toLocaleString("ko-KR");
+      }
+
+      function formatMoney(value) {
+        return `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
+      }
+
+      function formatRate(value) {
+        const number = Number(value || 0);
+        const percent = Math.abs(number) <= 1 ? number * 100 : number;
+        return `${percent.toFixed(2)}%`;
+      }
+
+      function formatMultiplier(value) {
+        const number = Number(value || 0);
+        return number ? `${number.toFixed(2)}x` : "-";
+      }
+
+      function conversionMetric(value, formatter = formatMetricNumber) {
+        if (adsDashboardData && adsDashboardData.conversion_metrics_available === false) return "-";
+        return formatter(value);
+      }
+
+      function adsStatusPill(value) {
+        const label = String(value || "상태 미확인").trim();
+        const className = label.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") || "unknown";
+        return `<span class="ads-status-pill ${escapeHtml(className)}">${escapeHtml(label)}</span>`;
+      }
+
+      function isoDateWithOffset(daysOffset) {
+        const date = new Date();
+        date.setDate(date.getDate() + daysOffset);
+        return date.toISOString().slice(0, 10);
+      }
+
+      function setDefaultAdsDates() {
+        const startInput = document.querySelector("#ads-start-date");
+        const endInput = document.querySelector("#ads-end-date");
+        if (!startInput.value) startInput.value = isoDateWithOffset(-7);
+        if (!endInput.value) endInput.value = isoDateWithOffset(0);
+      }
+
+      function renderAdsApiKeys(data = {}) {
+        adsApiKeys = data.items || [];
+        const select = document.querySelector("#ads-advertiser-select");
+        const previousValue = select.value || "";
+        select.innerHTML = '<option value="">공통 환경변수</option>';
+        adsApiKeys.forEach((item) => {
+          if (!item.enabled || !item.has_ads_api_key) return;
+          const option = document.createElement("option");
+          option.value = item.advertiser_name || "";
+          option.textContent = item.advertiser_name || "이름 없음";
+          select.appendChild(option);
+        });
+        if (Array.from(select.options).some((option) => option.value === previousValue)) {
+          select.value = previousValue;
+        }
+
+        const body = document.querySelector("#ads-api-key-body");
+        body.innerHTML = "";
+        if (!adsApiKeys.length) {
+          body.innerHTML = '<tr><td colspan="5">아직 등록된 광고주별 키가 없습니다.</td></tr>';
+          return;
+        }
+        adsApiKeys.forEach((item) => {
+          const tr = document.createElement("tr");
+          const advertiser = item.advertiser_name || "";
+          const adsKey = item.masked_ads_api_key || (item.has_ads_api_key ? "저장됨" : "-");
+          const conversionKey = item.masked_conversion_api_key || (item.has_conversion_api_key ? "저장됨" : "-");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(advertiser)}</strong></td>
+            <td><span class="secret-mask">${escapeHtml(adsKey)}</span></td>
+            <td><span class="secret-mask">${escapeHtml(conversionKey)}</span></td>
+            <td>${item.enabled ? '<span class="ads-status-pill enabled">사용</span>' : '<span class="ads-status-pill paused">중지</span>'}</td>
+            <td>
+              <div class="ads-key-actions">
+                <button type="button" data-ads-key-select="${escapeHtml(advertiser)}">선택</button>
+                <button type="button" data-ads-key-delete="${escapeHtml(advertiser)}">삭제</button>
+              </div>
+            </td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      function fillAdsKeyForm(advertiserName) {
+        const item = adsApiKeys.find((entry) => entry.advertiser_name === advertiserName);
+        if (!item) return;
+        document.querySelector("#ads-key-advertiser").value = item.advertiser_name || "";
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        document.querySelector("#ads-key-enabled").checked = item.enabled !== false;
+      }
+
+      async function loadAdsApiKeys() {
+        setStatus(adsApiKeyStatus, "API 키 목록을 불러오는 중...");
+        const data = await adminFetch("/api/admin/ads-api-keys");
+        renderAdsApiKeys(data);
+        setStatus(adsApiKeyStatus, "API 키 목록을 갱신했습니다.", "ok");
+      }
+
+      async function saveAdsApiKey() {
+        const advertiserName = document.querySelector("#ads-key-advertiser").value.trim();
+        if (!advertiserName) throw new Error("광고주명을 입력해 주세요.");
+        setStatus(adsApiKeyStatus, "API 키를 저장하는 중...");
+        await adminFetch("/api/admin/ads-api-keys", {
+          method: "POST",
+          body: JSON.stringify({
+            advertiser_name: advertiserName,
+            ads_api_key: document.querySelector("#ads-key-value").value.trim(),
+            conversion_api_key: document.querySelector("#ads-conversion-key-value").value.trim(),
+            enabled: document.querySelector("#ads-key-enabled").checked,
+          }),
+        });
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        await loadAdsApiKeys();
+        const select = document.querySelector("#ads-advertiser-select");
+        if (Array.from(select.options).some((option) => option.value === advertiserName)) {
+          select.value = advertiserName;
+          await loadAdsDashboard();
+        }
+        setStatus(adsApiKeyStatus, "API 키를 저장했습니다.", "ok");
+      }
+
+      async function deleteAdsApiKey(advertiserName) {
+        if (!advertiserName) return;
+        if (!window.confirm(`${advertiserName} API 키를 삭제할까요?`)) return;
+        setStatus(adsApiKeyStatus, "API 키를 삭제하는 중...");
+        await adminFetch(`/api/admin/ads-api-keys/${encodeURIComponent(advertiserName)}`, { method: "DELETE" });
+        document.querySelector("#ads-key-advertiser").value = "";
+        document.querySelector("#ads-key-value").value = "";
+        document.querySelector("#ads-conversion-key-value").value = "";
+        await loadAdsApiKeys();
+        await loadAdsDashboard();
+        setStatus(adsApiKeyStatus, "API 키를 삭제했습니다.", "ok");
+      }
+
+      function renderAdsKpis(summary = {}) {
+        document.querySelector("#ads-kpi-impressions").textContent = formatMetricNumber(summary.impressions);
+        document.querySelector("#ads-kpi-clicks").textContent = formatMetricNumber(summary.clicks);
+        document.querySelector("#ads-kpi-spend").textContent = formatMoney(summary.spend);
+        document.querySelector("#ads-kpi-ctr").textContent = formatRate(summary.ctr);
+        document.querySelector("#ads-kpi-cpc").textContent = formatMoney(summary.cpc);
+        document.querySelector("#ads-kpi-cpm").textContent = formatMoney(summary.cpm);
+        document.querySelector("#ads-kpi-conversions").textContent = conversionMetric(summary.conversions);
+        document.querySelector("#ads-kpi-conversion-value").textContent = conversionMetric(summary.conversion_value, formatMoney);
+        document.querySelector("#ads-kpi-cpa").textContent = conversionMetric(summary.cost_per_conversion, formatMoney);
+        document.querySelector("#ads-kpi-roas").textContent = conversionMetric(summary.roas, formatMultiplier);
+      }
+
+      function renderAdsCampaignRows(rows = []) {
+        const body = document.querySelector("#ads-campaign-body");
+        const count = document.querySelector("#ads-campaign-count");
+        count.textContent = `${formatMetricNumber(rows.length)}개 캠페인`;
+        body.innerHTML = "";
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="10">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
+          return;
+        }
+        rows.forEach((row) => {
+          const disabled = row.id ? "" : "disabled";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span style="color:#667085">${escapeHtml(row.id || "id 없음")}</span></td>
+            <td>${adsStatusPill(row.status)}</td>
+            <td>${formatMetricNumber(row.impressions)}</td>
+            <td>${formatMetricNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
+            <td><button type="button" data-ads-detail-scope="campaign" data-ads-detail-id="${escapeHtml(row.id || "")}" ${disabled}>광고그룹</button></td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-ads-detail-scope]").forEach((button) => {
+          button.addEventListener("click", () => {
+            loadAdsDashboard(button.dataset.adsDetailScope || "", button.dataset.adsDetailId || "").catch((error) =>
+              setStatus(adsDashboardStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function renderAdsDetail(detail) {
+        const summary = document.querySelector("#ads-detail-summary");
+        const body = document.querySelector("#ads-detail-body");
+        summary.innerHTML = "";
+        body.innerHTML = "";
+        if (!detail || !Array.isArray(detail.rows)) {
+          body.innerHTML = '<tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>';
+          return;
+        }
+        const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
+        const total = detail.total || {};
+        summary.innerHTML = `
+          <div class="summary-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 12px;">
+            <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatMetricNumber(detail.rows.length)}</strong></div>
+            <div class="metric"><span>클릭</span><strong>${formatMetricNumber(total.clicks)}</strong></div>
+            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+            <div class="metric"><span>전환수</span><strong>${conversionMetric(total.conversions)}</strong></div>
+          </div>
+        `;
+        if (!detail.rows.length) {
+          body.innerHTML = `<tr><td colspan="9">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
+          return;
+        }
+        detail.rows.forEach((row) => {
+          const canDrillDown = detail.aggregation_level === "ad_group" && row.id;
+          const action = canDrillDown
+            ? `<button type="button" data-ads-detail-scope="ad_group" data-ads-detail-id="${escapeHtml(row.id)}">소재</button>`
+            : "-";
+          const secondary = detail.aggregation_level === "ad"
+            ? `${escapeHtml(row.ad_group_name || "")}<br>${escapeHtml(row.review_status || "")}`
+            : escapeHtml(row.id || "id 없음");
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span style="color:#667085">${secondary}</span></td>
+            <td>${adsStatusPill(row.status || row.review_status)}</td>
+            <td>${formatMetricNumber(row.impressions)}</td>
+            <td>${formatMetricNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${conversionMetric(row.conversions)}</td>
+            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
+            <td>${action}</td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-ads-detail-scope]").forEach((button) => {
+          button.addEventListener("click", () => {
+            loadAdsDashboard(button.dataset.adsDetailScope || "", button.dataset.adsDetailId || "").catch((error) =>
+              setStatus(adsDashboardStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function renderAdsDashboard(data) {
+        adsDashboardData = data;
+        const setup = document.querySelector("#ads-dashboard-setup");
+        if (!data.ok) {
+          renderAdsKpis({});
+          renderAdsCampaignRows([]);
+          renderAdsDetail(null);
+          setup.classList.remove("hidden");
+          setup.textContent = data.configured === false
+            ? "광고주별 Ads API 키를 등록하거나 OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 이 영역에서 실시간 성과를 조회할 수 있습니다."
+            : `${data.error || "Ads API 조회에 실패했습니다."}${data.detail ? ` · ${data.detail}` : ""}`;
+          setStatus(adsDashboardStatus, data.configured === false ? "API 키 대기 중" : "조회 실패", "error");
+          return;
+        }
+        setup.classList.add("hidden");
+        setup.textContent = "";
+        renderAdsKpis(data.campaign_total || data.account || {});
+        renderAdsCampaignRows(data.campaigns || []);
+        renderAdsDetail(data.detail || null);
+        const range = data.range || {};
+        const advertiser = data.advertiser_name ? ` · ${data.advertiser_name}` : "";
+        if (data.warning) {
+          setStatus(
+            adsDashboardStatus,
+            `${range.start_date || ""} ~ ${range.end_date || ""} 기본 성과를 갱신했습니다${advertiser} · ${data.warning}`,
+            "warning",
+          );
+          return;
+        }
+        const conversionNote = data.conversion_metrics_available === false
+          ? " · 전환 필드는 현재 API 응답에서 제공되지 않아 비워 두었습니다."
+          : "";
+        setStatus(adsDashboardStatus, `${range.start_date || ""} ~ ${range.end_date || ""} 성과를 갱신했습니다${advertiser}${conversionNote}`, "ok");
+      }
+
+      async function loadAdsDashboard(detailScope = "", detailId = "") {
+        setDefaultAdsDates();
+        setStatus(adsDashboardStatus, "Ads API 성과를 불러오는 중...");
+        const params = new URLSearchParams({
+          start_date: document.querySelector("#ads-start-date").value,
+          end_date: document.querySelector("#ads-end-date").value,
+        });
+        const advertiserName = document.querySelector("#ads-advertiser-select")?.value || "";
+        if (advertiserName) params.set("advertiser_name", advertiserName);
+        if (detailScope && detailId) {
+          params.set("detail_scope", detailScope);
+          params.set("detail_id", detailId);
+        }
+        const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
+        renderAdsDashboard(data);
+      }
+
+      function changeTypeLabel(type) {
+        return type === "new" ? "신규" : "변경";
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString("ko-KR");
+      }
+
+      function filteredOfficialChanges(items = officialChanges) {
+        const langFilter = document.querySelector("#official-lang-filter")?.value || "all";
+        return (items || []).filter((item) => {
+          const lang = String(item.lang || "").toLowerCase();
+          if (langFilter !== "all" && lang !== langFilter) return false;
+          return true;
+        });
+      }
+
+      function renderOfficialChanges(items = officialChanges) {
+        const body = document.querySelector("#official-change-body");
+        const pageInfo = document.querySelector("#official-page-info");
+        const prevButton = document.querySelector("#official-prev");
+        const nextButton = document.querySelector("#official-next");
+        const filtered = filteredOfficialChanges(items);
+        const totalPages = Math.max(1, Number(officialPagination.total_pages || 1));
+        officialPage = Math.min(Math.max(1, Number(officialPagination.page || officialPage || 1)), totalPages);
+        const pageItems = filtered;
+        if (pageInfo) pageInfo.textContent = `${officialPage} / ${totalPages}`;
+        if (prevButton) prevButton.disabled = !officialPagination.has_previous;
+        if (nextButton) nextButton.disabled = !officialPagination.has_next;
+        body.innerHTML = "";
+        if (!filtered.length) {
+          body.innerHTML = '<tr><td colspan="6">아직 기록된 공식 가이드 변경이 없습니다. 다음 자동 재인덱싱에서 신규/변경 문서가 감지되면 여기에 표시됩니다.</td></tr>';
+          return;
+        }
+        pageItems.forEach((item) => {
+          const type = item.change_type === "new" ? "new" : "updated";
+          const updatedAt = item.current_source_updated_at || "-";
+          const previousAt = item.previous_source_updated_at || "";
+          const hashText = item.previous_hash
+            ? `${String(item.previous_hash).slice(0, 10)} → ${String(item.current_hash || "").slice(0, 10)}`
+            : String(item.current_hash || "").slice(0, 10);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(formatDateTime(item.detected_at))}</td>
+            <td><span class="change-type-chip ${type}">${changeTypeLabel(type)}</span></td>
+            <td><span class="language-chip">${escapeHtml(item.lang || "-")}</span></td>
+            <td>
+              <span class="mail-subject"><a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener">${escapeHtml(item.title || "Untitled")}</a></span>
+              <div class="mail-meta">article ${escapeHtml(item.article_id || "-")} · ${escapeHtml(hashText)}</div>
+            </td>
+            <td>${escapeHtml(item.summary || "AI 요약 대기 - 공식 원문 링크에서 변경 내용을 확인해 주세요.")}</td>
+            <td>${escapeHtml(previousAt ? `${previousAt} → ${updatedAt}` : updatedAt)}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      async function loadOfficialChanges(page = officialPage) {
+        setStatus(officialChangeStatus, "공식 변경 로그를 불러오는 중...");
+        officialPage = Math.max(1, Number(page || 1));
+        const params = new URLSearchParams({ limit: String(officialPageSize), page: String(officialPage) });
+        const startDate = document.querySelector("#official-start-date-filter")?.value || "";
+        const endDate = document.querySelector("#official-end-date-filter")?.value || "";
+        if (startDate) params.set("start_date", startDate);
+        if (endDate) params.set("end_date", endDate);
+        const data = await adminFetch(`/api/admin/official-changes?${params.toString()}`);
+        if (!data.ok) {
+          officialChanges = [];
+          officialPagination = { page: 1, total_pages: 1, has_previous: false, has_next: false };
+          renderOfficialChanges([]);
+          throw new Error(data.error || "공식 변경 로그를 불러오지 못했습니다.");
+        }
+        officialChanges = data.items || [];
+        officialPagination = data;
+        renderOfficialChanges(officialChanges);
+        setStatus(officialChangeStatus, `공식 변경 로그를 갱신했습니다. 총 ${Number(data.total_count || 0).toLocaleString("ko-KR")}개`, "ok");
+      }
+
+      function statusLabel(status) {
+        const labels = {
+          needs_review: "검토 필요",
+          approved_for_rag: "RAG 승인",
+          hold: "보류",
+          rejected: "제외",
+          superseded: "대체됨",
+        };
+        return labels[status] || status || "검토 필요";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[char]);
+      }
+
+      function isEmailAddress(value) {
+        return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(String(value || "").trim());
+      }
+
+      function mailtoLink(value, label) {
+        const email = String(value || "").trim();
+        const text = label || email || "-";
+        if (!isEmailAddress(email)) return escapeHtml(text);
+        return `<a class="mail-link" href="mailto:${escapeHtml(email)}">${escapeHtml(text)}</a>`;
+      }
+
+      function shortText(value, limit = 140) {
+        const text = String(value || "").replace(/\s+/g, " ").trim();
+        if (text.length <= limit) return text || "-";
+        return `${text.slice(0, limit - 1)}…`;
+      }
+
+      function rowStatus(row) {
+        return String(row.review_status || row.status || "needs_review").trim() || "needs_review";
+      }
+
+      function mailKeySummary(row) {
+        return row.key_summary || row.ai_summary || row.body_summary || row.approved_summary || row.body_text || "";
+      }
+
+      function renderMailStats(stats = {}) {
+        document.querySelector("#mail-metric-needs").textContent = Number(stats.needs_review || 0).toLocaleString("ko-KR");
+        document.querySelector("#mail-metric-approved").textContent = Number(stats.approved_for_rag || 0).toLocaleString("ko-KR");
+        document.querySelector("#mail-metric-total").textContent = Number(stats.total || 0).toLocaleString("ko-KR");
+      }
+
+      function renderMailRows(rows) {
+        const body = document.querySelector("#mail-review-body");
+        body.innerHTML = "";
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="4">조건에 맞는 메일이 없습니다.</td></tr>';
+          renderMailDetail(null);
+          return;
+        }
+        rows.forEach((row) => {
+          const status = rowStatus(row);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><span class="mail-status-chip ${status}">${statusLabel(status)}</span></td>
+            <td>
+              <span class="mail-subject">${escapeHtml(shortText(row.subject, 92))}</span>
+              <div class="mail-meta">${escapeHtml(row.received_at || "-")}<br>${escapeHtml(row.from_name || row.from_email || "-")} · ${mailtoLink(row.from_email)}</div>
+            </td>
+            <td>${escapeHtml(shortText(mailKeySummary(row), 160))}</td>
+            <td><button type="button" data-mail-hash="${escapeHtml(row.duplicate_hash)}">검토</button></td>
+          `;
+          body.appendChild(tr);
+        });
+        body.querySelectorAll("button[data-mail-hash]").forEach((button) => {
+          button.addEventListener("click", () => {
+            selectedMailHash = button.dataset.mailHash || "";
+            renderMailDetail(mailReviewRows.find((row) => row.duplicate_hash === selectedMailHash) || null);
+          });
+        });
+        if (!selectedMailHash || !rows.some((row) => row.duplicate_hash === selectedMailHash)) {
+          selectedMailHash = rows[0].duplicate_hash || "";
+          renderMailDetail(rows[0]);
+        }
+      }
+
+      function renderMailDetail(row) {
+        const detail = document.querySelector("#mail-detail");
+        if (!row) {
+          detail.innerHTML = '<div class="mail-detail-empty">왼쪽 목록에서 검토할 메일을 선택해 주세요.</div>';
+          return;
+        }
+        const status = rowStatus(row);
+        const defaultTitle = row.approved_title || row.subject || "";
+        const defaultSummary = row.approved_summary || row.body_summary || "";
+        const aiSummary = mailKeySummary(row);
+        detail.innerHTML = `
+          <span class="mail-status-chip ${status}">${statusLabel(status)}</span>
+          <h3>${escapeHtml(row.subject || "(제목 없음)")}</h3>
+          <div class="mail-meta">
+            수신 ${escapeHtml(row.received_at || "-")}<br>
+            발신 ${escapeHtml(row.from_name || "-")} &lt;${mailtoLink(row.from_email)}&gt;<br>
+            태그 ${escapeHtml(row.tags || "-")}<br>
+            해시 ${escapeHtml(row.duplicate_hash || "-")}
+          </div>
+          <div class="summary-card">
+            <strong>AI 주요 요약</strong>
+            <p>${escapeHtml(aiSummary || "아직 요약된 주요 사항이 없습니다. 원문을 확인해 주세요.")}</p>
+          </div>
+          <div class="mail-body-preview" style="margin-top: 12px;">${escapeHtml(row.body_text || row.body_summary || "(본문 없음)")}</div>
+          <div class="mail-approval-box">
+            <label>
+              승인 제목
+              <input id="mail-approved-title" type="text" value="${escapeHtml(defaultTitle)}" />
+            </label>
+            <label>
+              RAG 반영 문장
+              <textarea id="mail-approved-summary" placeholder="관리자가 확정해도 되는 문장만 정리해 주세요.">${escapeHtml(defaultSummary)}</textarea>
+            </label>
+            <label>
+              검토 메모
+              <textarea id="mail-review-note" placeholder="보류/제외 사유, 이전 내용 대체 여부 등을 남깁니다.">${escapeHtml(row.review_note || "")}</textarea>
+            </label>
+            <label>
+              승인자
+              <input id="mail-approved-by" type="text" value="${escapeHtml(row.approved_by || "관리자")}" />
+            </label>
+          </div>
+          <div class="actions">
+            <button class="danger" type="button" data-review-action="approved_for_rag">승인하여 RAG 반영</button>
+            <button class="secondary" type="button" data-review-action="hold">보류</button>
+            <button class="secondary" type="button" data-review-action="rejected">제외</button>
+            <button class="secondary" type="button" data-review-action="superseded">이전 내용 대체 처리</button>
+          </div>
+        `;
+        detail.querySelectorAll("[data-review-action]").forEach((button) => {
+          button.addEventListener("click", () => {
+            saveMailReview(button.dataset.reviewAction || "needs_review").catch((error) =>
+              setStatus(mailReviewStatus, error.message, "error"),
+            );
+          });
+        });
+      }
+
+      function readMailDetail(status) {
+        return {
+          duplicate_hash: selectedMailHash,
+          review_status: status,
+          approved_title: document.querySelector("#mail-approved-title")?.value || "",
+          approved_summary: document.querySelector("#mail-approved-summary")?.value || "",
+          review_note: document.querySelector("#mail-review-note")?.value || "",
+          approved_by: document.querySelector("#mail-approved-by")?.value || "관리자",
+          supersedes_duplicate_hash: "",
+        };
+      }
+
+      async function loadMailReview() {
+        const filter = document.querySelector("#mail-review-filter").value || "all";
+        setStatus(mailReviewStatus, "메일 검토 목록을 불러오는 중...");
+        const data = await adminFetch(`/api/admin/mail-review?status=${encodeURIComponent(filter)}&limit=100`);
+        if (!data.ok) {
+          renderMailStats(data.stats || {});
+          mailReviewRows = [];
+          renderMailRows([]);
+          throw new Error(data.error || "메일 검토 목록을 불러오지 못했습니다.");
+        }
+        mailReviewRows = data.rows || [];
+        renderMailStats(data.stats || {});
+        renderMailRows(mailReviewRows);
+        setStatus(mailReviewStatus, "메일 검토 목록을 갱신했습니다.", "ok");
+      }
+
+      async function saveMailReview(status) {
+        const payload = readMailDetail(status);
+        if (!payload.duplicate_hash) throw new Error("검토할 메일을 먼저 선택해 주세요.");
+        if (status === "approved_for_rag" && !payload.approved_summary.trim()) {
+          throw new Error("RAG 반영 승인에는 승인 요약이 필요합니다.");
+        }
+        setStatus(mailReviewStatus, "검토 상태를 저장하는 중...");
+        const data = await adminFetch("/api/admin/mail-review/update", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (!data.ok) throw new Error(data.error || "검토 상태 저장에 실패했습니다.");
+        setStatus(mailReviewStatus, "검토 상태를 저장했습니다. 다음 자동 동기화 때 승인 요약이 RAG에 반영됩니다.", "ok");
+        await loadMailReview();
+      }
+
+      async function login() {
+        setStatus(loginStatus, "확인 중...");
+        try {
+          await loadNotice();
+          await loadSlideContent();
+          await loadAnalytics();
+          await loadOfficialChanges();
+          await loadMailReview();
+          await loadAdsApiKeys().catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
+          window.sessionStorage.setItem("openaiAdsAdminPassword", passwordInput.value);
+          loginCard.classList.add("hidden");
+          adminPanel.classList.remove("hidden");
+          activateAdminPage(window.localStorage.getItem("openaiAdsAdminPage") || "notice");
+          setStatus(loginStatus, "");
+          loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+        } catch (error) {
+          setStatus(loginStatus, error.message, "error");
+        }
+      }
+
+      loginButton.addEventListener("click", login);
+      adminNavButtons.forEach((button) => {
+        button.addEventListener("click", () => activateAdminPage(button.dataset.adminPage || "notice"));
+      });
+      document.querySelectorAll("[data-admin-page-panel]").forEach((panel) => {
+        panel.hidden = !panel.classList.contains("active");
+      });
+      initNoticeEditor();
+      passwordInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") login();
+      });
+      document.querySelector("#save-notice").addEventListener("click", () => {
+        saveNotice().catch((error) => setStatus(noticeStatus, error.message, "error"));
+      });
+      document.querySelector("#reload-notice").addEventListener("click", () => {
+        loadNotice().catch((error) => setStatus(noticeStatus, error.message, "error"));
+      });
+      document.querySelector("#save-slide-content").addEventListener("click", () => {
+        saveSlideContent().catch((error) => setStatus(slideContentStatus, error.message, "error"));
+      });
+      document.querySelector("#reload-slide-content").addEventListener("click", () => {
+        loadSlideContent().catch((error) => setStatus(slideContentStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-analytics").addEventListener("click", () => {
+        loadAnalytics().catch((error) => setStatus(analyticsStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-ads-dashboard").addEventListener("click", () => {
+        loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+      });
+      document.querySelector("#save-ads-api-key").addEventListener("click", () => {
+        saveAdsApiKey().catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
+      });
+      document.querySelector("#ads-advertiser-select").addEventListener("change", () => {
+        loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+      });
+      document.querySelector("#ads-api-key-body").addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const selectName = button.dataset.adsKeySelect;
+        const deleteName = button.dataset.adsKeyDelete;
+        if (selectName) {
+          fillAdsKeyForm(selectName);
+          const select = document.querySelector("#ads-advertiser-select");
+          if (Array.from(select.options).some((option) => option.value === selectName)) {
+            select.value = selectName;
+            loadAdsDashboard().catch((error) => setStatus(adsDashboardStatus, error.message, "error"));
+          }
+        }
+        if (deleteName) {
+          deleteAdsApiKey(deleteName).catch((error) => setStatus(adsApiKeyStatus, error.message, "error"));
+        }
+      });
+      document.querySelector("#refresh-official-changes").addEventListener("click", () => {
+        officialPage = 1;
+        loadOfficialChanges().catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-start-date-filter").addEventListener("change", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-end-date-filter").addEventListener("change", () => {
+        officialPage = 1;
+        loadOfficialChanges(1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-lang-filter").addEventListener("change", () => {
+        officialPage = 1;
+        renderOfficialChanges();
+      });
+      document.querySelector("#official-prev").addEventListener("click", () => {
+        loadOfficialChanges(Math.max(1, officialPage - 1)).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#official-next").addEventListener("click", () => {
+        loadOfficialChanges(officialPage + 1).catch((error) => setStatus(officialChangeStatus, error.message, "error"));
+      });
+      document.querySelector("#refresh-mail-review").addEventListener("click", () => {
+        loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));
+      });
+      document.querySelector("#mail-review-filter").addEventListener("change", () => {
+        selectedMailHash = "";
+        loadMailReview().catch((error) => setStatus(mailReviewStatus, error.message, "error"));
+      });
+      document.querySelectorAll(".editor-toolbar button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const command = button.dataset.command;
+          const emoji = button.dataset.emoji;
+          if (emoji) {
+            insertNoticeEmoji(emoji);
+            return;
+          }
+          if (!command) return;
+          runNoticeCommand(command);
+        });
+      });
+      document.querySelectorAll("[data-format]").forEach((control) => {
+        const eventName = control.tagName === "SELECT" ? "change" : "input";
+        control.addEventListener(eventName, () => applyNoticeFormat(control.dataset.format, control.value));
+      });
+      [fields.title, fields.editor, fields.modalBg, fields.sourceLabel, fields.sourceUrl].filter(Boolean).forEach((element) => {
+        element.addEventListener("input", renderNoticePreview);
+      });
+
+      const savedPassword = window.sessionStorage.getItem("openaiAdsAdminPassword");
+      if (savedPassword) {
+        passwordInput.value = savedPassword;
+        login();
+      }
+    </script>
+  </body>
+</html>

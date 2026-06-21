@@ -12,9 +12,9 @@ class AdminShortcutStaticTests(unittest.TestCase):
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
 
         required = [
-            'class="admin-shortcut"',
             'href="/admin"',
-            "관리자 페이지로 이동",
+            "btn-command",
+            "ti-lock-cog",
             "관리자",
         ]
         for phrase in required:

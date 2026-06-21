@@ -1194,7 +1194,8 @@
         try {
           const response = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
             body: JSON.stringify(data),
           });
           if (!response.ok) {
@@ -1202,6 +1203,11 @@
             throw new Error(serverErrorMessage(body, response.statusText || "요청 처리 중 오류가 발생했습니다."));
           }
           return response;
+        } catch (error) {
+          if (error instanceof TypeError) {
+            throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+          }
+          throw error;
         } finally {
           setGlobalLoading(false);
         }
@@ -1272,7 +1278,12 @@
         form.append("file", file);
         setGlobalLoading(true, "업로드 파일을 점검하는 중입니다.");
         try {
-          const response = await fetch("/intake/inspect-workbook", { method: "POST", body: form });
+          const response = await fetch("/intake/inspect-workbook", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Accept": "application/json" },
+            body: form,
+          });
           const body = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(serverErrorMessage(body, response.statusText || "업로드 파일 검수 중 오류가 발생했습니다."));
           if (body.ok && body.data) populateFromWorkbook(body.data);

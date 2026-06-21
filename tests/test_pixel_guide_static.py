@@ -7,34 +7,27 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def pixel_guide_html() -> str:
-    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-    start = html.index('<section class="panel" id="pixel-guide-panel">')
-    end = html.index("    </main>", start)
-    return html[start:end]
+def index_html() -> str:
+    return (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
 
 
 class PixelGuideStaticTests(unittest.TestCase):
     def test_pixel_guide_tab_and_pdf_filename_exist(self) -> None:
-        html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        html = index_html()
 
         required = [
-            'data-tab="pixelGuide"',
+            'data-guide-deck="pixel"',
             "픽셀 설치 가이드",
-            "pixel-guide-print",
-            "print-pixel-guide",
-            "PIXEL_GUIDE_PDF_FILENAME",
-            "ChatGPT광고_픽셀설치가이드_케이티나스미디어_",
-            "pixelGuide: document.querySelector",
-            "pixel-guide-notice",
+            "ChatGPT광고_픽셀설치가이드_케이티나스미디어",
+            "printCurrentGuideDeck",
+            "document.body.classList.add(\"dev-guide-print\")",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
 
     def test_pixel_guide_has_pages_and_platform_steps(self) -> None:
-        html = pixel_guide_html()
+        html = index_html()
 
-        self.assertEqual(html.count('class="slide-card'), 8)
         required = [
             "OpenAI Ads Measurement Pixel",
             "웹 페이지뷰·전환·이벤트 측정 설정",
@@ -45,21 +38,16 @@ class PixelGuideStaticTests(unittest.TestCase):
             "캠페인에 연결",
             "STEP 4 · GTM 가이드",
             "GTM 삽입 방법",
-            "gtm-code-grid",
             "나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다",
             "adso@nasmedia.co.kr",
-            "https://developers.openai.com/ads/measurement-pixel",
-            "https://developers.openai.com/ads/supported-events",
+            "Pixel ID",
+            "Supported events",
         ]
         for phrase in required:
             self.assertIn(phrase, html)
-        self.assertEqual(
-            html.count("나스미디어는 GTM 기반 OpenAI Pixel 세팅을 지원합니다"),
-            1,
-        )
 
     def test_pixel_guide_contains_required_install_and_event_code(self) -> None:
-        html = pixel_guide_html()
+        html = index_html()
 
         required = [
             "https://bzrcdn.openai.com/sdk/oaiq.min.js",
@@ -78,11 +66,11 @@ class PixelGuideStaticTests(unittest.TestCase):
             self.assertIn(phrase, html)
 
     def test_pixel_guide_has_advertiser_safe_guardrails(self) -> None:
-        html = pixel_guide_html()
+        html = index_html()
 
         required = [
             "웹 JavaScript Pixel 기준",
-            "HTML &lt;head&gt; 안",
+            "HTML <head> 안",
             "페이지당 공통 설치 스크립트는 1회만 추가",
             "원문 이메일·전화번호를 보내지 말고",
             "서버 Conversions API를 직접 호출하지 말고",

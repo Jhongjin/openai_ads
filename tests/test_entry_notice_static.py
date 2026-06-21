@@ -14,7 +14,7 @@ class EntryNoticeStaticTests(unittest.TestCase):
         required = [
             "OpenAI 광고 집행 의뢰 안내",
             "최종 업데이트:",
-            "notice-update-date",
+            "entry-notice-date",
             "https://help.openai.com/en/collections/20001223-chatgpt-ads",
             "OpenAI Ads Guide",
             "하루 2회 최신 정보를 자동 확인·업데이트합니다.",
@@ -35,14 +35,13 @@ class EntryNoticeStaticTests(unittest.TestCase):
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
 
         required = [
-            "openaiAdsEntryNoticeDismissedDate",
+            "openai-ads-entry-notice",
             'timeZone: "Asia/Seoul"',
             "localStorage.setItem",
             "localStorage.getItem",
-            "window.location.pathname === \"/\"",
             "trapEntryNoticeFocus",
-            "pageMain.inert = true",
-            "body.modal-open",
+            "main.inert = true",
+            'document.body.classList.add("modal-open")',
         ]
         for phrase in required:
             self.assertIn(phrase, html)

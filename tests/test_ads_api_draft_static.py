@@ -56,19 +56,20 @@ class AdsApiDraftStaticTests(unittest.TestCase):
 
     def test_ads_api_page_is_removed_from_public_navigation(self) -> None:
         html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-        nav = html.split('<nav class="tabs"', 1)[1].split("</nav>", 1)[0]
         admin_html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
 
-        self.assertNotIn('data-page-link="apiOps"', nav)
-        self.assertNotIn('href="/ads-api"', nav)
-        self.assertNotIn("API 운영 검토", nav)
-        self.assertIn('.tab-group[data-group="docs"]::before', html)
-        self.assertIn('grid-template-columns: repeat(3, minmax(0, 1fr));', html)
+        self.assertNotIn('data-page-link="apiOps"', html)
+        self.assertNotIn('href="/ads-api"', html)
+        self.assertNotIn("API 운영 검토", html)
+        self.assertIn('data-view-button="guides"', html)
+        self.assertIn("광고주 안내자료", html)
 
         self.assertNotIn('href="/ads-api"', admin_html)
         self.assertIn("Ads API 성과 대시보드", admin_html)
-        self.assertIn('id="ads-dashboard-status"', admin_html)
+        self.assertIn('id="admin-view-performance"', admin_html)
+        self.assertIn('id="performance-status"', admin_html)
+        self.assertIn('id="performance-campaign-rows"', admin_html)
         self.assertIn("/api/admin/ads-dashboard", admin_html)
         self.assertNotIn('"apiOps":', app_py)
         self.assertIn('"/api/admin/ads-dashboard"', app_py)
