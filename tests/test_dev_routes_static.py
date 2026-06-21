@@ -69,6 +69,22 @@ class DevRoutesStaticTests(unittest.TestCase):
         finally:
             client.post("/api/admin/menu-settings", headers=headers, json=defaults)
 
+    def test_menu_settings_fail_closed_until_api_loads(self) -> None:
+        client = TestClient(app)
+        pages = [client.get("/").text, client.get("/dev").text]
+        css = client.get("/dev-assets/dev-redesign.css").text
+
+        for page in pages:
+            with self.subTest("initial menu gate"):
+                self.assertIn('class="dev-console menu-settings-pending"', page)
+                self.assertIn("state.menuSettingsLoaded = false", page)
+                self.assertIn("if (!state.menuSettingsLoaded) return false", page)
+                self.assertIn('document.body.classList.remove("menu-settings-pending")', page)
+                self.assertIn("state.menuSettingsLoaded && (isEnabled || admin)", page)
+
+        self.assertIn("body.menu-settings-pending [data-menu-key]", css)
+        self.assertIn("body.menu-settings-pending [data-guide-deck]", css)
+
     def test_dev_pages_use_new_command_center_markup(self) -> None:
         client = TestClient(app)
 

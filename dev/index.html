@@ -19,7 +19,7 @@
     />
     <link rel="stylesheet" href="/dev-assets/dev-redesign.css" />
   </head>
-  <body class="dev-console">
+  <body class="dev-console menu-settings-pending">
     <div class="global-loading" id="global-loading" aria-live="polite" aria-hidden="true">
       <div class="global-loading-bar"></div>
       <div class="global-loading-badge" role="status">
@@ -515,6 +515,7 @@
       state.menuSettings = typeof structuredClone === "function"
         ? structuredClone(defaultMenuSettings)
         : JSON.parse(JSON.stringify(defaultMenuSettings));
+      state.menuSettingsLoaded = false;
       const wideWorkspaceViews = new Set(["qa", "landing", "favicon", "guides"]);
       const ADMIN_SESSION_KEY = "openaiAdsAdminPassword";
       const ENTRY_NOTICE_STORAGE_KEY = "openai-ads-dev-entry-notice";
@@ -1391,6 +1392,7 @@
       }
 
       function isMenuAvailable(key) {
+        if (!state.menuSettingsLoaded) return false;
         if (key === "guides" && !hasAdminSession()) {
           const hasVisibleDeck = Object.values(state.menuSettings.guide_decks).some(Boolean);
           if (!hasVisibleDeck) return false;
@@ -1399,6 +1401,7 @@
       }
 
       function isGuideDeckAvailable(key) {
+        if (!state.menuSettingsLoaded) return false;
         return hasAdminSession() || state.menuSettings.guide_decks[key] !== false;
       }
 
@@ -1411,29 +1414,29 @@
       }
 
       function applyGuideDeckVisibility() {
-        const admin = hasAdminSession();
+        const admin = state.menuSettingsLoaded && hasAdminSession();
         $$("#guide-tabs [data-guide-deck]").forEach((button) => {
           const key = button.dataset.guideDeck;
           const isEnabled = state.menuSettings.guide_decks[key] !== false;
-          const visible = isEnabled || admin;
+          const visible = state.menuSettingsLoaded && (isEnabled || admin);
           button.hidden = !visible;
           button.disabled = !visible;
           button.classList.toggle("is-admin-visible-disabled", admin && !isEnabled);
           button.setAttribute("aria-disabled", visible ? "false" : "true");
           button.title = admin && !isEnabled ? "일반 사용자에게는 비활성화된 안내자료입니다." : "";
         });
-        if (!isGuideDeckAvailable(state.guideDeck)) {
+        if (state.menuSettingsLoaded && !isGuideDeckAvailable(state.guideDeck)) {
           state.guideDeck = firstAvailableGuideDeck();
           renderGuideDeck();
         }
       }
 
       function applyMenuVisibility() {
-        const admin = hasAdminSession();
+        const admin = state.menuSettingsLoaded && hasAdminSession();
         $$("[data-menu-key]").forEach((element) => {
           const key = element.dataset.menuKey;
           const isEnabled = state.menuSettings.menus[key] !== false;
-          const visible = isEnabled || admin;
+          const visible = state.menuSettingsLoaded && (isEnabled || admin);
           element.hidden = !visible;
           element.classList.toggle("is-admin-visible-disabled", admin && !isEnabled);
           if (admin && !isEnabled) {
@@ -1443,7 +1446,7 @@
           }
         });
         applyGuideDeckVisibility();
-        if (!isMenuAvailable(state.view || "qa")) {
+        if (state.menuSettingsLoaded && !isMenuAvailable(state.view || "qa")) {
           setView(firstAvailableView());
         }
       }
@@ -1452,9 +1455,11 @@
         try {
           const data = await fetchJson("/api/menu-settings");
           state.menuSettings = normalizeMenuSettings(data);
-          applyMenuVisibility();
         } catch (error) {
           state.menuSettings = normalizeMenuSettings(defaultMenuSettings);
+        } finally {
+          state.menuSettingsLoaded = true;
+          document.body.classList.remove("menu-settings-pending");
           applyMenuVisibility();
         }
       }

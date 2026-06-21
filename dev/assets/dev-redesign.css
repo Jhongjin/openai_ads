@@ -52,6 +52,11 @@ body.dev-console {
   text-rendering: optimizeLegibility;
 }
 
+body.menu-settings-pending [data-menu-key],
+body.menu-settings-pending [data-guide-deck] {
+  display: none !important;
+}
+
 body.dev-console button,
 body.dev-console input,
 body.dev-console textarea,
