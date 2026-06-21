@@ -355,6 +355,7 @@ _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_items: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_refreshed_at = ""
 _db_ready = False
+_faq_db_ready = False
 
 
 def _is_analytics_event(page: str) -> bool:
@@ -1465,6 +1466,57 @@ def _ensure_tables() -> None:
                 ),
             )
     _db_ready = True
+
+
+def _ensure_faq_tables() -> None:
+    global _faq_db_ready
+    if _faq_db_ready:
+        return
+
+    schema = _schema()
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.operating_faq_items (
+                    id text PRIMARY KEY,
+                    category text NOT NULL,
+                    category_label text NOT NULL,
+                    question_key text NOT NULL,
+                    question text NOT NULL,
+                    answer text NOT NULL,
+                    source_type text NOT NULL DEFAULT 'seed',
+                    source_ref text NOT NULL DEFAULT '',
+                    source_summary text NOT NULL DEFAULT '',
+                    frequency integer NOT NULL DEFAULT 1,
+                    status text NOT NULL DEFAULT 'active',
+                    source_updated_at timestamptz NOT NULL DEFAULT now(),
+                    created_at_utc timestamptz NOT NULL DEFAULT now(),
+                    updated_at_utc timestamptz NOT NULL DEFAULT now(),
+                    CONSTRAINT operating_faq_items_status_check
+                        CHECK (status IN ('active', 'deleted')),
+                    CONSTRAINT operating_faq_items_category_key_unique
+                        UNIQUE (category, question_key)
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS operating_faq_items_category_updated_idx
+                ON {schema}.operating_faq_items (category, status, updated_at_utc DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.operating_faq_refresh_state (
+                    id text PRIMARY KEY,
+                    refreshed_at_utc timestamptz NOT NULL DEFAULT now(),
+                    source_summary text NOT NULL DEFAULT ''
+                )
+                """
+            )
+    _faq_db_ready = True
 
 
 def get_notice_config() -> dict[str, Any]:
@@ -2593,36 +2645,24 @@ def _official_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
             c.source_url,
             c.change_type,
             c.detected_at,
-            c.summary,
-            (
-                SELECT d.content
-                FROM {schema}.documents d
-                WHERE d.collection = 'official'
-                  AND (
-                    d.metadata->>'source_identity' = c.source_identity
-                    OR d.source_url = c.source_url
-                  )
-                ORDER BY d.chunk_index ASC
-                LIMIT 1
-            ) AS document_content
+            c.summary
         FROM {schema}.official_guide_changes c
         ORDER BY c.detected_at DESC, c.id DESC
-        LIMIT 80
+        LIMIT 40
         """
     )
     candidates: list[dict[str, Any]] = []
     for row in cur.fetchall():
         row = dict(row)
         title = _short_official_title(row.get("title"))
-        content = row.get("document_content") or ""
         summary = str(row.get("summary") or "").strip()
         if not summary:
             summary = summarize_official_document_change(
                 title=title,
-                content=content,
+                content=title,
                 change_type=str(row.get("change_type") or "updated"),
             )
-        category = _faq_category_for_text(title, summary, content)
+        category = _faq_category_for_text(title, summary)
         candidate = _faq_candidate(
             category=category,
             question=f"{title} 문서에서 {FAQ_CATEGORY_LABELS[category]} 관련 확인할 점은 무엇인가요?",
@@ -2645,7 +2685,7 @@ def _manual_rag_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
         FROM {schema}.admin_manual_rag_items
         WHERE status = 'active'
         ORDER BY updated_at_utc DESC
-        LIMIT 120
+        LIMIT 80
         """
     )
     candidates: list[dict[str, Any]] = []
@@ -2678,7 +2718,7 @@ def _chat_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:
         FROM {schema}.chat_question_logs
         WHERE created_at >= now() - interval '90 days'
         ORDER BY created_at DESC
-        LIMIT 800
+        LIMIT 300
         """
     )
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
@@ -2795,7 +2835,7 @@ def _apply_faq_candidates(cur: Any, schema: str, candidates: list[dict[str, Any]
 
 def refresh_operating_faqs(*, force: bool = False) -> dict[str, Any]:
     try:
-        _ensure_tables()
+        _ensure_faq_tables()
         schema = _schema()
         with _connect() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
