@@ -154,6 +154,19 @@ class ManualRagItemRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=20000)
 
 
+class FaqCategoryRequest(BaseModel):
+    id: str | None = Field(default="", max_length=40)
+    label: str = Field(..., min_length=1, max_length=80)
+    sort_order: int | None = Field(default=0)
+
+
+class FaqItemRequest(BaseModel):
+    category: str = Field(..., min_length=1, max_length=40)
+    question: str = Field(..., min_length=1, max_length=500)
+    answer: str = Field(..., min_length=1, max_length=3000)
+    source_summary: str | None = Field(default="관리자 FAQ 관리", max_length=300)
+
+
 class CampaignIntakeOpsRequest(BaseModel):
     receipt_number: str = Field(..., min_length=3, max_length=80)
     operator_name: str | None = Field(default="", max_length=80)
@@ -311,8 +324,83 @@ def admin_refresh_operating_faqs(request: Request) -> dict[str, Any]:
     return {
         "ok": True,
         "disabled": True,
-        "message": "FAQ 자동 업데이트는 비활성화되어 있습니다. 검토된 기본 FAQ만 노출합니다.",
+        "message": "FAQ 자동 업데이트는 비활성화되어 있습니다. FAQ 관리 메뉴에서 저장한 항목만 사용자 화면에 노출됩니다.",
     }
+
+
+@app.get("/api/admin/faqs", include_in_schema=False)
+def admin_operating_faqs(request: Request) -> dict[str, Any]:
+    from admin_store import list_admin_operating_faqs
+
+    _require_admin(request)
+    include_deleted = str(request.query_params.get("include_deleted") or "1").lower() in {"1", "true", "yes"}
+    return list_admin_operating_faqs(include_deleted=include_deleted)
+
+
+@app.post("/api/admin/faqs/categories", include_in_schema=False)
+def admin_create_faq_category(request: Request, item: FaqCategoryRequest) -> dict[str, Any]:
+    from admin_store import upsert_operating_faq_category
+
+    _require_admin(request)
+    try:
+        return upsert_operating_faq_category(item.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/faqs/categories/{category_id}/update", include_in_schema=False)
+def admin_update_faq_category(request: Request, category_id: str, item: FaqCategoryRequest) -> dict[str, Any]:
+    from admin_store import upsert_operating_faq_category
+
+    _require_admin(request)
+    try:
+        return upsert_operating_faq_category(item.model_dump(), category_id=category_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/faqs/categories/{category_id}/delete", include_in_schema=False)
+def admin_delete_faq_category(request: Request, category_id: str) -> dict[str, Any]:
+    from admin_store import delete_operating_faq_category
+
+    _require_admin(request)
+    try:
+        return delete_operating_faq_category(category_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/faqs/items", include_in_schema=False)
+def admin_create_faq_item(request: Request, item: FaqItemRequest) -> dict[str, Any]:
+    from admin_store import upsert_operating_faq_item
+
+    _require_admin(request)
+    try:
+        return upsert_operating_faq_item(item.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/faqs/items/{item_id}/update", include_in_schema=False)
+def admin_update_faq_item(request: Request, item_id: str, item: FaqItemRequest) -> dict[str, Any]:
+    from admin_store import upsert_operating_faq_item
+
+    _require_admin(request)
+    try:
+        return upsert_operating_faq_item(item.model_dump(), item_id=item_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/faqs/items/{item_id}/delete", include_in_schema=False)
+def admin_delete_faq_item(request: Request, item_id: str) -> dict[str, Any]:
+    from admin_store import delete_operating_faq_item
+
+    _require_admin(request)
+    try:
+        return delete_operating_faq_item(item_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/cron/faqs", include_in_schema=False)

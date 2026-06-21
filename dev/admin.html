@@ -104,6 +104,10 @@
               <i class="ti ti-inbox"></i>
               <span>메일 검토함</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="faqManager">
+              <i class="ti ti-message-question"></i>
+              <span>FAQ 관리</span>
+            </button>
             <button class="rail-button" type="button" data-admin-view="manualRag">
               <i class="ti ti-database-edit"></i>
               <span>직접 입력 지식</span>
@@ -627,13 +631,13 @@
                 <div class="surface-body stack">
                   <section class="manual-rag-submit">
                     <div>
-                      <p class="eyebrow">운영 지식 직접 등록</p>
-                      <h3>담당자 확인 내용을 직접 반영</h3>
-                      <p>메일 검토함에 없는 운영 합의, 테스트 결과, 담당자 확인 내용을 관리자가 직접 정리해 지식베이스에 반영합니다.</p>
+                      <p class="eyebrow">RAG 운영 지식 직접 등록</p>
+                      <h3>담당자 확인 내용을 RAG에 직접 반영</h3>
+                      <p>메일 검토함에 없는 운영 합의, 테스트 결과, 담당자 확인 내용을 Q&A 답변 검색 근거로 반영합니다. FAQ 노출 항목에는 자동으로 추가되지 않습니다.</p>
                     </div>
                     <div class="manual-rag-form">
                       <input class="control" id="manual-rag-title" type="text" placeholder="제목 예: 2026-06-20 OpenAI 담당자 확인 - 국가 타겟팅" />
-                      <select class="control" id="manual-rag-category" aria-label="지식 카테고리">
+                      <select class="control" id="manual-rag-category" aria-label="RAG 운영 지식 분류">
                         <option value="계정·런칭">계정·런칭</option>
                         <option value="입찰·예산">입찰·예산</option>
                         <option value="청구·세금">청구·세금</option>
@@ -643,11 +647,12 @@
                         <option value="전환·권한">전환·권한</option>
                         <option value="플랫폼·지원">플랫폼·지원</option>
                       </select>
+                      <p class="status-line manual-rag-hint">이 분류는 Q&A 답변 검색용 태그입니다. 사용자 화면의 FAQ 카테고리나 FAQ 항목에는 직접 반영되지 않습니다.</p>
                       <input class="control" id="manual-rag-source-note" type="text" placeholder="출처 메모 예: OpenAI 담당자 메일, Slack, 회의록" />
-                      <textarea class="textarea" id="manual-rag-content" placeholder="지식베이스에 반영할 내용을 관리자가 확인 가능한 문장으로 정리해 주세요."></textarea>
+                      <textarea class="textarea" id="manual-rag-content" placeholder="RAG 검색에 반영할 운영 지식을 관리자가 확인 가능한 문장으로 정리해 주세요."></textarea>
                       <button class="btn-command" type="button" id="manual-rag-create">
                         <i class="ti ti-database-plus"></i>
-                        지식베이스에 직접 반영
+                        RAG 지식베이스에 직접 반영
                       </button>
                       <p class="status-line" id="manual-rag-create-status"></p>
                     </div>
@@ -705,6 +710,64 @@
               </section>
             </section>
 
+            <section class="view" id="admin-view-faqManager">
+              <section class="surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">FAQ 관리</h2>
+                    <p class="surface-copy">사용자 화면의 광고 정책 및 운영 FAQ 카테고리와 항목을 직접 관리합니다.</p>
+                  </div>
+                  <button class="btn-secondary" type="button" id="faq-admin-refresh">
+                    <i class="ti ti-refresh"></i>
+                    FAQ 새로고침
+                  </button>
+                </div>
+                <div class="surface-body stack">
+                  <div class="faq-admin-notice">
+                    <strong>FAQ는 RAG와 별도로 관리됩니다.</strong>
+                    <span>여기서 저장한 내용만 사용자 화면의 FAQ에 노출됩니다. 메일 검토함의 RAG 분류는 Q&A 검색 근거 태그이며 FAQ 항목을 자동 생성하지 않습니다.</span>
+                  </div>
+                  <div class="faq-admin-grid">
+                    <section class="faq-admin-card">
+                      <div class="faq-admin-card-head">
+                        <div>
+                          <h3>카테고리 유형</h3>
+                          <p>FAQ 상단 탭으로 노출되는 분류입니다.</p>
+                        </div>
+                        <button class="btn-secondary btn-compact" type="button" id="faq-category-reset">새 카테고리</button>
+                      </div>
+                      <div class="faq-category-form">
+                        <input class="control" id="faq-category-label" type="text" placeholder="카테고리명 예: 계정·런칭" />
+                        <input class="control" id="faq-category-order" type="number" min="0" step="1" placeholder="순서" />
+                        <button class="btn-command" type="button" id="faq-category-save">카테고리 저장</button>
+                      </div>
+                      <p class="status-line" id="faq-category-status"></p>
+                      <div class="faq-category-admin-list" id="faq-category-admin-list"></div>
+                    </section>
+
+                    <section class="faq-admin-card">
+                      <div class="faq-admin-card-head">
+                        <div>
+                          <h3>FAQ 항목</h3>
+                          <p>질문과 답변을 추가하거나 기존 항목을 수정합니다.</p>
+                        </div>
+                        <button class="btn-secondary btn-compact" type="button" id="faq-item-reset">새 FAQ</button>
+                      </div>
+                      <div class="faq-item-form">
+                        <select class="control" id="faq-item-category" aria-label="FAQ 카테고리"></select>
+                        <input class="control" id="faq-item-question" type="text" placeholder="질문" />
+                        <textarea class="textarea" id="faq-item-answer" placeholder="답변"></textarea>
+                        <input class="control" id="faq-item-source" type="text" placeholder="관리 메모 예: OpenAI 담당자 확인, 기본 FAQ" />
+                        <button class="btn-command" type="button" id="faq-item-save">FAQ 저장</button>
+                      </div>
+                      <p class="status-line" id="faq-item-status"></p>
+                      <div class="faq-item-admin-list" id="faq-item-admin-list"></div>
+                    </section>
+                  </div>
+                </div>
+              </section>
+            </section>
+
             <section class="view" id="admin-view-manualRag">
               <section class="surface">
                 <div class="surface-head">
@@ -740,6 +803,7 @@
         performance: ["Ads 성과 대시보드", "광고주 API 키 기반으로 Ads 성과를 조회합니다."],
         official: ["공식 문서 변경 로그", "공식 문서 변경 감지 결과를 검토합니다."],
         mail: ["메일 검토함", "메일 기반 운영 지식 반영 후보를 검토합니다."],
+        faqManager: ["FAQ 관리", "사용자 화면의 FAQ 카테고리와 항목을 직접 관리합니다."],
         campaignIntakes: ["캠페인 접수 현황", "구글 시트 접수 정보를 실제 캠페인 세팅 순서로 확인합니다."],
         manualRag: ["직접 입력 지식 관리", "관리자가 직접 반영한 운영 지식을 수정·삭제합니다."],
       };
@@ -766,6 +830,10 @@
       let campaignIntakeItems = [];
       let campaignIntakeQuery = "";
       let campaignIntakeStatusFilter = "all";
+      let faqAdminCategories = [];
+      let faqAdminItems = [];
+      let editingFaqCategoryId = "";
+      let editingFaqItemId = "";
       const CAMPAIGN_INTAKE_STATUSES = {
         ready: "대기",
         in_progress: "진행중",
@@ -3133,7 +3201,7 @@
       function manualRagPayloadFromForm() {
         return {
           title: $("#manual-rag-title")?.value.trim() || "",
-          category: $("#manual-rag-category")?.value.trim() || "",
+          category: normalizeManualRagCategory($("#manual-rag-category")?.value.trim() || ""),
           source_note: $("#manual-rag-source-note")?.value.trim() || "",
           content: $("#manual-rag-content")?.value.trim() || "",
         };
@@ -3150,6 +3218,179 @@
         `).join("");
       }
 
+      function activeFaqAdminCategories() {
+        return faqAdminCategories.filter((item) => item.status !== "deleted");
+      }
+
+      function faqAdminCategoryOptions(selected = "") {
+        return activeFaqAdminCategories().map((item) => `
+          <option value="${escapeHtml(item.id || "")}" ${item.id === selected ? "selected" : ""}>
+            ${escapeHtml(item.label || item.id || "")}
+          </option>
+        `).join("");
+      }
+
+      function renderFaqAdmin() {
+        const activeCategories = activeFaqAdminCategories();
+        const selectedCategory = $("#faq-item-category")?.value || activeCategories[0]?.id || "";
+        const categorySelect = $("#faq-item-category");
+        categorySelect.innerHTML = faqAdminCategoryOptions(selectedCategory);
+        categorySelect.disabled = !activeCategories.length;
+        $("#faq-item-save").disabled = !activeCategories.length;
+        $("#faq-category-admin-list").innerHTML = faqAdminCategories.map((item) => `
+          <article class="faq-admin-row ${item.status === "deleted" ? "is-deleted" : ""}" data-faq-category-id="${escapeHtml(item.id || "")}">
+            <div>
+              <strong>${escapeHtml(item.label || "(카테고리명 없음)")}</strong>
+              <span>${escapeHtml(item.id || "-")} · 순서 ${Number(item.sort_order || 0)} · FAQ ${Number(item.item_count || 0)}개</span>
+            </div>
+            <div class="row-actions">
+              <button class="btn-plain" type="button" data-faq-category-action="edit">수정</button>
+              <button class="btn-danger" type="button" data-faq-category-action="delete" ${item.status === "deleted" ? "disabled" : ""}>삭제</button>
+            </div>
+          </article>
+        `).join("") || '<p class="status-line">FAQ 카테고리가 없습니다.</p>';
+
+        $("#faq-item-admin-list").innerHTML = faqAdminItems.map((item) => `
+          <article class="faq-admin-item ${item.status === "deleted" ? "is-deleted" : ""}" data-faq-item-id="${escapeHtml(item.id || "")}">
+            <div class="faq-admin-item-main">
+              <span class="tag ${item.status === "deleted" ? "" : "tag-blue"}">${escapeHtml(item.category_label || item.category || "-")}</span>
+              <h3>${escapeHtml(item.question || "(질문 없음)")}</h3>
+              <p>${escapeHtml(item.answer || "")}</p>
+              <small>${escapeHtml(item.source_summary || "관리자 FAQ 관리")} · ${escapeHtml(item.status === "deleted" ? "삭제됨" : "노출 중")}</small>
+            </div>
+            <div class="row-actions">
+              <button class="btn-plain" type="button" data-faq-item-action="edit">수정</button>
+              <button class="btn-danger" type="button" data-faq-item-action="delete" ${item.status === "deleted" ? "disabled" : ""}>삭제</button>
+            </div>
+          </article>
+        `).join("") || '<p class="status-line">FAQ 항목이 없습니다.</p>';
+
+        if (!activeCategories.length) {
+          setStatus("faq-item-status", "활성 카테고리가 없습니다. FAQ 항목을 추가하려면 먼저 카테고리를 만들어 주세요.", "error");
+        }
+      }
+
+      function resetFaqCategoryForm() {
+        editingFaqCategoryId = "";
+        $("#faq-category-label").value = "";
+        $("#faq-category-order").value = "";
+        $("#faq-category-save").textContent = "카테고리 저장";
+        setStatus("faq-category-status", "새 FAQ 카테고리를 등록할 수 있습니다.");
+      }
+
+      function editFaqCategory(categoryId) {
+        const item = faqAdminCategories.find((entry) => entry.id === categoryId);
+        if (!item) return;
+        editingFaqCategoryId = item.id || "";
+        $("#faq-category-label").value = item.label || "";
+        $("#faq-category-order").value = Number(item.sort_order || 0);
+        $("#faq-category-save").textContent = item.status === "deleted" ? "카테고리 복구" : "카테고리 수정";
+        setStatus("faq-category-status", "카테고리명을 수정하면 해당 카테고리의 FAQ 표시명도 함께 바뀝니다.");
+      }
+
+      async function saveFaqCategory() {
+        const label = $("#faq-category-label").value.trim();
+        if (!label) {
+          setStatus("faq-category-status", "카테고리명을 입력해 주세요.", "error");
+          return;
+        }
+        const payload = {
+          id: editingFaqCategoryId,
+          label,
+          sort_order: Number($("#faq-category-order").value || 0),
+        };
+        const url = editingFaqCategoryId
+          ? `/api/admin/faqs/categories/${encodeURIComponent(editingFaqCategoryId)}/update`
+          : "/api/admin/faqs/categories";
+        setStatus("faq-category-status", "FAQ 카테고리를 저장하는 중입니다.");
+        const data = await adminFetch(url, { method: "POST", body: JSON.stringify(payload) });
+        if (data.ok === false) throw new Error(data.error || "카테고리 저장에 실패했습니다.");
+        setStatus("faq-category-status", "FAQ 카테고리를 저장했습니다.", "ok");
+        resetFaqCategoryForm();
+        await loadFaqAdmin();
+      }
+
+      async function deleteFaqCategory(categoryId) {
+        const item = faqAdminCategories.find((entry) => entry.id === categoryId);
+        if (!item) return;
+        if (!confirm(`'${item.label}' 카테고리를 삭제할까요? 이 카테고리의 FAQ 항목도 사용자 화면에서 숨겨집니다.`)) return;
+        setStatus("faq-category-status", "FAQ 카테고리를 삭제하는 중입니다.");
+        const data = await adminFetch(`/api/admin/faqs/categories/${encodeURIComponent(categoryId)}/delete`, {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        if (data.ok === false) throw new Error(data.error || "카테고리 삭제에 실패했습니다.");
+        setStatus("faq-category-status", "FAQ 카테고리를 삭제했습니다.", "ok");
+        await loadFaqAdmin();
+      }
+
+      function resetFaqItemForm() {
+        editingFaqItemId = "";
+        $("#faq-item-category").innerHTML = faqAdminCategoryOptions(activeFaqAdminCategories()[0]?.id || "");
+        $("#faq-item-question").value = "";
+        $("#faq-item-answer").value = "";
+        $("#faq-item-source").value = "";
+        $("#faq-item-save").textContent = "FAQ 저장";
+        setStatus("faq-item-status", "새 FAQ 항목을 등록할 수 있습니다.");
+      }
+
+      function editFaqItem(itemId) {
+        const item = faqAdminItems.find((entry) => entry.id === itemId);
+        if (!item) return;
+        editingFaqItemId = item.id || "";
+        $("#faq-item-category").innerHTML = faqAdminCategoryOptions(item.category || "");
+        $("#faq-item-question").value = item.question || "";
+        $("#faq-item-answer").value = item.answer || "";
+        $("#faq-item-source").value = item.source_summary || "";
+        $("#faq-item-save").textContent = item.status === "deleted" ? "FAQ 복구" : "FAQ 수정";
+        setStatus("faq-item-status", "수정 후 저장하면 사용자 FAQ 화면에 바로 반영됩니다.");
+      }
+
+      async function saveFaqItem() {
+        const payload = {
+          category: $("#faq-item-category").value,
+          question: $("#faq-item-question").value.trim(),
+          answer: $("#faq-item-answer").value.trim(),
+          source_summary: $("#faq-item-source").value.trim() || "관리자 FAQ 관리",
+        };
+        if (!payload.category || !payload.question || !payload.answer) {
+          setStatus("faq-item-status", "카테고리, 질문, 답변을 모두 입력해 주세요.", "error");
+          return;
+        }
+        const url = editingFaqItemId
+          ? `/api/admin/faqs/items/${encodeURIComponent(editingFaqItemId)}/update`
+          : "/api/admin/faqs/items";
+        setStatus("faq-item-status", "FAQ 항목을 저장하는 중입니다.");
+        const data = await adminFetch(url, { method: "POST", body: JSON.stringify(payload) });
+        if (data.ok === false) throw new Error(data.error || "FAQ 저장에 실패했습니다.");
+        setStatus("faq-item-status", "FAQ 항목을 저장했습니다.", "ok");
+        resetFaqItemForm();
+        await loadFaqAdmin();
+      }
+
+      async function deleteFaqItem(itemId) {
+        const item = faqAdminItems.find((entry) => entry.id === itemId);
+        if (!item) return;
+        if (!confirm("이 FAQ 항목을 사용자 화면에서 숨길까요?")) return;
+        setStatus("faq-item-status", "FAQ 항목을 삭제하는 중입니다.");
+        const data = await adminFetch(`/api/admin/faqs/items/${encodeURIComponent(itemId)}/delete`, {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        if (data.ok === false) throw new Error(data.error || "FAQ 삭제에 실패했습니다.");
+        setStatus("faq-item-status", "FAQ 항목을 삭제했습니다.", "ok");
+        await loadFaqAdmin();
+      }
+
+      async function loadFaqAdmin() {
+        setStatus("faq-item-status", "FAQ 목록을 불러오는 중입니다.");
+        const data = await adminFetch("/api/admin/faqs?include_deleted=1");
+        faqAdminCategories = Array.isArray(data.categories) ? data.categories : [];
+        faqAdminItems = Array.isArray(data.items) ? data.items : [];
+        renderFaqAdmin();
+        setStatus("faq-item-status", data.ok === false ? (data.error || "FAQ 목록을 불러오지 못했습니다.") : `FAQ ${faqAdminItems.length}개를 불러왔습니다.`, data.ok === false ? "error" : "ok");
+      }
+
       async function createManualRagItem() {
         const payload = manualRagPayloadFromForm();
         if (!payload.title || !payload.content) {
@@ -3158,7 +3399,7 @@
         }
         const button = $("#manual-rag-create");
         button.disabled = true;
-        setStatus("manual-rag-create-status", "지식베이스에 반영하는 중입니다. 검색용 데이터를 생성하고 저장합니다.");
+        setStatus("manual-rag-create-status", "RAG 지식베이스에 반영하는 중입니다. 검색용 데이터를 생성하고 저장합니다.");
         try {
           const data = await adminFetch("/api/admin/manual-rag", {
             method: "POST",
@@ -3169,8 +3410,8 @@
           $("#manual-rag-category").value = MANUAL_RAG_CATEGORIES[0];
           $("#manual-rag-source-note").value = "";
           $("#manual-rag-content").value = "";
-          setStatus("manual-rag-create-status", "직접 입력한 내용을 지식베이스에 반영했습니다.", "ok");
-          alert("직접 입력한 운영 커뮤니케이션 내용을 지식베이스에 반영했습니다.");
+          setStatus("manual-rag-create-status", "직접 입력한 내용을 RAG 지식베이스에 반영했습니다.", "ok");
+          alert("직접 입력한 운영 커뮤니케이션 내용을 RAG 지식베이스에 반영했습니다. FAQ에는 자동 추가되지 않습니다.");
           await loadManualRagItems();
         } catch (error) {
           setStatus("manual-rag-create-status", error.message, "error");
@@ -3287,6 +3528,7 @@
         }
         if (currentView === "official") await loadOfficialChanges();
         if (currentView === "mail") await loadMailReview();
+        if (currentView === "faqManager") await loadFaqAdmin();
         if (currentView === "campaignIntakes") await loadCampaignIntakes();
         if (currentView === "manualRag") await loadManualRagItems();
       }
@@ -3301,6 +3543,7 @@
           loadAdsKeys(),
           loadOfficialChanges(),
           loadMailReview(),
+          loadFaqAdmin(),
           loadCampaignIntakes(),
           loadManualRagItems(),
         ]);
@@ -3468,6 +3711,37 @@
       });
       $("#mail-next").addEventListener("click", () => {
         loadMailReview(mailPage + 1).catch((error) => setStatus("mail-status", error.message, "error"));
+      });
+      $("#faq-admin-refresh").addEventListener("click", () => {
+        loadFaqAdmin().catch((error) => setStatus("faq-item-status", error.message, "error"));
+      });
+      $("#faq-category-reset").addEventListener("click", resetFaqCategoryForm);
+      $("#faq-category-save").addEventListener("click", () => {
+        saveFaqCategory().catch((error) => setStatus("faq-category-status", error.message, "error"));
+      });
+      $("#faq-category-admin-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-faq-category-action]");
+        if (!button) return;
+        const row = button.closest("[data-faq-category-id]");
+        const categoryId = row?.dataset.faqCategoryId || "";
+        if (button.dataset.faqCategoryAction === "edit") editFaqCategory(categoryId);
+        if (button.dataset.faqCategoryAction === "delete") {
+          deleteFaqCategory(categoryId).catch((error) => setStatus("faq-category-status", error.message, "error"));
+        }
+      });
+      $("#faq-item-reset").addEventListener("click", resetFaqItemForm);
+      $("#faq-item-save").addEventListener("click", () => {
+        saveFaqItem().catch((error) => setStatus("faq-item-status", error.message, "error"));
+      });
+      $("#faq-item-admin-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-faq-item-action]");
+        if (!button) return;
+        const row = button.closest("[data-faq-item-id]");
+        const itemId = row?.dataset.faqItemId || "";
+        if (button.dataset.faqItemAction === "edit") editFaqItem(itemId);
+        if (button.dataset.faqItemAction === "delete") {
+          deleteFaqItem(itemId).catch((error) => setStatus("faq-item-status", error.message, "error"));
+        }
       });
       $("#campaign-intake-refresh").addEventListener("click", () => {
         loadCampaignIntakes().catch((error) => setStatus("campaign-intake-status", error.message, "error"));

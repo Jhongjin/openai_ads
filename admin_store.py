@@ -353,6 +353,7 @@ _memory_visit_events: list[dict[str, Any]] = []
 _memory_chat_questions: list[dict[str, Any]] = []
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
+_memory_operating_faq_categories: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_items: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_refreshed_at = ""
 _db_ready = False
@@ -570,12 +571,62 @@ def _seed_faq_updated_at() -> datetime:
     return datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
-def _public_faq_categories(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[str, list[dict[str, Any]]] = {item["id"]: [] for item in FAQ_CATEGORIES}
+def _default_faq_category_rows() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": category["id"],
+            "label": category["label"],
+            "sort_order": index,
+            "status": "active",
+            "created_at_utc": _seed_faq_updated_at().isoformat(),
+            "updated_at_utc": _seed_faq_updated_at().isoformat(),
+        }
+        for index, category in enumerate(FAQ_CATEGORIES)
+    ]
+
+
+def _memory_seed_faq_categories() -> None:
+    if _memory_operating_faq_categories:
+        return
+    for row in _default_faq_category_rows():
+        _memory_operating_faq_categories[row["id"]] = dict(row)
+
+
+def _active_faq_category_rows() -> list[dict[str, Any]]:
+    _memory_seed_faq_categories()
+    rows = [dict(row) for row in _memory_operating_faq_categories.values() if row.get("status") == "active"]
+    rows.sort(key=lambda row: (int(row.get("sort_order") or 0), str(row.get("label") or "")))
+    return rows
+
+
+def _fallback_faq_category_rows() -> list[dict[str, Any]]:
+    rows = _active_faq_category_rows()
+    return rows or _default_faq_category_rows()
+
+
+def _normalize_faq_category_id(value: Any, *, fallback_label: str = "") -> str:
+    raw = str(value or "").strip().lower()
+    if raw and re.fullmatch(r"[a-z0-9][a-z0-9_-]{1,39}", raw):
+        return raw[:40]
+    source = str(fallback_label or value or "").strip()
+    ascii_key = re.sub(r"[^a-z0-9_-]+", "-", source.lower()).strip("-")
+    if ascii_key:
+        return ascii_key[:40]
+    return f"category-{content_hash('faq-category', source or uuid.uuid4().hex)[:12]}"
+
+
+def _public_faq_categories(
+    rows: list[dict[str, Any]],
+    category_rows: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    categories_source = category_rows if category_rows is not None else _fallback_faq_category_rows()
+    grouped: dict[str, list[dict[str, Any]]] = {str(item["id"]): [] for item in categories_source}
     for row in rows:
         category = str(row.get("category") or "support")
         if category not in grouped:
             category = "support"
+        if category not in grouped:
+            continue
         question = _clean_faq_text(row.get("question"), 300)
         answer = _clean_faq_text(row.get("answer"), 1200)
         if not question or not answer:
@@ -592,9 +643,10 @@ def _public_faq_categories(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         )
 
     categories: list[dict[str, Any]] = []
-    for category in FAQ_CATEGORIES:
-        items = grouped.get(category["id"], [])[:10]
-        categories.append({"id": category["id"], "label": category["label"], "items": items})
+    for category in categories_source:
+        category_id = str(category["id"])
+        items = grouped.get(category_id, [])[:10]
+        categories.append({"id": category_id, "label": str(category["label"]), "items": items})
     return categories
 
 
@@ -637,14 +689,56 @@ def _default_faq_response(storage: dict[str, str] | None = None) -> dict[str, An
 
 
 def list_static_operating_faqs() -> dict[str, Any]:
-    """Return the reviewed default FAQ only; crawled or generated updates are excluded."""
-    return {
-        "ok": True,
-        "categories": _public_faq_categories(_default_faq_rows()),
-        "updated_at": "",
-        "refresh_interval_hours": 0,
-        **_storage_info("static"),
-    }
+    """Return the reviewed admin-managed FAQ. Automatic candidates stay excluded."""
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                _seed_operating_faq_categories(cur, schema)
+                _seed_operating_faqs(cur, schema)
+                cur.execute(
+                    f"""
+                    SELECT id, label, sort_order, status, updated_at_utc
+                    FROM {schema}.operating_faq_categories
+                    WHERE status = 'active'
+                    ORDER BY sort_order ASC, label ASC
+                    """
+                )
+                category_rows = [dict(row) for row in cur.fetchall()]
+                cur.execute(
+                    f"""
+                    SELECT id, category, category_label, question, answer, source_type,
+                           source_summary, frequency, source_updated_at, updated_at_utc
+                    FROM {schema}.operating_faq_items
+                    WHERE status = 'active'
+                      AND source_type IN ('seed', 'admin_faq')
+                    ORDER BY category, source_updated_at DESC, updated_at_utc DESC
+                    """
+                )
+                rows = [dict(row) for row in cur.fetchall()]
+        return {
+            "ok": True,
+            "categories": _public_faq_categories(rows, category_rows),
+            "updated_at": _iso_value(max((row.get("updated_at_utc") for row in rows), default="")),
+            "refresh_interval_hours": 0,
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        _memory_seed_faq_categories()
+        _memory_seed_operating_faqs()
+        rows = [
+            row
+            for row in _memory_operating_faq_items.values()
+            if row.get("status") == "active" and row.get("source_type") in {"seed", "admin_faq"}
+        ]
+        return {
+            "ok": True,
+            "categories": _public_faq_categories(rows, _fallback_faq_category_rows()),
+            "updated_at": _memory_operating_faq_refreshed_at,
+            "refresh_interval_hours": 0,
+            **_storage_info("memory", str(exc)),
+        }
 
 
 def _faq_candidate(
@@ -1489,6 +1583,26 @@ def _ensure_faq_tables() -> None:
     with _connect() as conn:
         with conn.cursor() as cur:
             cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.operating_faq_categories (
+                    id text PRIMARY KEY,
+                    label text NOT NULL,
+                    sort_order integer NOT NULL DEFAULT 0,
+                    status text NOT NULL DEFAULT 'active',
+                    created_at_utc timestamptz NOT NULL DEFAULT now(),
+                    updated_at_utc timestamptz NOT NULL DEFAULT now(),
+                    CONSTRAINT operating_faq_categories_status_check
+                        CHECK (status IN ('active', 'deleted'))
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS operating_faq_categories_sort_idx
+                ON {schema}.operating_faq_categories (status, sort_order ASC, label ASC)
+                """
+            )
             cur.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {schema}.operating_faq_items (
@@ -2646,6 +2760,424 @@ def _seed_operating_faqs(cur: Any, schema: str) -> int:
         )
         count += int(cur.rowcount or 0)
     return count
+
+
+def _seed_operating_faq_categories(cur: Any, schema: str) -> int:
+    count = 0
+    for row in _default_faq_category_rows():
+        cur.execute(
+            f"""
+            INSERT INTO {schema}.operating_faq_categories
+                (id, label, sort_order, status, created_at_utc, updated_at_utc)
+            VALUES (%s, %s, %s, 'active', %s, %s)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (
+                row["id"],
+                row["label"],
+                int(row["sort_order"]),
+                _faq_datetime(row["created_at_utc"]),
+                _faq_datetime(row["updated_at_utc"]),
+            ),
+        )
+        count += int(cur.rowcount or 0)
+    return count
+
+
+def _admin_faq_category_item(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(row.get("id") or ""),
+        "label": str(row.get("label") or ""),
+        "sort_order": int(row.get("sort_order") or 0),
+        "status": str(row.get("status") or "active"),
+        "item_count": int(row.get("item_count") or 0),
+        "updated_at": _iso_value(row.get("updated_at_utc")),
+    }
+
+
+def _admin_faq_item(row: dict[str, Any]) -> dict[str, Any]:
+    category = str(row.get("category") or "support")
+    return {
+        "id": str(row.get("id") or ""),
+        "category": category,
+        "category_label": str(row.get("category_label") or FAQ_CATEGORY_LABELS.get(category, category)),
+        "question": _clean_faq_text(row.get("question"), 500),
+        "answer": _clean_faq_text(row.get("answer"), 2000),
+        "source_type": str(row.get("source_type") or "admin_faq"),
+        "source_summary": str(row.get("source_summary") or "").strip(),
+        "frequency": int(row.get("frequency") or 1),
+        "status": str(row.get("status") or "active"),
+        "updated_at": _iso_value(row.get("updated_at_utc") or row.get("source_updated_at")),
+    }
+
+
+def _memory_admin_faq_categories() -> list[dict[str, Any]]:
+    _memory_seed_faq_categories()
+    counts: dict[str, int] = {}
+    for row in _memory_operating_faq_items.values():
+        if row.get("status") == "active" and row.get("source_type") in {"seed", "admin_faq"}:
+            counts[str(row.get("category") or "")] = counts.get(str(row.get("category") or ""), 0) + 1
+    rows = []
+    for row in _memory_operating_faq_categories.values():
+        item = dict(row)
+        item["item_count"] = counts.get(str(row.get("id") or ""), 0)
+        rows.append(_admin_faq_category_item(item))
+    rows.sort(key=lambda row: (row["status"] != "active", row["sort_order"], row["label"]))
+    return rows
+
+
+def _memory_admin_faq_items() -> list[dict[str, Any]]:
+    _memory_seed_operating_faqs()
+    rows = [
+        _admin_faq_item(dict(row))
+        for row in _memory_operating_faq_items.values()
+        if row.get("source_type") in {"seed", "admin_faq"}
+    ]
+    rows.sort(key=lambda row: (row["status"] != "active", row["category"], row["question"]))
+    return rows
+
+
+def list_admin_operating_faqs(*, include_deleted: bool = True) -> dict[str, Any]:
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                _seed_operating_faq_categories(cur, schema)
+                _seed_operating_faqs(cur, schema)
+                category_status_clause = "" if include_deleted else "WHERE c.status = 'active'"
+                item_status_clause = "" if include_deleted else "WHERE f.status = 'active'"
+                cur.execute(
+                    f"""
+                    SELECT
+                        c.id,
+                        c.label,
+                        c.sort_order,
+                        c.status,
+                        c.updated_at_utc,
+                        COUNT(f.id) FILTER (
+                            WHERE f.status = 'active' AND f.source_type IN ('seed', 'admin_faq')
+                        ) AS item_count
+                    FROM {schema}.operating_faq_categories c
+                    LEFT JOIN {schema}.operating_faq_items f
+                        ON f.category = c.id
+                    {category_status_clause}
+                    GROUP BY c.id, c.label, c.sort_order, c.status, c.updated_at_utc
+                    ORDER BY c.status ASC, c.sort_order ASC, c.label ASC
+                    """
+                )
+                categories = [_admin_faq_category_item(dict(row)) for row in cur.fetchall()]
+                cur.execute(
+                    f"""
+                    SELECT
+                        f.id,
+                        f.category,
+                        COALESCE(c.label, f.category_label) AS category_label,
+                        f.question,
+                        f.answer,
+                        f.source_type,
+                        f.source_summary,
+                        f.frequency,
+                        f.status,
+                        f.updated_at_utc
+                    FROM {schema}.operating_faq_items f
+                    LEFT JOIN {schema}.operating_faq_categories c
+                        ON c.id = f.category
+                    {item_status_clause}
+                    {"AND" if item_status_clause else "WHERE"} f.source_type IN ('seed', 'admin_faq')
+                    ORDER BY f.status ASC, COALESCE(c.sort_order, 999) ASC, f.updated_at_utc DESC
+                    """
+                )
+                items = [_admin_faq_item(dict(row)) for row in cur.fetchall()]
+        return {"ok": True, "categories": categories, "items": items, **_storage_info("supabase")}
+    except Exception as exc:
+        return {
+            "ok": True,
+            "categories": _memory_admin_faq_categories(),
+            "items": _memory_admin_faq_items(),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def upsert_operating_faq_category(payload: dict[str, Any], category_id: str = "") -> dict[str, Any]:
+    label = str(payload.get("label") or "").strip()[:80]
+    if not label:
+        raise ValueError("카테고리명을 입력해 주세요.")
+    item_id = _normalize_faq_category_id(category_id or payload.get("id"), fallback_label=label)
+    try:
+        sort_order = int(payload.get("sort_order") if payload.get("sort_order") is not None else 0)
+    except (TypeError, ValueError):
+        sort_order = 0
+
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                _seed_operating_faq_categories(cur, schema)
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.operating_faq_categories
+                        (id, label, sort_order, status, updated_at_utc)
+                    VALUES (%s, %s, %s, 'active', now())
+                    ON CONFLICT (id) DO UPDATE SET
+                        label = EXCLUDED.label,
+                        sort_order = EXCLUDED.sort_order,
+                        status = 'active',
+                        updated_at_utc = now()
+                    RETURNING id, label, sort_order, status, updated_at_utc
+                    """,
+                    (item_id, label, sort_order),
+                )
+                row = dict(cur.fetchone())
+                cur.execute(
+                    f"""
+                    UPDATE {schema}.operating_faq_items
+                    SET category_label = %s, updated_at_utc = now()
+                    WHERE category = %s
+                    """,
+                    (label, item_id),
+                )
+        return {"ok": True, "category": _admin_faq_category_item(row), **_storage_info("supabase")}
+    except Exception as exc:
+        now = datetime.now(timezone.utc).isoformat()
+        _memory_seed_faq_categories()
+        _memory_operating_faq_categories[item_id] = {
+            "id": item_id,
+            "label": label,
+            "sort_order": sort_order,
+            "status": "active",
+            "created_at_utc": _memory_operating_faq_categories.get(item_id, {}).get("created_at_utc", now),
+            "updated_at_utc": now,
+        }
+        for item in _memory_operating_faq_items.values():
+            if item.get("category") == item_id:
+                item["category_label"] = label
+                item["updated_at_utc"] = now
+        return {
+            "ok": True,
+            "category": _admin_faq_category_item(_memory_operating_faq_categories[item_id]),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def delete_operating_faq_category(category_id: str) -> dict[str, Any]:
+    item_id = _normalize_faq_category_id(category_id)
+    if not item_id:
+        raise ValueError("카테고리 ID가 필요합니다.")
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    UPDATE {schema}.operating_faq_categories
+                    SET status = 'deleted', updated_at_utc = now()
+                    WHERE id = %s
+                    RETURNING id, label, sort_order, status, updated_at_utc
+                    """,
+                    (item_id,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise ValueError("삭제할 FAQ 카테고리를 찾지 못했습니다.")
+                cur.execute(
+                    f"""
+                    UPDATE {schema}.operating_faq_items
+                    SET status = 'deleted', updated_at_utc = now()
+                    WHERE category = %s
+                    """,
+                    (item_id,),
+                )
+        return {"ok": True, "category": _admin_faq_category_item(dict(row)), **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        _memory_seed_faq_categories()
+        if item_id not in _memory_operating_faq_categories:
+            raise ValueError("삭제할 FAQ 카테고리를 찾지 못했습니다.") from exc
+        now = datetime.now(timezone.utc).isoformat()
+        _memory_operating_faq_categories[item_id]["status"] = "deleted"
+        _memory_operating_faq_categories[item_id]["updated_at_utc"] = now
+        for item in _memory_operating_faq_items.values():
+            if item.get("category") == item_id:
+                item["status"] = "deleted"
+                item["updated_at_utc"] = now
+        return {
+            "ok": True,
+            "category": _admin_faq_category_item(_memory_operating_faq_categories[item_id]),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def _active_category_label(category_id: str) -> str:
+    _memory_seed_faq_categories()
+    row = _memory_operating_faq_categories.get(category_id) or {}
+    if row.get("status") == "active":
+        return str(row.get("label") or "")
+    return FAQ_CATEGORY_LABELS.get(category_id, "")
+
+
+def upsert_operating_faq_item(payload: dict[str, Any], item_id: str = "") -> dict[str, Any]:
+    category = _normalize_faq_category_id(payload.get("category") or "support")
+    question = _clean_faq_text(payload.get("question"), 500)
+    answer = _clean_faq_text(payload.get("answer"), 3000)
+    if not question:
+        raise ValueError("질문을 입력해 주세요.")
+    if not answer:
+        raise ValueError("답변을 입력해 주세요.")
+    source_summary = str(payload.get("source_summary") or "관리자 FAQ 관리").strip()[:300]
+
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                _seed_operating_faq_categories(cur, schema)
+                cur.execute(
+                    f"""
+                    SELECT label
+                    FROM {schema}.operating_faq_categories
+                    WHERE id = %s AND status = 'active'
+                    """,
+                    (category,),
+                )
+                category_row = cur.fetchone()
+                if not category_row:
+                    raise ValueError("활성 FAQ 카테고리를 선택해 주세요.")
+                category_label = str(category_row["label"])
+                question_key = _faq_question_key(question)
+                new_id = item_id or f"admin-faq-{content_hash('admin-faq', category, question)[:16]}"
+                if item_id:
+                    cur.execute(
+                        f"""
+                        UPDATE {schema}.operating_faq_items
+                        SET category = %s,
+                            category_label = %s,
+                            question_key = %s,
+                            question = %s,
+                            answer = %s,
+                            source_type = 'admin_faq',
+                            source_ref = %s,
+                            source_summary = %s,
+                            status = 'active',
+                            source_updated_at = now(),
+                            updated_at_utc = now()
+                        WHERE id = %s
+                        RETURNING id, category, category_label, question, answer, source_type,
+                                  source_summary, frequency, status, updated_at_utc
+                        """,
+                        (
+                            category,
+                            category_label,
+                            question_key,
+                            question,
+                            answer,
+                            f"internal://admin-faq/{item_id}",
+                            source_summary,
+                            item_id,
+                        ),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        raise ValueError("수정할 FAQ 항목을 찾지 못했습니다.")
+                else:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {schema}.operating_faq_items AS faq
+                            (id, category, category_label, question_key, question, answer, source_type,
+                             source_ref, source_summary, frequency, status, source_updated_at, updated_at_utc)
+                        VALUES (%s, %s, %s, %s, %s, %s, 'admin_faq', %s, %s, 1, 'active', now(), now())
+                        ON CONFLICT (category, question_key) DO UPDATE SET
+                            category_label = EXCLUDED.category_label,
+                            question = EXCLUDED.question,
+                            answer = EXCLUDED.answer,
+                            source_type = 'admin_faq',
+                            source_ref = EXCLUDED.source_ref,
+                            source_summary = EXCLUDED.source_summary,
+                            status = 'active',
+                            source_updated_at = now(),
+                            updated_at_utc = now()
+                        RETURNING id, category, category_label, question, answer, source_type,
+                                  source_summary, frequency, status, updated_at_utc
+                        """,
+                        (
+                            new_id,
+                            category,
+                            category_label,
+                            question_key,
+                            question,
+                            answer,
+                            f"internal://admin-faq/{new_id}",
+                            source_summary,
+                        ),
+                    )
+                    row = cur.fetchone()
+        return {"ok": True, "item": _admin_faq_item(dict(row)), **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        _memory_seed_faq_categories()
+        category_label = _active_category_label(category)
+        if not category_label:
+            raise ValueError("활성 FAQ 카테고리를 선택해 주세요.") from exc
+        now = datetime.now(timezone.utc).isoformat()
+        target_id = item_id or f"admin-faq-{content_hash('admin-faq', category, question)[:16]}"
+        if item_id and item_id not in _memory_operating_faq_items:
+            raise ValueError("수정할 FAQ 항목을 찾지 못했습니다.") from exc
+        row = {
+            "id": target_id,
+            "category": category,
+            "category_label": category_label,
+            "question_key": _faq_question_key(question),
+            "question": question,
+            "answer": answer,
+            "source_type": "admin_faq",
+            "source_ref": f"internal://admin-faq/{target_id}",
+            "source_summary": source_summary,
+            "frequency": 1,
+            "status": "active",
+            "source_updated_at": now,
+            "created_at_utc": _memory_operating_faq_items.get(target_id, {}).get("created_at_utc", now),
+            "updated_at_utc": now,
+        }
+        _memory_operating_faq_items[target_id] = row
+        return {"ok": True, "item": _admin_faq_item(row), **_storage_info("memory", str(exc))}
+
+
+def delete_operating_faq_item(item_id: str) -> dict[str, Any]:
+    item_id = str(item_id or "").strip()
+    if not item_id:
+        raise ValueError("FAQ 항목 ID가 필요합니다.")
+    try:
+        _ensure_faq_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    UPDATE {schema}.operating_faq_items
+                    SET status = 'deleted', updated_at_utc = now()
+                    WHERE id = %s
+                    RETURNING id, category, category_label, question, answer, source_type,
+                              source_summary, frequency, status, updated_at_utc
+                    """,
+                    (item_id,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise ValueError("삭제할 FAQ 항목을 찾지 못했습니다.")
+        return {"ok": True, "item": _admin_faq_item(dict(row)), **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        if item_id not in _memory_operating_faq_items:
+            raise ValueError("삭제할 FAQ 항목을 찾지 못했습니다.") from exc
+        now = datetime.now(timezone.utc).isoformat()
+        _memory_operating_faq_items[item_id]["status"] = "deleted"
+        _memory_operating_faq_items[item_id]["updated_at_utc"] = now
+        return {"ok": True, "item": _admin_faq_item(_memory_operating_faq_items[item_id]), **_storage_info("memory", str(exc))}
 
 
 def _official_faq_candidates(cur: Any, schema: str) -> list[dict[str, Any]]:

@@ -102,6 +102,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="admin-view-manualRag"', admin)
         self.assertIn("/api/admin/manual-rag", admin)
         self.assertIn('select class="control" id="manual-rag-category"', admin)
+        self.assertIn("RAG 운영 지식 직접 등록", admin)
+        self.assertIn("FAQ에는 자동 추가되지 않습니다", admin)
         self.assertIn("MANUAL_RAG_CATEGORIES", admin)
         for category in [
             "계정·런칭",
@@ -120,6 +122,13 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("MAIL_REVIEW_PAGE_SIZE = 10", admin)
         self.assertIn("최근 ${retentionDays}일 메일", admin)
         self.assertIn("14일 초과", admin)
+        self.assertIn('data-admin-view="faqManager"', admin)
+        self.assertIn('id="admin-view-faqManager"', admin)
+        self.assertIn('id="faq-category-admin-list"', admin)
+        self.assertIn('id="faq-item-admin-list"', admin)
+        self.assertIn("/api/admin/faqs/categories", admin)
+        self.assertIn("/api/admin/faqs/items", admin)
+        self.assertIn("FAQ는 RAG와 별도로 관리됩니다.", admin)
         self.assertIn('id="official-start-date"', admin)
         self.assertIn('id="official-end-date"', admin)
         self.assertIn('id="official-clear-period"', admin)
@@ -364,6 +373,9 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn(".mail-rag-draft", response.text)
         self.assertIn(".manual-rag-submit", response.text)
         self.assertIn(".manual-rag-item", response.text)
+        self.assertIn(".faq-admin-notice", response.text)
+        self.assertIn(".faq-admin-grid", response.text)
+        self.assertIn(".faq-admin-item", response.text)
         self.assertIn(".notice-editor-shell", response.text)
         self.assertIn(".notice-toolbar", response.text)
         self.assertIn(".notice-preview-surface", response.text)
@@ -398,7 +410,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertIn("refresh_interval_hours", payload)
         self.assertEqual(payload["refresh_interval_hours"], 0)
-        self.assertEqual(payload["storage"], "static")
+        self.assertIn(payload["storage"], {"supabase", "memory"})
         categories = payload["categories"]
         self.assertEqual(len(categories), 8)
         self.assertEqual(categories[0]["id"], "account")
@@ -406,7 +418,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertTrue(categories[0]["items"])
         self.assertIn("q", categories[0]["items"][0])
         self.assertIn("a", categories[0]["items"][0])
-        self.assertIn("Order Form", categories[0]["items"][0]["q"])
+        self.assertTrue(any("Order Form" in item["q"] for item in categories[0]["items"]))
         self.assertTrue(categories[0]["items"][0]["a"])
 
     def test_dev_assets_do_not_expose_copied_html_pages(self) -> None:
