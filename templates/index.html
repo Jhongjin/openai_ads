@@ -495,6 +495,7 @@
         guideText: new Map(),
         guideImages: new Map(),
         guideDeckHtml: new Map(),
+        guideUsesSavedLayout: false,
         guideUpdatedAt: "",
       };
       const defaultMenuSettings = {
@@ -1096,6 +1097,18 @@
           guideDecks[deckKey].slides = JSON.parse(JSON.stringify(deckLayout.slides));
         });
         normalizeGuideDeckEditKeys();
+      }
+
+      function hasUsableGuideLayout(layout) {
+        if (
+          layout?.version !== GUIDE_LAYOUT_VERSION
+          || layout?.fingerprint !== GUIDE_LAYOUT_FINGERPRINT
+        ) {
+          return false;
+        }
+        return Object.values(layout?.decks || {}).some((deckLayout) => (
+          Array.isArray(deckLayout?.slides) && deckLayout.slides.length > 0
+        ));
       }
 
       normalizeGuideDeckEditKeys();
@@ -2140,7 +2153,7 @@
         $("#guide-kicker").textContent = deck.kicker;
         $("#guide-title").textContent = deck.label;
         $("#guide-updated").textContent = state.guideUpdatedAt || "ready";
-        const productionHtml = state.guideDeckHtml.get(state.guideDeck);
+        const productionHtml = state.guideUsesSavedLayout ? "" : state.guideDeckHtml.get(state.guideDeck);
         if (productionHtml) {
           $("#guide-deck").innerHTML = productionHtml;
           applyProductionGuideOverrides();
@@ -2160,7 +2173,10 @@
           const images = Array.isArray(data.images) ? data.images : [];
           state.guideText = new Map(items.map((item) => [item.key, item.value || item.default || ""]));
           state.guideImages = new Map(images.map((item) => [item.key, item]));
-          state.guideDeckHtml = new Map(Object.entries(deckHtml.decks || {}));
+          const savedLayoutAvailable = hasUsableGuideLayout(data.layout);
+          applyGuideLayout(data.layout);
+          state.guideUsesSavedLayout = savedLayoutAvailable;
+          state.guideDeckHtml = savedLayoutAvailable ? new Map() : new Map(Object.entries(deckHtml.decks || {}));
           state.guideUpdatedAt = data.updated_at || "";
           renderGuideDeck();
         } catch (error) {
