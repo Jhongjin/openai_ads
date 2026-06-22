@@ -76,6 +76,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         client = TestClient(app)
 
         home = client.get("/dev").text
+        public_home = client.get("/").text
         admin = client.get("/dev/admin").text
         intake = client.get("/dev/creative-upload-draft").text
 
@@ -132,6 +133,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("hasUsableGuideLayout", home)
         self.assertIn("guideUsesSavedLayout", home)
         self.assertIn("tagProductionGuideTextKeys", home)
+        self.assertIn("normalizeGuideDeckEditKeys(guideDeckDefaults);", home)
+        self.assertIn("normalizeGuideDeckEditKeys(guideDeckDefaults);", public_home)
         self.assertIn("state.guideDeckHtml = new Map(Object.entries(deckHtml.decks || {}));", home)
         self.assertIn("guideDeckDefaults", home)
         self.assertIn("guide-public-slide", home)

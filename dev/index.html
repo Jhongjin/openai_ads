@@ -750,8 +750,8 @@
         },
       };
 
-      function normalizeGuideDeckEditKeys() {
-        Object.entries(guideDecks).forEach(([deckKey, deck]) => {
+      function normalizeGuideDeckEditKeys(targetDecks = guideDecks) {
+        Object.entries(targetDecks).forEach(([deckKey, deck]) => {
           (deck.slides || []).forEach((slide, slideIndex) => {
             const slideKey = `${deckKey}.slide${slideIndex + 1}`;
             if (slide.kicker && !slide.kickerKey) slide.kickerKey = `${slideKey}.kicker`;
@@ -1091,6 +1091,7 @@
 
       applyRichGuideDeckDefaults(guideDecks);
       const guideDeckDefaults = JSON.parse(JSON.stringify(guideDecks));
+      normalizeGuideDeckEditKeys(guideDeckDefaults);
 
       function resetGuideDecks() {
         Object.entries(guideDeckDefaults).forEach(([deckKey, deck]) => {
