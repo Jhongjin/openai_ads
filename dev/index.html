@@ -2204,9 +2204,173 @@
         });
       }
 
+      function guideEntryKey(entry = []) {
+        if (!Array.isArray(entry)) return "";
+        return entry[3] || entry[2] || "";
+      }
+
+      function guideSlideKey(slide = {}) {
+        if (!slide || typeof slide !== "object") return "";
+        return (
+          slide.titleKey
+          || slide.kickerKey
+          || slide.subtitleKey
+          || slide.calloutKey
+          || guideEntryKey(slide.cards?.[0])
+          || guideEntryKey(slide.fieldRows?.[0])
+          || guideEntryKey(slide.processCards?.[0])
+          || ""
+        );
+      }
+
+      function guideElementTextKey(element) {
+        return element?.querySelector("[data-guide-text]")?.getAttribute("data-guide-text") || "";
+      }
+
+      function guideSlideElementKey(element) {
+        return (
+          element?.querySelector(".slide-title[data-guide-text], .slide-section-title[data-guide-text]")?.getAttribute("data-guide-text")
+          || element?.querySelector(".slide-kicker[data-guide-text]")?.getAttribute("data-guide-text")
+          || guideElementTextKey(element)
+          || ""
+        );
+      }
+
+      function createGuideTextPairElement(entry = [], className = "slide-item") {
+        const [title = "", body = "", bodyKey = "", titleKey = "", pills = [], itemClass = "", cardCode = ""] = entry;
+        const element = document.createElement("div");
+        element.className = `${className} ${itemClass || ""}`.trim();
+        const titleElement = document.createElement("strong");
+        if (titleKey) titleElement.setAttribute("data-guide-text", titleKey);
+        titleElement.textContent = titleKey ? guideText(titleKey, title) : title;
+        const bodyElement = document.createElement("span");
+        if (bodyKey) bodyElement.setAttribute("data-guide-text", bodyKey);
+        bodyElement.textContent = bodyKey ? guideText(bodyKey, body) : body;
+        element.append(titleElement, bodyElement);
+        if (Array.isArray(pills) && pills.length) {
+          const pillGroup = document.createElement("div");
+          pillGroup.className = "dev-slide-pills";
+          pills.forEach((pill) => {
+            const item = document.createElement("em");
+            item.textContent = pill;
+            pillGroup.appendChild(item);
+          });
+          element.appendChild(pillGroup);
+        }
+        if (cardCode) {
+          const code = document.createElement("pre");
+          code.className = "crawler-code";
+          code.textContent = cardCode;
+          element.appendChild(code);
+        }
+        return element;
+      }
+
+      function reconcileProductionGuideCollection(container, itemSelector, entries = [], createElement) {
+        if (!container || !Array.isArray(entries)) return;
+        const existing = Array.from(container.querySelectorAll(itemSelector));
+        const byKey = new Map();
+        existing.forEach((element) => {
+          const key = guideElementTextKey(element);
+          if (key && !byKey.has(key)) byKey.set(key, element);
+        });
+        const used = new Set();
+        const ordered = entries.map((entry, index) => {
+          const key = guideEntryKey(entry);
+          const element = (key && byKey.get(key)) || createElement(entry, index);
+          used.add(element);
+          return element;
+        });
+        existing.forEach((element) => {
+          if (!used.has(element)) element.remove();
+        });
+        ordered.forEach((element) => container.appendChild(element));
+      }
+
+      function reconcileProductionGuideSlide(slideElement, slide) {
+        const cardContainer = slideElement.querySelector(".slide-grid, .crawler-steps");
+        if (cardContainer && Array.isArray(slide.cards)) {
+          reconcileProductionGuideCollection(
+            cardContainer,
+            ":scope > .slide-item",
+            slide.cards,
+            (card, index) => {
+              const element = createGuideTextPairElement(card, "slide-item");
+              if (cardContainer.classList.contains("material") && index >= 5) element.classList.add("split");
+              return element;
+            },
+          );
+        }
+        const fieldTable = slideElement.querySelector(".guide-field-table");
+        if (fieldTable && Array.isArray(slide.fieldRows)) {
+          reconcileProductionGuideCollection(
+            fieldTable,
+            ":scope > .guide-field-row",
+            slide.fieldRows,
+            (row) => createGuideTextPairElement(row, "guide-field-row"),
+          );
+        }
+        const processGrid = slideElement.querySelector(".guide-process-grid");
+        if (processGrid && Array.isArray(slide.processCards)) {
+          reconcileProductionGuideCollection(
+            processGrid,
+            ":scope > .guide-step-card",
+            slide.processCards,
+            (row) => createGuideTextPairElement(row, "guide-step-card"),
+          );
+        }
+        const eventGrid = slideElement.querySelector(".pixel-event-grid");
+        if (eventGrid && Array.isArray(slide.eventCards)) {
+          reconcileProductionGuideCollection(
+            eventGrid,
+            ":scope > .pixel-event-card",
+            slide.eventCards,
+            (row) => createGuideTextPairElement(row, "pixel-event-card"),
+          );
+        }
+      }
+
+      function createFallbackGuideSlideElement(slide, index, total) {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = renderGuideSlide(slide, index, total).trim();
+        return wrapper.firstElementChild;
+      }
+
+      function reconcileProductionGuideStructure(deckKey) {
+        const deckElement = $("#guide-deck");
+        const deck = guideDecks[deckKey] || guideDecks.advertiser || {};
+        const slides = Array.isArray(deck.slides) ? deck.slides : [];
+        const existingSlides = Array.from(deckElement.querySelectorAll(":scope > .slide-card, :scope > .dev-slide-card"));
+        const byKey = new Map();
+        existingSlides.forEach((slideElement) => {
+          const key = guideSlideElementKey(slideElement);
+          if (key && !byKey.has(key)) byKey.set(key, slideElement);
+        });
+        const used = new Set();
+        const orderedSlides = slides.map((slide, index) => {
+          const key = guideSlideKey(slide);
+          const slideElement = (key && byKey.get(key)) || createFallbackGuideSlideElement(slide, index, slides.length);
+          used.add(slideElement);
+          return { slide, slideElement };
+        });
+        existingSlides.forEach((slideElement) => {
+          if (!used.has(slideElement)) slideElement.remove();
+        });
+        orderedSlides.forEach(({ slide, slideElement }) => {
+          deckElement.appendChild(slideElement);
+          reconcileProductionGuideSlide(slideElement, slide);
+        });
+        const currentSlides = Array.from(deckElement.querySelectorAll(":scope > .slide-card, :scope > .dev-slide-card"));
+        currentSlides.forEach((slideElement, index) => {
+          const page = slideElement.querySelector(".slide-page-number, .dev-slide-footer b");
+          if (page) page.textContent = `${index + 1}/${currentSlides.length}`;
+        });
+      }
+
       function applyProductionGuideOverrides() {
         const deckElement = $("#guide-deck");
         tagProductionGuideTextKeys(state.guideDeck);
+        reconcileProductionGuideStructure(state.guideDeck);
         deckElement.querySelectorAll(".slide-update-date").forEach((element) => {
           element.textContent = state.guideUpdatedAt || "-";
         });
