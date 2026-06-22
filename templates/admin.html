@@ -1235,6 +1235,23 @@
                 cardCode || "",
               ];
             });
+            if (slide.copyGuide && typeof slide.copyGuide === "object") {
+              const copyGuide = slide.copyGuide;
+              copyGuide.titleKey = copyGuide.titleKey || `${slideKey}.copyGuide.title`;
+              const columns = Array.isArray(copyGuide.columns) ? copyGuide.columns : [];
+              const columnKeys = Array.isArray(copyGuide.columnKeys) ? copyGuide.columnKeys : [];
+              copyGuide.columnKeys = columns.map(
+                (_, columnIndex) => columnKeys[columnIndex] || `${slideKey}.copyGuide.column${columnIndex + 1}`,
+              );
+              const rows = Array.isArray(copyGuide.rows) ? copyGuide.rows : [];
+              const rowKeys = Array.isArray(copyGuide.rowKeys) ? copyGuide.rowKeys : [];
+              copyGuide.rowKeys = rows.map((row, rowIndex) => {
+                const existingRowKeys = Array.isArray(rowKeys[rowIndex]) ? rowKeys[rowIndex] : [];
+                return (row || []).map(
+                  (_, cellIndex) => existingRowKeys[cellIndex] || `${slideKey}.copyGuide.row${rowIndex + 1}.cell${cellIndex + 1}`,
+                );
+              });
+            }
           });
         });
       }
@@ -2206,7 +2223,7 @@
 
       function renderGuideEditableText(key, fallback, label, deck, className = "", tagName = "span", multiline = false) {
         const item = ensureGuideTextItem(key, fallback, label, deck, multiline);
-        const tag = ["h4", "p", "strong", "span", "pre"].includes(tagName) ? tagName : "span";
+        const tag = ["h4", "h5", "p", "strong", "span", "pre", "div"].includes(tagName) ? tagName : "span";
         const text = item.value || item.default || fallback || "";
         return `<${tag}
           class="${escapeHtml(className)} guide-editable-text"
@@ -2292,15 +2309,40 @@
         `;
       }
 
-      function renderAdminGuideCopyGuide(copyGuide) {
+      function renderAdminGuideCopyGuide(copyGuide, deckKey = activeGuideDeck, slide = {}, slideIndex = 0) {
         if (!copyGuide || !Array.isArray(copyGuide.rows) || !copyGuide.rows.length) return "";
         const columns = copyGuide.columns || ["구분", "좋은 예", "아쉬운 예"];
+        const columnKeys = Array.isArray(copyGuide.columnKeys) ? copyGuide.columnKeys : [];
+        const rowKeys = Array.isArray(copyGuide.rowKeys) ? copyGuide.rowKeys : [];
+        const prefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
         return `
           <div class="dev-copy-guide">
-            <h5>${escapeHtml(copyGuide.title || "가이드")}</h5>
+            ${renderGuideEditableText(
+              copyGuide.titleKey,
+              copyGuide.title || "가이드",
+              `${prefix} · 테이블 제목`,
+              deckKey,
+              "",
+              "h5",
+            )}
             <div class="dev-copy-guide-table" style="--guide-columns:${columns.length}">
-              ${columns.map((column) => `<div class="head">${escapeHtml(column)}</div>`).join("")}
-              ${copyGuide.rows.flatMap((row) => columns.map((_, index) => `<div>${escapeHtml(row?.[index] || "")}</div>`)).join("")}
+              ${columns.map((column, columnIndex) => renderGuideEditableText(
+                columnKeys[columnIndex],
+                column,
+                `${prefix} · 테이블 헤더 ${columnIndex + 1}`,
+                deckKey,
+                "head",
+                "div",
+              )).join("")}
+              ${copyGuide.rows.flatMap((row, rowIndex) => columns.map((_, columnIndex) => renderGuideEditableText(
+                rowKeys[rowIndex]?.[columnIndex],
+                row?.[columnIndex] || "",
+                `${prefix} · 테이블 ${rowIndex + 1}행 ${columnIndex + 1}열`,
+                deckKey,
+                "",
+                "div",
+                true,
+              ))).join("")}
             </div>
           </div>
         `;
@@ -2423,7 +2465,7 @@
                 ${renderAdminGuideFieldRows(slide.fieldRows, deckKey, slide, index)}
                 ${renderAdminGuideEventCards(slide.eventCards, deckKey, slide, index)}
                 ${slide.cards?.length ? `<div class="dev-slide-grid ${escapeHtml(slide.gridClass || "")}">${renderAdminGuideCards(slide.cards, deckKey, slide, index)}</div>` : ""}
-                ${renderAdminGuideCopyGuide(slide.copyGuide)}
+                ${renderAdminGuideCopyGuide(slide.copyGuide, deckKey, slide, index)}
                 ${renderAdminGuideList(slide.listItems)}
                 ${slide.sourceNote ? `<p class="dev-guide-source-note">${escapeHtml(slide.sourceNote)}</p>` : ""}
                 ${slide.note ? `<p class="dev-guide-note">${escapeHtml(slide.note)}</p>` : ""}
@@ -2570,6 +2612,17 @@
                 if (row[3]) textKeys.add(row[3]);
               });
             });
+            if (slide.copyGuide) {
+              if (slide.copyGuide.titleKey) textKeys.add(slide.copyGuide.titleKey);
+              (slide.copyGuide.columnKeys || []).forEach((key) => {
+                if (key) textKeys.add(key);
+              });
+              (slide.copyGuide.rowKeys || []).forEach((row) => {
+                (row || []).forEach((key) => {
+                  if (key) textKeys.add(key);
+                });
+              });
+            }
             (slide.codeBlocks || []).forEach((block) => {
               if (block.titleKey) textKeys.add(block.titleKey);
               if (block.codeKey) textKeys.add(block.codeKey);
@@ -2608,6 +2661,21 @@
               if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 이벤트 ${cardIndex + 1} 제목`, deckKey);
               if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 이벤트 ${cardIndex + 1} 내용`, deckKey, true);
             });
+            if (slide.copyGuide) {
+              if (slide.copyGuide.titleKey) {
+                ensureGuideTextItem(slide.copyGuide.titleKey, slide.copyGuide.title || "가이드", `${labelPrefix} · 테이블 제목`, deckKey);
+              }
+              (slide.copyGuide.columns || []).forEach((column, columnIndex) => {
+                const key = slide.copyGuide.columnKeys?.[columnIndex];
+                if (key) ensureGuideTextItem(key, column, `${labelPrefix} · 테이블 헤더 ${columnIndex + 1}`, deckKey);
+              });
+              (slide.copyGuide.rows || []).forEach((row, rowIndex) => {
+                (row || []).forEach((cell, columnIndex) => {
+                  const key = slide.copyGuide.rowKeys?.[rowIndex]?.[columnIndex];
+                  if (key) ensureGuideTextItem(key, cell, `${labelPrefix} · 테이블 ${rowIndex + 1}행 ${columnIndex + 1}열`, deckKey, true);
+                });
+              });
+            }
             (slide.codeBlocks || []).forEach((block, blockIndex) => {
               if (block.titleKey) ensureGuideTextItem(block.titleKey, block.title, `${labelPrefix} · 코드 ${blockIndex + 1} 제목`, deckKey);
               if (block.codeKey) ensureGuideTextItem(block.codeKey, block.code, `${labelPrefix} · 코드 ${blockIndex + 1}`, deckKey, true);

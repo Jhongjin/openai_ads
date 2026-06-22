@@ -70,6 +70,24 @@ class GuideSlidesAdminTests(unittest.TestCase):
                                         ]
                                     ],
                                     "fieldRows": [["필드명", "필드 설명"]],
+                                    "copyGuide": {
+                                        "title": "테스트 카피 가이드",
+                                        "titleKey": "advertiser.custom.copy.title",
+                                        "columns": ["구분", "좋은 예", "아쉬운 예"],
+                                        "columnKeys": [
+                                            "advertiser.custom.copy.column1",
+                                            "advertiser.custom.copy.column2",
+                                            "advertiser.custom.copy.column3",
+                                        ],
+                                        "rows": [["출발점", "테스트 좋은 예", "테스트 아쉬운 예"]],
+                                        "rowKeys": [
+                                            [
+                                                "advertiser.custom.copy.row1.cell1",
+                                                "advertiser.custom.copy.row1.cell2",
+                                                "advertiser.custom.copy.row1.cell3",
+                                            ]
+                                        ],
+                                    },
                                     "images": [{"key": "campaign_preview", "caption": "미리보기 이미지"}],
                                     "codeBlocks": [{"title": "코드 예시", "code": "oaiq(\"measure\", \"page_viewed\")"}],
                                 }
@@ -90,6 +108,8 @@ class GuideSlidesAdminTests(unittest.TestCase):
             self.assertEqual(body["layout"]["fingerprint"], "production-guide-decks-20260620-v2")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["kicker"], "테스트 키커")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["fieldRows"][0][0], "필드명")
+            self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["copyGuide"]["rows"][0][1], "테스트 좋은 예")
+            self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["copyGuide"]["rowKeys"][0][2], "advertiser.custom.copy.row1.cell3")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["images"][0]["key"], "campaign_preview")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["codeBlocks"][0]["title"], "코드 예시")
             self.assertEqual(body["layout"]["decks"]["advertiser"]["slides"][0]["cards"][0][4][0], "테스트 배지")

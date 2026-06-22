@@ -1965,21 +1965,39 @@ def _clean_slide_copy_guide(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {}
     rows = []
+    row_keys: list[list[str]] = []
     raw_rows = value.get("rows")
+    raw_row_keys = value.get("rowKeys")
     if isinstance(raw_rows, list):
-        for raw_row in raw_rows[:20]:
+        for row_index, raw_row in enumerate(raw_rows[:20]):
             if isinstance(raw_row, list):
                 row = [_clean_slide_text(cell, multiline=True, fallback="")[:600] for cell in raw_row[:4]]
                 if any(row):
                     rows.append(row)
+                    if isinstance(raw_row_keys, list) and row_index < len(raw_row_keys) and isinstance(raw_row_keys[row_index], list):
+                        row_keys.append([_clean_slide_key(key) for key in raw_row_keys[row_index][: len(row)]])
+                    else:
+                        row_keys.append([])
     if not rows:
         return {}
     columns = _clean_slide_string_list(value.get("columns"), max_items=4) or ["구분", "좋은 예", "아쉬운 예"]
-    return {
+    column_keys = []
+    raw_column_keys = value.get("columnKeys")
+    if isinstance(raw_column_keys, list):
+        column_keys = [_clean_slide_key(key) for key in raw_column_keys[: len(columns)]]
+    clean_copy_guide = {
         "title": _clean_slide_text(value.get("title"), fallback="가이드"),
         "columns": columns,
         "rows": rows,
     }
+    title_key = _clean_slide_key(value.get("titleKey"))
+    if title_key:
+        clean_copy_guide["titleKey"] = title_key
+    if any(column_keys):
+        clean_copy_guide["columnKeys"] = column_keys
+    if any(any(key for key in row) for row in row_keys):
+        clean_copy_guide["rowKeys"] = row_keys
+    return clean_copy_guide
 
 
 def _clean_slide_code_blocks(value: Any) -> list[dict[str, str]]:

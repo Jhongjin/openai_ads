@@ -2022,12 +2022,18 @@
       function renderGuideCopyGuide(copyGuide) {
         if (!copyGuide || !Array.isArray(copyGuide.rows) || !copyGuide.rows.length) return "";
         const columns = copyGuide.columns || ["구분", "좋은 예", "아쉬운 예"];
+        const columnKeys = Array.isArray(copyGuide.columnKeys) ? copyGuide.columnKeys : [];
+        const rowKeys = Array.isArray(copyGuide.rowKeys) ? copyGuide.rowKeys : [];
         return `
           <div class="dev-copy-guide">
-            <h5>${escapeHtml(copyGuide.title || "가이드")}</h5>
+            <h5>${escapeHtml(copyGuide.titleKey ? guideText(copyGuide.titleKey, copyGuide.title || "가이드") : copyGuide.title || "가이드")}</h5>
             <div class="dev-copy-guide-table" style="--guide-columns:${columns.length}">
-              ${columns.map((column) => `<div class="head">${escapeHtml(column)}</div>`).join("")}
-              ${copyGuide.rows.flatMap((row) => columns.map((_, index) => `<div>${escapeHtml(row?.[index] || "")}</div>`)).join("")}
+              ${columns.map((column, columnIndex) => `<div class="head">${escapeHtml(columnKeys[columnIndex] ? guideText(columnKeys[columnIndex], column) : column)}</div>`).join("")}
+              ${copyGuide.rows.flatMap((row, rowIndex) => columns.map((_, columnIndex) => {
+                const key = rowKeys[rowIndex]?.[columnIndex];
+                const value = row?.[columnIndex] || "";
+                return `<div>${escapeHtml(key ? guideText(key, value) : value)}</div>`;
+              })).join("")}
             </div>
           </div>
         `;
@@ -2188,6 +2194,26 @@
           assignTextPairs(".guide-field-table .guide-field-row", slide.fieldRows);
           assignTextPairs(".guide-process-grid .guide-step-card", slide.processCards);
           assignTextPairs(".pixel-event-grid .pixel-event-card", slide.eventCards);
+          if (slide.copyGuide) {
+            assignFirst(".copy-guide h3, .dev-copy-guide h5, .dev-copy-guide h3", slide.copyGuide.titleKey);
+            const copyTable = slideElement.querySelector(".copy-guide-table, .dev-copy-guide-table");
+            const copyCells = copyTable ? Array.from(copyTable.children) : [];
+            const columns = slide.copyGuide.columns || [];
+            const columnKeys = slide.copyGuide.columnKeys || [];
+            const rowKeys = slide.copyGuide.rowKeys || [];
+            columns.forEach((_, columnIndex) => {
+              const key = columnKeys[columnIndex];
+              if (key && copyCells[columnIndex]) copyCells[columnIndex].setAttribute("data-guide-text", key);
+            });
+            const rowOffset = columns.length;
+            (slide.copyGuide.rows || []).forEach((row, rowIndex) => {
+              (row || []).forEach((_, columnIndex) => {
+                const key = rowKeys[rowIndex]?.[columnIndex];
+                const cell = copyCells[rowOffset + rowIndex * columns.length + columnIndex];
+                if (key && cell) cell.setAttribute("data-guide-text", key);
+              });
+            });
+          }
           const codeBlockElements = Array.from(slideElement.querySelectorAll(".gtm-code-grid > div, .dev-guide-code-grid > div"));
           (slide.codeBlocks || []).forEach((block, blockIndex) => {
             const codeBlockElement = codeBlockElements[blockIndex];
