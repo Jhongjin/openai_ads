@@ -24,10 +24,12 @@ class GuideSlidesAdminTests(unittest.TestCase):
             decks = deck_response.json()["decks"]
             self.assertEqual(decks["advertiser"].count('class="slide-card'), 5)
             self.assertEqual(decks["setup"].count('class="slide-card'), 5)
-            self.assertEqual(decks["pixel"].count('class="slide-card'), 7)
+            self.assertEqual(decks["pixel"].count('class="slide-card'), 8)
             self.assertIn("광고 소재 준비물", decks["advertiser"])
             self.assertIn("플래너에게 받아야 할 캠페인 정보 및 소재", decks["setup"])
             self.assertIn("웹 픽셀 만들기와 코드 복사", decks["pixel"])
+            self.assertIn("GTM 삽입 방법", decks["pixel"])
+            self.assertIn("8/8", decks["pixel"])
 
             denied = client.get("/api/admin/guide-slides")
             self.assertEqual(denied.status_code, 403)

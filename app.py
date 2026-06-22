@@ -231,9 +231,9 @@ def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
 def _production_guide_decks() -> dict[str, str]:
     root = project_root()
     source_candidates = [
-        root / "templates" / "index.html",
-        root / "public" / "index.html",
         root / "backups" / "production_pages_20260621_pre_dev_cutover" / "index.html",
+        root / "public" / "index.html",
+        root / "templates" / "index.html",
     ]
     missing_panels: list[str] = []
     for source in source_candidates:

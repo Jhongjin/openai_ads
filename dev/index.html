@@ -759,6 +759,23 @@
             if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
             if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
             if (slide.code && !slide.codeKey) slide.codeKey = `${slideKey}.code`;
+            const normalizePairs = (rows, prefix) => (rows || []).map((row, rowIndex) => {
+              const [title, body, bodyKey, titleKey] = row;
+              return [
+                title,
+                body,
+                bodyKey || `${slideKey}.${prefix}${rowIndex + 1}.body`,
+                titleKey || `${slideKey}.${prefix}${rowIndex + 1}.title`,
+              ];
+            });
+            slide.fieldRows = normalizePairs(slide.fieldRows, "field");
+            slide.processCards = normalizePairs(slide.processCards, "process");
+            slide.eventCards = normalizePairs(slide.eventCards, "event");
+            slide.codeBlocks = (slide.codeBlocks || []).map((block, blockIndex) => ({
+              ...block,
+              titleKey: block.titleKey || `${slideKey}.codeBlock${blockIndex + 1}.title`,
+              codeKey: block.codeKey || `${slideKey}.codeBlock${blockIndex + 1}.code`,
+            }));
             slide.cards = (slide.cards || []).map((card, cardIndex) => {
               const [title, body, bodyKey, titleKey, pills, cardClass, cardCode] = card;
               return [
@@ -1958,10 +1975,10 @@
         if (!Array.isArray(rows) || !rows.length) return "";
         return `
           <div class="dev-guide-field-table">
-            ${rows.map(([label, value]) => `
+            ${rows.map(([label, value, bodyKey, titleKey]) => `
               <div class="dev-guide-field-row">
-                <strong>${escapeHtml(label)}</strong>
-                <span>${escapeHtml(value)}</span>
+                <strong>${escapeHtml(titleKey ? guideText(titleKey, label) : label)}</strong>
+                <span>${escapeHtml(bodyKey ? guideText(bodyKey, value) : value)}</span>
               </div>
             `).join("")}
           </div>
@@ -1977,10 +1994,10 @@
         if (!Array.isArray(cards) || !cards.length) return "";
         return `
           <div class="dev-guide-process-grid">
-            ${cards.map(([title, body]) => `
+            ${cards.map(([title, body, bodyKey, titleKey]) => `
               <div class="dev-guide-step-card">
-                <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(body)}</span>
+                <strong>${escapeHtml(titleKey ? guideText(titleKey, title) : title)}</strong>
+                <span>${escapeHtml(bodyKey ? guideText(bodyKey, body) : body)}</span>
               </div>
             `).join("")}
           </div>
@@ -2019,10 +2036,10 @@
         if (!Array.isArray(cards) || !cards.length) return "";
         return `
           <div class="dev-pixel-event-grid">
-            ${cards.map(([title, body]) => `
+            ${cards.map(([title, body, bodyKey, titleKey]) => `
               <div class="dev-pixel-event-card">
-                <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(body)}</span>
+                <strong>${escapeHtml(titleKey ? guideText(titleKey, title) : title)}</strong>
+                <span>${escapeHtml(bodyKey ? guideText(bodyKey, body) : body)}</span>
               </div>
             `).join("")}
           </div>
@@ -2051,8 +2068,8 @@
           <div class="dev-guide-code-grid">
             ${blocks.map((block) => `
               <div>
-                <p class="dev-guide-caption">${escapeHtml(block.title || "코드")}</p>
-                <pre class="dev-slide-code">${escapeHtml(block.code || "")}</pre>
+                <p class="dev-guide-caption">${escapeHtml(block.titleKey ? guideText(block.titleKey, block.title || "코드") : block.title || "코드")}</p>
+                <pre class="dev-slide-code">${escapeHtml(block.codeKey ? guideText(block.codeKey, block.code || "") : block.code || "")}</pre>
               </div>
             `).join("")}
           </div>
@@ -2125,8 +2142,70 @@
         });
       }
 
+      function tagProductionGuideTextKeys(deckKey) {
+        const deck = guideDeckDefaults[deckKey] || guideDecks[deckKey] || {};
+        const slides = Array.isArray(deck.slides) ? deck.slides : [];
+        $$("#guide-deck .slide-card").forEach((slideElement, index) => {
+          const slide = slides[index] || {};
+          const assignFirst = (selector, key) => {
+            if (!key) return;
+            const element = slideElement.querySelector(selector);
+            if (element && !element.getAttribute("data-guide-text")) {
+              element.setAttribute("data-guide-text", key);
+            }
+          };
+          assignFirst(".slide-kicker", slide.kickerKey);
+          assignFirst(".slide-title, .slide-section-title", slide.titleKey);
+          assignFirst(".slide-subtitle", slide.subtitleKey);
+          assignFirst(".slide-callout", slide.calloutKey);
+          assignFirst("pre.pixel-code, pre.crawler-code", slide.codeKey);
+
+          const assignTextPair = (element, row) => {
+            if (!element || !Array.isArray(row)) return;
+            const [, , bodyKey, titleKey] = row;
+            const titleElement = element.querySelector("strong");
+            const bodyElement = element.querySelector("span");
+            if (titleKey && titleElement && !titleElement.getAttribute("data-guide-text")) {
+              titleElement.setAttribute("data-guide-text", titleKey);
+            }
+            if (bodyKey && bodyElement && !bodyElement.getAttribute("data-guide-text")) {
+              bodyElement.setAttribute("data-guide-text", bodyKey);
+            }
+          };
+
+          const assignTextPairs = (selector, rows = []) => {
+            const elements = Array.from(slideElement.querySelectorAll(selector));
+            rows.forEach((row, rowIndex) => assignTextPair(elements[rowIndex], row));
+          };
+
+          const cardElements = Array.from(
+            slideElement.querySelectorAll(".slide-grid > .slide-item, .crawler-steps > .slide-item"),
+          );
+          (slide.cards || []).forEach((card, cardIndex) => {
+            assignTextPair(cardElements[cardIndex], card);
+          });
+          assignTextPairs(".guide-field-table .guide-field-row", slide.fieldRows);
+          assignTextPairs(".guide-process-grid .guide-step-card", slide.processCards);
+          assignTextPairs(".pixel-event-grid .pixel-event-card", slide.eventCards);
+          const codeBlockElements = Array.from(slideElement.querySelectorAll(".gtm-code-grid > div, .dev-guide-code-grid > div"));
+          (slide.codeBlocks || []).forEach((block, blockIndex) => {
+            const codeBlockElement = codeBlockElements[blockIndex];
+            if (!codeBlockElement) return;
+            const captionElement = codeBlockElement.querySelector(".guide-caption, .dev-guide-caption");
+            const codeElement = codeBlockElement.querySelector("pre");
+            if (block.titleKey && captionElement && !captionElement.getAttribute("data-guide-text")) {
+              captionElement.setAttribute("data-guide-text", block.titleKey);
+            }
+            if (block.codeKey && codeElement && !codeElement.getAttribute("data-guide-text")) {
+              codeElement.setAttribute("data-guide-text", block.codeKey);
+            }
+          });
+        });
+      }
+
       function applyProductionGuideOverrides() {
         const deckElement = $("#guide-deck");
+        tagProductionGuideTextKeys(state.guideDeck);
         deckElement.querySelectorAll(".slide-update-date").forEach((element) => {
           element.textContent = state.guideUpdatedAt || "-";
         });
@@ -2158,7 +2237,7 @@
         $("#guide-kicker").textContent = deck.kicker;
         $("#guide-title").textContent = deck.label;
         $("#guide-updated").textContent = state.guideUpdatedAt || "ready";
-        const productionHtml = state.guideUsesSavedLayout ? "" : state.guideDeckHtml.get(state.guideDeck);
+        const productionHtml = state.guideDeckHtml.get(state.guideDeck);
         if (productionHtml) {
           $("#guide-deck").innerHTML = productionHtml;
           applyProductionGuideOverrides();
@@ -2181,7 +2260,7 @@
           const savedLayoutAvailable = hasUsableGuideLayout(data.layout);
           applyGuideLayout(data.layout);
           state.guideUsesSavedLayout = savedLayoutAvailable;
-          state.guideDeckHtml = savedLayoutAvailable ? new Map() : new Map(Object.entries(deckHtml.decks || {}));
+          state.guideDeckHtml = new Map(Object.entries(deckHtml.decks || {}));
           state.guideUpdatedAt = data.updated_at || "";
           renderGuideDeck();
         } catch (error) {

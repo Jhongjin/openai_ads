@@ -1206,6 +1206,23 @@
             if (slide.subtitle && !slide.subtitleKey) slide.subtitleKey = `${slideKey}.subtitle`;
             if (slide.callout && !slide.calloutKey) slide.calloutKey = `${slideKey}.callout`;
             if (slide.code && !slide.codeKey) slide.codeKey = `${slideKey}.code`;
+            const normalizePairs = (rows, prefix) => (rows || []).map((row, rowIndex) => {
+              const [title, body, bodyKey, titleKey] = row;
+              return [
+                title,
+                body,
+                bodyKey || `${slideKey}.${prefix}${rowIndex + 1}.body`,
+                titleKey || `${slideKey}.${prefix}${rowIndex + 1}.title`,
+              ];
+            });
+            slide.fieldRows = normalizePairs(slide.fieldRows, "field");
+            slide.processCards = normalizePairs(slide.processCards, "process");
+            slide.eventCards = normalizePairs(slide.eventCards, "event");
+            slide.codeBlocks = (slide.codeBlocks || []).map((block, blockIndex) => ({
+              ...block,
+              titleKey: block.titleKey || `${slideKey}.codeBlock${blockIndex + 1}.title`,
+              codeKey: block.codeKey || `${slideKey}.codeBlock${blockIndex + 1}.code`,
+            }));
             slide.cards = (slide.cards || []).map((card, cardIndex) => {
               const [title, body, bodyKey, titleKey, pills, cardClass, cardCode] = card;
               return [
@@ -2226,14 +2243,15 @@
         `).join("");
       }
 
-      function renderAdminGuideFieldRows(rows = []) {
+      function renderAdminGuideFieldRows(rows = [], deckKey = activeGuideDeck, slide = {}, slideIndex = 0) {
         if (!Array.isArray(rows) || !rows.length) return "";
+        const prefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
         return `
           <div class="dev-guide-field-table">
-            ${rows.map(([label, value]) => `
+            ${rows.map(([label, value, bodyKey, titleKey], rowIndex) => `
               <div class="dev-guide-field-row">
-                <strong>${escapeHtml(label)}</strong>
-                <span>${escapeHtml(value)}</span>
+                ${renderGuideEditableText(titleKey, label, `${prefix} · 필드 ${rowIndex + 1} 제목`, deckKey, "", "strong")}
+                ${renderGuideEditableText(bodyKey, value, `${prefix} · 필드 ${rowIndex + 1} 내용`, deckKey, "", "span", true)}
               </div>
             `).join("")}
           </div>
@@ -2245,14 +2263,15 @@
         return `<ul class="dev-guide-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
       }
 
-      function renderAdminGuideProcessCards(cards = []) {
+      function renderAdminGuideProcessCards(cards = [], deckKey = activeGuideDeck, slide = {}, slideIndex = 0) {
         if (!Array.isArray(cards) || !cards.length) return "";
+        const prefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
         return `
           <div class="dev-guide-process-grid">
-            ${cards.map(([title, body]) => `
+            ${cards.map(([title, body, bodyKey, titleKey], cardIndex) => `
               <div class="dev-guide-step-card">
-                <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(body)}</span>
+                ${renderGuideEditableText(titleKey, title, `${prefix} · 프로세스 ${cardIndex + 1} 제목`, deckKey, "", "strong")}
+                ${renderGuideEditableText(bodyKey, body, `${prefix} · 프로세스 ${cardIndex + 1} 내용`, deckKey, "", "span", true)}
               </div>
             `).join("")}
           </div>
@@ -2287,14 +2306,15 @@
         `;
       }
 
-      function renderAdminGuideEventCards(cards = []) {
+      function renderAdminGuideEventCards(cards = [], deckKey = activeGuideDeck, slide = {}, slideIndex = 0) {
         if (!Array.isArray(cards) || !cards.length) return "";
+        const prefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
         return `
           <div class="dev-pixel-event-grid">
-            ${cards.map(([title, body]) => `
+            ${cards.map(([title, body, bodyKey, titleKey], cardIndex) => `
               <div class="dev-pixel-event-card">
-                <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(body)}</span>
+                ${renderGuideEditableText(titleKey, title, `${prefix} · 이벤트 ${cardIndex + 1} 제목`, deckKey, "", "strong")}
+                ${renderGuideEditableText(bodyKey, body, `${prefix} · 이벤트 ${cardIndex + 1} 내용`, deckKey, "", "span", true)}
               </div>
             `).join("")}
           </div>
@@ -2333,14 +2353,15 @@
         `;
       }
 
-      function renderAdminGuideCodeBlocks(blocks = []) {
+      function renderAdminGuideCodeBlocks(blocks = [], deckKey = activeGuideDeck, slide = {}, slideIndex = 0) {
         if (!Array.isArray(blocks) || !blocks.length) return "";
+        const prefix = slide.kicker || `슬라이드 ${slideIndex + 1}`;
         return `
           <div class="dev-guide-code-grid">
-            ${blocks.map((block) => `
+            ${blocks.map((block, blockIndex) => `
               <div>
-                <p class="dev-guide-caption">${escapeHtml(block.title || "코드")}</p>
-                <pre class="dev-slide-code">${escapeHtml(block.code || "")}</pre>
+                ${renderGuideEditableText(block.titleKey, block.title || "코드", `${prefix} · 코드 ${blockIndex + 1} 제목`, deckKey, "dev-guide-caption", "p")}
+                ${renderGuideEditableText(block.codeKey, block.code || "", `${prefix} · 코드 ${blockIndex + 1}`, deckKey, "dev-slide-code", "pre", true)}
               </div>
             `).join("")}
           </div>
@@ -2379,7 +2400,7 @@
           ? renderGuideEditableText(codeKey, slide.code, `${slide.kicker || `슬라이드 ${index + 1}`} 코드`, deckKey, "dev-slide-code", "pre", true)
           : (slide.code ? `<pre class="dev-slide-code">${escapeHtml(slide.code)}</pre>` : "");
         const media = renderAdminGuideMedia(slide, deckKey, code);
-        const extraCodeBlocks = renderAdminGuideCodeBlocks(slide.codeBlocks);
+        const extraCodeBlocks = renderAdminGuideCodeBlocks(slide.codeBlocks, deckKey, slide, index);
         const hasMedia = Boolean(media.trim());
 
         return `
@@ -2397,10 +2418,10 @@
                 ${title || (slide.title ? `<h4>${escapeHtml(slide.title)}</h4>` : "")}
                 ${subtitle}
                 ${slide.channelNote ? `<p class="dev-guide-channel-note">${escapeHtml(slide.channelNote)}</p>` : ""}
-                ${renderAdminGuideProcessCards(slide.processCards)}
+                ${renderAdminGuideProcessCards(slide.processCards, deckKey, slide, index)}
                 ${renderAdminGuideOverview(slide.overview)}
-                ${renderAdminGuideFieldRows(slide.fieldRows)}
-                ${renderAdminGuideEventCards(slide.eventCards)}
+                ${renderAdminGuideFieldRows(slide.fieldRows, deckKey, slide, index)}
+                ${renderAdminGuideEventCards(slide.eventCards, deckKey, slide, index)}
                 ${slide.cards?.length ? `<div class="dev-slide-grid ${escapeHtml(slide.gridClass || "")}">${renderAdminGuideCards(slide.cards, deckKey, slide, index)}</div>` : ""}
                 ${renderAdminGuideCopyGuide(slide.copyGuide)}
                 ${renderAdminGuideList(slide.listItems)}
@@ -2543,6 +2564,16 @@
               if (card[2]) textKeys.add(card[2]);
               if (card[3]) textKeys.add(card[3]);
             });
+            ["fieldRows", "processCards", "eventCards"].forEach((groupKey) => {
+              (slide[groupKey] || []).forEach((row) => {
+                if (row[2]) textKeys.add(row[2]);
+                if (row[3]) textKeys.add(row[3]);
+              });
+            });
+            (slide.codeBlocks || []).forEach((block) => {
+              if (block.titleKey) textKeys.add(block.titleKey);
+              if (block.codeKey) textKeys.add(block.codeKey);
+            });
           });
         });
         return { textKeys, imageKeys };
@@ -2564,6 +2595,22 @@
             (slide.cards || []).forEach(([title, body, bodyKey, titleKey], cardIndex) => {
               if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 카드 ${cardIndex + 1} 제목`, deckKey);
               if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 카드 ${cardIndex + 1} 내용`, deckKey, true);
+            });
+            (slide.fieldRows || []).forEach(([title, body, bodyKey, titleKey], rowIndex) => {
+              if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 필드 ${rowIndex + 1} 제목`, deckKey);
+              if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 필드 ${rowIndex + 1} 내용`, deckKey, true);
+            });
+            (slide.processCards || []).forEach(([title, body, bodyKey, titleKey], cardIndex) => {
+              if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 프로세스 ${cardIndex + 1} 제목`, deckKey);
+              if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 프로세스 ${cardIndex + 1} 내용`, deckKey, true);
+            });
+            (slide.eventCards || []).forEach(([title, body, bodyKey, titleKey], cardIndex) => {
+              if (titleKey) ensureGuideTextItem(titleKey, title, `${labelPrefix} · 이벤트 ${cardIndex + 1} 제목`, deckKey);
+              if (bodyKey) ensureGuideTextItem(bodyKey, body, `${labelPrefix} · 이벤트 ${cardIndex + 1} 내용`, deckKey, true);
+            });
+            (slide.codeBlocks || []).forEach((block, blockIndex) => {
+              if (block.titleKey) ensureGuideTextItem(block.titleKey, block.title, `${labelPrefix} · 코드 ${blockIndex + 1} 제목`, deckKey);
+              if (block.codeKey) ensureGuideTextItem(block.codeKey, block.code, `${labelPrefix} · 코드 ${blockIndex + 1}`, deckKey, true);
             });
           });
         });
