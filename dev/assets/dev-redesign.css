@@ -2463,6 +2463,15 @@ body.dev-console.modal-open {
   color: #111827;
 }
 
+.dev-slide-card.guide-public-slide {
+  overflow: visible;
+  height: auto;
+  min-height: 440px;
+  aspect-ratio: auto;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
 .dev-slide-card::before {
   content: "";
   position: absolute;
@@ -2541,6 +2550,13 @@ body.dev-console.modal-open {
   grid-column: span 3;
 }
 
+.dev-slide-grid .dev-slide-item.is-long,
+.dev-slide-grid.material .dev-slide-item.is-long,
+.dev-slide-grid.material .dev-slide-item:nth-child(n + 7).is-long {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
 .dev-slide-grid.check .dev-slide-item {
   min-height: 68px;
   border-color: #e6ccd0;
@@ -2568,6 +2584,7 @@ body.dev-console.modal-open {
   color: var(--oa-muted);
   font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
   white-space: pre-line;
 }
 
@@ -5341,6 +5358,15 @@ body.dev-console.modal-open {
     padding: 12mm 14mm 10mm 16mm;
   }
 
+  body.dev-guide-print .dev-slide-card.guide-public-slide {
+    height: auto;
+    min-height: 210mm;
+    overflow: visible;
+    break-inside: auto;
+    page-break-inside: auto;
+    justify-content: flex-start;
+  }
+
   body.dev-guide-print .dev-slide-card:last-child,
   body.dev-guide-print .slide-card:last-child {
     page-break-after: auto;
@@ -5576,6 +5602,12 @@ body.dev-console.modal-open {
   body.dev-guide-print .dev-slide-grid {
     gap: 5mm;
     margin-top: 8mm;
+  }
+
+  body.dev-guide-print .dev-slide-grid .dev-slide-item.is-long,
+  body.dev-guide-print .dev-slide-grid.material .dev-slide-item.is-long,
+  body.dev-guide-print .dev-slide-grid.material .dev-slide-item:nth-child(n + 7).is-long {
+    grid-column: 1 / -1;
   }
 
   body.dev-guide-print .dev-slide-item {

@@ -1938,10 +1938,15 @@
       function renderGuideCards(cards = []) {
         return cards.map(([title, body, textKey, titleKey, pills = [], cardClass = "", cardCode = ""]) => {
           const pillItems = Array.isArray(pills) ? pills : [];
+          const renderedTitle = titleKey ? guideText(titleKey, title) : title;
+          const renderedBody = textKey ? guideText(textKey, body) : body;
+          const densityClass = String(renderedBody || "").length > 96 || String(renderedBody || "").includes("\n")
+            ? " is-long"
+            : "";
           return `
-            <div class="dev-slide-item ${escapeHtml(cardClass || "")}">
-              <strong>${escapeHtml(titleKey ? guideText(titleKey, title) : title)}</strong>
-              <span>${escapeHtml(textKey ? guideText(textKey, body) : body)}</span>
+            <div class="dev-slide-item ${escapeHtml(cardClass || "")}${densityClass}">
+              <strong>${escapeHtml(renderedTitle)}</strong>
+              <span>${escapeHtml(renderedBody)}</span>
               ${pillItems.length ? `<div class="dev-slide-pills">${pillItems.map((pill) => `<em>${escapeHtml(pill)}</em>`).join("")}</div>` : ""}
               ${cardCode ? `<pre class="dev-card-code">${escapeHtml(cardCode)}</pre>` : ""}
             </div>
@@ -2100,7 +2105,7 @@
           ${extraCodeBlocks}
         `;
         return `
-          <section class="dev-slide-card">
+          <section class="dev-slide-card guide-public-slide">
             <span class="dev-slide-update">최종 업데이트: ${escapeHtml(state.guideUpdatedAt || "-")}</span>
             ${body}
             <footer class="dev-slide-footer">
