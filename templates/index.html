@@ -2236,17 +2236,37 @@
         );
       }
 
+      function applyGuideTextValue(element, value) {
+        if (!element) return;
+        const text = String(value ?? "");
+        element.textContent = text;
+        element.classList.toggle("guide-text-preserve-lines", text.includes("\n"));
+      }
+
+      function normalizeGuidePairClass(element, baseClass, entry = []) {
+        if (!element) return;
+        const [, body = "", bodyKey = "", , , itemClass = ""] = Array.isArray(entry) ? entry : [];
+        const renderedBody = bodyKey ? guideText(bodyKey, body) : body;
+        const classNames = [baseClass];
+        String(itemClass || "").split(/\s+/).filter(Boolean).forEach((name) => classNames.push(name));
+        if (String(renderedBody || "").length > 96 || String(renderedBody || "").includes("\n")) {
+          classNames.push("is-long");
+        }
+        element.className = Array.from(new Set(classNames)).join(" ");
+      }
+
       function createGuideTextPairElement(entry = [], className = "slide-item") {
         const [title = "", body = "", bodyKey = "", titleKey = "", pills = [], itemClass = "", cardCode = ""] = entry;
         const element = document.createElement("div");
         element.className = `${className} ${itemClass || ""}`.trim();
         const titleElement = document.createElement("strong");
         if (titleKey) titleElement.setAttribute("data-guide-text", titleKey);
-        titleElement.textContent = titleKey ? guideText(titleKey, title) : title;
+        applyGuideTextValue(titleElement, titleKey ? guideText(titleKey, title) : title);
         const bodyElement = document.createElement("span");
         if (bodyKey) bodyElement.setAttribute("data-guide-text", bodyKey);
-        bodyElement.textContent = bodyKey ? guideText(bodyKey, body) : body;
+        applyGuideTextValue(bodyElement, bodyKey ? guideText(bodyKey, body) : body);
         element.append(titleElement, bodyElement);
+        normalizeGuidePairClass(element, className, entry);
         if (Array.isArray(pills) && pills.length) {
           const pillGroup = document.createElement("div");
           pillGroup.className = "dev-slide-pills";
@@ -2266,7 +2286,7 @@
         return element;
       }
 
-      function reconcileProductionGuideCollection(container, itemSelector, entries = [], createElement) {
+      function reconcileProductionGuideCollection(container, itemSelector, entries = [], createElement, prepareElement = null) {
         if (!container || !Array.isArray(entries)) return;
         const existing = Array.from(container.querySelectorAll(itemSelector));
         const byKey = new Map();
@@ -2278,6 +2298,7 @@
         const ordered = entries.map((entry, index) => {
           const key = guideEntryKey(entry);
           const element = (key && byKey.get(key)) || createElement(entry, index);
+          if (typeof prepareElement === "function") prepareElement(element, entry, index);
           used.add(element);
           return element;
         });
@@ -2296,9 +2317,9 @@
             slide.cards,
             (card, index) => {
               const element = createGuideTextPairElement(card, "slide-item");
-              if (cardContainer.classList.contains("material") && index >= 5) element.classList.add("split");
               return element;
             },
+            (element, card) => normalizeGuidePairClass(element, "slide-item", card),
           );
         }
         const fieldTable = slideElement.querySelector(".guide-field-table");
@@ -2377,7 +2398,7 @@
         deckElement.querySelectorAll("[data-guide-text]").forEach((element) => {
           const key = element.getAttribute("data-guide-text");
           if (!key) return;
-          element.textContent = guideText(key, element.textContent.trim());
+          applyGuideTextValue(element, guideText(key, element.textContent.trim()));
         });
         deckElement.querySelectorAll("[data-guide-image]").forEach((image) => {
           const key = image.getAttribute("data-guide-image-key");

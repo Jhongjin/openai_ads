@@ -2992,6 +2992,10 @@ body.dev-console.modal-open {
   grid-column: span 3;
 }
 
+.dev-slide-deck .slide-card.ad-material-slide .slide-item.is-long {
+  grid-column: span 3;
+}
+
 .dev-slide-deck .slide-card.ad-material-slide .slide-item strong {
   font-size: 14px;
 }
@@ -3100,6 +3104,13 @@ body.dev-console.modal-open {
   color: #374151;
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.dev-slide-deck .guide-text-preserve-lines {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .dev-slide-deck .slide-mini-badges {
