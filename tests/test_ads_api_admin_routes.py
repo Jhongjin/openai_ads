@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from urllib.parse import quote
 
 from fastapi.testclient import TestClient
@@ -43,6 +43,29 @@ class AdsApiAdminRouteTests(unittest.TestCase):
             self.assertFalse(
                 any(item["advertiser_name"] == advertiser_name for item in listed_after_delete.json()["items"])
             )
+
+    def test_dashboard_uses_active_advertiser_keys_when_no_advertiser_selected(self) -> None:
+        client = TestClient(app)
+        headers = {"x-admin-password": "nas2026@"}
+        credentials = [{"advertiser_name": "Live Advertiser", "api_key": "sk-live"}]
+
+        with (
+            patch("admin_store.list_active_ads_api_key_credentials", return_value=credentials),
+            patch("rag_chatbot.ads_api.fetch_ads_dashboard_for_advertisers", new_callable=AsyncMock) as aggregate,
+            patch("rag_chatbot.ads_api.fetch_ads_dashboard", new_callable=AsyncMock) as single,
+        ):
+            aggregate.return_value = {
+                "ok": True,
+                "advertiser_name": "전체 활성 광고주",
+                "campaigns": [{"id": "cmp_live", "advertiser_name": "Live Advertiser"}],
+            }
+            response = client.get("/api/admin/ads-dashboard", headers=headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["advertiser_name"], "전체 활성 광고주")
+        self.assertEqual(response.json()["campaigns"][0]["advertiser_name"], "Live Advertiser")
+        aggregate.assert_awaited_once()
+        single.assert_not_awaited()
 
 
 if __name__ == "__main__":

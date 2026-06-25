@@ -3044,9 +3044,12 @@
         const select = $("#performance-advertiser-select");
         if (!select) return;
         const previousValue = select.value || "";
-        select.innerHTML = '<option value="">공통 환경변수</option>';
-        adsKeyItems.forEach((item) => {
-          if (!item.enabled || !item.has_ads_api_key) return;
+        const activeAdvertisers = adsKeyItems.filter((item) => item.enabled && item.has_ads_api_key);
+        const defaultLabel = activeAdvertisers.length
+          ? `전체 활성 광고주 (${formatNumber(activeAdvertisers.length)})`
+          : "공통 환경변수";
+        select.innerHTML = `<option value="">${defaultLabel}</option>`;
+        activeAdvertisers.forEach((item) => {
           const option = document.createElement("option");
           option.value = item.advertiser_name || "";
           option.textContent = item.advertiser_name || "이름 없음";
@@ -3081,9 +3084,12 @@
         }
         rows.forEach((row) => {
           const disabled = row.id ? "" : "disabled";
+          const advertiserLabel = row.advertiser_name
+            ? `<span class="muted-text">${escapeHtml(row.advertiser_name)}</span><br>`
+            : "";
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span class="muted-text">${escapeHtml(row.id || "id 없음")}</span></td>
+            <td><strong>${escapeHtml(row.name || "-")}</strong><br>${advertiserLabel}<span class="muted-text">${escapeHtml(row.id || "id 없음")}</span></td>
             <td>${adsStatusPill(row.status)}</td>
             <td>${formatNumber(row.impressions)}</td>
             <td>${formatNumber(row.clicks)}</td>
@@ -3092,7 +3098,7 @@
             <td>${conversionMetric(row.conversions)}</td>
             <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
             <td>${conversionMetric(row.roas, formatMultiplier)}</td>
-            <td><button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="campaign" data-performance-detail-id="${escapeHtml(row.id || "")}" ${disabled}>광고그룹</button></td>
+            <td><button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="campaign" data-performance-detail-id="${escapeHtml(row.id || "")}" data-performance-detail-advertiser="${escapeHtml(row.advertiser_name || "")}" ${disabled}>광고그룹</button></td>
           `;
           body.appendChild(tr);
         });
@@ -3176,7 +3182,7 @@
         setStatus("performance-status", `${range.start_date || ""} ~ ${range.end_date || ""} 성과 갱신${advertiser}${conversionNote}`, "ok");
       }
 
-      async function loadPerformanceDashboard(detailScope = "", detailId = "") {
+      async function loadPerformanceDashboard(detailScope = "", detailId = "", detailAdvertiserName = "") {
         setDefaultPerformanceDates();
         setStatus("performance-status", "Ads API 성과를 불러오는 중입니다.");
         const params = new URLSearchParams({
@@ -3189,6 +3195,7 @@
           params.set("detail_scope", detailScope);
           params.set("detail_id", detailId);
         }
+        if (detailAdvertiserName) params.set("detail_advertiser_name", detailAdvertiserName);
         const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
         renderPerformanceDashboard(data);
       }
@@ -4091,7 +4098,11 @@
         $(`#${id}`).addEventListener("click", (event) => {
           const button = event.target.closest("[data-performance-detail-scope]");
           if (!button) return;
-          loadPerformanceDashboard(button.dataset.performanceDetailScope || "", button.dataset.performanceDetailId || "")
+          loadPerformanceDashboard(
+            button.dataset.performanceDetailScope || "",
+            button.dataset.performanceDetailId || "",
+            button.dataset.performanceDetailAdvertiser || "",
+          )
             .catch((error) => setStatus("performance-status", error.message, "error"));
         });
       });

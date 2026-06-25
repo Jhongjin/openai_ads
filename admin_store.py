@@ -2598,6 +2598,43 @@ def list_ads_api_keys() -> dict[str, Any]:
         }
 
 
+def list_active_ads_api_key_credentials() -> list[dict[str, str]]:
+    """Return enabled Ads API credentials for server-side dashboard aggregation."""
+
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, ads_api_key
+                    FROM {schema}.ads_api_keys
+                    WHERE enabled = true
+                      AND COALESCE(ads_api_key, '') <> ''
+                    ORDER BY advertiser_name ASC
+                    """
+                )
+                rows = cur.fetchall()
+        return [
+            {
+                "advertiser_name": str(row.get("advertiser_name") or ""),
+                "api_key": str(row.get("ads_api_key") or ""),
+            }
+            for row in rows
+            if row.get("ads_api_key")
+        ]
+    except Exception:
+        return [
+            {
+                "advertiser_name": str(row.get("advertiser_name") or ""),
+                "api_key": str(row.get("ads_api_key") or ""),
+            }
+            for row in sorted(_memory_ads_api_keys.values(), key=lambda item: item.get("advertiser_name", ""))
+            if row.get("enabled", True) and row.get("ads_api_key")
+        ]
+
+
 def get_ads_api_key(advertiser_name: str) -> str:
     advertiser_name = str(advertiser_name or "").strip()
     if not advertiser_name:

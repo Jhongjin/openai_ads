@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import httpx
 
-from rag_chatbot.ads_api import fetch_ads_dashboard, summarize_rows
+from rag_chatbot.ads_api import fetch_ads_dashboard, fetch_ads_dashboard_for_advertisers, summarize_rows
 
 
 class AdsApiDashboardTests(unittest.TestCase):
@@ -83,6 +83,56 @@ class AdsApiDashboardTests(unittest.TestCase):
         self.assertEqual(data["campaign_total"]["impressions"], 2000)
         self.assertEqual(data["campaign_total"]["clicks"], 100)
         self.assertEqual(data["campaign_total"]["spend"], 50000)
+
+    def test_multi_advertiser_dashboard_aggregates_campaigns_by_default(self) -> None:
+        async def fake_insights(self, *, aggregation_level, **kwargs):
+            advertiser = "Alpha" if self.settings.api_key == "sk-alpha" else "Beta"
+            multiplier = 1 if advertiser == "Alpha" else 2
+            if aggregation_level == "ad_account":
+                return {
+                    "data": [
+                        {
+                            "ad_account": {
+                                "id": f"acct_{advertiser.lower()}",
+                                "name": advertiser,
+                                "impressions": 1000 * multiplier,
+                                "clicks": 50 * multiplier,
+                                "spend": 10000 * multiplier,
+                            }
+                        }
+                    ]
+                }
+            return {
+                "data": [
+                    {
+                        "campaign": {
+                            "id": f"cmp_{advertiser.lower()}",
+                            "name": f"{advertiser} Campaign",
+                            "status": "ACTIVE",
+                            "impressions": 1000 * multiplier,
+                            "clicks": 50 * multiplier,
+                            "spend": 10000 * multiplier,
+                        }
+                    }
+                ]
+            }
+
+        advertisers = [
+            {"advertiser_name": "Alpha", "api_key": "sk-alpha"},
+            {"advertiser_name": "Beta", "api_key": "sk-beta"},
+        ]
+        with patch("rag_chatbot.ads_api.AdsInsightsClient.insights", new=fake_insights):
+            data = asyncio.run(fetch_ads_dashboard_for_advertisers(advertisers))
+
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["advertiser_name"], "전체 활성 광고주")
+        self.assertEqual(data["key_source"], "advertiser_collection")
+        self.assertEqual(data["advertiser_count"], 2)
+        self.assertEqual(len(data["campaigns"]), 2)
+        self.assertEqual({row["advertiser_name"] for row in data["campaigns"]}, {"Alpha", "Beta"})
+        self.assertEqual(data["campaign_total"]["impressions"], 3000)
+        self.assertEqual(data["campaign_total"]["clicks"], 150)
+        self.assertEqual(data["campaign_total"]["spend"], 30000)
 
 
 if __name__ == "__main__":

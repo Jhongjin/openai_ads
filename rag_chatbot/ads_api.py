@@ -458,6 +458,120 @@ async def fetch_ads_dashboard(
         }
 
 
+async def fetch_ads_dashboard_for_advertisers(
+    advertisers: list[dict[str, str]],
+    *,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    detail_scope: str | None = None,
+    detail_id: str | None = None,
+    detail_advertiser_name: str | None = None,
+) -> dict[str, Any]:
+    default_start, default_end = default_date_range()
+    start_date = start_date or default_start
+    end_date = end_date or default_end
+    credentials = [
+        {
+            "advertiser_name": str(item.get("advertiser_name") or "").strip(),
+            "api_key": str(item.get("api_key") or "").strip(),
+        }
+        for item in advertisers
+        if str(item.get("api_key") or "").strip()
+    ]
+    if not credentials:
+        return {
+            "ok": False,
+            "configured": False,
+            "error": "활성화된 광고주 Ads API 키가 없습니다.",
+            "docs": {
+                "overview": "https://developers.openai.com/ads/api-overview",
+                "insights": "https://developers.openai.com/ads/api-reference/insights",
+            },
+        }
+
+    detail_advertiser_name = str(detail_advertiser_name or "").strip()
+    semaphore = asyncio.Semaphore(4)
+
+    async def fetch_one(item: dict[str, str]) -> dict[str, Any]:
+        async with semaphore:
+            include_detail = detail_advertiser_name and item["advertiser_name"] == detail_advertiser_name
+            return await fetch_ads_dashboard(
+                start_date=start_date,
+                end_date=end_date,
+                detail_scope=detail_scope if include_detail else None,
+                detail_id=detail_id if include_detail else None,
+                api_key=item["api_key"],
+                advertiser_name=item["advertiser_name"],
+            )
+
+    results = await asyncio.gather(*(fetch_one(item) for item in credentials))
+    ok_results = [result for result in results if result.get("ok")]
+    failed = [
+        {
+            "advertiser_name": credentials[index]["advertiser_name"],
+            "error": str(result.get("error") or "조회 실패"),
+        }
+        for index, result in enumerate(results)
+        if not result.get("ok")
+    ]
+
+    if not ok_results:
+        return {
+            "ok": False,
+            "configured": True,
+            "advertiser_name": "전체 활성 광고주",
+            "key_source": "advertiser_collection",
+            "error": "등록된 활성 광고주 키로 조회된 Ads 성과가 없습니다.",
+            "detail": "; ".join(
+                f"{item['advertiser_name']}: {item['error']}" for item in failed[:5]
+            ),
+            "range": {"start_date": start_date, "end_date": end_date, "timezone": TIMEZONE},
+        }
+
+    campaign_rows: list[dict[str, Any]] = []
+    detail = None
+    for result in ok_results:
+        advertiser = str(result.get("advertiser_name") or "")
+        for row in result.get("campaigns") or []:
+            campaign_rows.append({**row, "advertiser_name": advertiser})
+        if result.get("detail"):
+            detail_rows = [
+                {**row, "advertiser_name": advertiser}
+                for row in result["detail"].get("rows", [])
+            ]
+            detail = {**result["detail"], "rows": detail_rows}
+
+    warning_parts = [str(result.get("warning") or "") for result in ok_results if result.get("warning")]
+    if failed:
+        names = ", ".join(item["advertiser_name"] or "이름 없음" for item in failed[:5])
+        warning_parts.append(f"일부 광고주 조회 실패: {names}")
+
+    conversion_metrics_available = any(
+        result.get("conversion_metrics_available") is not False for result in ok_results
+    )
+
+    return {
+        "ok": True,
+        "configured": True,
+        "advertiser_name": "전체 활성 광고주",
+        "key_source": "advertiser_collection",
+        "advertiser_count": len(credentials),
+        "successful_advertiser_count": len(ok_results),
+        "failed_advertisers": failed,
+        "conversion_metrics_available": conversion_metrics_available,
+        "warning": " · ".join(dict.fromkeys(part for part in warning_parts if part)),
+        "range": {"start_date": start_date, "end_date": end_date, "timezone": TIMEZONE},
+        "account": summarize_rows(campaign_rows),
+        "campaigns": campaign_rows,
+        "campaign_total": summarize_rows(campaign_rows),
+        "detail": detail,
+        "docs": {
+            "overview": "https://developers.openai.com/ads/api-overview",
+            "insights": "https://developers.openai.com/ads/api-reference/insights",
+        },
+    }
+
+
 async def _fetch_account_and_campaigns(
     client: AdsInsightsClient,
     start_date: str,

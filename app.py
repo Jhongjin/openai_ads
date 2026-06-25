@@ -608,7 +608,7 @@ def admin_delete_ads_api_key(advertiser_name: str, request: Request) -> dict[str
 
 @app.get("/api/admin/ads-dashboard", include_in_schema=False)
 async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
-    from rag_chatbot.ads_api import fetch_ads_dashboard
+    from rag_chatbot.ads_api import fetch_ads_dashboard, fetch_ads_dashboard_for_advertisers
 
     _require_admin(request)
     start_date = str(request.query_params.get("start_date") or "") or None
@@ -616,6 +616,7 @@ async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
     detail_scope = str(request.query_params.get("detail_scope") or "") or None
     detail_id = str(request.query_params.get("detail_id") or "") or None
     advertiser_name = str(request.query_params.get("advertiser_name") or "").strip()
+    detail_advertiser_name = str(request.query_params.get("detail_advertiser_name") or "").strip()
     api_key = None
     if advertiser_name:
         from admin_store import get_ads_api_key
@@ -628,6 +629,19 @@ async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
                 "advertiser_name": advertiser_name,
                 "error": f"{advertiser_name} Ads API 키가 등록되어 있지 않거나 비활성 상태입니다.",
             }
+    else:
+        from admin_store import list_active_ads_api_key_credentials
+
+        credentials = list_active_ads_api_key_credentials()
+        if credentials:
+            return await fetch_ads_dashboard_for_advertisers(
+                credentials,
+                start_date=start_date,
+                end_date=end_date,
+                detail_scope=detail_scope,
+                detail_id=detail_id,
+                detail_advertiser_name=detail_advertiser_name,
+            )
     return await fetch_ads_dashboard(
         start_date=start_date,
         end_date=end_date,
