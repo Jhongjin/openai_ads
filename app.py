@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 from io import BytesIO
 import os
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Any
 import httpx
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
@@ -34,6 +35,56 @@ app.mount(
     StaticFiles(directory=project_root() / "dev" / "assets", check_dir=False),
     name="assets",
 )
+
+
+IpNetwork = ipaddress.IPv4Network | ipaddress.IPv6Network
+IpAddress = ipaddress.IPv4Address | ipaddress.IPv6Address
+
+
+def _configured_access_networks() -> list[IpNetwork]:
+    raw = os.getenv("ACCESS_ALLOWED_IPS", "").strip()
+    if not raw:
+        return []
+    networks: list[IpNetwork] = []
+    for item in re.split(r"[,\s]+", raw):
+        value = item.strip()
+        if not value:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(value, strict=False))
+        except ValueError:
+            continue
+    return networks
+
+
+def _request_client_ip(request: Request) -> IpAddress | None:
+    header_value = (
+        request.headers.get("x-vercel-forwarded-for")
+        or request.headers.get("x-forwarded-for")
+        or request.headers.get("x-real-ip")
+        or ""
+    )
+    candidate = header_value.split(",", 1)[0].strip()
+    if not candidate and request.client:
+        candidate = request.client.host
+    if not candidate:
+        return None
+    candidate = candidate.strip("[]")
+    try:
+        return ipaddress.ip_address(candidate)
+    except ValueError:
+        return None
+
+
+@app.middleware("http")
+async def restrict_access_by_ip(request: Request, call_next):
+    networks = _configured_access_networks()
+    if not networks:
+        return await call_next(request)
+    client_ip = _request_client_ip(request)
+    if client_ip and any(client_ip in network for network in networks):
+        return await call_next(request)
+    return PlainTextResponse("허용된 사내 네트워크에서만 접속할 수 있습니다.", status_code=403)
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
