@@ -367,6 +367,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="toggle-performance-conversions"', admin)
         self.assertIn("performanceLiveAdvertiserNames", admin)
         self.assertIn("performanceAdvertiserStatusLabel", admin)
+        self.assertIn("performanceDashboardStatusMessage", admin)
+        self.assertIn("performanceCacheStatusLabel", admin)
         self.assertIn("fetchPerformanceNestedDetail", admin)
         self.assertIn("PERFORMANCE_CAMPAIGN_COLSPAN = 17", admin)
         self.assertIn("전체 활성 광고주(${formatNumber(activeAdvertisers.length)})", admin)

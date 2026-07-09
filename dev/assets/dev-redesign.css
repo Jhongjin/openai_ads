@@ -1724,16 +1724,13 @@ body.dev-console.modal-open {
 }
 
 .performance-status-card .status-line {
-  display: -webkit-box;
-  max-height: 4.65em;
-  overflow: hidden;
+  display: grid;
+  gap: 2px;
   margin: 0;
   color: var(--oa-gold);
   font-size: 13px;
   font-weight: 850;
   line-height: 1.55;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
 }
 
 .performance-status-card .status-line span {
