@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 import ipaddress
 from io import BytesIO
 import os
@@ -39,6 +40,8 @@ app.mount(
 
 IpNetwork = ipaddress.IPv4Network | ipaddress.IPv6Network
 IpAddress = ipaddress.IPv4Address | ipaddress.IPv6Address
+ADS_DASHBOARD_CACHE_KEY = "active_advertisers"
+KST = timezone(timedelta(hours=9))
 
 
 def _configured_access_networks() -> list[IpNetwork]:
@@ -242,9 +245,21 @@ class VisitRequest(BaseModel):
 
 class AdsApiKeyRequest(BaseModel):
     advertiser_name: str = Field(..., min_length=1, max_length=120)
+    industry: str | None = Field(default="", max_length=40)
     ads_api_key: str | None = Field(default="", max_length=500)
     conversion_api_key: str | None = Field(default="", max_length=500)
     enabled: bool = True
+
+
+class AdsApiKeyInspectRequest(BaseModel):
+    ads_api_key: str = Field(..., min_length=1, max_length=500)
+
+
+class AdsCampaignObjectiveRequest(BaseModel):
+    advertiser_name: str = Field(..., min_length=1, max_length=120)
+    campaign_id: str = Field(..., min_length=1, max_length=160)
+    campaign_name: str | None = Field(default="", max_length=1000)
+    objective: str | None = Field(default="", max_length=40)
 
 
 PAGE_LABELS = {
@@ -273,6 +288,68 @@ def _require_admin(request: Request) -> None:
     provided = request.headers.get("x-admin-password", "")
     if provided != _admin_password():
         raise HTTPException(status_code=403, detail="관리자 비밀번호가 올바르지 않습니다.")
+
+
+def _require_cron(request: Request) -> None:
+    cron_secret = os.getenv("CRON_SECRET", "").strip()
+    if cron_secret:
+        expected = f"Bearer {cron_secret}"
+        if request.headers.get("authorization", "") != expected:
+            raise HTTPException(status_code=401, detail="cron authorization failed")
+
+
+def _join_unique_messages(*messages: str) -> str:
+    return " · ".join(dict.fromkeys(str(message or "").strip() for message in messages if str(message or "").strip()))
+
+
+def _date_label(value: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=KST)
+        return parsed.astimezone(KST).date().isoformat()
+    except ValueError:
+        return text[:10] if re.match(r"^\d{4}-\d{2}-\d{2}", text) else text
+
+
+def _ads_dashboard_range_cache_key(start_date: str | None, end_date: str | None) -> str:
+    if start_date and end_date:
+        return f"{ADS_DASHBOARD_CACHE_KEY}:{start_date}:{end_date}"
+    return ADS_DASHBOARD_CACHE_KEY
+
+
+def _ads_dashboard_payload_matches_range(payload: dict[str, Any], start_date: str | None, end_date: str | None) -> bool:
+    if not start_date or not end_date:
+        return True
+    range_payload = payload.get("range") if isinstance(payload.get("range"), dict) else {}
+    return str(range_payload.get("start_date") or "") == start_date and str(range_payload.get("end_date") or "") == end_date
+
+
+def _ads_dashboard_cached_payload(cache_row: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(cache_row.get("payload") or {})
+    refreshed_at = str(cache_row.get("refreshed_at") or "")
+    advertiser_count = int(payload.get("advertiser_count") or payload.get("live_status_total_advertisers") or 0)
+    advertiser_label = f"전체 활성 광고주({advertiser_count}개)" if advertiser_count else "전체 활성 광고주"
+    refreshed_label = _date_label(refreshed_at)
+    cache_note = "전체 활성 광고주 지표는 백그라운드 캐시 기준입니다. 개별 광고주 실시간 조회와 수치가 조금 다를 수 있습니다."
+    if refreshed_label:
+        cache_note = f"{advertiser_label} 지표는 {refreshed_label} 캐시 기준입니다. 개별 광고주 실시간 조회와 수치가 조금 다를 수 있습니다."
+    payload.update(
+        {
+            "cache_status": "hit",
+            "cache_source": "background",
+            "cache_refreshed_at": refreshed_at,
+            "cache_note": cache_note,
+            "key_source": "advertiser_collection",
+            "advertiser_name": "전체 활성 광고주",
+            "advertiser_label": advertiser_label,
+        }
+    )
+    payload["warning"] = _join_unique_messages(cache_note, str(payload.get("warning") or ""))
+    return payload
 
 
 def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
@@ -341,7 +418,7 @@ def creative_upload_draft_page() -> FileResponse:
 
 @app.get("/ads-api-draft", include_in_schema=False)
 def ads_api_draft_page() -> FileResponse:
-    return FileResponse(project_root() / "templates" / "ads_api_draft.html")
+    raise HTTPException(status_code=404, detail="공개 접근이 제한된 검토 페이지입니다.")
 
 
 @app.get("/slides", include_in_schema=False)
@@ -351,7 +428,7 @@ def slides_page() -> FileResponse:
 
 @app.get("/admin", include_in_schema=False)
 def admin_page() -> FileResponse:
-    return FileResponse(project_root() / "templates" / "admin.html")
+    return FileResponse(project_root() / "dev" / "admin.html")
 
 
 @app.get("/dev", include_in_schema=False)
@@ -487,15 +564,51 @@ def admin_delete_faq_item(request: Request, item_id: str) -> dict[str, Any]:
 
 @app.post("/api/cron/faqs", include_in_schema=False)
 def cron_refresh_operating_faqs(request: Request) -> dict[str, Any]:
-    cron_secret = os.getenv("CRON_SECRET", "").strip()
-    if cron_secret:
-        expected = f"Bearer {cron_secret}"
-        if request.headers.get("authorization", "") != expected:
-            raise HTTPException(status_code=401, detail="cron authorization failed")
+    _require_cron(request)
     return {
         "ok": True,
         "disabled": True,
         "message": "FAQ automatic refresh is disabled.",
+    }
+
+
+@app.get("/api/cron/ads-dashboard-cache", include_in_schema=False)
+async def cron_refresh_ads_dashboard_cache(request: Request) -> dict[str, Any]:
+    _require_cron(request)
+    from admin_store import (
+        get_ads_campaign_objective_override_map,
+        list_active_ads_api_key_credentials,
+        save_ads_dashboard_cache,
+    )
+    from rag_chatbot.ads_api import apply_campaign_objective_overrides, fetch_ads_dashboard_for_advertisers
+
+    credentials = list_active_ads_api_key_credentials()
+    if not credentials:
+        payload = {
+            "ok": False,
+            "configured": False,
+            "advertiser_name": "전체 활성 광고주",
+            "key_source": "advertiser_collection",
+            "error": "활성화된 광고주 Ads API 키가 없습니다.",
+        }
+    else:
+        payload = await fetch_ads_dashboard_for_advertisers(
+            credentials,
+            include_aggregate_extensions=True,
+        )
+    payload = apply_campaign_objective_overrides(payload, get_ads_campaign_objective_override_map())
+    saved = save_ads_dashboard_cache(payload, ADS_DASHBOARD_CACHE_KEY)
+    return {
+        "ok": True,
+        "refreshed": True,
+        "cache_key": ADS_DASHBOARD_CACHE_KEY,
+        "refreshed_at": saved.get("refreshed_at", ""),
+        "active_advertiser_count": len(credentials),
+        "payload_ok": bool(payload.get("ok")),
+        "campaign_count": len(payload.get("campaigns") or []),
+        "trend_count": len(payload.get("trend") or []),
+        "device_count": len(payload.get("device_breakdown") or []),
+        "storage": saved.get("storage", ""),
     }
 
 
@@ -641,7 +754,51 @@ def admin_save_ads_api_key(request: Request, payload: AdsApiKeyRequest) -> dict[
 
     _require_admin(request)
     try:
-        return upsert_ads_api_key(payload.model_dump())
+        return upsert_ads_api_key(payload.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/ads-api-keys/inspect", include_in_schema=False)
+async def admin_inspect_ads_api_key(request: Request, payload: AdsApiKeyInspectRequest) -> dict[str, Any]:
+    from rag_chatbot.ads_api import fetch_ad_account_metadata
+
+    _require_admin(request)
+    try:
+        return await fetch_ad_account_metadata(payload.ads_api_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/ads-campaign-objectives", include_in_schema=False)
+def admin_ads_campaign_objectives(request: Request) -> dict[str, Any]:
+    from admin_store import list_ads_campaign_objective_overrides
+
+    _require_admin(request)
+    return list_ads_campaign_objective_overrides()
+
+
+@app.post("/api/admin/ads-campaign-objectives", include_in_schema=False)
+def admin_save_ads_campaign_objective(
+    request: Request,
+    payload: AdsCampaignObjectiveRequest,
+) -> dict[str, Any]:
+    from admin_store import upsert_ads_campaign_objective_override
+
+    _require_admin(request)
+    try:
+        return upsert_ads_campaign_objective_override(payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/ads-api-keys/{advertiser_name}/reveal", include_in_schema=False)
+def admin_reveal_ads_api_key(advertiser_name: str, request: Request) -> dict[str, Any]:
+    from admin_store import get_ads_api_key_secrets
+
+    _require_admin(request)
+    try:
+        return get_ads_api_key_secrets(advertiser_name)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -659,7 +816,12 @@ def admin_delete_ads_api_key(advertiser_name: str, request: Request) -> dict[str
 
 @app.get("/api/admin/ads-dashboard", include_in_schema=False)
 async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
-    from rag_chatbot.ads_api import fetch_ads_dashboard, fetch_ads_dashboard_for_advertisers
+    from admin_store import get_ads_campaign_objective_override_map
+    from rag_chatbot.ads_api import (
+        apply_campaign_objective_overrides,
+        fetch_ads_dashboard,
+        fetch_ads_dashboard_for_advertisers,
+    )
 
     _require_admin(request)
     start_date = str(request.query_params.get("start_date") or "") or None
@@ -669,10 +831,13 @@ async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
     advertiser_name = str(request.query_params.get("advertiser_name") or "").strip()
     detail_advertiser_name = str(request.query_params.get("detail_advertiser_name") or "").strip()
     api_key = None
+    advertiser_industry = ""
     if advertiser_name:
-        from admin_store import get_ads_api_key
+        from admin_store import get_ads_api_key_credential
 
-        api_key = get_ads_api_key(advertiser_name)
+        credential = get_ads_api_key_credential(advertiser_name)
+        api_key = credential.get("api_key", "")
+        advertiser_industry = credential.get("industry", "")
         if not api_key:
             return {
                 "ok": False,
@@ -681,26 +846,120 @@ async def admin_ads_dashboard(request: Request) -> dict[str, Any]:
                 "error": f"{advertiser_name} Ads API 키가 등록되어 있지 않거나 비활성 상태입니다.",
             }
     else:
-        from admin_store import list_active_ads_api_key_credentials
+        from admin_store import get_ads_dashboard_cache, list_active_ads_api_key_credentials, save_ads_dashboard_cache
 
         credentials = list_active_ads_api_key_credentials()
         if credentials:
-            return await fetch_ads_dashboard_for_advertisers(
+            if not detail_scope and not detail_id:
+                cache_key = _ads_dashboard_range_cache_key(start_date, end_date)
+                cache_row = get_ads_dashboard_cache(cache_key)
+                if cache_row and not _ads_dashboard_payload_matches_range(
+                    dict(cache_row.get("payload") or {}),
+                    start_date,
+                    end_date,
+                ):
+                    cache_row = None
+                if not cache_row and cache_key != ADS_DASHBOARD_CACHE_KEY:
+                    legacy_cache_row = get_ads_dashboard_cache(ADS_DASHBOARD_CACHE_KEY)
+                    if legacy_cache_row and _ads_dashboard_payload_matches_range(
+                        dict(legacy_cache_row.get("payload") or {}),
+                        start_date,
+                        end_date,
+                    ):
+                        cache_row = legacy_cache_row
+                if cache_row and cache_row.get("payload"):
+                    return apply_campaign_objective_overrides(
+                        _ads_dashboard_cached_payload(cache_row),
+                        get_ads_campaign_objective_override_map(),
+                    )
+            data = await fetch_ads_dashboard_for_advertisers(
                 credentials,
                 start_date=start_date,
                 end_date=end_date,
                 detail_scope=detail_scope,
                 detail_id=detail_id,
                 detail_advertiser_name=detail_advertiser_name,
+                include_aggregate_extensions=not (detail_scope or detail_id),
             )
-    return await fetch_ads_dashboard(
+            if not detail_scope and not detail_id:
+                if data.get("ok"):
+                    cache_key = _ads_dashboard_range_cache_key(
+                        str(data.get("range", {}).get("start_date") or start_date or ""),
+                        str(data.get("range", {}).get("end_date") or end_date or ""),
+                    )
+                    saved = save_ads_dashboard_cache(data, cache_key)
+                    advertiser_count = int(data.get("advertiser_count") or len(credentials))
+                    advertiser_label = f"전체 활성 광고주({advertiser_count}개)"
+                    range_payload = data.get("range") if isinstance(data.get("range"), dict) else {}
+                    range_label = f"{range_payload.get('start_date') or start_date or ''} ~ {range_payload.get('end_date') or end_date or ''}".strip()
+                    cache_note = f"{advertiser_label} 지표는 {range_label} 선택 기간 기준으로 새로 계산했습니다. 다음 조회부터 같은 기간은 캐시를 사용합니다."
+                    data["cache_status"] = "refreshed"
+                    data["cache_source"] = "request"
+                    data["cache_refreshed_at"] = saved.get("refreshed_at", "")
+                    data["cache_note"] = cache_note
+                    data["advertiser_label"] = advertiser_label
+                    data["warning"] = _join_unique_messages(cache_note, str(data.get("warning") or ""))
+                else:
+                    data["cache_status"] = "miss"
+                    data["cache_note"] = "전체 활성 광고주 캐시가 아직 준비되지 않아 기본 성과만 실시간 조회했습니다. 백그라운드 캐시 갱신 후 디바이스/추이 차트가 표시됩니다."
+                    data["warning"] = _join_unique_messages(data["cache_note"], str(data.get("warning") or ""))
+            return apply_campaign_objective_overrides(data, get_ads_campaign_objective_override_map())
+    data = await fetch_ads_dashboard(
         start_date=start_date,
         end_date=end_date,
         detail_scope=detail_scope,
         detail_id=detail_id,
         api_key=api_key,
         advertiser_name=advertiser_name,
+        advertiser_industry=advertiser_industry,
     )
+    return apply_campaign_objective_overrides(data, get_ads_campaign_objective_override_map())
+
+
+@app.get("/api/admin/ads-dashboard/hourly", include_in_schema=False)
+async def admin_ads_dashboard_hourly(request: Request) -> dict[str, Any]:
+    from admin_store import get_ads_api_key_credential
+    from rag_chatbot.ads_api import fetch_resource_hourly_insights
+
+    _require_admin(request)
+    advertiser_name = str(request.query_params.get("advertiser_name") or "").strip()
+    resource_scope = str(request.query_params.get("resource_scope") or "campaign").strip()
+    resource_id = str(request.query_params.get("resource_id") or "").strip()
+    resource_name = str(request.query_params.get("resource_name") or "").strip()
+    campaign_id = str(request.query_params.get("campaign_id") or "").strip()
+    campaign_name = str(request.query_params.get("campaign_name") or "").strip()
+    if not resource_id and campaign_id:
+        resource_scope = "campaign"
+        resource_id = campaign_id
+        resource_name = resource_name or campaign_name
+    since_hour = str(request.query_params.get("since") or "").strip()
+    until_hour = str(request.query_params.get("until") or "").strip()
+    if not advertiser_name:
+        raise HTTPException(status_code=400, detail="광고주명이 필요합니다.")
+    credential = get_ads_api_key_credential(advertiser_name)
+    api_key = credential.get("api_key", "")
+    if not api_key:
+        return {
+            "ok": False,
+            "configured": False,
+            "advertiser_name": advertiser_name,
+            "campaign_id": campaign_id,
+            "resource_scope": resource_scope,
+            "resource_id": resource_id,
+            "error": f"{advertiser_name} Ads API 키가 등록되어 있지 않거나 비활성 상태입니다.",
+        }
+    try:
+        return await fetch_resource_hourly_insights(
+            advertiser_name=advertiser_name,
+            resource_scope=resource_scope,
+            resource_id=resource_id,
+            resource_name=resource_name,
+            since_hour=since_hour,
+            until_hour=until_hour,
+            api_key=api_key,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/admin/official-changes", include_in_schema=False)

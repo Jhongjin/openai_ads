@@ -20,10 +20,7 @@ class AdsApiDraftStaticTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
         legacy_response = client.get("/ads-api-draft")
-        self.assertEqual(legacy_response.status_code, 200)
-        self.assertIn("OpenAI Ads API 성과 대시보드 준비", legacy_response.text)
-        self.assertIn("공식 문서 기반 · 권한 확인 필요", legacy_response.text)
-        self.assertIn("관리자 페이지로 돌아가기", legacy_response.text)
+        self.assertEqual(legacy_response.status_code, 404)
 
     def test_ads_api_draft_keeps_ops_scope_and_sources(self) -> None:
         html = (ROOT / "templates" / "ads_api_draft.html").read_text(encoding="utf-8")

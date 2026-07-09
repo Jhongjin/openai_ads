@@ -369,12 +369,64 @@ _memory_visit_days: dict[str, int] = {}
 _memory_visit_events: list[dict[str, Any]] = []
 _memory_chat_questions: list[dict[str, Any]] = []
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
+_memory_ads_dashboard_cache: dict[str, dict[str, Any]] = {}
+_memory_ads_campaign_objectives: dict[str, dict[str, Any]] = {}
 _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_categories: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_items: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_refreshed_at = ""
 _db_ready = False
 _faq_db_ready = False
+
+
+ADS_INDUSTRIES = (
+    "가전",
+    "게임",
+    "관광/레저",
+    "교육",
+    "금융",
+    "기타",
+    "단체",
+    "문화/예술",
+    "방송/통신서비스",
+    "생활/잡화",
+    "쇼핑몰",
+    "식음료",
+    "앱/사이트",
+    "의료/건강",
+    "주택/가구",
+    "컴퓨터",
+    "패션",
+    "화장품",
+    "수송",
+)
+
+ADS_OBJECTIVES = ("클릭", "노출", "전환")
+
+
+def _normalize_ads_industry(value: Any) -> str:
+    industry = str(value or "").strip()
+    if not industry:
+        return ""
+    if industry not in ADS_INDUSTRIES:
+        raise ValueError("등록되지 않은 업종입니다.")
+    return industry
+
+
+def _normalize_ads_objective(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    normalized = text.lower()
+    if normalized in {"click", "clicks", "cpc", "클릭"}:
+        return "클릭"
+    if normalized in {"view", "views", "reach", "impression", "impressions", "cpm", "노출", "도달"}:
+        return "노출"
+    if normalized in {"conversion", "conversions", "cpa", "roas", "전환"}:
+        return "전환"
+    if text not in ADS_OBJECTIVES:
+        raise ValueError("등록되지 않은 목표입니다.")
+    return text
 
 
 def _is_analytics_event(page: str) -> bool:
@@ -1550,11 +1602,40 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE TABLE IF NOT EXISTS {schema}.ads_api_keys (
                     advertiser_name text PRIMARY KEY,
+                    industry text NOT NULL DEFAULT '',
                     ads_api_key text NOT NULL DEFAULT '',
                     conversion_api_key text NOT NULL DEFAULT '',
                     enabled boolean NOT NULL DEFAULT true,
                     created_at timestamptz NOT NULL DEFAULT now(),
                     updated_at timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                ALTER TABLE {schema}.ads_api_keys
+                ADD COLUMN IF NOT EXISTS industry text NOT NULL DEFAULT ''
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.ads_dashboard_cache (
+                    cache_key text PRIMARY KEY,
+                    payload jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    refreshed_at timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.ads_campaign_objectives (
+                    advertiser_name text NOT NULL,
+                    campaign_id text NOT NULL,
+                    campaign_name text NOT NULL DEFAULT '',
+                    objective text NOT NULL DEFAULT '',
+                    created_at timestamptz NOT NULL DEFAULT now(),
+                    updated_at timestamptz NOT NULL DEFAULT now(),
+                    PRIMARY KEY (advertiser_name, campaign_id)
                 )
                 """
             )
@@ -2553,11 +2634,24 @@ def _mask_secret(value: str) -> str:
     return f"{value[:8]}...{value[-4:]}"
 
 
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return dict(parsed) if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
 def _public_ads_api_key_row(row: dict[str, Any]) -> dict[str, Any]:
     ads_api_key = str(row.get("ads_api_key") or "")
     conversion_api_key = str(row.get("conversion_api_key") or "")
     return {
         "advertiser_name": str(row.get("advertiser_name") or ""),
+        "industry": str(row.get("industry") or ""),
         "has_ads_api_key": bool(ads_api_key),
         "masked_ads_api_key": _mask_secret(ads_api_key),
         "has_conversion_api_key": bool(conversion_api_key),
@@ -2576,7 +2670,7 @@ def list_ads_api_keys() -> dict[str, Any]:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     f"""
-                    SELECT advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    SELECT advertiser_name, industry, ads_api_key, conversion_api_key, enabled, created_at, updated_at
                     FROM {schema}.ads_api_keys
                     ORDER BY advertiser_name ASC
                     """
@@ -2608,7 +2702,7 @@ def list_active_ads_api_key_credentials() -> list[dict[str, str]]:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     f"""
-                    SELECT advertiser_name, ads_api_key
+                    SELECT advertiser_name, industry, ads_api_key
                     FROM {schema}.ads_api_keys
                     WHERE enabled = true
                       AND COALESCE(ads_api_key, '') <> ''
@@ -2619,6 +2713,7 @@ def list_active_ads_api_key_credentials() -> list[dict[str, str]]:
         return [
             {
                 "advertiser_name": str(row.get("advertiser_name") or ""),
+                "industry": str(row.get("industry") or ""),
                 "api_key": str(row.get("ads_api_key") or ""),
             }
             for row in rows
@@ -2628,6 +2723,7 @@ def list_active_ads_api_key_credentials() -> list[dict[str, str]]:
         return [
             {
                 "advertiser_name": str(row.get("advertiser_name") or ""),
+                "industry": str(row.get("industry") or ""),
                 "api_key": str(row.get("ads_api_key") or ""),
             }
             for row in sorted(_memory_ads_api_keys.values(), key=lambda item: item.get("advertiser_name", ""))
@@ -2659,8 +2755,309 @@ def get_ads_api_key(advertiser_name: str) -> str:
         return str(row.get("ads_api_key") or "") if row.get("enabled", True) else ""
 
 
+def get_ads_api_key_credential(advertiser_name: str) -> dict[str, str]:
+    advertiser_name = str(advertiser_name or "").strip()
+    if not advertiser_name:
+        return {"advertiser_name": "", "industry": "", "api_key": ""}
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, industry, ads_api_key
+                    FROM {schema}.ads_api_keys
+                    WHERE advertiser_name = %s AND enabled = true
+                    """,
+                    (advertiser_name,),
+                )
+                row = cur.fetchone()
+        if not row:
+            return {"advertiser_name": advertiser_name, "industry": "", "api_key": ""}
+        return {
+            "advertiser_name": str(row.get("advertiser_name") or advertiser_name),
+            "industry": str(row.get("industry") or ""),
+            "api_key": str(row.get("ads_api_key") or ""),
+        }
+    except Exception:
+        row = _memory_ads_api_keys.get(advertiser_name) or {}
+        if not row.get("enabled", True):
+            return {"advertiser_name": advertiser_name, "industry": "", "api_key": ""}
+        return {
+            "advertiser_name": advertiser_name,
+            "industry": str(row.get("industry") or ""),
+            "api_key": str(row.get("ads_api_key") or ""),
+        }
+
+
+def get_ads_api_key_secrets(advertiser_name: str) -> dict[str, Any]:
+    advertiser_name = str(advertiser_name or "").strip()
+    if not advertiser_name:
+        raise ValueError("광고주명이 필요합니다.")
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, ads_api_key, conversion_api_key
+                    FROM {schema}.ads_api_keys
+                    WHERE advertiser_name = %s
+                    """,
+                    (advertiser_name,),
+                )
+                row = cur.fetchone()
+    except Exception:
+        row = _memory_ads_api_keys.get(advertiser_name)
+    if not row:
+        raise ValueError("등록된 광고주 API 키를 찾을 수 없습니다.")
+    ads_api_key = str(row.get("ads_api_key") or "")
+    conversion_api_key = str(row.get("conversion_api_key") or "")
+    return {
+        "ok": True,
+        "advertiser_name": advertiser_name,
+        "ads_api_key": ads_api_key,
+        "masked_ads_api_key": _mask_secret(ads_api_key),
+        "conversion_api_key": conversion_api_key,
+        "masked_conversion_api_key": _mask_secret(conversion_api_key),
+    }
+
+
+def get_ads_dashboard_cache(cache_key: str = "active_advertisers") -> dict[str, Any] | None:
+    cache_key = str(cache_key or "active_advertisers").strip() or "active_advertisers"
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT cache_key, payload, refreshed_at
+                    FROM {schema}.ads_dashboard_cache
+                    WHERE cache_key = %s
+                    """,
+                    (cache_key,),
+                )
+                row = cur.fetchone()
+        if not row:
+            return None
+        return {
+            "cache_key": str(row.get("cache_key") or cache_key),
+            "payload": _json_object(row.get("payload")),
+            "refreshed_at": _iso_value(row.get("refreshed_at")),
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        row = _memory_ads_dashboard_cache.get(cache_key)
+        if not row:
+            return None
+        return {
+            "cache_key": cache_key,
+            "payload": _json_object(row.get("payload")),
+            "refreshed_at": str(row.get("refreshed_at") or ""),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def save_ads_dashboard_cache(payload: dict[str, Any], cache_key: str = "active_advertisers") -> dict[str, Any]:
+    cache_key = str(cache_key or "active_advertisers").strip() or "active_advertisers"
+    safe_payload = json.loads(json.dumps(payload or {}, ensure_ascii=False, default=str))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.ads_dashboard_cache (cache_key, payload, refreshed_at)
+                    VALUES (%s, %s::jsonb, now())
+                    ON CONFLICT (cache_key) DO UPDATE SET
+                        payload = EXCLUDED.payload,
+                        refreshed_at = now()
+                    RETURNING cache_key, refreshed_at
+                    """,
+                    (cache_key, json.dumps(safe_payload, ensure_ascii=False)),
+                )
+                row = cur.fetchone()
+        return {
+            "ok": True,
+            "cache_key": str(row.get("cache_key") or cache_key),
+            "refreshed_at": _iso_value(row.get("refreshed_at")),
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        refreshed_at = datetime.now(KST).isoformat()
+        _memory_ads_dashboard_cache[cache_key] = {
+            "payload": safe_payload,
+            "refreshed_at": refreshed_at,
+        }
+        return {
+            "ok": True,
+            "cache_key": cache_key,
+            "refreshed_at": refreshed_at,
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def delete_ads_dashboard_cache(cache_key: str = "active_advertisers") -> dict[str, Any]:
+    cache_key = str(cache_key or "active_advertisers").strip() or "active_advertisers"
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"DELETE FROM {schema}.ads_dashboard_cache WHERE cache_key = %s",
+                    (cache_key,),
+                )
+        return {"ok": True, "cache_key": cache_key, **_storage_info("supabase")}
+    except Exception as exc:
+        _memory_ads_dashboard_cache.pop(cache_key, None)
+        return {"ok": True, "cache_key": cache_key, **_storage_info("memory", str(exc))}
+
+
+def _ads_campaign_objective_key(advertiser_name: str, campaign_id: str) -> str:
+    return f"{advertiser_name}\u241f{campaign_id}"
+
+
+def _public_ads_campaign_objective_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "advertiser_name": str(row.get("advertiser_name") or ""),
+        "campaign_id": str(row.get("campaign_id") or ""),
+        "campaign_name": str(row.get("campaign_name") or ""),
+        "objective": str(row.get("objective") or ""),
+        "updated_at": _iso_value(row.get("updated_at")),
+    }
+
+
+def list_ads_campaign_objective_overrides() -> dict[str, Any]:
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT advertiser_name, campaign_id, campaign_name, objective, updated_at
+                    FROM {schema}.ads_campaign_objectives
+                    ORDER BY advertiser_name ASC, campaign_name ASC
+                    """
+                )
+                rows = cur.fetchall()
+        return {
+            "ok": True,
+            "items": [_public_ads_campaign_objective_row(dict(row)) for row in rows],
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        return {
+            "ok": True,
+            "items": [
+                _public_ads_campaign_objective_row(row)
+                for row in sorted(
+                    _memory_ads_campaign_objectives.values(),
+                    key=lambda item: (item.get("advertiser_name", ""), item.get("campaign_name", "")),
+                )
+            ],
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def get_ads_campaign_objective_override_map() -> dict[str, str]:
+    data = list_ads_campaign_objective_overrides()
+    overrides: dict[str, str] = {}
+    for item in data.get("items") or []:
+        advertiser_name = str(item.get("advertiser_name") or "").strip()
+        campaign_id = str(item.get("campaign_id") or "").strip()
+        objective = str(item.get("objective") or "").strip()
+        if advertiser_name and campaign_id and objective:
+            overrides[_ads_campaign_objective_key(advertiser_name, campaign_id)] = objective
+    return overrides
+
+
+def upsert_ads_campaign_objective_override(payload: dict[str, Any]) -> dict[str, Any]:
+    advertiser_name = str(payload.get("advertiser_name") or "").strip()
+    campaign_id = str(payload.get("campaign_id") or "").strip()
+    campaign_name = str(payload.get("campaign_name") or "").strip()
+    objective = _normalize_ads_objective(payload.get("objective"))
+    if not advertiser_name:
+        raise ValueError("광고주명이 필요합니다.")
+    if not campaign_id:
+        raise ValueError("캠페인 ID가 필요합니다.")
+
+    key = _ads_campaign_objective_key(advertiser_name, campaign_id)
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                if not objective:
+                    cur.execute(
+                        f"""
+                        DELETE FROM {schema}.ads_campaign_objectives
+                        WHERE advertiser_name = %s AND campaign_id = %s
+                        RETURNING advertiser_name, campaign_id, campaign_name, objective, updated_at
+                        """,
+                        (advertiser_name, campaign_id),
+                    )
+                    row = cur.fetchone()
+                else:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {schema}.ads_campaign_objectives
+                            (advertiser_name, campaign_id, campaign_name, objective, created_at, updated_at)
+                        VALUES
+                            (%s, %s, %s, %s, now(), now())
+                        ON CONFLICT (advertiser_name, campaign_id) DO UPDATE SET
+                            campaign_name = EXCLUDED.campaign_name,
+                            objective = EXCLUDED.objective,
+                            updated_at = now()
+                        RETURNING advertiser_name, campaign_id, campaign_name, objective, updated_at
+                        """,
+                        (advertiser_name, campaign_id, campaign_name, objective),
+                    )
+                    row = cur.fetchone()
+        delete_ads_dashboard_cache()
+        item = _public_ads_campaign_objective_row(dict(row)) if row else {
+            "advertiser_name": advertiser_name,
+            "campaign_id": campaign_id,
+            "campaign_name": campaign_name,
+            "objective": "",
+            "updated_at": "",
+        }
+        return {"ok": True, "item": item, **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        if objective:
+            now = datetime.now(KST).isoformat()
+            _memory_ads_campaign_objectives[key] = {
+                "advertiser_name": advertiser_name,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign_name,
+                "objective": objective,
+                "updated_at": now,
+            }
+            item = _public_ads_campaign_objective_row(_memory_ads_campaign_objectives[key])
+        else:
+            _memory_ads_campaign_objectives.pop(key, None)
+            item = {
+                "advertiser_name": advertiser_name,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign_name,
+                "objective": "",
+                "updated_at": "",
+            }
+        delete_ads_dashboard_cache()
+        return {"ok": True, "item": item, **_storage_info("memory", str(exc))}
+
+
 def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
     advertiser_name = str(payload.get("advertiser_name") or "").strip()
+    industry_supplied = "industry" in payload
+    new_industry = _normalize_ads_industry(payload.get("industry")) if industry_supplied else None
     new_ads_api_key = str(payload.get("ads_api_key") or "").strip()
     new_conversion_api_key = str(payload.get("conversion_api_key") or "").strip()
     enabled = bool(payload.get("enabled", True))
@@ -2674,13 +3071,14 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     f"""
-                    SELECT advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    SELECT advertiser_name, industry, ads_api_key, conversion_api_key, enabled, created_at, updated_at
                     FROM {schema}.ads_api_keys
                     WHERE advertiser_name = %s
                     """,
                     (advertiser_name,),
                 )
                 existing = cur.fetchone()
+                industry = new_industry if new_industry is not None else (existing["industry"] if existing else "")
                 ads_api_key = new_ads_api_key or (existing["ads_api_key"] if existing else "")
                 conversion_api_key = new_conversion_api_key or (existing["conversion_api_key"] if existing else "")
                 if not ads_api_key:
@@ -2688,18 +3086,20 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
                 cur.execute(
                     f"""
                     INSERT INTO {schema}.ads_api_keys
-                        (advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at)
+                        (advertiser_name, industry, ads_api_key, conversion_api_key, enabled, created_at, updated_at)
                     VALUES
-                        (%s, %s, %s, %s, COALESCE(%s, now()), now())
+                        (%s, %s, %s, %s, %s, COALESCE(%s, now()), now())
                     ON CONFLICT (advertiser_name) DO UPDATE SET
+                        industry = EXCLUDED.industry,
                         ads_api_key = EXCLUDED.ads_api_key,
                         conversion_api_key = EXCLUDED.conversion_api_key,
                         enabled = EXCLUDED.enabled,
                         updated_at = now()
-                    RETURNING advertiser_name, ads_api_key, conversion_api_key, enabled, created_at, updated_at
+                    RETURNING advertiser_name, industry, ads_api_key, conversion_api_key, enabled, created_at, updated_at
                     """,
                     (
                         advertiser_name,
+                        industry,
                         ads_api_key,
                         conversion_api_key,
                         enabled,
@@ -2707,6 +3107,7 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
                     ),
                 )
                 row = cur.fetchone()
+        delete_ads_dashboard_cache()
         return {
             "ok": True,
             "item": _public_ads_api_key_row(dict(row)),
@@ -2716,6 +3117,7 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
         raise
     except Exception as exc:
         existing = _memory_ads_api_keys.get(advertiser_name) or {}
+        industry = new_industry if new_industry is not None else str(existing.get("industry") or "")
         ads_api_key = new_ads_api_key or str(existing.get("ads_api_key") or "")
         conversion_api_key = new_conversion_api_key or str(existing.get("conversion_api_key") or "")
         if not ads_api_key:
@@ -2723,6 +3125,7 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
         now = datetime.now(KST).isoformat()
         row = {
             "advertiser_name": advertiser_name,
+            "industry": industry,
             "ads_api_key": ads_api_key,
             "conversion_api_key": conversion_api_key,
             "enabled": enabled,
@@ -2730,6 +3133,7 @@ def upsert_ads_api_key(payload: dict[str, Any]) -> dict[str, Any]:
             "updated_at": now,
         }
         _memory_ads_api_keys[advertiser_name] = row
+        delete_ads_dashboard_cache()
         return {
             "ok": True,
             "item": _public_ads_api_key_row(row),
@@ -2750,9 +3154,11 @@ def delete_ads_api_key(advertiser_name: str) -> dict[str, Any]:
                     f"DELETE FROM {schema}.ads_api_keys WHERE advertiser_name = %s",
                     (advertiser_name,),
                 )
+        delete_ads_dashboard_cache()
         return {"ok": True, **_storage_info("supabase")}
     except Exception as exc:
         _memory_ads_api_keys.pop(advertiser_name, None)
+        delete_ads_dashboard_cache()
         return {"ok": True, **_storage_info("memory", str(exc))}
 
 

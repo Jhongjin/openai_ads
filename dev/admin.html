@@ -552,12 +552,45 @@
                       <input class="control" id="ads-name" />
                     </div>
                     <div class="field">
+                      <label for="ads-industry">업종</label>
+                      <select class="control" id="ads-industry">
+                        <option value="">업종 선택</option>
+                        <option value="가전">가전</option>
+                        <option value="게임">게임</option>
+                        <option value="관광/레저">관광/레저</option>
+                        <option value="교육">교육</option>
+                        <option value="금융">금융</option>
+                        <option value="기타">기타</option>
+                        <option value="단체">단체</option>
+                        <option value="문화/예술">문화/예술</option>
+                        <option value="방송/통신서비스">방송/통신서비스</option>
+                        <option value="생활/잡화">생활/잡화</option>
+                        <option value="쇼핑몰">쇼핑몰</option>
+                        <option value="식음료">식음료</option>
+                        <option value="앱/사이트">앱/사이트</option>
+                        <option value="의료/건강">의료/건강</option>
+                        <option value="주택/가구">주택/가구</option>
+                        <option value="컴퓨터">컴퓨터</option>
+                        <option value="패션">패션</option>
+                        <option value="화장품">화장품</option>
+                        <option value="수송">수송</option>
+                      </select>
+                    </div>
+                    <div class="field">
                       <label for="ads-key">Ads API Key</label>
-                      <input class="control" id="ads-key" autocomplete="off" />
+                      <div class="input-with-action">
+                        <input class="control" id="ads-key" autocomplete="off" />
+                        <button class="btn-secondary btn-inline" type="button" id="inspect-ads-key">
+                          <i class="ti ti-radar"></i>
+                          계정 확인
+                        </button>
+                      </div>
+                      <div class="secret-preview" id="ads-key-preview" hidden></div>
                     </div>
                     <div class="field">
                       <label for="conversion-key">Conversion API Key</label>
                       <input class="control" id="conversion-key" autocomplete="off" />
+                      <div class="secret-preview" id="conversion-key-preview" hidden></div>
                     </div>
                     <label class="tag"><input type="checkbox" id="ads-enabled" checked /> 활성화</label>
                     <div class="form-actions">
@@ -590,7 +623,7 @@
                     </div>
                     <div class="table-scroll">
                       <table class="data-grid ads-key-table">
-                        <thead><tr><th>광고주</th><th>Ads Key</th><th>Conversion</th><th>상태</th><th>관리</th></tr></thead>
+                        <thead><tr><th>광고주</th><th>업종</th><th>Ads Key</th><th>Conversion</th><th>상태</th><th>관리</th></tr></thead>
                         <tbody id="ads-key-rows"></tbody>
                       </table>
                     </div>
@@ -618,27 +651,39 @@
                 </div>
                 <div class="surface-body stack">
                   <div class="performance-controls">
-                    <label>
-                      광고주
-                      <select class="control" id="performance-advertiser-select">
-                        <option value="">공통 환경변수</option>
-                      </select>
-                    </label>
-                    <label>
-                      시작일
-                      <input class="control" id="performance-start-date" type="date" />
-                    </label>
-                    <label>
-                      종료일
-                      <input class="control" id="performance-end-date" type="date" />
-                    </label>
-                    <button class="btn-command" type="button" id="refresh-performance-dashboard">
-                      <i class="ti ti-refresh"></i>
-                      성과 새로고침
-                    </button>
-                    <span class="status-line" id="performance-status"></span>
+                    <div class="performance-filter-grid">
+                      <label>
+                        광고주
+                        <select class="control" id="performance-advertiser-select">
+                          <option value="">공통 환경변수</option>
+                        </select>
+                      </label>
+                      <label>
+                        시작일
+                        <input class="control" id="performance-start-date" type="date" />
+                      </label>
+                      <label>
+                        종료일
+                        <input class="control" id="performance-end-date" type="date" />
+                      </label>
+                      <button class="btn-command" type="button" id="refresh-performance-dashboard">
+                        <i class="ti ti-refresh"></i>
+                        성과 새로고침
+                      </button>
+                    </div>
+                    <div class="performance-status-card">
+                      <span class="status-line" id="performance-status"></span>
+                    </div>
                   </div>
                   <div class="performance-config-note" id="performance-setup" hidden></div>
+                  <div class="performance-config-note is-soft" id="performance-extension-note" hidden></div>
+                  <div class="performance-brief-grid">
+                    <div class="metric"><span>라이브 광고주</span><strong id="performance-live-advertisers">0</strong></div>
+                    <div class="metric"><span>라이브 캠페인</span><strong id="performance-live-campaigns">0</strong></div>
+                    <div class="metric"><span>모바일 노출 비중</span><strong id="performance-mobile-share">-</strong></div>
+                    <div class="metric"><span>PC 노출 비중</span><strong id="performance-pc-share">-</strong></div>
+                    <div class="metric"><span>기타 디바이스</span><strong id="performance-other-share">-</strong></div>
+                  </div>
                   <div class="performance-kpi-grid">
                     <div class="metric"><span>노출</span><strong id="performance-kpi-impressions">0</strong></div>
                     <div class="metric"><span>클릭</span><strong id="performance-kpi-clicks">0</strong></div>
@@ -651,27 +696,110 @@
                     <div class="metric"><span>CPA</span><strong id="performance-kpi-cpa">0원</strong></div>
                     <div class="metric"><span>ROAS</span><strong id="performance-kpi-roas">-</strong></div>
                   </div>
+                  <section class="performance-panel">
+                    <div class="performance-panel-head">
+                      <div>
+                        <h3>성과 차트</h3>
+                        <p>선택 기간의 디바이스 비중과 일별 성과 흐름입니다.</p>
+                      </div>
+                    </div>
+                    <div class="performance-chart-grid">
+                      <div class="performance-chart-card">
+                        <div class="performance-chart-title">디바이스 노출 비중</div>
+                        <div class="performance-trend-chart" id="performance-device-chart"></div>
+                      </div>
+                      <div class="performance-chart-card">
+                        <div class="performance-chart-title">일별 노출·클릭</div>
+                        <div class="performance-trend-chart" id="performance-volume-trend"></div>
+                      </div>
+                      <div class="performance-chart-card">
+                        <div class="performance-chart-title">일별 소진액·CPC</div>
+                        <div class="performance-trend-chart" id="performance-spend-trend"></div>
+                      </div>
+                    </div>
+                  </section>
                   <div class="performance-dashboard-layout">
                     <section class="performance-panel">
                       <div class="performance-panel-head">
                         <div>
                           <h3>캠페인 현황</h3>
-                          <p>선택 기간에 조회된 캠페인 단위 성과입니다.</p>
+                          <p>광고주를 펼치면 캠페인이, 캠페인을 펼치면 광고그룹과 소재가 같은 표 안에 표시됩니다.</p>
                         </div>
-                        <span class="status-line" id="performance-campaign-count">0개 캠페인</span>
+                        <div class="panel-actions">
+                          <div class="download-scope-control" aria-label="엑셀 포함 항목">
+                            <span>포함</span>
+                            <label><input type="checkbox" id="download-performance-include-campaigns" checked /> 캠페인</label>
+                            <label><input type="checkbox" id="download-performance-include-adgroups" checked /> 광고그룹</label>
+                            <label><input type="checkbox" id="download-performance-include-ads" checked /> 소재</label>
+                          </div>
+                          <button class="btn-secondary btn-compact" type="button" id="download-performance-campaigns">
+                            <i class="ti ti-download"></i>
+                            엑셀
+                          </button>
+                          <button class="btn-secondary btn-compact" type="button" id="toggle-performance-conversions" aria-pressed="false">
+                            <i class="ti ti-chart-dots"></i>
+                            전환 지표
+                          </button>
+                          <span class="status-line" id="performance-campaign-count">0개 캠페인</span>
+                        </div>
                       </div>
                       <div class="table-scroll">
-                        <table class="data-grid performance-table">
+                        <table class="data-grid performance-table performance-campaign-table" id="performance-campaign-table">
                           <thead>
-                            <tr><th>캠페인</th><th>상태</th><th>노출</th><th>클릭</th><th>소진액</th><th>CTR</th><th>전환</th><th>CPA</th><th>ROAS</th><th>상세</th></tr>
+                            <tr>
+                              <th><button class="sort-header" type="button" data-performance-sort="advertiser_name">광고주 <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                              <th><button class="sort-header" type="button" data-performance-sort="name">캠페인 <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                              <th><button class="sort-header" type="button" data-performance-sort="industry">업종 <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                              <th>목표</th><th>상태</th><th>시작일</th><th>종료일</th><th>예산/소진</th><th>노출</th><th>클릭</th><th>소진액</th><th>CTR</th><th>CPC</th><th>CPM</th><th class="conversion-column">전환</th><th class="conversion-column">CPA</th><th class="conversion-column">ROAS</th>
+                            </tr>
                           </thead>
                           <tbody id="performance-campaign-rows">
+                            <tr><td colspan="17">성과 데이터를 불러오는 중입니다.</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="list-pagination performance-pagination">
+                        <button class="btn-secondary" type="button" id="performance-campaign-prev">이전</button>
+                        <span class="status-line" id="performance-campaign-page-info">-</span>
+                        <button class="btn-secondary" type="button" id="performance-campaign-next">다음</button>
+                      </div>
+                    </section>
+                    <section class="performance-panel">
+                      <div class="performance-panel-head">
+                        <div>
+                          <h3>캠페인 벤치마크</h3>
+                          <p>업종별, 목표별, 업종 × 목표별 CPM, CPC, CTR 기준을 비교합니다.</p>
+                        </div>
+                        <div class="panel-actions">
+                          <div class="segmented-control" role="group" aria-label="벤치마크 보기">
+                            <button type="button" data-benchmark-mode="industry_objective" class="is-active">업종×목표</button>
+                            <button type="button" data-benchmark-mode="industry">업종별</button>
+                            <button type="button" data-benchmark-mode="objective">목표별</button>
+                          </div>
+                          <button class="btn-secondary btn-compact" type="button" id="download-performance-benchmarks">
+                            <i class="ti ti-download"></i>
+                            엑셀
+                          </button>
+                          <span class="status-line" id="performance-benchmark-count">0개 그룹</span>
+                        </div>
+                      </div>
+                      <div class="table-scroll">
+                        <table class="data-grid performance-table benchmark-table">
+                          <thead>
+                            <tr><th>구분</th><th>업종</th><th>목표</th><th>캠페인</th><th>노출</th><th>클릭</th><th>소진액</th><th>CTR</th><th>CPC</th><th>CPM</th></tr>
+                          </thead>
+                          <tbody id="performance-benchmark-rows">
                             <tr><td colspan="10">성과 데이터를 불러오는 중입니다.</td></tr>
                           </tbody>
                         </table>
                       </div>
+                      <div class="list-pagination performance-pagination">
+                        <button class="btn-secondary" type="button" id="performance-benchmark-prev">이전</button>
+                        <span class="status-line" id="performance-benchmark-page-info">-</span>
+                        <button class="btn-secondary" type="button" id="performance-benchmark-next">다음</button>
+                      </div>
                     </section>
-                    <section class="performance-panel" id="performance-detail-panel">
+                    <section class="performance-panel" id="performance-detail-panel" hidden>
                       <div class="performance-panel-head">
                         <div>
                           <h3>상세 성과</h3>
@@ -688,6 +816,11 @@
                             <tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>
                           </tbody>
                         </table>
+                      </div>
+                      <div class="list-pagination performance-pagination">
+                        <button class="btn-secondary" type="button" id="performance-detail-prev">이전</button>
+                        <span class="status-line" id="performance-detail-page-info">-</span>
+                        <button class="btn-secondary" type="button" id="performance-detail-next">다음</button>
                       </div>
                     </section>
                   </div>
@@ -962,8 +1095,54 @@
       let adsKeyQuery = "";
       let adsKeySort = "asc";
       let editingAdsName = "";
+      let editingAdsSecrets = null;
+      let revealedAdsSecrets = { ads: false, conversion: false };
+      let loadingAdsSecretField = "";
       let adsDashboardData = null;
+      let performanceTrendCharts = { device: null, volume: null, cost: null, hourly: null };
+      let performanceCampaignSort = { key: "", direction: "asc" };
+      let performanceShowConversionColumns = false;
+      let performanceExpandedAdvertisers = new Set();
+      let performanceExpandedCampaigns = new Set();
+      let performanceExpandedAdGroups = new Set();
+      let performanceDetailCache = new Map();
+      let performanceLoadingDetailKey = "";
+      let performanceHourlyOpenKey = "";
+      let performanceHourlyLoadingKey = "";
+      let performanceHourlyCache = new Map();
+      let performanceHourlyOptions = new Map();
+      let performanceHourlyResources = new Map();
+      let performanceLiveAdvertiserNames = new Set();
+      let performanceCampaignPage = 1;
+      let performanceBenchmarkPage = 1;
+      let performanceDetailPage = 1;
+      let performanceBenchmarkMode = "industry_objective";
+      const PERFORMANCE_PAGE_SIZE = 10;
+      const PERFORMANCE_CAMPAIGN_COLSPAN = 17;
+      const PERFORMANCE_EARLY_DEPLETION_HOUR = 3;
+      const PERFORMANCE_OBJECTIVES = ["클릭", "노출", "전환"];
       const ADS_KEY_PAGE_SIZE = 10;
+      const ADS_INDUSTRIES = [
+        "가전",
+        "게임",
+        "관광/레저",
+        "교육",
+        "금융",
+        "기타",
+        "단체",
+        "문화/예술",
+        "방송/통신서비스",
+        "생활/잡화",
+        "쇼핑몰",
+        "식음료",
+        "앱/사이트",
+        "의료/건강",
+        "주택/가구",
+        "컴퓨터",
+        "패션",
+        "화장품",
+        "수송",
+      ];
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -1595,7 +1774,16 @@
         const element = document.getElementById(id);
         if (!element) return;
         element.className = `status-line ${type}`;
-        element.textContent = message || "";
+        if (id === "performance-status") {
+          element.innerHTML = String(message || "")
+            .split(" · ")
+            .filter(Boolean)
+            .map((part) => `<span>${escapeHtml(part)}</span>`)
+            .join("");
+        } else {
+          element.textContent = message || "";
+        }
+        element.title = message || "";
       }
 
       let globalLoadingDepth = 0;
@@ -1691,6 +1879,11 @@
         $$(".view[id^='admin-view-']").forEach((view) => {
           view.classList.toggle("is-active", view.id === `admin-view-${name}`);
         });
+        if (name === "performance") {
+          window.requestAnimationFrame(() => {
+            Object.values(performanceTrendCharts).forEach((chart) => chart?.resize());
+          });
+        }
       }
 
       function coerceMenuSetting(value, fallback = false) {
@@ -2920,6 +3113,7 @@
         $("#ads-key-rows").innerHTML = pageItems.map((item) => `
           <tr>
             <td>${escapeHtml(item.advertiser_name)}</td>
+            <td>${escapeHtml(item.industry || "-")}</td>
             <td>${item.has_ads_api_key ? escapeHtml(item.masked_ads_api_key) : "-"}</td>
             <td>${item.has_conversion_api_key ? escapeHtml(item.masked_conversion_api_key) : "-"}</td>
             <td><span class="${item.enabled ? "tag tag-green" : "tag"}">${item.enabled ? "활성" : "비활성"}</span></td>
@@ -2930,7 +3124,7 @@
               </div>
             </td>
           </tr>
-        `).join("") || '<tr><td colspan="5">등록된 API 키가 없습니다.</td></tr>';
+        `).join("") || '<tr><td colspan="6">등록된 API 키가 없습니다.</td></tr>';
 
         $("#ads-key-page-info").textContent = filtered.length
           ? `${startIndex + 1}-${Math.min(startIndex + ADS_KEY_PAGE_SIZE, filtered.length)} / ${filtered.length}`
@@ -2943,10 +3137,15 @@
         editingAdsName = "";
         $("#ads-name").value = "";
         $("#ads-name").readOnly = false;
+        $("#ads-industry").value = "";
         $("#ads-key").value = "";
         $("#ads-key").placeholder = "";
         $("#conversion-key").value = "";
         $("#conversion-key").placeholder = "";
+        editingAdsSecrets = null;
+        revealedAdsSecrets = { ads: false, conversion: false };
+        loadingAdsSecretField = "";
+        renderAdsSecretPreviews(null);
         $("#ads-enabled").checked = true;
         $("#save-ads-key").textContent = "API 키 저장";
         $("#cancel-ads-edit").hidden = true;
@@ -2959,15 +3158,121 @@
         editingAdsName = item.advertiser_name;
         $("#ads-name").value = item.advertiser_name;
         $("#ads-name").readOnly = true;
+        $("#ads-industry").value = ADS_INDUSTRIES.includes(item.industry) ? item.industry : "";
         $("#ads-key").value = "";
         $("#ads-key").placeholder = item.has_ads_api_key ? "비워두면 기존 Ads API Key 유지" : "Ads API Key 입력";
         $("#conversion-key").value = "";
         $("#conversion-key").placeholder = item.has_conversion_api_key ? "비워두면 기존 Conversion API Key 유지" : "Conversion API Key 입력";
+        editingAdsSecrets = null;
+        revealedAdsSecrets = { ads: false, conversion: false };
+        loadingAdsSecretField = "";
+        renderAdsSecretPreviews(item);
         $("#ads-enabled").checked = Boolean(item.enabled);
         $("#save-ads-key").textContent = "수정 저장";
         $("#cancel-ads-edit").hidden = false;
         $("#ads-edit-note").textContent = `${item.advertiser_name} 수정 중입니다. 보안상 기존 키 원문은 표시하지 않습니다.`;
         $("#ads-name").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      function secretPreviewMarkup({ field, label, hasKey, maskedValue, revealedValue }) {
+        if (!hasKey) {
+          return `
+            <span class="secret-preview-label">${escapeHtml(label)}</span>
+            <code>등록된 키 없음</code>
+          `;
+        }
+        const revealed = Boolean(revealedAdsSecrets[field]);
+        const loading = loadingAdsSecretField === field;
+        const displayValue = revealed ? (revealedValue || maskedValue || "-") : (maskedValue || "-");
+        const icon = revealed ? "ti-eye-off" : "ti-eye";
+        const actionLabel = revealed ? `${label} 숨기기` : `${label} 마스킹 해제`;
+        const actionText = loading ? "확인 중" : (revealed ? "숨김" : "보기");
+        return `
+          <span class="secret-preview-label">${escapeHtml(label)}</span>
+          <code title="${escapeHtml(displayValue)}">${escapeHtml(displayValue)}</code>
+          <button class="secret-toggle" type="button" data-secret-field="${escapeHtml(field)}" title="${escapeHtml(actionLabel)}" aria-label="${escapeHtml(actionLabel)}" ${loading ? "disabled" : ""}>
+            <i class="ti ${icon}"></i>
+            <span>${escapeHtml(actionText)}</span>
+          </button>
+        `;
+      }
+
+      function renderAdsSecretPreviews(item) {
+        const adsPreview = $("#ads-key-preview");
+        const conversionPreview = $("#conversion-key-preview");
+        if (!item) {
+          adsPreview.hidden = true;
+          conversionPreview.hidden = true;
+          adsPreview.innerHTML = "";
+          conversionPreview.innerHTML = "";
+          return;
+        }
+        const adsValue = editingAdsSecrets?.ads_api_key || "";
+        const conversionValue = editingAdsSecrets?.conversion_api_key || "";
+        adsPreview.hidden = false;
+        conversionPreview.hidden = false;
+        adsPreview.innerHTML = secretPreviewMarkup({
+          field: "ads",
+          label: "기존 Ads API Key",
+          hasKey: item.has_ads_api_key,
+          maskedValue: item.masked_ads_api_key,
+          revealedValue: adsValue,
+        });
+        conversionPreview.innerHTML = secretPreviewMarkup({
+          field: "conversion",
+          label: "기존 Conversion API Key",
+          hasKey: item.has_conversion_api_key,
+          maskedValue: item.masked_conversion_api_key,
+          revealedValue: conversionValue,
+        });
+      }
+
+      async function toggleAdsSecret(field) {
+        const item = adsKeyItems.find((entry) => entry.advertiser_name === editingAdsName);
+        if (!item) return;
+        const hasKey = field === "conversion" ? item.has_conversion_api_key : item.has_ads_api_key;
+        if (!hasKey) return;
+        const isRevealing = !revealedAdsSecrets[field];
+        if (isRevealing && !editingAdsSecrets) {
+          loadingAdsSecretField = field;
+          renderAdsSecretPreviews(item);
+          try {
+            const data = await adminFetch(`/api/admin/ads-api-keys/${encodeURIComponent(editingAdsName)}/reveal`);
+            editingAdsSecrets = data;
+          } finally {
+            loadingAdsSecretField = "";
+            renderAdsSecretPreviews(item);
+          }
+        }
+        const revealedValue = field === "conversion" ? editingAdsSecrets?.conversion_api_key : editingAdsSecrets?.ads_api_key;
+        if (isRevealing && !revealedValue) {
+          renderAdsSecretPreviews(item);
+          throw new Error("표시할 API 키 원문을 찾지 못했습니다.");
+        }
+        revealedAdsSecrets[field] = !revealedAdsSecrets[field];
+        renderAdsSecretPreviews(item);
+        setStatus("ads-status", revealedAdsSecrets[field] ? `${field === "conversion" ? "Conversion" : "Ads"} API Key를 표시했습니다.` : "API Key를 다시 마스킹했습니다.", "ok");
+      }
+
+      async function inspectAdsKey() {
+        const adsKey = $("#ads-key").value.trim();
+        if (!adsKey) {
+          setStatus("ads-status", "확인할 Ads API Key를 입력해 주세요.", "error");
+          return;
+        }
+        setStatus("ads-status", "Ads API Key로 광고 계정을 확인하는 중입니다.");
+        const data = await adminFetch("/api/admin/ads-api-keys/inspect", {
+          method: "POST",
+          body: JSON.stringify({ ads_api_key: adsKey }),
+        });
+        if (!data.ok) {
+          setStatus("ads-status", `${data.error || "계정 확인 실패"}${data.detail ? ` · ${data.detail}` : ""}`, "error");
+          return;
+        }
+        const account = data.ad_account || {};
+        if (!$("#ads-name").value.trim() && account.name) $("#ads-name").value = account.name;
+        const meta = [account.name, account.currency_code, account.timezone].filter(Boolean).join(" · ");
+        setStatus("ads-status", meta ? `계정 확인 완료: ${meta}` : "계정 확인 완료", "ok");
       }
 
       async function deleteAdsKey(advertiserName) {
@@ -2991,6 +3296,7 @@
           method: "POST",
           body: JSON.stringify({
             advertiser_name: advertiserName,
+            industry: $("#ads-industry").value,
             ads_api_key: $("#ads-key").value,
             conversion_api_key: $("#conversion-key").value,
             enabled: $("#ads-enabled").checked,
@@ -3005,10 +3311,31 @@
         return `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
       }
 
+      function formatMoneyOptional(value, suffix = "") {
+        const number = Number(value || 0);
+        return number ? `${formatMoney(number)}${suffix}` : "-";
+      }
+
       function formatRate(value) {
         const number = Number(value || 0);
         const percent = Math.abs(number) <= 1 ? number * 100 : number;
         return `${percent.toFixed(2)}%`;
+      }
+
+      function formatBudgetRate(value) {
+        const ratio = Number(value || 0);
+        if (!Number.isFinite(ratio)) return "-";
+        const percent = ratio * 100;
+        const rounded = Math.round(percent * 100) / 100;
+        if (Math.abs(rounded - Math.round(rounded)) < 0.005) {
+          return `${Math.round(rounded).toLocaleString("ko-KR")}%`;
+        }
+        return `${rounded.toFixed(2)}%`;
+      }
+
+      function formatShare(value) {
+        const number = Number(value || 0);
+        return number ? `${(number * 100).toFixed(1)}%` : "-";
       }
 
       function formatMultiplier(value) {
@@ -3019,6 +3346,176 @@
       function conversionMetric(value, formatter = formatNumber) {
         if (adsDashboardData && adsDashboardData.conversion_metrics_available === false) return "-";
         return formatter(value);
+      }
+
+      function displayDate(value) {
+        return value ? String(value).slice(0, 10) : "-";
+      }
+
+      function objectiveLabel(value) {
+        const text = String(value || "").trim().toLowerCase();
+        if (!text || text === "-") return "-";
+        if (["click", "cpc", "클릭"].includes(text) || text.includes("click")) return "클릭";
+        if (["reach", "view", "impression", "노출", "도달"].includes(text) || text.includes("impression")) return "노출";
+        if (["conversion", "conversions", "전환"].includes(text) || text.includes("conversion")) return "전환";
+        return value;
+      }
+
+      function campaignObjectiveValue(row = {}) {
+        const label = objectiveLabel(row.objective);
+        return PERFORMANCE_OBJECTIVES.includes(label) ? label : "";
+      }
+
+      function campaignObjectiveControl(row = {}) {
+        const value = campaignObjectiveValue(row);
+        const currentLabel = objectiveLabel(row.objective);
+        const hasCustomOption = currentLabel && currentLabel !== "-" && !PERFORMANCE_OBJECTIVES.includes(currentLabel);
+        const customOption = hasCustomOption
+          ? `<option value="${escapeHtml(currentLabel)}" selected>${escapeHtml(currentLabel)}</option>`
+          : "";
+        const options = [
+          `<option value="" ${value || hasCustomOption ? "" : "selected"}>-</option>`,
+          ...PERFORMANCE_OBJECTIVES.map((item) => `<option value="${escapeHtml(item)}" ${value === item ? "selected" : ""}>${escapeHtml(item)}</option>`),
+        ].join("");
+        const disabled = row.id && row.advertiser_name ? "" : "disabled";
+        return `
+          <select class="objective-select" data-performance-objective-select
+            data-advertiser="${escapeHtml(row.advertiser_name || "")}"
+            data-objective-campaign="${escapeHtml(row.id || "")}"
+            data-campaign-name="${escapeHtml(row.name || "")}"
+            title="캠페인 목표 수정" ${disabled}>
+            ${customOption}${options}
+          </select>
+        `;
+      }
+
+      function budgetBidLabel(row = {}) {
+        if (row.level === "ad_group") {
+          const rawBid = Number(row.max_bid || 0);
+          const billingEvent = String(row.billing_event_type || "").toLowerCase();
+          const isCpmBid = objectiveLabel(row.objective) === "노출"
+            || billingEvent.includes("impression")
+            || billingEvent.includes("cpm")
+            || billingEvent.includes("view")
+            || billingEvent.includes("reach");
+          const displayBid = isCpmBid && rawBid > 0 && rawBid < 1000 ? rawBid * 1000 : rawBid;
+          return formatMoneyOptional(displayBid, " 입찰");
+        }
+        if (Number(row.daily_budget || 0)) return formatMoneyOptional(row.daily_budget, "/일");
+        return "-";
+      }
+
+      function parseDateStamp(value) {
+        const text = String(value || "").slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+        const [year, month, day] = text.split("-").map((part) => Number(part));
+        const stamp = Date.UTC(year, month - 1, day);
+        return Number.isFinite(stamp) ? stamp : null;
+      }
+
+      function inclusiveDays(startStamp, endStamp) {
+        if (startStamp === null || endStamp === null || endStamp < startStamp) return 0;
+        return Math.floor((endStamp - startStamp) / 86400000) + 1;
+      }
+
+      function selectedPerformanceRangeStamps() {
+        const range = adsDashboardData?.range || {};
+        const start = parseDateStamp($("#performance-start-date")?.value || range.start_date);
+        const end = parseDateStamp($("#performance-end-date")?.value || range.end_date);
+        return { start, end };
+      }
+
+      function campaignBudgetDays(row = {}) {
+        const selected = selectedPerformanceRangeStamps();
+        const fallbackDays = inclusiveDays(selected.start, selected.end) || 1;
+        let start = selected.start;
+        let end = selected.end;
+        const campaignStart = parseDateStamp(row.start_date);
+        const campaignEnd = parseDateStamp(row.end_date);
+        if (campaignStart !== null) start = start === null ? campaignStart : Math.max(start, campaignStart);
+        if (campaignEnd !== null) end = end === null ? campaignEnd : Math.min(end, campaignEnd);
+        return inclusiveDays(start, end) || fallbackDays;
+      }
+
+      function campaignBudgetBasis(row = {}) {
+        const dailyBudget = Number(row.daily_budget || 0);
+        const lifetimeBudget = Number(row.lifetime_budget || 0);
+        const budgetType = String(row.budget_type || "").toLowerCase();
+        if (budgetType === "lifetime" && lifetimeBudget > 0) {
+          return { basis: lifetimeBudget, type: "lifetime", label: "총예산" };
+        }
+        if (dailyBudget > 0) {
+          const days = campaignBudgetDays(row);
+          return { basis: dailyBudget * days, type: "daily", label: `기간 예산 ${formatNumber(days)}일` };
+        }
+        if (lifetimeBudget > 0) {
+          return { basis: lifetimeBudget, type: "lifetime", label: "총예산" };
+        }
+        return { basis: 0, type: "", label: "" };
+      }
+
+      function campaignBudgetSpendSummary(row = {}) {
+        const budget = campaignBudgetBasis(row);
+        return {
+          basis: budget.basis,
+          spend: Number(row.spend || 0),
+          unknownCount: budget.basis > 0 ? 0 : 1,
+          label: budget.label,
+          type: budget.type,
+          fallbackLabel: budgetBidLabel(row),
+        };
+      }
+
+      function groupBudgetSpendSummary(group = {}) {
+        const campaigns = Array.isArray(group.campaigns) ? group.campaigns : [];
+        let basis = 0;
+        let unknownCount = 0;
+        const types = new Set();
+        campaigns.forEach((row) => {
+          const budget = campaignBudgetBasis(row);
+          if (budget.basis > 0) {
+            basis += budget.basis;
+            if (budget.type) types.add(budget.type);
+          } else {
+            unknownCount += 1;
+          }
+        });
+        const typeList = [...types];
+        const label = typeList.length === 1
+          ? (typeList[0] === "daily" ? "기간 예산 합계" : "총예산 합계")
+          : "예산 기준 합계";
+        return {
+          basis,
+          spend: Number(group.total?.spend || 0),
+          unknownCount,
+          label,
+          type: typeList.join(","),
+          fallbackLabel: "-",
+        };
+      }
+
+      function budgetSpendMarkup(summary = {}) {
+        const basis = Number(summary.basis || 0);
+        if (!basis) {
+          return `<span class="budget-progress-empty">${escapeHtml(summary.fallbackLabel || "-")}</span>`;
+        }
+        const spend = Number(summary.spend || 0);
+        const ratio = spend / basis;
+        const width = Math.max(0, Math.min(100, ratio * 100));
+        const stateClass = ratio >= 1 ? "is-over" : (ratio >= 0.8 ? "is-high" : "");
+        const unknownText = Number(summary.unknownCount || 0) > 0 ? ` · ${formatNumber(summary.unknownCount)}개 예산 미확인` : "";
+        return `
+          <div class="budget-progress ${stateClass}">
+            <div class="budget-progress-main">
+              <span title="${escapeHtml(summary.label || "예산 기준")}">${escapeHtml(summary.label || "예산 기준")}</span>
+              <strong>${formatBudgetRate(ratio)}</strong>
+            </div>
+            <div class="budget-progress-track" aria-hidden="true">
+              <span style="width: ${width.toFixed(2)}%"></span>
+            </div>
+            <div class="budget-progress-sub">${escapeHtml(`${formatMoney(spend)} / ${formatMoney(basis)}${unknownText}`)}</div>
+          </div>
+        `;
       }
 
       function adsStatusPill(value) {
@@ -3040,19 +3537,39 @@
         if (endInput && !endInput.value) endInput.value = isoDateWithOffset(0);
       }
 
+      function deriveLiveAdvertiserNames(data = {}) {
+        const names = new Set(
+          (data?.live_advertisers || []).map((name) => String(name || "").trim()).filter(Boolean),
+        );
+        if (Array.isArray(data?.campaigns)) {
+          data.campaigns.forEach((row) => {
+            const advertiserName = String(row.advertiser_name || "").trim();
+            if (advertiserName && isActiveAdsStatus(row.status)) names.add(advertiserName);
+          });
+        }
+        return names;
+      }
+
+      function updatePerformanceLiveAdvertiserCache(data = {}) {
+        deriveLiveAdvertiserNames(data).forEach((name) => performanceLiveAdvertiserNames.add(name));
+      }
+
       function renderPerformanceAdvertiserSelect() {
         const select = $("#performance-advertiser-select");
         if (!select) return;
         const previousValue = select.value || "";
         const activeAdvertisers = adsKeyItems.filter((item) => item.enabled && item.has_ads_api_key);
-        const defaultLabel = activeAdvertisers.length
-          ? `전체 활성 광고주 (${formatNumber(activeAdvertisers.length)})`
-          : "공통 환경변수";
+        const defaultLabel = activeAdvertisers.length ? `전체 활성 광고주(${formatNumber(activeAdvertisers.length)})` : "공통 환경변수";
+        const liveNames = new Set(performanceLiveAdvertiserNames);
         select.innerHTML = `<option value="">${defaultLabel}</option>`;
         activeAdvertisers.forEach((item) => {
           const option = document.createElement("option");
           option.value = item.advertiser_name || "";
           option.textContent = item.advertiser_name || "이름 없음";
+          if (liveNames.has(option.value)) {
+            option.className = "is-live-advertiser";
+            option.dataset.live = "true";
+          }
           select.appendChild(option);
         });
         if (Array.from(select.options).some((option) => option.value === previousValue)) {
@@ -3073,71 +3590,1323 @@
         $("#performance-kpi-roas").textContent = conversionMetric(summary.roas, formatMultiplier);
       }
 
-      function renderPerformanceCampaignRows(rows = []) {
-        const body = $("#performance-campaign-rows");
-        const count = $("#performance-campaign-count");
-        if (count) count.textContent = `${formatNumber(rows.length)}개 캠페인`;
-        body.innerHTML = "";
-        if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="10">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>';
+      function deviceBucket(value) {
+        const text = String(value || "").toLowerCase();
+        if (text.includes("mobile") || text.includes("phone") || text.includes("android") || text.includes("ios")) return "mobile";
+        if (text.includes("desktop") || text.includes("pc") || text.includes("computer")) return "pc";
+        return "other";
+      }
+
+      function renderPerformanceOverview(data = {}) {
+        const devices = Array.isArray(data.device_breakdown) ? data.device_breakdown : [];
+        const shares = { mobile: 0, pc: 0, other: 0 };
+        devices.forEach((item) => {
+          shares[deviceBucket(item.device)] += Number(item.impression_share || 0);
+        });
+        $("#performance-live-advertisers").textContent = formatNumber(data.live_advertiser_count || 0);
+        $("#performance-live-campaigns").textContent = formatNumber(data.live_campaign_count || 0);
+        $("#performance-mobile-share").textContent = formatShare(shares.mobile);
+        $("#performance-pc-share").textContent = formatShare(shares.pc);
+        $("#performance-other-share").textContent = formatShare(shares.other);
+      }
+
+      function disposePerformanceTrendChart(key) {
+        const chart = performanceTrendCharts[key];
+        if (chart) {
+          chart.dispose();
+          performanceTrendCharts[key] = null;
+        }
+      }
+
+      function disposePerformanceTrendCharts() {
+        Object.keys(performanceTrendCharts).forEach((key) => disposePerformanceTrendChart(key));
+      }
+
+      function normalizePerformanceTrendRows(rows = []) {
+        const byDate = new Map();
+        (Array.isArray(rows) ? rows : []).forEach((row) => {
+          const date = String(row.date || "").trim();
+          if (!date) return;
+          const target = byDate.get(date) || { date, spend: 0, impressions: 0, clicks: 0 };
+          target.spend += Number(row.spend || 0);
+          target.impressions += Number(row.impressions || 0);
+          target.clicks += Number(row.clicks || 0);
+          byDate.set(date, target);
+        });
+        return [...byDate.values()]
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map((row) => ({
+            ...row,
+            ctr: row.impressions ? row.clicks / row.impressions : 0,
+            cpc: row.clicks ? row.spend / row.clicks : 0,
+            cpm: row.impressions ? row.spend / row.impressions * 1000 : 0,
+          }));
+      }
+
+      function selectedPerformanceDateRange() {
+        const range = adsDashboardData?.range || {};
+        return {
+          start: String($("#performance-start-date")?.value || range.start_date || "").trim(),
+          end: String($("#performance-end-date")?.value || range.end_date || "").trim(),
+        };
+      }
+
+      function padPerformanceTrendRows(rows = []) {
+        const normalizedRows = normalizePerformanceTrendRows(rows);
+        if (!normalizedRows.length) return normalizedRows;
+        const { start, end } = selectedPerformanceDateRange();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start) {
+          return normalizedRows;
+        }
+        const byDate = new Map(normalizedRows.map((row) => [row.date, row]));
+        const paddedRows = [];
+        let current = start;
+        let guard = 0;
+        while (current <= end && guard < 370) {
+          paddedRows.push(byDate.get(current) || {
+            date: current,
+            spend: 0,
+            impressions: 0,
+            clicks: 0,
+            ctr: 0,
+            cpc: 0,
+            cpm: 0,
+          });
+          current = shiftDateString(current, 1);
+          guard += 1;
+        }
+        return paddedRows;
+      }
+
+      function trendDateLabel(date) {
+        const text = String(date || "");
+        return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(5) : text || "-";
+      }
+
+      function chartNumberLabel(value) {
+        const number = Number(value || 0);
+        if (number >= 1000000) return `${Math.round(number / 10000).toLocaleString("ko-KR")}만`;
+        if (number >= 1000) return `${Math.round(number / 1000).toLocaleString("ko-KR")}천`;
+        return Math.round(number).toLocaleString("ko-KR");
+      }
+
+      function showPerformanceChartEmpty(key, element, message) {
+        disposePerformanceTrendChart(key);
+        if (!element) return;
+        element.classList.add("is-empty");
+        element.innerHTML = `<div class="empty-state compact">${escapeHtml(message)}</div>`;
+      }
+
+      function preparePerformanceChart(key, element) {
+        disposePerformanceTrendChart(key);
+        element.classList.remove("is-empty");
+        element.innerHTML = "";
+        performanceTrendCharts[key] = echarts.init(element);
+        return performanceTrendCharts[key];
+      }
+
+      function renderPerformanceDeviceChart(devices = []) {
+        const element = $("#performance-device-chart");
+        if (!element) return;
+        const buckets = new Map([
+          ["mobile", { name: "모바일", value: 0 }],
+          ["pc", { name: "PC", value: 0 }],
+          ["other", { name: "기타", value: 0 }],
+        ]);
+        (Array.isArray(devices) ? devices : []).forEach((item) => {
+          const key = deviceBucket(item.device);
+          const bucket = buckets.get(key) || buckets.get("other");
+          bucket.value += Number(item.impressions || item.impression_share || 0);
+        });
+        const data = [...buckets.values()].filter((item) => item.value > 0);
+        if (!data.length) {
+          showPerformanceChartEmpty("device", element, "디바이스 데이터가 없습니다.");
           return;
         }
-        rows.forEach((row) => {
-          const disabled = row.id ? "" : "disabled";
-          const advertiserLabel = row.advertiser_name
-            ? `<span class="muted-text">${escapeHtml(row.advertiser_name)}</span><br>`
-            : "";
+        const chart = preparePerformanceChart("device", element);
+        chart.setOption({
+          color: ["#0f8f63", "#2563eb", "#94a3b8"],
+          tooltip: { trigger: "item" },
+          legend: { bottom: 0, left: "center", itemWidth: 10, itemHeight: 10, textStyle: { color: "#526175", fontSize: 12 } },
+          series: [{
+            name: "노출 비중",
+            type: "pie",
+            radius: ["42%", "68%"],
+            center: ["50%", "43%"],
+            avoidLabelOverlap: true,
+            label: { position: "inside", formatter: "{d}%", color: "#fff", fontWeight: 900, fontSize: 12 },
+            labelLine: { show: false },
+            data,
+          }],
+        }, true);
+      }
+
+      function renderPerformanceVolumeChart(rows = []) {
+        const element = $("#performance-volume-trend");
+        if (!element) return;
+        if (!rows.length) {
+          showPerformanceChartEmpty("volume", element, "일별 성과 데이터가 없습니다.");
+          return;
+        }
+        const chart = preparePerformanceChart("volume", element);
+        chart.setOption({
+          color: ["#2563eb", "#0f8f63"],
+          grid: { top: 50, right: 58, bottom: 36, left: 58, containLabel: true },
+          legend: { top: 4, right: 8, itemWidth: 14, itemHeight: 8, textStyle: { color: "#526175", fontSize: 12 } },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "cross" },
+            valueFormatter: (value) => formatNumber(value),
+          },
+          xAxis: {
+            type: "category",
+            boundaryGap: true,
+            data: rows.map((row) => trendDateLabel(row.date)),
+            axisLabel: { color: "#637085" },
+            axisLine: { lineStyle: { color: "#d7dee9" } },
+          },
+          yAxis: [
+            {
+              type: "value",
+              axisLabel: { color: "#637085", formatter: chartNumberLabel },
+              splitLine: { lineStyle: { color: "#edf1f7" } },
+            },
+            {
+              type: "value",
+              axisLabel: { color: "#637085", formatter: chartNumberLabel },
+              splitLine: { show: false },
+            },
+          ],
+          series: [
+            {
+              name: "노출",
+              type: "line",
+              smooth: true,
+              symbolSize: 6,
+              lineStyle: { width: 3 },
+              areaStyle: { color: "rgba(37,99,235,.10)" },
+              data: rows.map((row) => Number(row.impressions || 0)),
+            },
+            {
+              name: "클릭",
+              type: "bar",
+              yAxisIndex: 1,
+              barMaxWidth: 22,
+              data: rows.map((row) => Number(row.clicks || 0)),
+            },
+          ],
+        }, true);
+      }
+
+      function renderPerformanceCostChart(rows = []) {
+        const element = $("#performance-spend-trend");
+        if (!element) return;
+        if (!rows.length) {
+          const aggregate = adsDashboardData?.key_source === "advertiser_collection";
+          const message = aggregate
+            ? "전체 활성 광고주 캐시가 아직 준비되지 않아 추이 데이터가 없습니다."
+            : "선택 기간의 추이 데이터가 없습니다.";
+          showPerformanceChartEmpty("cost", element, message);
+          return;
+        }
+        const chart = preparePerformanceChart("cost", element);
+        chart.setOption({
+          color: ["#d71920", "#f59e0b"],
+          grid: { top: 50, right: 64, bottom: 36, left: 66, containLabel: true },
+          legend: { top: 4, right: 8, itemWidth: 14, itemHeight: 8, textStyle: { color: "#526175", fontSize: 12 } },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "cross" },
+            formatter: (params) => {
+              const lines = params.map((item) => {
+                const value = item.seriesName === "CPC" ? formatMoney(item.value) : formatMoney(item.value);
+                return `${item.marker}${item.seriesName}: ${value}`;
+              });
+              return [escapeHtml(params[0]?.axisValue || ""), ...lines].join("<br>");
+            },
+          },
+          xAxis: {
+            type: "category",
+            data: rows.map((row) => trendDateLabel(row.date)),
+            axisLabel: { color: "#637085" },
+            axisLine: { lineStyle: { color: "#d7dee9" } },
+          },
+          yAxis: [
+            {
+              type: "value",
+              axisLabel: { color: "#637085", formatter: (value) => `${Math.round(value / 1000).toLocaleString("ko-KR")}천` },
+              splitLine: { lineStyle: { color: "#edf1f7" } },
+            },
+            {
+              type: "value",
+              axisLabel: { color: "#637085", formatter: (value) => `${Math.round(value).toLocaleString("ko-KR")}` },
+              splitLine: { show: false },
+            },
+          ],
+          series: [
+            {
+              name: "소진액",
+              type: "bar",
+              barMaxWidth: 24,
+              itemStyle: { borderRadius: [6, 6, 0, 0] },
+              data: rows.map((row) => Number(row.spend || 0)),
+            },
+            {
+              name: "CPC",
+              type: "line",
+              yAxisIndex: 1,
+              smooth: true,
+              symbolSize: 6,
+              lineStyle: { width: 3 },
+              data: rows.map((row) => Number(row.cpc || 0)),
+            },
+          ],
+        }, true);
+      }
+
+      function renderPerformanceTrend(rows = [], devices = []) {
+        const chartElements = ["performance-device-chart", "performance-volume-trend", "performance-spend-trend"].map((id) => $(`#${id}`));
+        if (!chartElements.some(Boolean)) return;
+        if (!window.echarts) {
+          showPerformanceChartEmpty("device", $("#performance-device-chart"), "차트 라이브러리를 불러오지 못했습니다.");
+          showPerformanceChartEmpty("volume", $("#performance-volume-trend"), "차트 라이브러리를 불러오지 못했습니다.");
+          showPerformanceChartEmpty("cost", $("#performance-spend-trend"), "차트 라이브러리를 불러오지 못했습니다.");
+          return;
+        }
+        const normalizedRows = padPerformanceTrendRows(rows);
+        renderPerformanceDeviceChart(devices);
+        renderPerformanceVolumeChart(normalizedRows);
+        renderPerformanceCostChart(normalizedRows);
+        window.requestAnimationFrame(() => {
+          Object.values(performanceTrendCharts).forEach((chart) => chart?.resize());
+        });
+      }
+
+      function renderPerformanceExtensionNote(data = {}) {
+        const note = $("#performance-extension-note");
+        if (!note) return;
+        if (!data || !data.ok) {
+          note.hidden = true;
+          note.innerHTML = "";
+          return;
+        }
+        const hasTrend = Array.isArray(data.trend) && data.trend.length > 0;
+        const hasDevices = Array.isArray(data.device_breakdown) && data.device_breakdown.length > 0;
+        const aggregate = data.key_source === "advertiser_collection";
+        const messages = [];
+        if (data.cache_note) {
+          messages.push(data.cache_note);
+        }
+        if (aggregate && data.cache_status === "miss" && (!hasTrend || !hasDevices)) {
+          messages.push("전체 활성 광고주 캐시가 아직 준비되지 않아 기본 성과만 실시간 조회합니다. 캐시 갱신 후 디바이스 비중과 일별 차트가 표시됩니다.");
+        } else if (aggregate && (!hasTrend || !hasDevices)) {
+          messages.push("전체 활성 광고주 캐시 응답에 추이·디바이스 데이터가 없습니다. 다음 백그라운드 갱신 후 다시 확인해주세요.");
+        } else {
+          if (!hasDevices) messages.push("디바이스별 노출 비중은 OpenAI Ads API가 선택 기간의 device 세그먼트 응답을 반환하지 않아 표시할 데이터가 없습니다.");
+          if (!hasTrend) messages.push("일별 성과 차트는 OpenAI Ads API가 선택 기간의 daily 추이 응답을 반환하지 않아 표시할 데이터가 없습니다.");
+        }
+        if (data.extension_warning) messages.push(data.extension_warning);
+        const uniqueMessages = [...new Set(messages.filter(Boolean))];
+        note.hidden = uniqueMessages.length === 0;
+        note.innerHTML = uniqueMessages.map((message) => `<span>${escapeHtml(message)}</span>`).join("");
+      }
+
+      function performanceAdvertiserStatusLabel(data = {}) {
+        if (data.advertiser_label) return String(data.advertiser_label);
+        if (data.key_source === "advertiser_collection") {
+          const count = Number(data.advertiser_count || data.live_status_total_advertisers || performanceLiveAdvertiserNames.size || 0);
+          return count ? `전체 활성 광고주(${formatNumber(count)}개)` : "전체 활성 광고주";
+        }
+        return String(data.advertiser_name || "");
+      }
+
+      function isActiveAdsStatus(value) {
+        return ["active", "enabled", "live", "라이브", "활성"].includes(String(value || "").trim().toLowerCase());
+      }
+
+      function summarizePerformanceRows(rows = []) {
+        const impressions = rows.reduce((sum, row) => sum + Number(row.impressions || 0), 0);
+        const clicks = rows.reduce((sum, row) => sum + Number(row.clicks || 0), 0);
+        const spend = rows.reduce((sum, row) => sum + Number(row.spend || 0), 0);
+        const conversions = rows.reduce((sum, row) => sum + Number(row.conversions || 0), 0);
+        const conversionValue = rows.reduce((sum, row) => sum + Number(row.conversion_value || 0), 0);
+        return {
+          impressions,
+          clicks,
+          spend,
+          conversions,
+          conversion_value: conversionValue,
+          ctr: impressions ? clicks / impressions : 0,
+          cpc: clicks ? spend / clicks : 0,
+          cpm: impressions ? spend / impressions * 1000 : 0,
+          cost_per_conversion: conversions ? spend / conversions : 0,
+          roas: spend ? conversionValue / spend : 0,
+        };
+      }
+
+      function updatePerformancePagination(prefix, page, totalItems, pageSize = PERFORMANCE_PAGE_SIZE) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        const pageInfo = $(`#${prefix}-page-info`);
+        const prev = $(`#${prefix}-prev`);
+        const next = $(`#${prefix}-next`);
+        if (pageInfo) pageInfo.textContent = totalItems ? `${page} / ${totalPages} · ${formatNumber(totalItems)}개` : "0 / 0";
+        if (prev) prev.disabled = page <= 1;
+        if (next) next.disabled = page >= totalPages;
+      }
+
+      function pageSlice(rows, page, pageSize = PERFORMANCE_PAGE_SIZE) {
+        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        return {
+          page: safePage,
+          rows: rows.slice((safePage - 1) * pageSize, safePage * pageSize),
+        };
+      }
+
+      function benchmarkTypeLabel(value) {
+        if (value === "industry") return "업종별";
+        if (value === "objective") return "목표별";
+        return "업종×목표";
+      }
+
+      function renderPerformanceBenchmarkModeButtons() {
+        $$("[data-benchmark-mode]").forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.benchmarkMode === performanceBenchmarkMode);
+        });
+      }
+
+      function currentBenchmarkRows(rows = []) {
+        return (Array.isArray(rows) ? rows : []).filter((row) => (row.type || "industry_objective") === performanceBenchmarkMode);
+      }
+
+      function renderPerformanceBenchmarks(rows = []) {
+        const body = $("#performance-benchmark-rows");
+        const count = $("#performance-benchmark-count");
+        const filtered = currentBenchmarkRows(rows);
+        const paged = pageSlice(filtered, performanceBenchmarkPage);
+        performanceBenchmarkPage = paged.page;
+        renderPerformanceBenchmarkModeButtons();
+        updatePerformancePagination("performance-benchmark", performanceBenchmarkPage, filtered.length);
+        if (count) count.textContent = `${formatNumber(filtered.length)}개 그룹`;
+        body.innerHTML = "";
+        if (!filtered.length) {
+          body.innerHTML = '<tr><td colspan="10">선택한 기준의 벤치마크 데이터가 없습니다.</td></tr>';
+          return;
+        }
+        paged.rows.forEach((row) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><strong>${escapeHtml(row.name || "-")}</strong><br>${advertiserLabel}<span class="muted-text">${escapeHtml(row.id || "id 없음")}</span></td>
-            <td>${adsStatusPill(row.status)}</td>
+            <td>${escapeHtml(benchmarkTypeLabel(row.type))}</td>
+            <td><span class="tag">${escapeHtml(row.industry || "미지정")}</span></td>
+            <td>${escapeHtml(objectiveLabel(row.objective))}</td>
+            <td>${formatNumber(row.campaign_count)}</td>
             <td>${formatNumber(row.impressions)}</td>
             <td>${formatNumber(row.clicks)}</td>
             <td>${formatMoney(row.spend)}</td>
             <td>${formatRate(row.ctr)}</td>
-            <td>${conversionMetric(row.conversions)}</td>
-            <td>${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
-            <td>${conversionMetric(row.roas, formatMultiplier)}</td>
-            <td><button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="campaign" data-performance-detail-id="${escapeHtml(row.id || "")}" data-performance-detail-advertiser="${escapeHtml(row.advertiser_name || "")}" ${disabled}>광고그룹</button></td>
+            <td>${formatMoney(row.cpc)}</td>
+            <td>${formatMoney(row.cpm)}</td>
           `;
           body.appendChild(tr);
         });
       }
 
-      function renderPerformanceDetail(detail) {
-        const summary = $("#performance-detail-summary");
-        const body = $("#performance-detail-rows");
-        summary.innerHTML = "";
-        body.innerHTML = "";
-        if (!detail || !Array.isArray(detail.rows)) {
-          body.innerHTML = '<tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>';
-          return;
+      function performanceSortValue(row, key) {
+        if (key === "name") return row.name || "";
+        if (key === "advertiser_name") return row.advertiser_name || "";
+        if (key === "industry") return row.industry || "";
+        return "";
+      }
+
+      function sortedPerformanceCampaignRows(rows = []) {
+        if (!performanceCampaignSort.key || performanceCampaignSort.key === "advertiser_name" || performanceCampaignSort.key === "industry") return [...rows];
+        const direction = performanceCampaignSort.direction === "desc" ? -1 : 1;
+        return [...rows].sort((a, b) => {
+          const left = String(performanceSortValue(a, performanceCampaignSort.key) || "");
+          const right = String(performanceSortValue(b, performanceCampaignSort.key) || "");
+          return left.localeCompare(right, "ko", { sensitivity: "base", numeric: true }) * direction;
+        });
+      }
+
+      function renderPerformanceSortHeaders() {
+        $$("[data-performance-sort]").forEach((button) => {
+          const key = button.dataset.performanceSort || "";
+          const active = performanceCampaignSort.key === key;
+          const indicator = $(".sort-indicator", button);
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-label", `${button.textContent.replace(/[↕↑↓]/g, "").trim()} ${active && performanceCampaignSort.direction === "desc" ? "내림차순" : "오름차순"} 정렬`);
+          if (indicator) indicator.textContent = active ? (performanceCampaignSort.direction === "desc" ? "↓" : "↑") : "↕";
+        });
+      }
+
+      function groupedPerformanceCampaignRows(rows = []) {
+        const groupMap = new Map();
+        (Array.isArray(rows) ? rows : []).forEach((row) => {
+          const advertiser = String(row.advertiser_name || "광고주 미지정");
+          if (!groupMap.has(advertiser)) {
+            groupMap.set(advertiser, {
+              advertiser_name: advertiser,
+              industry: row.industry || "-",
+              campaigns: [],
+            });
+          }
+          const group = groupMap.get(advertiser);
+          if ((!group.industry || group.industry === "-") && row.industry) group.industry = row.industry;
+          group.campaigns.push(row);
+        });
+        const groups = Array.from(groupMap.values()).map((group) => {
+          const campaigns = sortedPerformanceCampaignRows(group.campaigns);
+          const total = summarizePerformanceRows(campaigns);
+          return {
+            ...group,
+            campaigns,
+            total,
+            allActive: campaigns.length > 0 && campaigns.every((row) => isActiveAdsStatus(row.status)),
+          };
+        });
+        const direction = performanceCampaignSort.direction === "desc" ? -1 : 1;
+        if (performanceCampaignSort.key === "industry") {
+          groups.sort((a, b) => String(a.industry || "").localeCompare(String(b.industry || ""), "ko", { sensitivity: "base", numeric: true }) * direction);
+        } else {
+          groups.sort((a, b) => String(a.advertiser_name || "").localeCompare(String(b.advertiser_name || ""), "ko", { sensitivity: "base", numeric: true }) * direction);
         }
-        const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
-        const total = detail.total || {};
-        summary.innerHTML = `
-          <div class="performance-detail-summary">
-            <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatNumber(detail.rows.length)}</strong></div>
-            <div class="metric"><span>클릭</span><strong>${formatNumber(total.clicks)}</strong></div>
-            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
-            <div class="metric"><span>전환수</span><strong>${conversionMetric(total.conversions)}</strong></div>
+        return groups;
+      }
+
+      function groupStatusPill(group) {
+        const className = group.allActive ? "active" : "partial-active";
+        return `<span class="ads-status-pill ${className}">active</span>`;
+      }
+
+      function groupObjectiveLabel(campaigns = []) {
+        const labels = [...new Set(campaigns.map((row) => objectiveLabel(row.objective)).filter((label) => label && label !== "-"))];
+        if (!labels.length) return "-";
+        return labels.length === 1 ? labels[0] : "전체";
+      }
+
+      function detailCacheKey(scope, id, advertiserName = "") {
+        return `${scope}:${id}:${advertiserName || ""}`;
+      }
+
+      function hourlyCacheKey(scope, id, advertiserName = "") {
+        return `hourly:${scope || "campaign"}:${id || ""}:${advertiserName || ""}`;
+      }
+
+      function parseHourlyCacheKey(key) {
+        const raw = String(key || "").replace(/^hourly:/, "");
+        const parts = raw.split(":");
+        if (parts.length < 3) {
+          return { scope: "campaign", id: parts[0] || "", advertiserName: parts[1] || "" };
+        }
+        return {
+          scope: parts[0] || "campaign",
+          id: parts[1] || "",
+          advertiserName: parts.slice(2).join(":"),
+        };
+      }
+
+      function findPerformanceCampaign(campaignId, advertiserName = "") {
+        return (adsDashboardData?.campaigns || []).find((row) => (
+          String(row.id || "") === String(campaignId || "")
+          && (!advertiserName || String(row.advertiser_name || "") === String(advertiserName || ""))
+        )) || null;
+      }
+
+      function isSingleAdvertiserPerformanceView() {
+        return Boolean($("#performance-advertiser-select")?.value);
+      }
+
+      function hourlyScopeLabel(scope = "campaign") {
+        return ({ campaign: "캠페인", ad_group: "광고그룹", ad: "소재" })[scope] || "항목";
+      }
+
+      function rememberPerformanceHourlyResource(resource = {}) {
+        const key = hourlyCacheKey(resource.hourly_scope, resource.id, resource.advertiser_name);
+        performanceHourlyResources.set(key, resource);
+        return key;
+      }
+
+      function findPerformanceHourlyResource(key) {
+        const existing = performanceHourlyResources.get(key);
+        if (existing) return existing;
+        const parsed = parseHourlyCacheKey(key);
+        if (parsed.scope === "campaign") return findPerformanceCampaign(parsed.id, parsed.advertiserName);
+        return null;
+      }
+
+      function hourlyToggleMarkup(resource = {}) {
+        if (!isSingleAdvertiserPerformanceView() || !resource.id || !resource.advertiser_name) return "";
+        const scope = resource.hourly_scope || "campaign";
+        const key = rememberPerformanceHourlyResource(resource);
+        const expanded = performanceHourlyOpenKey === key;
+        const label = `${hourlyScopeLabel(scope)} 시간대별 리포트`;
+        return `
+          <button class="btn-icon hourly-toggle ${expanded ? "is-active" : ""}" type="button" data-performance-hourly-toggle="${escapeHtml(resource.id || "")}" data-performance-hourly-scope="${escapeHtml(scope)}" data-performance-hourly-advertiser="${escapeHtml(resource.advertiser_name || "")}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-expanded="${expanded ? "true" : "false"}">
+            <i class="ti ti-clock-hour-3"></i>
+            <span>시간별</span>
+          </button>
+        `;
+      }
+
+      function kstDateParts(date = new Date()) {
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Seoul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          hourCycle: "h23",
+        });
+        const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
+        return {
+          year: parts.year || "1970",
+          month: parts.month || "01",
+          day: parts.day || "01",
+          hour: parts.hour || "00",
+        };
+      }
+
+      function kstTodayString() {
+        const parts = kstDateParts();
+        return `${parts.year}-${parts.month}-${parts.day}`;
+      }
+
+      function kstCurrentHour() {
+        return Math.max(0, Math.min(23, Number(kstDateParts().hour || 0)));
+      }
+
+      function shiftDateString(dateString, days) {
+        const match = String(dateString || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return dateString || "";
+        const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + Number(days || 0)));
+        return date.toISOString().slice(0, 10);
+      }
+
+      function dateHourString(dateString, hour) {
+        return `${dateString}T${String(hour).padStart(2, "0")}`;
+      }
+
+      function defaultPerformanceHourlyDate() {
+        return $("#performance-end-date")?.value || kstTodayString();
+      }
+
+      function performanceHourlyOption(key) {
+        if (!performanceHourlyOptions.has(key)) {
+          performanceHourlyOptions.set(key, { preset: "date", date: defaultPerformanceHourlyDate() });
+        }
+        return performanceHourlyOptions.get(key);
+      }
+
+      function performanceHourlyRange(option = {}) {
+        const today = kstTodayString();
+        const currentHour = kstCurrentHour();
+        const preset = option.preset || "date";
+        let endDate = option.date || defaultPerformanceHourlyDate();
+        let startDate = endDate;
+        let label = "선택일";
+        if (preset === "today") {
+          startDate = today;
+          endDate = today;
+          label = "오늘";
+        } else if (preset === "yesterday") {
+          startDate = shiftDateString(today, -1);
+          endDate = startDate;
+          label = "어제";
+        } else if (preset === "3d" || preset === "7d") {
+          const days = preset === "3d" ? 3 : 7;
+          if (endDate > today) endDate = today;
+          startDate = shiftDateString(endDate, -(days - 1));
+          label = `최근 ${days}일`;
+        } else if (endDate > today) {
+          endDate = today;
+        }
+        let untilDate = shiftDateString(endDate, 1);
+        let untilHour = 0;
+        if (endDate >= today) {
+          untilDate = today;
+          untilHour = Math.max(1, currentHour);
+        }
+        return {
+          since: dateHourString(startDate, 0),
+          until: dateHourString(untilDate, untilHour),
+          startDate,
+          endDate,
+          label,
+        };
+      }
+
+      function normalizePerformanceHourlyRows(rows = []) {
+        const byHour = new Map();
+        (Array.isArray(rows) ? rows : []).forEach((row) => {
+          const hour = String(row.hour || row.date || "").slice(0, 13);
+          if (!hour) return;
+          const target = byHour.get(hour) || { hour, date: hour.slice(0, 10), spend: 0, impressions: 0, clicks: 0 };
+          target.spend += Number(row.spend || 0);
+          target.impressions += Number(row.impressions || 0);
+          target.clicks += Number(row.clicks || 0);
+          byHour.set(hour, target);
+        });
+        return [...byHour.values()]
+          .sort((a, b) => a.hour.localeCompare(b.hour))
+          .map((row) => ({
+            ...row,
+            ctr: row.impressions ? row.clicks / row.impressions : 0,
+            cpc: row.clicks ? row.spend / row.clicks : 0,
+            cpm: row.impressions ? row.spend / row.impressions * 1000 : 0,
+          }));
+      }
+
+      function hourlyLabel(hour, includeDate = false) {
+        const text = String(hour || "");
+        if (!/^\d{4}-\d{2}-\d{2}T\d{2}$/.test(text)) return text || "-";
+        const date = text.slice(5, 10).replace("-", "/");
+        const hourText = `${text.slice(11, 13)}시`;
+        return includeDate ? `${date} ${hourText}` : hourText;
+      }
+
+      function shortDateLabel(date) {
+        const text = String(date || "");
+        return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(5, 10).replace("-", "/") : text || "-";
+      }
+
+      function hourlyRangeDisplay(range = {}) {
+        const since = String(range.since || "");
+        const until = String(range.until || "");
+        if (!/^\d{4}-\d{2}-\d{2}T\d{2}$/.test(since) || !/^\d{4}-\d{2}-\d{2}T\d{2}$/.test(until)) {
+          return `${since || "-"} ~ ${until || "-"} (KST)`;
+        }
+        const startDate = since.slice(0, 10);
+        const endDate = until.slice(0, 10);
+        const start = hourlyLabel(since, true);
+        const end = hourlyLabel(until, startDate !== endDate);
+        if (startDate === endDate && since.slice(11, 13) === "00" && until.slice(11, 13) === "23") {
+          return `${shortDateLabel(startDate)} 하루 (KST)`;
+        }
+        return `${start} ~ ${end} (KST)`;
+      }
+
+      function hourlyAxisLabels(rows = []) {
+        const dates = new Set(rows.map((row) => String(row.hour || "").slice(0, 10)).filter(Boolean));
+        const includeDate = dates.size > 1;
+        return rows.map((row) => hourlyLabel(row.hour, includeDate));
+      }
+
+      function hourlyHourNumber(hour) {
+        const value = Number(String(hour || "").slice(11, 13));
+        return Number.isFinite(value) ? value : null;
+      }
+
+      function averageHourlyLabel(hours = []) {
+        const validHours = hours.map((hour) => Number(hour)).filter((hour) => Number.isFinite(hour));
+        if (!validHours.length) return "-";
+        const average = validHours.reduce((sum, hour) => sum + hour, 0) / validHours.length;
+        return `${String(Math.round(average)).padStart(2, "0")}시`;
+      }
+
+      function analyzePerformanceHourlyBudget(resource = {}, rows = []) {
+        const scope = resource.hourly_scope || resource.resource_scope || "campaign";
+        const sortedRows = [...rows].sort((a, b) => String(a.hour || "").localeCompare(String(b.hour || "")));
+        const total = summarizePerformanceRows(sortedRows);
+        const earlyRows = sortedRows.filter((row) => {
+          const hour = hourlyHourNumber(row.hour);
+          return hour !== null && hour <= PERFORMANCE_EARLY_DEPLETION_HOUR;
+        });
+        const earlySpend = earlyRows.reduce((sum, row) => sum + Number(row.spend || 0), 0);
+        const earlySpendShare = total.spend ? earlySpend / total.spend : 0;
+        const base = {
+          scope,
+          total,
+          earlySpend,
+          earlySpendShare,
+          recommendation: false,
+          tone: "",
+          summary: "소진 분석 대기",
+          detail: "시간대별 데이터가 쌓이면 판단합니다.",
+          decision: "관찰 중",
+          note: "선택 기간의 시간대별 성과를 기준으로 계산합니다.",
+          hitDays: 0,
+          totalDays: 0,
+          latestHitHour: "",
+          averageHitHour: "",
+          budgetMode: "",
+        };
+        if (!sortedRows.length) return base;
+        if (scope !== "campaign") {
+          return {
+            ...base,
+            summary: earlySpendShare ? `00~03시 ${formatShare(earlySpendShare)}` : "패턴 참고",
+            detail: "광고그룹·소재는 캠페인 예산을 직접 판단하지 않습니다.",
+            decision: "패턴 참고",
+            note: "증액 판단은 캠페인 행의 시간대별 리포트에서 확인합니다.",
+          };
+        }
+        const dailyBudget = Number(resource.daily_budget || 0);
+        const lifetimeBudget = Number(resource.lifetime_budget || 0);
+        if (dailyBudget > 0) {
+          const byDate = new Map();
+          sortedRows.forEach((row) => {
+            const date = String(row.hour || "").slice(0, 10);
+            if (!date) return;
+            const target = byDate.get(date) || { date, spend: 0, hitHour: "", rows: 0 };
+            target.spend += Number(row.spend || 0);
+            target.rows += 1;
+            if (!target.hitHour && target.spend >= dailyBudget) target.hitHour = row.hour;
+            byDate.set(date, target);
+          });
+          const days = [...byDate.values()].filter((item) => item.rows > 0);
+          const hits = days.filter((item) => item.hitHour);
+          const hitHours = hits.map((item) => hourlyHourNumber(item.hitHour)).filter((hour) => hour !== null);
+          const earlyHits = hits.filter((item) => {
+            const hour = hourlyHourNumber(item.hitHour);
+            return hour !== null && hour <= PERFORMANCE_EARLY_DEPLETION_HOUR;
+          });
+          const latestHit = hits[hits.length - 1] || null;
+          const majorityEarlyHits = earlyHits.length >= Math.max(1, Math.ceil(hits.length * 0.5));
+          const repeatedEarlyHits = earlyHits.length >= 2 || days.length <= 1;
+          const concentratedEarlySpend = earlySpendShare >= 0.65 && total.spend >= dailyBudget;
+          const recommendation = hits.length > 0 && ((majorityEarlyHits && repeatedEarlyHits) || concentratedEarlySpend);
+          const summary = hits.length
+            ? (days.length === 1 ? `${hourlyLabel(hits[0].hitHour)} 소진` : `${hits.length}/${days.length}일 소진 · 평균 ${averageHourlyLabel(hitHours)}`)
+            : "일예산 100% 소진 미확인";
+          return {
+            ...base,
+            budgetMode: "daily",
+            hitDays: hits.length,
+            totalDays: days.length,
+            latestHitHour: latestHit?.hitHour || "",
+            averageHitHour: averageHourlyLabel(hitHours),
+            recommendation,
+            tone: recommendation ? "is-alert" : (hits.length ? "is-watch" : ""),
+            summary,
+            detail: hits.length
+              ? `최신 ${hourlyLabel(latestHit.hitHour, true)} · 00~03시 소진 ${formatShare(earlySpendShare)}`
+              : `00~03시 소진 ${formatShare(earlySpendShare)}`,
+            decision: recommendation ? "증액 제안 후보" : (hits.length ? "추이 관찰" : "소진 여유"),
+            note: recommendation
+              ? "선택 기간에 일예산이 이른 시간대에 소진되어 증액 제안 근거로 사용할 수 있습니다."
+              : "선택 기간의 소진 속도만으로는 즉시 증액 후보로 보기 어렵습니다.",
+          };
+        }
+        if (lifetimeBudget > 0) {
+          let cumulative = 0;
+          const hit = sortedRows.find((row) => {
+            cumulative += Number(row.spend || 0);
+            return cumulative >= lifetimeBudget;
+          });
+          const recommendation = Boolean(hit && earlySpendShare >= 0.5);
+          return {
+            ...base,
+            budgetMode: "lifetime",
+            latestHitHour: hit?.hour || "",
+            recommendation,
+            tone: recommendation ? "is-alert" : (hit ? "is-watch" : ""),
+            summary: hit ? `${hourlyLabel(hit.hour, true)} 총예산 소진` : "총예산 100% 소진 미확인",
+            detail: `00~03시 소진 ${formatShare(earlySpendShare)}`,
+            decision: recommendation ? "증액 제안 후보" : (hit ? "추이 관찰" : "소진 여유"),
+            note: recommendation
+              ? "총예산 소진과 새벽 초반 소진 집중이 함께 확인됩니다."
+              : "총예산 캠페인은 선택 기간의 누적 소진 흐름을 참고합니다.",
+          };
+        }
+        return {
+          ...base,
+          summary: "예산 기준 미확인",
+          detail: `00~03시 소진 ${formatShare(earlySpendShare)}`,
+          decision: "예산 확인 필요",
+          note: "캠페인 예산 정보가 없어 소진 완료 시점을 판단하지 못했습니다.",
+        };
+      }
+
+      function performanceHourlyDepletionText(campaign = {}, rows = []) {
+        return analyzePerformanceHourlyBudget({ ...campaign, hourly_scope: campaign.hourly_scope || "campaign" }, rows).summary;
+      }
+
+      function hourlyRecommendationForResource(resource = {}) {
+        if (!resource?.id || !resource?.advertiser_name) return null;
+        const key = hourlyCacheKey(resource.hourly_scope || "campaign", resource.id, resource.advertiser_name);
+        const cached = performanceHourlyCache.get(key);
+        if (!cached || cached.ok === false) return null;
+        const rows = normalizePerformanceHourlyRows(cached.rows || []);
+        const analysis = analyzePerformanceHourlyBudget(resource, rows);
+        return analysis.recommendation ? analysis : null;
+      }
+
+      function performanceHourlyInsightMarkup(resource = {}, rows = []) {
+        if (!rows.length) return "";
+        const analysis = analyzePerformanceHourlyBudget(resource, rows);
+        const recommendationClass = analysis.recommendation ? "is-alert" : analysis.tone;
+        return `
+          <div class="hourly-insight-strip ${escapeHtml(recommendationClass)}">
+            <div class="hourly-insight-card">
+              <span>00~03시 소진액</span>
+              <strong>${escapeHtml(formatShare(analysis.earlySpendShare))}</strong>
+              <em>${escapeHtml(formatMoney(analysis.earlySpend))}</em>
+            </div>
+            <div class="hourly-insight-card">
+              <span>소진 완료 시점</span>
+              <strong>${escapeHtml(analysis.summary)}</strong>
+              <em>${escapeHtml(analysis.detail)}</em>
+            </div>
+            <div class="hourly-insight-card ${escapeHtml(recommendationClass)}">
+              <span>운영 판단</span>
+              <strong>${escapeHtml(analysis.decision)}</strong>
+              <em>${escapeHtml(analysis.note)}</em>
+            </div>
           </div>
         `;
-        if (!detail.rows.length) {
+      }
+
+      function conversionCells(row = {}) {
+        return `
+          <td class="conversion-column">${conversionMetric(row.conversions)}</td>
+          <td class="conversion-column">${conversionMetric(row.cost_per_conversion, formatMoney)}</td>
+          <td class="conversion-column">${conversionMetric(row.roas, formatMultiplier)}</td>
+        `;
+      }
+
+      function renderPerformanceConversionToggle() {
+        const table = $("#performance-campaign-table");
+        const button = $("#toggle-performance-conversions");
+        if (table) table.classList.toggle("show-conversions", performanceShowConversionColumns);
+        if (button) {
+          button.classList.toggle("is-active", performanceShowConversionColumns);
+          button.setAttribute("aria-pressed", performanceShowConversionColumns ? "true" : "false");
+        }
+      }
+
+      function loadingDetailRow(message, depthClass = "nested-row") {
+        return `<tr class="${depthClass}"><td colspan="${PERFORMANCE_CAMPAIGN_COLSPAN}"><span class="muted-text">${escapeHtml(message)}</span></td></tr>`;
+      }
+
+      function emptyDetailRow(message, depthClass = "nested-row") {
+        return `<tr class="${depthClass}"><td colspan="${PERFORMANCE_CAMPAIGN_COLSPAN}"><span class="muted-text">${escapeHtml(message)}</span></td></tr>`;
+      }
+
+      function performanceHourlySummaryMarkup(resource = {}, data = null) {
+        const rows = normalizePerformanceHourlyRows(data?.rows || []);
+        const total = summarizePerformanceRows(rows);
+        const range = data?.range || {};
+        const depletion = performanceHourlyDepletionText(resource, rows);
+        return `
+          <div class="hourly-summary-grid">
+            <div class="metric"><span>조회 기간</span><strong>${escapeHtml(hourlyRangeDisplay(range))}</strong></div>
+            <div class="metric"><span>표시 시간</span><strong>${formatNumber(rows.length)}개 구간</strong></div>
+            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+            <div class="metric"><span>노출·클릭</span><strong>${formatNumber(total.impressions)} · ${formatNumber(total.clicks)}</strong></div>
+            <div class="metric"><span>소진 완료 시점</span><strong>${escapeHtml(depletion)}</strong></div>
+          </div>
+          ${performanceHourlyInsightMarkup(resource, rows)}
+        `;
+      }
+
+      function hourlyPresetButton(key, currentPreset, value, label) {
+        return `<button class="btn-secondary btn-compact ${currentPreset === value ? "is-active" : ""}" type="button" data-performance-hourly-preset="${value}" data-performance-hourly-key="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
+      }
+
+      function performanceHourlyTableMarkup(rows = []) {
+        if (!rows.length) {
+          return '<tr><td colspan="7">선택 시간대의 성과 데이터가 없습니다.</td></tr>';
+        }
+        return rows.map((row) => `
+          <tr>
+            <td>${escapeHtml(hourlyLabel(row.hour, true))}</td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${formatMoney(row.cpc)}</td>
+            <td>${formatMoney(row.cpm)}</td>
+          </tr>
+        `).join("");
+      }
+
+      function performanceHourlyReportMarkup(resource = {}) {
+        const scope = resource.hourly_scope || "campaign";
+        const key = hourlyCacheKey(scope, resource.id, resource.advertiser_name);
+        const option = performanceHourlyOption(key);
+        const range = performanceHourlyRange(option);
+        const loading = performanceHourlyLoadingKey === key;
+        const cached = performanceHourlyCache.get(key);
+        const data = cached ? { ...cached, range } : null;
+        const rows = normalizePerformanceHourlyRows(data?.rows || []);
+        const body = loading
+          ? '<tr><td colspan="7">시간대별 성과를 불러오는 중입니다.</td></tr>'
+          : performanceHourlyTableMarkup(rows);
+        const error = data && data.ok === false ? `<div class="empty-state compact">${escapeHtml(data.error || "시간대별 성과 조회에 실패했습니다.")}</div>` : "";
+        return `
+          <tr class="hourly-report-row">
+            <td colspan="${PERFORMANCE_CAMPAIGN_COLSPAN}">
+              <div class="hourly-report-shell">
+                <div class="hourly-report-head">
+                  <div>
+                    <h4>${escapeHtml(hourlyScopeLabel(scope))} 시간대별 리포트 · ${escapeHtml(resource.name || "-")}</h4>
+                    <p>${escapeHtml(hourlyRangeDisplay(range))} · OpenAI Ads hourly 응답 기준</p>
+                  </div>
+                  <div class="hourly-report-actions">
+                    ${hourlyPresetButton(key, option.preset, "today", "오늘")}
+                    ${hourlyPresetButton(key, option.preset, "yesterday", "어제")}
+                    ${hourlyPresetButton(key, option.preset, "3d", "최근 3일")}
+                    ${hourlyPresetButton(key, option.preset, "7d", "최근 7일")}
+                    <input class="control hourly-date-control" type="date" value="${escapeHtml(option.date || defaultPerformanceHourlyDate())}" data-performance-hourly-date data-performance-hourly-key="${escapeHtml(key)}" />
+                    <button class="btn-secondary btn-compact" type="button" data-performance-hourly-refresh="${escapeHtml(key)}">
+                      <i class="ti ti-refresh"></i>
+                      갱신
+                    </button>
+                    <button class="btn-secondary btn-compact" type="button" data-performance-hourly-download="${escapeHtml(key)}" ${rows.length ? "" : "disabled"}>
+                      <i class="ti ti-download"></i>
+                      엑셀
+                    </button>
+                  </div>
+                </div>
+                ${performanceHourlySummaryMarkup(resource, data)}
+                ${error}
+                <div class="hourly-report-legend" aria-label="차트 범례">
+                  <span><i class="legend-dot is-spend"></i>소진액</span>
+                  <span><i class="legend-dot is-impressions"></i>노출</span>
+                  <span><i class="legend-dot is-clicks"></i>클릭</span>
+                  <em>좌축: 금액(원) · 우축: 건수</em>
+                </div>
+                <div class="hourly-report-chart" id="performance-hourly-chart"></div>
+                <div class="hourly-report-table-scroll">
+                  <table class="data-grid hourly-report-table">
+                    <thead>
+                      <tr><th>시간</th><th>노출</th><th>클릭</th><th>소진액</th><th>CTR</th><th>CPC</th><th>CPM</th></tr>
+                    </thead>
+                    <tbody>${body}</tbody>
+                  </table>
+                </div>
+                <p class="hourly-report-note">시간대별 데이터는 OpenAI Ads API hourly 응답 기준이며, Ads Manager UI에는 동일 리포트가 아직 제공되지 않을 수 있습니다.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      function renderOpenPerformanceHourlyChart() {
+        const element = $("#performance-hourly-chart");
+        if (!element) {
+          disposePerformanceTrendChart("hourly");
+          return;
+        }
+        const cached = performanceHourlyCache.get(performanceHourlyOpenKey);
+        const rows = normalizePerformanceHourlyRows(cached?.rows || []);
+        if (!window.echarts) {
+          showPerformanceChartEmpty("hourly", element, "차트 라이브러리를 불러오지 못했습니다.");
+          return;
+        }
+        if (!rows.length) {
+          showPerformanceChartEmpty("hourly", element, "선택 시간대의 차트 데이터가 없습니다.");
+          return;
+        }
+        const chart = preparePerformanceChart("hourly", element);
+        chart.setOption({
+          color: ["#d98200", "#2563eb", "#0f8f63"],
+          grid: { top: 44, right: 82, bottom: rows.length > 36 ? 62 : 36, left: 76, containLabel: true },
+          legend: { show: false },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "cross" },
+            formatter: (params) => {
+              const lines = params.map((item) => {
+                const value = item.seriesName === "소진액" ? formatMoney(item.value) : formatNumber(item.value);
+                return `${item.marker}${item.seriesName}: ${value}`;
+              });
+              return [escapeHtml(params[0]?.axisValue || ""), ...lines].join("<br>");
+            },
+          },
+          dataZoom: rows.length > 36 ? [
+            { type: "inside", start: 0, end: 45 },
+            { type: "slider", height: 18, bottom: 16, start: 0, end: 45 },
+          ] : [],
+          xAxis: {
+            type: "category",
+            data: hourlyAxisLabels(rows),
+            axisLabel: { color: "#637085", interval: "auto" },
+            axisLine: { lineStyle: { color: "#d7dee9" } },
+          },
+          yAxis: [
+            {
+              type: "value",
+              name: "소진액(원)",
+              nameGap: 18,
+              nameTextStyle: { color: "#5f6b7a", fontSize: 12, fontWeight: 800 },
+              axisLabel: { color: "#637085", formatter: (value) => `${Math.round(value / 1000).toLocaleString("ko-KR")}천` },
+              splitLine: { lineStyle: { color: "#edf1f7" } },
+            },
+            {
+              type: "value",
+              name: "노출·클릭(건)",
+              nameGap: 18,
+              nameTextStyle: { color: "#5f6b7a", fontSize: 12, fontWeight: 800 },
+              axisLabel: { color: "#637085", formatter: chartNumberLabel },
+              splitLine: { show: false },
+            },
+          ],
+          series: [
+            {
+              name: "소진액",
+              type: "bar",
+              barMaxWidth: 20,
+              itemStyle: { borderRadius: [5, 5, 0, 0] },
+              data: rows.map((row) => Number(row.spend || 0)),
+            },
+            {
+              name: "노출",
+              type: "line",
+              yAxisIndex: 1,
+              smooth: true,
+              symbolSize: 5,
+              lineStyle: { width: 3 },
+              data: rows.map((row) => Number(row.impressions || 0)),
+            },
+            {
+              name: "클릭",
+              type: "line",
+              yAxisIndex: 1,
+              smooth: true,
+              symbolSize: 5,
+              lineStyle: { width: 3 },
+              data: rows.map((row) => Number(row.clicks || 0)),
+            },
+          ],
+        }, true);
+      }
+
+      function campaignRowMarkup(row) {
+        const expanded = performanceExpandedCampaigns.has(row.id);
+        const disabled = row.id ? "" : "disabled";
+        const hourlyResource = { ...row, hourly_scope: "campaign" };
+        const hourlyRecommendation = hourlyRecommendationForResource(hourlyResource);
+        return `
+          <tr class="campaign-child-row">
+            <td class="advertiser-cell"><span class="muted-text">캠페인</span></td>
+            <td class="campaign-cell">
+              <div class="campaign-cell-line">
+                <button class="row-expander campaign-toggle" type="button" data-performance-campaign-toggle="${escapeHtml(row.id || "")}" data-performance-campaign-advertiser="${escapeHtml(row.advertiser_name || "")}" aria-expanded="${expanded ? "true" : "false"}" ${disabled}>
+                  <i class="ti ${expanded ? "ti-chevron-down" : "ti-chevron-right"}"></i>
+                  <span>
+                    <strong class="campaign-name" title="${escapeHtml(row.name || "-")}">${escapeHtml(row.name || "-")}</strong>
+                  </span>
+                </button>
+                ${disabled ? "" : hourlyToggleMarkup(hourlyResource)}
+                ${hourlyRecommendation ? `<span class="hourly-recommendation-badge" title="${escapeHtml(hourlyRecommendation.note || "증액 제안 후보")}">증액 후보</span>` : ""}
+              </div>
+            </td>
+            <td class="industry-cell"><span class="text-ellipsis" title="${escapeHtml(row.industry || "-")}">${escapeHtml(row.industry || "-")}</span></td>
+            <td>${campaignObjectiveControl(row)}</td>
+            <td>${adsStatusPill(row.status)}</td>
+            <td>${escapeHtml(displayDate(row.start_date))}</td>
+            <td>${escapeHtml(displayDate(row.end_date))}</td>
+            <td>${budgetSpendMarkup(campaignBudgetSpendSummary(row))}</td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${formatMoney(row.cpc)}</td>
+            <td>${formatMoney(row.cpm)}</td>
+            ${conversionCells(row)}
+          </tr>
+        `;
+      }
+
+      function adGroupRowMarkup(row, campaignRow) {
+        const expanded = performanceExpandedAdGroups.has(row.id);
+        const hourlyResource = {
+          ...row,
+          advertiser_name: campaignRow.advertiser_name || "",
+          hourly_scope: "ad_group",
+          campaign_id: campaignRow.id || row.campaign_id || "",
+          campaign_name: campaignRow.name || row.campaign_name || "",
+        };
+        return `
+          <tr class="ad-group-row nested-row">
+            <td class="advertiser-cell"><span class="nested-label">광고그룹</span></td>
+            <td class="campaign-cell">
+              <div class="campaign-cell-line">
+                <button class="row-expander ad-group-toggle" type="button" data-performance-adgroup-toggle="${escapeHtml(row.id || "")}" data-performance-adgroup-advertiser="${escapeHtml(campaignRow.advertiser_name || "")}" aria-expanded="${expanded ? "true" : "false"}" ${row.id ? "" : "disabled"}>
+                  <i class="ti ${expanded ? "ti-chevron-down" : "ti-chevron-right"}"></i>
+                  <span>
+                    <strong class="campaign-name" title="${escapeHtml(row.name || "-")}">${escapeHtml(row.name || "-")}</strong>
+                  </span>
+                </button>
+                ${row.id ? hourlyToggleMarkup(hourlyResource) : ""}
+              </div>
+            </td>
+            <td>-</td>
+            <td>${escapeHtml(objectiveLabel(campaignRow.objective))}</td>
+            <td>${adsStatusPill(row.status)}</td>
+            <td>-</td>
+            <td>-</td>
+            <td><span class="budget-progress-empty">${escapeHtml(budgetBidLabel({ ...row, level: "ad_group", objective: campaignRow.objective }))}</span></td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${formatMoney(row.cpc)}</td>
+            <td>${formatMoney(row.cpm)}</td>
+            ${conversionCells(row)}
+          </tr>
+        `;
+      }
+
+      function adRowMarkup(row, campaignRow) {
+        const hourlyResource = {
+          ...row,
+          advertiser_name: campaignRow.advertiser_name || "",
+          hourly_scope: "ad",
+          campaign_id: campaignRow.id || row.campaign_id || "",
+          campaign_name: campaignRow.name || row.campaign_name || "",
+        };
+        return `
+          <tr class="ad-row nested-row is-deeper">
+            <td class="advertiser-cell"><span class="nested-label">소재</span></td>
+            <td class="campaign-cell">
+              <div class="campaign-cell-line">
+                <strong class="campaign-name" title="${escapeHtml(row.name || "-")}">${escapeHtml(row.name || "-")}</strong>
+                ${row.id ? hourlyToggleMarkup(hourlyResource) : ""}
+              </div>
+            </td>
+            <td>-</td>
+            <td>${escapeHtml(objectiveLabel(campaignRow.objective))}</td>
+            <td>${adsStatusPill(row.status || row.review_status)}</td>
+            <td>-</td>
+            <td>-</td>
+            <td><span class="budget-progress-empty">-</span></td>
+            <td>${formatNumber(row.impressions)}</td>
+            <td>${formatNumber(row.clicks)}</td>
+            <td>${formatMoney(row.spend)}</td>
+            <td>${formatRate(row.ctr)}</td>
+            <td>${formatMoney(row.cpc)}</td>
+            <td>${formatMoney(row.cpm)}</td>
+            ${conversionCells(row)}
+          </tr>
+        `;
+      }
+
+      function nestedDetailMarkup(scope, id, advertiserName, parentRow) {
+        const key = detailCacheKey(scope, id, advertiserName);
+        if (performanceLoadingDetailKey === key) {
+          return loadingDetailRow(scope === "campaign" ? "광고그룹 성과를 불러오는 중입니다." : "소재 성과를 불러오는 중입니다.", scope === "campaign" ? "ad-group-row nested-row" : "ad-row nested-row is-deeper");
+        }
+        const detail = performanceDetailCache.get(key);
+        if (!detail) return "";
+        const rows = Array.isArray(detail.rows) ? detail.rows : [];
+        if (!rows.length) {
+          return emptyDetailRow(scope === "campaign" ? "조회된 광고그룹 성과가 없습니다." : "조회된 소재 성과가 없습니다.", scope === "campaign" ? "ad-group-row nested-row" : "ad-row nested-row is-deeper");
+        }
+        if (scope === "campaign") {
+          return rows.map((row) => {
+            const adGroupResource = {
+              ...row,
+              advertiser_name: parentRow.advertiser_name || "",
+              hourly_scope: "ad_group",
+              campaign_id: parentRow.id || row.campaign_id || "",
+              campaign_name: parentRow.name || row.campaign_name || "",
+            };
+            const adGroupHtml = adGroupRowMarkup(row, parentRow);
+            const hourlyReport = performanceHourlyOpenKey === hourlyCacheKey("ad_group", row.id, advertiserName)
+              ? performanceHourlyReportMarkup(adGroupResource)
+              : "";
+            const adRows = performanceExpandedAdGroups.has(row.id)
+              ? nestedDetailMarkup("ad_group", row.id, advertiserName, parentRow)
+              : "";
+            return `${adGroupHtml}${hourlyReport}${adRows}`;
+          }).join("");
+        }
+        return rows.map((row) => {
+          const adResource = {
+            ...row,
+            advertiser_name: parentRow.advertiser_name || "",
+            hourly_scope: "ad",
+            campaign_id: parentRow.id || row.campaign_id || "",
+            campaign_name: parentRow.name || row.campaign_name || "",
+          };
+          const adHtml = adRowMarkup(row, parentRow);
+          const hourlyReport = performanceHourlyOpenKey === hourlyCacheKey("ad", row.id, advertiserName)
+            ? performanceHourlyReportMarkup(adResource)
+            : "";
+          return `${adHtml}${hourlyReport}`;
+        }).join("");
+      }
+
+      function renderPerformanceCampaignRows(rows = []) {
+        const body = $("#performance-campaign-rows");
+        const count = $("#performance-campaign-count");
+        const groups = groupedPerformanceCampaignRows(rows);
+        const paged = pageSlice(groups, performanceCampaignPage);
+        performanceCampaignPage = paged.page;
+        renderPerformanceSortHeaders();
+        renderPerformanceConversionToggle();
+        updatePerformancePagination("performance-campaign", performanceCampaignPage, groups.length);
+        const campaignTotal = groups.reduce((sum, group) => sum + group.campaigns.length, 0);
+        if (count) count.textContent = `${formatNumber(groups.length)}개 광고주 · ${formatNumber(campaignTotal)}개 캠페인`;
+        body.innerHTML = "";
+        if (!groups.length) {
+          body.innerHTML = `<tr><td colspan="${PERFORMANCE_CAMPAIGN_COLSPAN}">선택한 기간에 조회된 캠페인 성과가 없습니다.</td></tr>`;
+          return;
+        }
+        paged.rows.forEach((group) => {
+          const expanded = performanceExpandedAdvertisers.has(group.advertiser_name);
+          const total = group.total;
+          const objective = groupObjectiveLabel(group.campaigns);
+          const groupTr = document.createElement("tr");
+          groupTr.className = "campaign-group-row";
+          groupTr.innerHTML = `
+            <td class="advertiser-cell">
+              <button class="group-toggle" type="button" data-performance-advertiser-toggle="${escapeHtml(group.advertiser_name)}" aria-expanded="${expanded ? "true" : "false"}">
+                <i class="ti ${expanded ? "ti-chevron-down" : "ti-chevron-right"}"></i>
+                <span class="text-ellipsis" title="${escapeHtml(group.advertiser_name)}">${escapeHtml(group.advertiser_name)}</span>
+              </button>
+            </td>
+            <td>${formatNumber(group.campaigns.length)}개 캠페인</td>
+            <td class="industry-cell"><span class="text-ellipsis" title="${escapeHtml(group.industry || "-")}">${escapeHtml(group.industry || "-")}</span></td>
+            <td>${escapeHtml(objective)}</td>
+            <td>${groupStatusPill(group)}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>${budgetSpendMarkup(groupBudgetSpendSummary(group))}</td>
+            <td>${formatNumber(total.impressions)}</td>
+            <td>${formatNumber(total.clicks)}</td>
+            <td>${formatMoney(total.spend)}</td>
+            <td>${formatRate(total.ctr)}</td>
+            <td>${formatMoney(total.cpc)}</td>
+            <td>${formatMoney(total.cpm)}</td>
+            ${conversionCells(total)}
+          `;
+          body.appendChild(groupTr);
+          if (!expanded) return;
+          group.campaigns.forEach((row) => {
+            body.insertAdjacentHTML("beforeend", campaignRowMarkup(row));
+            if (performanceHourlyOpenKey === hourlyCacheKey("campaign", row.id, row.advertiser_name)) {
+              body.insertAdjacentHTML("beforeend", performanceHourlyReportMarkup({ ...row, hourly_scope: "campaign" }));
+            }
+            if (performanceExpandedCampaigns.has(row.id)) {
+              body.insertAdjacentHTML("beforeend", nestedDetailMarkup("campaign", row.id, row.advertiser_name || "", row));
+            }
+          });
+        });
+        window.requestAnimationFrame(() => renderOpenPerformanceHourlyChart());
+      }
+
+      function renderPerformanceDetailRows(detail, rows = []) {
+        const body = $("#performance-detail-rows");
+        const levelLabel = detail?.aggregation_level === "ad" ? "소재" : "광고그룹";
+        const paged = pageSlice(rows, performanceDetailPage);
+        performanceDetailPage = paged.page;
+        updatePerformancePagination("performance-detail", performanceDetailPage, rows.length);
+        body.innerHTML = "";
+        if (!rows.length) {
           body.innerHTML = `<tr><td colspan="9">선택한 항목의 ${escapeHtml(levelLabel)} 성과가 없습니다.</td></tr>`;
           return;
         }
-        detail.rows.forEach((row) => {
+        paged.rows.forEach((row) => {
           const canDrillDown = detail.aggregation_level === "ad_group" && row.id;
           const action = canDrillDown
             ? `<button class="btn-secondary btn-compact" type="button" data-performance-detail-scope="ad_group" data-performance-detail-id="${escapeHtml(row.id)}">소재</button>`
             : "-";
-          const secondary = detail.aggregation_level === "ad"
-            ? `${escapeHtml(row.ad_group_name || "")}<br>${escapeHtml(row.review_status || "")}`
-            : escapeHtml(row.id || "id 없음");
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><strong>${escapeHtml(row.name || "-")}</strong><br><span class="muted-text">${secondary}</span></td>
+            <td><strong>${escapeHtml(row.name || "-")}</strong></td>
             <td>${adsStatusPill(row.status || row.review_status)}</td>
             <td>${formatNumber(row.impressions)}</td>
             <td>${formatNumber(row.clicks)}</td>
@@ -3151,13 +4920,271 @@
         });
       }
 
+      function renderPerformanceDetail(detail) {
+        const summary = $("#performance-detail-summary");
+        const body = $("#performance-detail-rows");
+        summary.innerHTML = "";
+        body.innerHTML = "";
+        if (!detail || !Array.isArray(detail.rows)) {
+          body.innerHTML = '<tr><td colspan="9">아직 선택된 항목이 없습니다.</td></tr>';
+          updatePerformancePagination("performance-detail", 1, 0);
+          return;
+        }
+        const levelLabel = detail.aggregation_level === "ad" ? "소재" : "광고그룹";
+        const total = detail.total || {};
+        summary.innerHTML = `
+          <div class="performance-detail-summary">
+            <div class="metric"><span>${escapeHtml(levelLabel)} 수</span><strong>${formatNumber(detail.rows.length)}</strong></div>
+            <div class="metric"><span>클릭</span><strong>${formatNumber(total.clicks)}</strong></div>
+            <div class="metric"><span>소진액</span><strong>${formatMoney(total.spend)}</strong></div>
+            <div class="metric"><span>전환수</span><strong>${conversionMetric(total.conversions)}</strong></div>
+          </div>
+        `;
+        renderPerformanceDetailRows(detail, detail.rows);
+      }
+
+      function downloadTableAsExcel(filenamePrefix, headers, bodyRows) {
+        const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${bodyRows.map((cells) => `<tr>${cells.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></body></html>`;
+        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const link = document.createElement("a");
+        const today = new Date().toISOString().slice(0, 10);
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filenamePrefix}-${today}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }
+
+      function selectedPerformanceDownloadScope() {
+        return {
+          campaigns: $("#download-performance-include-campaigns")?.checked ?? true,
+          adGroups: $("#download-performance-include-adgroups")?.checked ?? true,
+          ads: $("#download-performance-include-ads")?.checked ?? true,
+        };
+      }
+
+      function statusText(value) {
+        return String(value || "-").trim() || "-";
+      }
+
+      function performanceDownloadRow(level, campaign = {}, adGroup = {}, ad = {}) {
+        const source = level === "소재" ? ad : (level === "광고그룹" ? adGroup : campaign);
+        const adGroupName = level === "광고그룹"
+          ? adGroup.name || "-"
+          : (level === "소재" ? ad.ad_group_name || adGroup.name || "-" : "-");
+        return [
+          level,
+          campaign.advertiser_name || adGroup.advertiser_name || ad.advertiser_name || "-",
+          campaign.name || "-",
+          adGroupName,
+          level === "소재" ? ad.name || "-" : "-",
+          campaign.industry || "-",
+          objectiveLabel(campaign.objective || source.objective),
+          statusText(source.status || source.review_status),
+          displayDate(campaign.start_date),
+          displayDate(campaign.end_date),
+          level === "광고그룹" ? budgetBidLabel({ ...adGroup, level: "ad_group", objective: campaign.objective }) : (level === "캠페인" ? budgetBidLabel(campaign) : "-"),
+          formatNumber(source.impressions),
+          formatNumber(source.clicks),
+          formatMoney(source.spend),
+          formatRate(source.ctr),
+          formatMoney(source.cpc),
+          formatMoney(source.cpm),
+          conversionMetric(source.conversions),
+          conversionMetric(source.cost_per_conversion, formatMoney),
+          conversionMetric(source.roas, formatMultiplier),
+        ];
+      }
+
+      async function loadPerformanceDetailForScope(scope, id, advertiserName = "") {
+        if (!scope || !id) return { rows: [] };
+        const key = detailCacheKey(scope, id, advertiserName);
+        if (performanceDetailCache.has(key)) return performanceDetailCache.get(key);
+        setDefaultPerformanceDates();
+        const params = new URLSearchParams({
+          start_date: $("#performance-start-date").value,
+          end_date: $("#performance-end-date").value,
+          detail_scope: scope,
+          detail_id: id,
+        });
+        if (advertiserName) params.set("advertiser_name", advertiserName);
+        const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
+        const detail = data.detail || { rows: [] };
+        performanceDetailCache.set(key, detail);
+        if (data.conversion_metrics_available === false && adsDashboardData) {
+          adsDashboardData.conversion_metrics_available = false;
+        }
+        return detail;
+      }
+
+      async function fetchPerformanceHourlyReport(resource = {}) {
+        if (!resource?.id || !resource?.advertiser_name) return null;
+        const scope = resource.hourly_scope || "campaign";
+        const key = hourlyCacheKey(scope, resource.id, resource.advertiser_name);
+        rememberPerformanceHourlyResource(resource);
+        const option = performanceHourlyOption(key);
+        const range = performanceHourlyRange(option);
+        performanceHourlyLoadingKey = key;
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        try {
+          const params = new URLSearchParams({
+            advertiser_name: resource.advertiser_name || "",
+            resource_scope: scope,
+            resource_id: resource.id || "",
+            resource_name: resource.name || "",
+            since: range.since,
+            until: range.until,
+          });
+          const data = await adminFetch(`/api/admin/ads-dashboard/hourly?${params.toString()}`);
+          performanceHourlyCache.set(key, { ...data, range });
+          if (!data.ok) {
+            setStatus("performance-status", data.error || "시간대별 성과 조회에 실패했습니다.", "error");
+          } else {
+            setStatus("performance-status", `${resource.name || hourlyScopeLabel(scope)} 시간대별 성과를 갱신했습니다.`, "ok");
+          }
+          return data;
+        } finally {
+          performanceHourlyLoadingKey = "";
+          renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        }
+      }
+
+      function downloadPerformanceHourlyReport(key) {
+        const cached = performanceHourlyCache.get(key);
+        const rows = normalizePerformanceHourlyRows(cached?.rows || []);
+        if (!rows.length) {
+          setStatus("performance-status", "다운로드할 시간대별 데이터가 없습니다.", "error");
+          return;
+        }
+        const resource = findPerformanceHourlyResource(key) || {};
+        const parsed = parseHourlyCacheKey(key);
+        const scope = cached.resource_scope || resource.hourly_scope || parsed.scope || "campaign";
+        const analysis = analyzePerformanceHourlyBudget({ ...resource, resource_scope: scope, hourly_scope: scope }, rows);
+        const headers = ["광고주", "범위", "이름", "시간", "노출", "클릭", "소진액", "CTR", "CPC", "CPM", "소진 완료 시점", "00~03시 소진 비중", "운영 판단"];
+        const bodyRows = rows.map((row) => [
+          cached.advertiser_name || "-",
+          hourlyScopeLabel(scope),
+          cached.resource_name || cached.campaign_name || "-",
+          hourlyLabel(row.hour, true),
+          formatNumber(row.impressions),
+          formatNumber(row.clicks),
+          formatMoney(row.spend),
+          formatRate(row.ctr),
+          formatMoney(row.cpc),
+          formatMoney(row.cpm),
+          analysis.summary,
+          formatShare(analysis.earlySpendShare),
+          analysis.decision,
+        ]);
+        downloadTableAsExcel(`openai-ads-hourly-${scope}-${cached.resource_id || cached.campaign_id || "resource"}`, headers, bodyRows);
+        setStatus("performance-status", "시간대별 리포트 엑셀을 다운로드했습니다.", "ok");
+      }
+
+      async function downloadPerformanceCampaigns() {
+        const campaigns = sortedPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        if (!campaigns.length) {
+          setStatus("performance-status", "다운로드할 캠페인 데이터가 없습니다.", "error");
+          return;
+        }
+        const scope = selectedPerformanceDownloadScope();
+        if (!scope.campaigns && !scope.adGroups && !scope.ads) {
+          setStatus("performance-status", "엑셀에 포함할 항목을 하나 이상 선택해주세요.", "error");
+          return;
+        }
+        const button = $("#download-performance-campaigns");
+        const headers = ["구분", "광고주", "캠페인", "광고그룹", "소재", "업종", "목표", "상태", "시작일", "종료일", "예산/입찰", "노출", "클릭", "소진액", "CTR", "CPC", "CPM", "전환", "CPA", "ROAS"];
+        const bodyRows = [];
+        if (button) button.disabled = true;
+        try {
+          for (const [index, campaign] of campaigns.entries()) {
+            if (scope.campaigns) bodyRows.push(performanceDownloadRow("캠페인", campaign));
+            if ((!scope.adGroups && !scope.ads) || !campaign.id) continue;
+            setStatus("performance-status", `엑셀 데이터 준비 중 · ${index + 1}/${campaigns.length} 캠페인 · ${campaign.advertiser_name || campaign.name || ""}`);
+            const adGroupDetail = await loadPerformanceDetailForScope("campaign", campaign.id, campaign.advertiser_name || "");
+            const adGroups = Array.isArray(adGroupDetail.rows) ? adGroupDetail.rows : [];
+            for (const adGroup of adGroups) {
+              if (scope.adGroups) bodyRows.push(performanceDownloadRow("광고그룹", campaign, adGroup));
+              if (!scope.ads || !adGroup.id) continue;
+              const adDetail = await loadPerformanceDetailForScope("ad_group", adGroup.id, campaign.advertiser_name || "");
+              const ads = Array.isArray(adDetail.rows) ? adDetail.rows : [];
+              ads.forEach((ad) => bodyRows.push(performanceDownloadRow("소재", campaign, adGroup, ad)));
+            }
+          }
+          if (!bodyRows.length) {
+            setStatus("performance-status", "선택한 범위에 다운로드할 데이터가 없습니다.", "error");
+            return;
+          }
+          downloadTableAsExcel("openai-ads-campaigns", headers, bodyRows);
+          setStatus("performance-status", `캠페인 현황 엑셀을 다운로드했습니다. · ${formatNumber(bodyRows.length)}개 행`, "ok");
+        } catch (error) {
+          setStatus("performance-status", error.message || "캠페인 현황 엑셀 다운로드에 실패했습니다.", "error");
+        } finally {
+          if (button) button.disabled = false;
+        }
+      }
+
+      function downloadPerformanceBenchmarks() {
+        const rows = currentBenchmarkRows(adsDashboardData?.benchmarks || []);
+        if (!rows.length) {
+          setStatus("performance-status", "다운로드할 벤치마크 데이터가 없습니다.", "error");
+          return;
+        }
+        const headers = ["구분", "업종", "목표", "캠페인", "노출", "클릭", "소진액", "CTR", "CPC", "CPM"];
+        const bodyRows = rows.map((row) => [
+          benchmarkTypeLabel(row.type),
+          row.industry || "미지정",
+          objectiveLabel(row.objective),
+          formatNumber(row.campaign_count),
+          formatNumber(row.impressions),
+          formatNumber(row.clicks),
+          formatMoney(row.spend),
+          formatRate(row.ctr),
+          formatMoney(row.cpc),
+          formatMoney(row.cpm),
+        ]);
+        downloadTableAsExcel(`openai-ads-benchmarks-${performanceBenchmarkMode}`, headers, bodyRows);
+        setStatus("performance-status", `${benchmarkTypeLabel(performanceBenchmarkMode)} 벤치마크 엑셀을 다운로드했습니다.`, "ok");
+      }
+
+      async function savePerformanceCampaignObjective(select) {
+        const advertiserName = select.dataset.advertiser || "";
+        const campaignId = select.dataset.objectiveCampaign || "";
+        const campaignName = select.dataset.campaignName || "";
+        if (!advertiserName || !campaignId) return;
+        select.disabled = true;
+        try {
+          await adminFetch("/api/admin/ads-campaign-objectives", {
+            method: "POST",
+            body: JSON.stringify({
+              advertiser_name: advertiserName,
+              campaign_id: campaignId,
+              campaign_name: campaignName,
+              objective: select.value || "",
+            }),
+            loadingMessage: "캠페인 목표를 저장하는 중입니다.",
+          });
+          setStatus("performance-status", select.value ? "캠페인 목표를 저장했습니다." : "캠페인 목표 수동값을 초기화했습니다.", "success");
+          await loadPerformanceDashboard();
+        } catch (error) {
+          setStatus("performance-status", error.message, "error");
+          renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        }
+      }
+
       function renderPerformanceDashboard(data) {
         adsDashboardData = data;
+        updatePerformanceLiveAdvertiserCache(data);
+        renderPerformanceAdvertiserSelect();
         const setup = $("#performance-setup");
         if (!data.ok) {
           renderPerformanceKpis({});
+          renderPerformanceOverview({});
+          renderPerformanceTrend([], []);
+          renderPerformanceBenchmarks([]);
           renderPerformanceCampaignRows([]);
           renderPerformanceDetail(null);
+          renderPerformanceExtensionNote(null);
           setup.hidden = false;
           setup.textContent = data.configured === false
             ? "광고주별 Ads API 키를 등록하거나 OPENAI_ADS_API_KEY 환경변수를 Vercel Production에 추가하면 실시간 성과를 조회할 수 있습니다."
@@ -3168,10 +5195,15 @@
         setup.hidden = true;
         setup.textContent = "";
         renderPerformanceKpis(data.campaign_total || data.account || {});
+        renderPerformanceOverview(data);
+        renderPerformanceTrend(data.trend || [], data.device_breakdown || []);
+        renderPerformanceBenchmarks(data.benchmarks || []);
         renderPerformanceCampaignRows(data.campaigns || []);
         renderPerformanceDetail(data.detail || null);
+        renderPerformanceExtensionNote(data);
         const range = data.range || {};
-        const advertiser = data.advertiser_name ? ` · ${data.advertiser_name}` : "";
+        const advertiserLabel = performanceAdvertiserStatusLabel(data);
+        const advertiser = advertiserLabel ? ` · ${advertiserLabel}` : "";
         if (data.warning) {
           setStatus("performance-status", `${range.start_date || ""} ~ ${range.end_date || ""} 기본 성과 갱신${advertiser} · ${data.warning}`, "warning");
           return;
@@ -3184,6 +5216,23 @@
 
       async function loadPerformanceDashboard(detailScope = "", detailId = "", detailAdvertiserName = "") {
         setDefaultPerformanceDates();
+        if (detailScope && detailId) {
+          performanceDetailPage = 1;
+        } else {
+          performanceCampaignPage = 1;
+          performanceBenchmarkPage = 1;
+          performanceDetailPage = 1;
+          performanceExpandedAdvertisers = new Set();
+          performanceExpandedCampaigns = new Set();
+          performanceExpandedAdGroups = new Set();
+          performanceDetailCache = new Map();
+          performanceLoadingDetailKey = "";
+          performanceHourlyOpenKey = "";
+          performanceHourlyLoadingKey = "";
+          performanceHourlyCache = new Map();
+          performanceHourlyOptions = new Map();
+          performanceHourlyResources = new Map();
+        }
         setStatus("performance-status", "Ads API 성과를 불러오는 중입니다.");
         const params = new URLSearchParams({
           start_date: $("#performance-start-date").value,
@@ -3198,6 +5247,24 @@
         if (detailAdvertiserName) params.set("detail_advertiser_name", detailAdvertiserName);
         const data = await adminFetch(`/api/admin/ads-dashboard?${params.toString()}`);
         renderPerformanceDashboard(data);
+      }
+
+      async function fetchPerformanceNestedDetail(scope, id, advertiserName = "") {
+        if (!scope || !id) return;
+        const key = detailCacheKey(scope, id, advertiserName);
+        if (performanceDetailCache.has(key)) {
+          renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+          return;
+        }
+        setDefaultPerformanceDates();
+        performanceLoadingDetailKey = key;
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        try {
+          await loadPerformanceDetailForScope(scope, id, advertiserName);
+        } finally {
+          performanceLoadingDetailKey = "";
+          renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+        }
       }
 
       function renderOfficialPagination(meta = {}) {
@@ -4051,6 +6118,14 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
+      $("#inspect-ads-key").addEventListener("click", () => inspectAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
+      ["ads-key-preview", "conversion-key-preview"].forEach((id) => {
+        $(`#${id}`).addEventListener("click", (event) => {
+          const button = event.target.closest("[data-secret-field]");
+          if (!button) return;
+          toggleAdsSecret(button.dataset.secretField || "").catch((error) => setStatus("ads-status", error.message, "error"));
+        });
+      });
       $("#cancel-ads-edit").addEventListener("click", () => {
         resetAdsKeyForm();
         setStatus("ads-status", "수정 모드를 취소했습니다.");
@@ -4094,8 +6169,142 @@
       $("#performance-end-date").addEventListener("change", () => {
         loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
       });
+      $("#toggle-performance-conversions").addEventListener("click", () => {
+        performanceShowConversionColumns = !performanceShowConversionColumns;
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+      });
+      $("#download-performance-campaigns").addEventListener("click", () => {
+        downloadPerformanceCampaigns();
+      });
+      $("#performance-campaign-table").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-performance-sort]");
+        if (!button) return;
+        const key = button.dataset.performanceSort || "";
+        if (performanceCampaignSort.key === key) {
+          performanceCampaignSort.direction = performanceCampaignSort.direction === "asc" ? "desc" : "asc";
+        } else {
+          performanceCampaignSort = { key, direction: "asc" };
+        }
+        performanceCampaignPage = 1;
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+      });
+      $("#performance-campaign-table").addEventListener("change", (event) => {
+        const hourlyDate = event.target.closest("[data-performance-hourly-date]");
+        if (hourlyDate) {
+          const key = hourlyDate.dataset.performanceHourlyKey || "";
+          const option = performanceHourlyOption(key);
+          option.preset = "date";
+          option.date = hourlyDate.value || defaultPerformanceHourlyDate();
+          const resource = findPerformanceHourlyResource(key);
+          if (resource) {
+            fetchPerformanceHourlyReport(resource).catch((error) => setStatus("performance-status", error.message, "error"));
+          }
+          return;
+        }
+        const select = event.target.closest("[data-performance-objective-select]");
+        if (!select) return;
+        savePerformanceCampaignObjective(select).catch((error) => setStatus("performance-status", error.message, "error"));
+      });
       ["performance-campaign-rows", "performance-detail-rows"].forEach((id) => {
         $(`#${id}`).addEventListener("click", (event) => {
+          if (id === "performance-campaign-rows") {
+            const hourlyToggle = event.target.closest("[data-performance-hourly-toggle]");
+            if (hourlyToggle) {
+              const scope = hourlyToggle.dataset.performanceHourlyScope || "campaign";
+              const resourceId = hourlyToggle.dataset.performanceHourlyToggle || "";
+              const advertiserName = hourlyToggle.dataset.performanceHourlyAdvertiser || "";
+              const key = hourlyCacheKey(scope, resourceId, advertiserName);
+              if (performanceHourlyOpenKey === key) {
+                performanceHourlyOpenKey = "";
+                disposePerformanceTrendChart("hourly");
+                renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+                return;
+              }
+              const resource = findPerformanceHourlyResource(key);
+              if (!resource) return;
+              performanceHourlyOpenKey = key;
+              performanceHourlyOption(key);
+              renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+              fetchPerformanceHourlyReport(resource).catch((error) => {
+                performanceHourlyLoadingKey = "";
+                setStatus("performance-status", error.message, "error");
+                renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+              });
+              return;
+            }
+            const hourlyPreset = event.target.closest("[data-performance-hourly-preset]");
+            if (hourlyPreset) {
+              const key = hourlyPreset.dataset.performanceHourlyKey || "";
+              const option = performanceHourlyOption(key);
+              option.preset = hourlyPreset.dataset.performanceHourlyPreset || "date";
+              if (option.preset === "today") option.date = kstTodayString();
+              if (option.preset === "yesterday") option.date = shiftDateString(kstTodayString(), -1);
+              const resource = findPerformanceHourlyResource(key);
+              if (resource) fetchPerformanceHourlyReport(resource).catch((error) => setStatus("performance-status", error.message, "error"));
+              return;
+            }
+            const hourlyRefresh = event.target.closest("[data-performance-hourly-refresh]");
+            if (hourlyRefresh) {
+              const key = hourlyRefresh.dataset.performanceHourlyRefresh || "";
+              const resource = findPerformanceHourlyResource(key);
+              if (resource) fetchPerformanceHourlyReport(resource).catch((error) => setStatus("performance-status", error.message, "error"));
+              return;
+            }
+            const hourlyDownload = event.target.closest("[data-performance-hourly-download]");
+            if (hourlyDownload) {
+              downloadPerformanceHourlyReport(hourlyDownload.dataset.performanceHourlyDownload || "");
+              return;
+            }
+            const toggle = event.target.closest("[data-performance-advertiser-toggle]");
+            if (toggle) {
+              const advertiserName = toggle.dataset.performanceAdvertiserToggle || "";
+              if (performanceExpandedAdvertisers.has(advertiserName)) {
+                performanceExpandedAdvertisers.delete(advertiserName);
+              } else {
+                performanceExpandedAdvertisers.add(advertiserName);
+              }
+              renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+              return;
+            }
+            const campaignToggle = event.target.closest("[data-performance-campaign-toggle]");
+            if (campaignToggle) {
+              const campaignId = campaignToggle.dataset.performanceCampaignToggle || "";
+              const advertiserName = campaignToggle.dataset.performanceCampaignAdvertiser || "";
+              if (!campaignId) return;
+              if (performanceExpandedCampaigns.has(campaignId)) {
+                performanceExpandedCampaigns.delete(campaignId);
+                renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+              } else {
+                performanceExpandedCampaigns.add(campaignId);
+                fetchPerformanceNestedDetail("campaign", campaignId, advertiserName)
+                  .catch((error) => {
+                    performanceLoadingDetailKey = "";
+                    setStatus("performance-status", error.message, "error");
+                    renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+                  });
+              }
+              return;
+            }
+            const adGroupToggle = event.target.closest("[data-performance-adgroup-toggle]");
+            if (adGroupToggle) {
+              const adGroupId = adGroupToggle.dataset.performanceAdgroupToggle || "";
+              const advertiserName = adGroupToggle.dataset.performanceAdgroupAdvertiser || "";
+              if (!adGroupId) return;
+              if (performanceExpandedAdGroups.has(adGroupId)) {
+                performanceExpandedAdGroups.delete(adGroupId);
+                renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+              } else {
+                performanceExpandedAdGroups.add(adGroupId);
+                fetchPerformanceNestedDetail("ad_group", adGroupId, advertiserName)
+                  .catch((error) => {
+                    performanceLoadingDetailKey = "";
+                    setStatus("performance-status", error.message, "error");
+                    renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+                  });
+              }
+              return;
+            }
+          }
           const button = event.target.closest("[data-performance-detail-scope]");
           if (!button) return;
           loadPerformanceDashboard(
@@ -4105,6 +6314,38 @@
           )
             .catch((error) => setStatus("performance-status", error.message, "error"));
         });
+      });
+      $("#performance-campaign-prev").addEventListener("click", () => {
+        performanceCampaignPage = Math.max(1, performanceCampaignPage - 1);
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+      });
+      $("#performance-campaign-next").addEventListener("click", () => {
+        performanceCampaignPage += 1;
+        renderPerformanceCampaignRows(adsDashboardData?.campaigns || []);
+      });
+      $$("[data-benchmark-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+          performanceBenchmarkMode = button.dataset.benchmarkMode || "industry_objective";
+          performanceBenchmarkPage = 1;
+          renderPerformanceBenchmarks(adsDashboardData?.benchmarks || []);
+        });
+      });
+      $("#download-performance-benchmarks").addEventListener("click", downloadPerformanceBenchmarks);
+      $("#performance-benchmark-prev").addEventListener("click", () => {
+        performanceBenchmarkPage = Math.max(1, performanceBenchmarkPage - 1);
+        renderPerformanceBenchmarks(adsDashboardData?.benchmarks || []);
+      });
+      $("#performance-benchmark-next").addEventListener("click", () => {
+        performanceBenchmarkPage += 1;
+        renderPerformanceBenchmarks(adsDashboardData?.benchmarks || []);
+      });
+      $("#performance-detail-prev").addEventListener("click", () => {
+        performanceDetailPage = Math.max(1, performanceDetailPage - 1);
+        renderPerformanceDetailRows(adsDashboardData?.detail || null, adsDashboardData?.detail?.rows || []);
+      });
+      $("#performance-detail-next").addEventListener("click", () => {
+        performanceDetailPage += 1;
+        renderPerformanceDetailRows(adsDashboardData?.detail || null, adsDashboardData?.detail?.rows || []);
       });
       ["notice-title", "notice-source-label", "notice-source-url", "notice-bg"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderNoticePreview);
@@ -4279,6 +6520,7 @@
       window.addEventListener("resize", () => {
         visitChart?.resize();
         visitPieChart?.resize();
+        Object.values(performanceTrendCharts).forEach((chart) => chart?.resize());
       });
 
       if (adminPassword) {

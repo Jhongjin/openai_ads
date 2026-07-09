@@ -5,11 +5,12 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+ADMIN_HTML = ROOT / "dev" / "admin.html"
 
 
 class AdminStaticTests(unittest.TestCase):
     def test_notice_editor_and_visit_chart_present(self) -> None:
-        html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        html = ADMIN_HTML.read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
         admin_store = (ROOT / "admin_store.py").read_text(encoding="utf-8")
 
@@ -47,7 +48,7 @@ class AdminStaticTests(unittest.TestCase):
         self.assertNotIn("저장소:", html)
 
     def test_mail_review_gate_present(self) -> None:
-        html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        html = ADMIN_HTML.read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
         admin_store = (ROOT / "admin_store.py").read_text(encoding="utf-8")
 
@@ -73,7 +74,7 @@ class AdminStaticTests(unittest.TestCase):
         self.assertIn('"review_update"', admin_store)
 
     def test_official_guide_change_log_present(self) -> None:
-        html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        html = ADMIN_HTML.read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
         admin_store = (ROOT / "admin_store.py").read_text(encoding="utf-8")
         db_py = (ROOT / "rag_chatbot" / "db.py").read_text(encoding="utf-8")
@@ -105,7 +106,7 @@ class AdminStaticTests(unittest.TestCase):
         self.assertIn("record_official_guide_change", ingestion_py)
 
     def test_ads_api_dashboard_is_admin_only_ui(self) -> None:
-        html = (ROOT / "templates" / "admin.html").read_text(encoding="utf-8")
+        html = ADMIN_HTML.read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")
 
         for phrase in [

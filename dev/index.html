@@ -102,6 +102,7 @@
             >
               <i class="ti ti-table-import"></i>
               <span>소재 접수</span>
+              <small class="rail-link-note">베타</small>
             </a>
           </div>
 
@@ -119,7 +120,7 @@
 
           <footer class="rail-footer">
             <strong>kt nasmedia</strong>
-            <span>OpenAI Ads Operating Center</span>
+            <span>OpenAI Ads 운영 센터</span>
             <a href="mailto:openai@nasmedia.co.kr">openai@nasmedia.co.kr</a>
             <small>Copyright © kt nasmedia Co., Ltd. All Rights Reserved.</small>
           </footer>
@@ -145,7 +146,7 @@
                 data-menu-key="creative"
               >
                 <i class="ti ti-table-import"></i>
-                소재 접수
+                소재 접수 베타
               </a>
               <a class="btn-command" href="/dev/admin">
                 <i class="ti ti-lock-cog"></i>
@@ -427,8 +428,8 @@
         landing: {
           title: "랜딩 URL 접근 점검",
           copy: "OpenAI 광고 로봇이 랜딩 페이지에 접근할 수 있는지 사전에 확인합니다.",
-          badge: "URL Checker",
-          metric: "URL Checker",
+          badge: "URL 점검",
+          metric: "URL 점검",
           inspectorTitle: "랜딩 점검 준비",
           inspectorCopy: "여러 URL은 줄바꿈으로 넣고 점검 시작을 누르세요.",
           flow: [
@@ -447,8 +448,8 @@
         favicon: {
           title: "이미지·파비콘 규격 점검",
           copy: "이미지 크기, 배경, 형식 조건을 확인해 소재 교체 필요 여부를 판단합니다.",
-          badge: "IMG Checker",
-          metric: "IMG Checker",
+          badge: "이미지 점검",
+          metric: "이미지 점검",
           inspectorTitle: "이미지 검수 준비",
           inspectorCopy: "favicon, logo 이미지 URL을 넣고 결과를 CSV로 저장할 수 있습니다.",
           flow: [
@@ -1747,6 +1748,30 @@
         renderFaqList();
       }
 
+      function sourceTierMeta(source = {}) {
+        const tier = String(source.source_tier || source.collection || "").toLowerCase();
+        if (tier === "official") return { label: "공식", className: "source-official" };
+        if (["kr_ops", "policy", "admin_faq", "manual_rag", "seed"].includes(tier)) {
+          return { label: "내부운영", className: "source-internal" };
+        }
+        if (tier === "pending") return { label: "확인대기", className: "source-pending" };
+        return { label: "근거", className: "source-generic" };
+      }
+
+      function sourceChipMarkup(source = {}, index = 0) {
+        const meta = sourceTierMeta(source);
+        const title = source.title || source.source || source.source_label || "근거";
+        const url = String(source.source_url || source.url || "");
+        const body = `
+          <span class="source-tier">${escapeHtml(meta.label)}</span>
+          <span>${index + 1}. ${escapeHtml(title)}</span>
+        `;
+        if (/^https?:\/\//i.test(url)) {
+          return `<a class="source-chip ${meta.className}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${body}</a>`;
+        }
+        return `<span class="source-chip ${meta.className}">${body}</span>`;
+      }
+
       function renderAnswer(payload) {
         const sources = Array.isArray(payload.sources) ? payload.sources : [];
         const paragraphs = String(payload.answer || "답변이 없습니다.")
@@ -1757,9 +1782,7 @@
           <h3>답변</h3>
           ${paragraphs}
           <div class="source-list">
-            ${sources.length ? sources.map((source, index) => `
-              <span class="source-chip">${index + 1}. ${escapeHtml(source.title || source.source || "근거")}</span>
-            `).join("") : '<span class="source-chip">출처 없음</span>'}
+            ${sources.length ? sources.map((source, index) => sourceChipMarkup(source, index)).join("") : '<span class="source-chip source-none"><span class="source-tier">근거 없음</span><span>제공된 자료에서 확인할 수 없습니다.</span></span>'}
           </div>
         `;
       }
@@ -1767,7 +1790,7 @@
       function verdictTag(verdict) {
         const value = String(verdict || "").toLowerCase();
         if (["allow", "pass", "ok"].includes(value)) return "tag tag-green";
-        if (["warn", "wait"].includes(value)) return "tag tag-blue";
+        if (["warn", "wait"].includes(value)) return "tag tag-amber";
         return "tag tag-red";
       }
 
@@ -1880,8 +1903,8 @@
           renderAnswer(payload);
           setStatus("답변 생성이 완료되었습니다.", "ok");
         } catch (error) {
-          $("#qa-answer").textContent = `답변 생성 실패: ${error.message}`;
-          setStatus(error.message, "error");
+          $("#qa-answer").textContent = "답변 생성에 실패했습니다. 잠시 후 다시 시도하거나 담당자에게 문의해 주세요.";
+          setStatus("답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.", "error");
         } finally {
           $("#qa-run").disabled = false;
         }

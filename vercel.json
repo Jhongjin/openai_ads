@@ -1,1 +1,8 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/ads-dashboard-cache",
+      "schedule": "0 */2 * * *"
+    }
+  ]
+}
