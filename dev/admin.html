@@ -83,6 +83,10 @@
               <i class="ti ti-stack-forward"></i>
               <span>캠페인 접수 현황</span>
             </button>
+            <button class="rail-button" type="button" data-admin-view="adcopyGenerator">
+              <i class="ti ti-sparkles"></i>
+              <span>AI 카피 생성기</span>
+            </button>
             <button class="rail-button" type="button" data-admin-view="ads">
               <i class="ti ti-key"></i>
               <span>광고주 API 키</span>
@@ -637,6 +641,179 @@
               </div>
             </section>
 
+            <section class="view" id="admin-view-adcopyGenerator">
+              <section class="surface adcopy-generator-surface">
+                <div class="surface-head">
+                  <div>
+                    <h2 class="surface-title">AI 카피 생성기</h2>
+                    <p class="surface-copy">OpenAI 모델로 OpenAI Ads 업로드용 generated.json 초안을 만들고, 제목·카피·정책 검수 결과를 함께 확인합니다.</p>
+                  </div>
+                  <div class="doc-actions">
+                    <button class="btn-secondary" type="button" id="reset-adcopy-generator">
+                      <i class="ti ti-eraser"></i>
+                      입력 초기화
+                    </button>
+                    <button class="btn-secondary" type="button" id="copy-adcopy-json" disabled>
+                      <i class="ti ti-copy"></i>
+                      JSON 복사
+                    </button>
+                  </div>
+                </div>
+                <div class="surface-body stack">
+                  <div class="adcopy-safe-note">
+                    <strong>초안 전용</strong>
+                    <span>이 화면은 캠페인·광고그룹·소재를 생성하지 않습니다. 결과는 운영 검수 후 수동 업로드 또는 다음 단계의 draft 세팅 흐름으로만 넘깁니다.</span>
+                  </div>
+                  <div class="adcopy-generator-layout">
+                    <form class="adcopy-form" id="adcopy-generator-form">
+                      <div class="grid-3">
+                        <label class="field">
+                          기존 광고주
+                          <select class="control" id="adcopy-existing-advertiser">
+                            <option value="">직접 입력</option>
+                          </select>
+                        </label>
+                        <label class="field">
+                          광고주명 <span class="required-mark">*</span>
+                          <input class="control" id="adcopy-advertiser-name" required />
+                        </label>
+                        <label class="field">
+                          업종
+                          <select class="control" id="adcopy-industry">
+                            <option value="">업종 선택</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div class="grid-3">
+                        <label class="field">
+                          캠페인명 <span class="required-mark">*</span>
+                          <input class="control" id="adcopy-campaign-name" required />
+                        </label>
+                        <label class="field">
+                          목표
+                          <select class="control" id="adcopy-objective">
+                            <option value="Views">노출</option>
+                            <option value="Clicks">클릭</option>
+                            <option value="Conversions">전환</option>
+                          </select>
+                        </label>
+                        <label class="field">
+                          타겟 국가
+                          <input class="control" id="adcopy-target-countries" value="KR" />
+                        </label>
+                      </div>
+                      <div class="grid-3">
+                        <label class="field">
+                          예산 유형
+                          <select class="control" id="adcopy-budget-type">
+                            <option value="daily">일 예산</option>
+                            <option value="total">총 예산</option>
+                          </select>
+                        </label>
+                        <label class="field">
+                          예산
+                          <input class="control" id="adcopy-budget-max" type="number" min="0" step="1" placeholder="예: 25000" />
+                        </label>
+                        <label class="field">
+                          생성 수량
+                          <span class="adcopy-count-control">
+                            <input class="control" id="adcopy-adgroup-count" type="number" min="1" max="12" value="3" aria-label="광고그룹 수" />
+                            <input class="control" id="adcopy-ads-per-adgroup" type="number" min="1" max="8" value="3" aria-label="광고그룹별 소재 수" />
+                          </span>
+                        </label>
+                      </div>
+                      <div class="grid-2">
+                        <label class="field">
+                          시작일
+                          <input class="control" id="adcopy-launch-date" type="date" />
+                        </label>
+                        <label class="field">
+                          종료일
+                          <input class="control" id="adcopy-end-date" type="date" />
+                        </label>
+                      </div>
+                      <div class="grid-2">
+                        <label class="field">
+                          랜딩 URL <span class="required-mark">*</span>
+                          <input class="control" id="adcopy-landing-url" type="url" required placeholder="https://..." />
+                        </label>
+                        <label class="field">
+                          이미지 URL <span class="required-mark">*</span>
+                          <input class="control" id="adcopy-image-link" type="url" required placeholder="https://..." />
+                        </label>
+                      </div>
+                      <label class="field">
+                        제품·서비스명 <span class="required-mark">*</span>
+                        <input class="control" id="adcopy-product-name" required placeholder="예: 초등 영어 학습 앱" />
+                      </label>
+                      <label class="field">
+                        핵심 소구점
+                        <textarea class="textarea" id="adcopy-selling-points" placeholder="혜택, 차별점, 가격, 이용 조건, 주의해야 할 표현 등을 문장으로 정리해 주세요."></textarea>
+                      </label>
+                      <div class="grid-2">
+                        <label class="field">
+                          타깃·상황
+                          <textarea class="textarea" id="adcopy-audience" placeholder="누가, 어떤 상황에서, 어떤 문제를 해결하려는지 적어 주세요."></textarea>
+                        </label>
+                        <label class="field">
+                          톤앤매너
+                          <textarea class="textarea" id="adcopy-tone" placeholder="예: 담백하고 신뢰감 있게, 과장 금지, 교육 정보형"></textarea>
+                        </label>
+                      </div>
+                      <div class="grid-2">
+                        <label class="field">
+                          금지 표현
+                          <textarea class="textarea" id="adcopy-banned-terms" placeholder="줄바꿈 또는 쉼표로 입력"></textarea>
+                        </label>
+                        <label class="field">
+                          필수 포함 문구
+                          <textarea class="textarea" id="adcopy-required-phrases" placeholder="광고별로 반드시 들어가야 하는 문구가 있으면 입력"></textarea>
+                        </label>
+                      </div>
+                      <div class="form-actions">
+                        <button class="btn-command" type="submit" id="generate-adcopy">
+                          <i class="ti ti-sparkles"></i>
+                          초안 생성
+                        </button>
+                        <p class="status-line" id="adcopy-generator-status"></p>
+                      </div>
+                    </form>
+                    <aside class="adcopy-preview">
+                      <div class="adcopy-preview-head">
+                        <div>
+                          <h3>생성 결과</h3>
+                          <p id="adcopy-result-note">아직 생성된 초안이 없습니다.</p>
+                        </div>
+                        <span class="tag" id="adcopy-validation-badge">대기</span>
+                      </div>
+                      <div class="adcopy-summary-grid" id="adcopy-summary-grid">
+                        <div><span>캠페인</span><strong>-</strong></div>
+                        <div><span>광고그룹</span><strong>-</strong></div>
+                        <div><span>소재</span><strong>-</strong></div>
+                        <div><span>검수</span><strong>-</strong></div>
+                      </div>
+                      <div class="adcopy-result-section">
+                        <h4>광고그룹·소재 미리보기</h4>
+                        <div class="adcopy-preview-list" id="adcopy-preview-list">
+                          <div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>
+                        </div>
+                      </div>
+                      <div class="adcopy-result-section">
+                        <h4>자동 검수 리포트</h4>
+                        <div class="adcopy-validation-list" id="adcopy-validation-list">
+                          <div class="empty-pane">검수 결과가 없습니다.</div>
+                        </div>
+                      </div>
+                      <details class="adcopy-json-details">
+                        <summary>generated.json 보기</summary>
+                        <pre id="adcopy-json-preview">{}</pre>
+                      </details>
+                    </aside>
+                  </div>
+                </div>
+              </section>
+            </section>
+
             <section class="view" id="admin-view-performance">
               <section class="surface performance-surface">
                 <div class="surface-head">
@@ -1055,6 +1232,7 @@
         guides: ["안내자료 편집", "광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드를 수정합니다."],
         menuSettings: ["메뉴 노출 관리", "일반 사용자에게 공개할 운영 메뉴와 안내자료 탭을 관리합니다."],
         ads: ["광고주 API 키", "광고주별 Ads API 키를 등록하고 조회 상태를 확인합니다."],
+        adcopyGenerator: ["AI 카피 생성기", "generated.json 호환 카피 초안을 만들고 자동 검수합니다."],
         performance: ["Ads 성과 대시보드", "광고주 API 키 기반으로 Ads 성과를 조회합니다."],
         official: ["공식 문서 변경 로그", "공식 문서 변경 감지 결과를 검토합니다."],
         mail: ["메일 검토함", "메일 기반 운영 지식 반영 후보를 검토합니다."],
@@ -1143,6 +1321,8 @@
         "화장품",
         "수송",
       ];
+      const ADCOPY_DEFAULT_BANNED_TERMS = ["무조건", "누구나", "최고", "반드시", "혜택 보장", "업계 1위"];
+      let adcopyLastResult = null;
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -3086,6 +3266,7 @@
         adsKeyPage = 1;
         renderAdsKeyRows();
         renderPerformanceAdvertiserSelect();
+        renderAdcopyAdvertiserSelect();
       }
 
       function filteredAdsKeyItems() {
@@ -3131,6 +3312,210 @@
           : "0 / 0";
         $("#ads-key-prev").disabled = adsKeyPage <= 1;
         $("#ads-key-next").disabled = adsKeyPage >= totalPages;
+      }
+
+      function renderAdcopyAdvertiserSelect() {
+        const advertiserSelect = $("#adcopy-existing-advertiser");
+        const industrySelect = $("#adcopy-industry");
+        if (industrySelect && !industrySelect.dataset.populated) {
+          industrySelect.innerHTML = '<option value="">업종 선택</option>' + ADS_INDUSTRIES
+            .map((industry) => `<option value="${escapeHtml(industry)}">${escapeHtml(industry)}</option>`)
+            .join("");
+          industrySelect.dataset.populated = "1";
+        }
+        if (!advertiserSelect) return;
+        const selected = advertiserSelect.value || "";
+        const options = adsKeyItems
+          .slice()
+          .sort((a, b) => String(a.advertiser_name || "").localeCompare(String(b.advertiser_name || ""), "ko", { numeric: true }))
+          .map((item) => {
+            const suffix = item.enabled ? "활성" : "비활성";
+            return `<option value="${escapeHtml(item.advertiser_name || "")}">${escapeHtml(item.advertiser_name || "")} · ${suffix}</option>`;
+          })
+          .join("");
+        advertiserSelect.innerHTML = `<option value="">직접 입력</option>${options}`;
+        if (selected && adsKeyItems.some((item) => item.advertiser_name === selected)) advertiserSelect.value = selected;
+      }
+
+      function applyAdcopyAdvertiserSelection() {
+        const advertiserName = $("#adcopy-existing-advertiser").value || "";
+        if (!advertiserName) return;
+        const item = adsKeyItems.find((entry) => entry.advertiser_name === advertiserName);
+        if (!item) return;
+        $("#adcopy-advertiser-name").value = item.advertiser_name || "";
+        $("#adcopy-industry").value = ADS_INDUSTRIES.includes(item.industry) ? item.industry : "";
+      }
+
+      function readAdcopyPayload() {
+        const countries = ($("#adcopy-target-countries").value || "KR")
+          .split(/[,\s]+/)
+          .map((item) => item.trim().toUpperCase())
+          .filter(Boolean);
+        return {
+          advertiser_name: $("#adcopy-advertiser-name").value.trim(),
+          industry: $("#adcopy-industry").value.trim(),
+          campaign_name: $("#adcopy-campaign-name").value.trim(),
+          objective: $("#adcopy-objective").value || "Views",
+          budget_max: Number($("#adcopy-budget-max").value || 0),
+          budget_type: $("#adcopy-budget-type").value || "daily",
+          launch_date: $("#adcopy-launch-date").value || "",
+          end_date: $("#adcopy-end-date").value || "",
+          target_countries: countries.length ? countries : ["KR"],
+          product_name: $("#adcopy-product-name").value.trim(),
+          landing_url: $("#adcopy-landing-url").value.trim(),
+          image_link: $("#adcopy-image-link").value.trim(),
+          audience: $("#adcopy-audience").value.trim(),
+          selling_points: $("#adcopy-selling-points").value.trim(),
+          tone: $("#adcopy-tone").value.trim(),
+          banned_terms: $("#adcopy-banned-terms").value.trim(),
+          required_phrases: $("#adcopy-required-phrases").value.trim(),
+          adgroup_count: Number($("#adcopy-adgroup-count").value || 3),
+          ads_per_adgroup: Number($("#adcopy-ads-per-adgroup").value || 3),
+        };
+      }
+
+      function validateAdcopyPayload(payload) {
+        const missing = [];
+        if (!payload.advertiser_name) missing.push("광고주명");
+        if (!payload.campaign_name) missing.push("캠페인명");
+        if (!payload.product_name) missing.push("제품·서비스명");
+        if (!payload.landing_url) missing.push("랜딩 URL");
+        if (!payload.image_link) missing.push("이미지 URL");
+        if (missing.length) throw new Error(`${missing.join(", ")}을 입력해 주세요.`);
+        if (!/^https?:\/\//i.test(payload.landing_url)) throw new Error("랜딩 URL은 http 또는 https 주소여야 합니다.");
+        if (!/^https?:\/\//i.test(payload.image_link)) throw new Error("이미지 URL은 http 또는 https 주소여야 합니다.");
+        if (payload.adgroup_count < 1 || payload.adgroup_count > 12) throw new Error("광고그룹 수는 1~12 사이로 입력해 주세요.");
+        if (payload.ads_per_adgroup < 1 || payload.ads_per_adgroup > 8) throw new Error("그룹당 소재 수는 1~8 사이로 입력해 주세요.");
+      }
+
+      function resetAdcopyGenerator() {
+        $("#adcopy-generator-form").reset();
+        $("#adcopy-target-countries").value = "KR";
+        $("#adcopy-adgroup-count").value = "3";
+        $("#adcopy-ads-per-adgroup").value = "3";
+        $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
+        adcopyLastResult = null;
+        renderAdcopyResult(null);
+        setStatus("adcopy-generator-status", "입력값을 초기화했습니다.");
+      }
+
+      function adcopyValidationLabel(report) {
+        if (!report) return { text: "대기", cls: "tag" };
+        if (report.ok) return { text: "통과", cls: "tag tag-green" };
+        return { text: `${formatNumber(report.summary?.errors || 0)}개 오류`, cls: "tag tag-red" };
+      }
+
+      function renderAdcopyResult(data) {
+        const result = data?.generated || null;
+        const report = data?.validation_report || null;
+        const badge = adcopyValidationLabel(report);
+        $("#adcopy-validation-badge").className = badge.cls;
+        $("#adcopy-validation-badge").textContent = badge.text;
+        $("#copy-adcopy-json").disabled = !result;
+        $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
+        $("#adcopy-result-note").textContent = result
+          ? `${data.model || "모델"} 생성 · ${data.notice || "운영 검수 필요"}`
+          : "아직 생성된 초안이 없습니다.";
+        const summary = report?.summary || {};
+        $("#adcopy-summary-grid").innerHTML = `
+          <div><span>캠페인</span><strong>${formatNumber(summary.campaigns || 0)}</strong></div>
+          <div><span>광고그룹</span><strong>${formatNumber(summary.adgroups || 0)}</strong></div>
+          <div><span>소재</span><strong>${formatNumber(summary.ads || 0)}</strong></div>
+          <div><span>검수</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
+        `;
+        renderAdcopyPreviewList(result);
+        renderAdcopyValidationList(report);
+      }
+
+      function renderAdcopyPreviewList(result) {
+        const root = $("#adcopy-preview-list");
+        if (!result) {
+          root.innerHTML = '<div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
+          return;
+        }
+        const adsByGroup = new Map();
+        (result.ads || []).forEach((ad) => {
+          const key = ad.adgroup_name || "-";
+          if (!adsByGroup.has(key)) adsByGroup.set(key, []);
+          adsByGroup.get(key).push(ad);
+        });
+        root.innerHTML = (result.adgroups || []).map((group) => {
+          const keywords = (group.keywords || []).map((keyword) => {
+            const text = typeof keyword === "object" ? keyword.text : keyword;
+            const origin = typeof keyword === "object" ? keyword.origin : "ai_inferred";
+            return `<span class="adcopy-keyword ${origin === "customer_data" ? "is-customer" : ""}">${escapeHtml(text || "")}</span>`;
+          }).join("");
+          const rows = (adsByGroup.get(group.adgroup_name) || []).map((ad) => `
+            <tr>
+              <td>${escapeHtml(ad.ad_name || "-")}</td>
+              <td><strong>${escapeHtml(ad.title || "-")}</strong><small>${String(ad.title || "").length}자</small></td>
+              <td>${escapeHtml(ad.copy || "-")}<small>${String(ad.copy || "").length}자</small></td>
+            </tr>
+          `).join("");
+          return `
+            <article class="adcopy-group-card">
+              <div class="adcopy-group-head">
+                <strong>${escapeHtml(group.adgroup_name || "-")}</strong>
+                <span>${formatNumber((adsByGroup.get(group.adgroup_name) || []).length)}개 소재</span>
+              </div>
+              <div class="adcopy-keyword-row">${keywords || '<span class="muted-text">Context Hints 없음</span>'}</div>
+              <table class="data-grid adcopy-mini-table">
+                <thead><tr><th>광고명</th><th>제목</th><th>카피</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="3">생성된 소재가 없습니다.</td></tr>'}</tbody>
+              </table>
+            </article>
+          `;
+        }).join("") || '<div class="empty-pane">생성된 광고그룹이 없습니다.</div>';
+      }
+
+      function renderAdcopyValidationList(report) {
+        const root = $("#adcopy-validation-list");
+        if (!report) {
+          root.innerHTML = '<div class="empty-pane">검수 결과가 없습니다.</div>';
+          return;
+        }
+        const findings = [...(report.errors || []), ...(report.warnings || [])];
+        if (!findings.length) {
+          root.innerHTML = '<div class="adcopy-validation-empty"><i class="ti ti-circle-check"></i><span>자동 검수에서 오류가 발견되지 않았습니다. 그래도 운영자 검수는 필요합니다.</span></div>';
+          return;
+        }
+        root.innerHTML = findings.map((finding) => `
+          <div class="adcopy-validation-item ${finding.level === "error" ? "is-error" : "is-warning"}">
+            <span>${finding.level === "error" ? "오류" : "주의"}</span>
+            <div>
+              <strong>${escapeHtml(finding.rule || "-")}</strong>
+              <p>${escapeHtml(finding.scope || "-")} · ${escapeHtml(finding.item || "-")} · ${escapeHtml(finding.field || "-")}</p>
+              <p>${escapeHtml(finding.message || "")}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      async function generateAdcopy(event) {
+        event?.preventDefault();
+        const button = $("#generate-adcopy");
+        const payload = readAdcopyPayload();
+        validateAdcopyPayload(payload);
+        setButtonBusy(button, true, "생성 중...");
+        setStatus("adcopy-generator-status", "카피 초안을 생성하는 중입니다. 대량 생성은 1분 정도 걸릴 수 있습니다.");
+        try {
+          const data = await adminFetch("/api/admin/adcopy/generate", {
+            method: "POST",
+            body: JSON.stringify(payload),
+            loadingMessage: "AI 카피 초안을 생성하는 중입니다.",
+          });
+          adcopyLastResult = data;
+          renderAdcopyResult(data);
+          setStatus("adcopy-generator-status", data.ok ? "초안 생성과 자동 검수를 완료했습니다." : "초안 생성 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+        } finally {
+          setButtonBusy(button, false);
+        }
+      }
+
+      async function copyAdcopyJson() {
+        if (!adcopyLastResult?.generated) return;
+        await navigator.clipboard.writeText(JSON.stringify(adcopyLastResult.generated, null, 2));
+        setStatus("adcopy-generator-status", "generated.json 내용을 클립보드에 복사했습니다.", "ok");
       }
 
       function resetAdsKeyForm() {
@@ -6072,6 +6457,9 @@
         await loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
       }
 
+      $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
+      renderAdcopyAdvertiserSelect();
+
       $("#login-button").addEventListener("click", async () => {
         adminPassword = $("#admin-password").value;
         setStatus("login-status", "비밀번호를 확인하는 중입니다.");
@@ -6156,6 +6544,14 @@
         if (!editable) return;
         event.preventDefault();
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
+      });
+      $("#adcopy-existing-advertiser").addEventListener("change", applyAdcopyAdvertiserSelection);
+      $("#adcopy-generator-form").addEventListener("submit", (event) => {
+        generateAdcopy(event).catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#reset-adcopy-generator").addEventListener("click", resetAdcopyGenerator);
+      $("#copy-adcopy-json").addEventListener("click", () => {
+        copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       $("#inspect-ads-key").addEventListener("click", () => inspectAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
