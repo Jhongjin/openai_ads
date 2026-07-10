@@ -666,110 +666,155 @@
                   </div>
                   <div class="adcopy-generator-layout">
                     <form class="adcopy-form" id="adcopy-generator-form">
-                      <div class="grid-3">
+                      <section class="adcopy-form-section">
+                        <div class="adcopy-form-section-head">
+                          <span>01</span>
+                          <div>
+                            <h3>기본 정보</h3>
+                            <p>등록된 광고주를 선택하면 광고주명과 업종이 자동 입력됩니다.</p>
+                          </div>
+                        </div>
+                        <div class="grid-3">
+                          <label class="field">
+                            <span class="field-label">기존 광고주</span>
+                            <select class="control" id="adcopy-existing-advertiser">
+                              <option value="">직접 입력</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span class="field-label">광고주명 <em class="required-mark">*</em></span>
+                            <input class="control" id="adcopy-advertiser-name" required />
+                          </label>
+                          <label class="field">
+                            <span class="field-label">업종</span>
+                            <select class="control" id="adcopy-industry">
+                              <option value="">업종 선택</option>
+                            </select>
+                          </label>
+                        </div>
+                      </section>
+
+                      <section class="adcopy-form-section">
+                        <div class="adcopy-form-section-head">
+                          <span>02</span>
+                          <div>
+                            <h3>캠페인 조건</h3>
+                            <p>생성 결과의 campaign 행에 그대로 반영되는 값입니다.</p>
+                          </div>
+                        </div>
+                        <div class="grid-3">
+                          <label class="field">
+                            <span class="field-label">캠페인명 <em class="required-mark">*</em></span>
+                            <input class="control" id="adcopy-campaign-name" required />
+                          </label>
+                          <label class="field">
+                            <span class="field-label">목표</span>
+                            <select class="control" id="adcopy-objective">
+                              <option value="Views">노출</option>
+                              <option value="Clicks">클릭</option>
+                              <option value="Conversions">전환</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span class="field-label">타겟 국가</span>
+                            <input class="control" id="adcopy-target-countries" value="KR" />
+                          </label>
+                        </div>
+                        <div class="grid-3">
+                          <label class="field">
+                            <span class="field-label">예산 유형</span>
+                            <select class="control" id="adcopy-budget-type">
+                              <option value="daily">일 예산</option>
+                              <option value="total">총 예산</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span class="field-label">예산</span>
+                            <input class="control" id="adcopy-budget-max" type="number" min="0" step="1" placeholder="예: 25000" />
+                          </label>
+                          <div class="field">
+                            <span class="field-label">생성 수량</span>
+                            <span class="adcopy-count-control">
+                              <label>
+                                <span>광고그룹</span>
+                                <input class="control" id="adcopy-adgroup-count" type="number" min="1" max="12" value="3" aria-label="광고그룹 수" />
+                              </label>
+                              <label>
+                                <span>소재/그룹</span>
+                                <input class="control" id="adcopy-ads-per-adgroup" type="number" min="1" max="8" value="3" aria-label="광고그룹별 소재 수" />
+                              </label>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="grid-2">
+                          <label class="field">
+                            <span class="field-label">시작일</span>
+                            <input class="control" id="adcopy-launch-date" type="date" />
+                          </label>
+                          <label class="field">
+                            <span class="field-label">종료일</span>
+                            <input class="control" id="adcopy-end-date" type="date" />
+                          </label>
+                        </div>
+                      </section>
+
+                      <section class="adcopy-form-section">
+                        <div class="adcopy-form-section-head">
+                          <span>03</span>
+                          <div>
+                            <h3>소재 브리프</h3>
+                            <p>AI가 광고그룹, Context Hints, 제목과 카피를 만드는 핵심 입력입니다.</p>
+                          </div>
+                        </div>
                         <label class="field">
-                          기존 광고주
-                          <select class="control" id="adcopy-existing-advertiser">
-                            <option value="">직접 입력</option>
-                          </select>
+                          <span class="field-label">제품·서비스명 <em class="required-mark">*</em></span>
+                          <input class="control" id="adcopy-product-name" required placeholder="예: 초등 영어 학습 앱" />
                         </label>
+                        <div class="grid-2">
+                          <label class="field">
+                            <span class="field-label">랜딩 URL <em class="required-mark">*</em></span>
+                            <input class="control" id="adcopy-landing-url" type="url" required placeholder="https://..." />
+                          </label>
+                          <label class="field">
+                            <span class="field-label">이미지 URL <em class="required-mark">*</em></span>
+                            <input class="control" id="adcopy-image-link" type="url" required placeholder="https://..." />
+                          </label>
+                        </div>
                         <label class="field">
-                          광고주명 <span class="required-mark">*</span>
-                          <input class="control" id="adcopy-advertiser-name" required />
+                          <span class="field-label">핵심 소구점</span>
+                          <textarea class="textarea" id="adcopy-selling-points" placeholder="혜택, 차별점, 가격, 이용 조건, 주의해야 할 표현 등을 문장으로 정리해 주세요."></textarea>
                         </label>
-                        <label class="field">
-                          업종
-                          <select class="control" id="adcopy-industry">
-                            <option value="">업종 선택</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div class="grid-3">
-                        <label class="field">
-                          캠페인명 <span class="required-mark">*</span>
-                          <input class="control" id="adcopy-campaign-name" required />
-                        </label>
-                        <label class="field">
-                          목표
-                          <select class="control" id="adcopy-objective">
-                            <option value="Views">노출</option>
-                            <option value="Clicks">클릭</option>
-                            <option value="Conversions">전환</option>
-                          </select>
-                        </label>
-                        <label class="field">
-                          타겟 국가
-                          <input class="control" id="adcopy-target-countries" value="KR" />
-                        </label>
-                      </div>
-                      <div class="grid-3">
-                        <label class="field">
-                          예산 유형
-                          <select class="control" id="adcopy-budget-type">
-                            <option value="daily">일 예산</option>
-                            <option value="total">총 예산</option>
-                          </select>
-                        </label>
-                        <label class="field">
-                          예산
-                          <input class="control" id="adcopy-budget-max" type="number" min="0" step="1" placeholder="예: 25000" />
-                        </label>
-                        <label class="field">
-                          생성 수량
-                          <span class="adcopy-count-control">
-                            <input class="control" id="adcopy-adgroup-count" type="number" min="1" max="12" value="3" aria-label="광고그룹 수" />
-                            <input class="control" id="adcopy-ads-per-adgroup" type="number" min="1" max="8" value="3" aria-label="광고그룹별 소재 수" />
-                          </span>
-                        </label>
-                      </div>
-                      <div class="grid-2">
-                        <label class="field">
-                          시작일
-                          <input class="control" id="adcopy-launch-date" type="date" />
-                        </label>
-                        <label class="field">
-                          종료일
-                          <input class="control" id="adcopy-end-date" type="date" />
-                        </label>
-                      </div>
-                      <div class="grid-2">
-                        <label class="field">
-                          랜딩 URL <span class="required-mark">*</span>
-                          <input class="control" id="adcopy-landing-url" type="url" required placeholder="https://..." />
-                        </label>
-                        <label class="field">
-                          이미지 URL <span class="required-mark">*</span>
-                          <input class="control" id="adcopy-image-link" type="url" required placeholder="https://..." />
-                        </label>
-                      </div>
-                      <label class="field">
-                        제품·서비스명 <span class="required-mark">*</span>
-                        <input class="control" id="adcopy-product-name" required placeholder="예: 초등 영어 학습 앱" />
-                      </label>
-                      <label class="field">
-                        핵심 소구점
-                        <textarea class="textarea" id="adcopy-selling-points" placeholder="혜택, 차별점, 가격, 이용 조건, 주의해야 할 표현 등을 문장으로 정리해 주세요."></textarea>
-                      </label>
-                      <div class="grid-2">
-                        <label class="field">
-                          타깃·상황
-                          <textarea class="textarea" id="adcopy-audience" placeholder="누가, 어떤 상황에서, 어떤 문제를 해결하려는지 적어 주세요."></textarea>
-                        </label>
-                        <label class="field">
-                          톤앤매너
-                          <textarea class="textarea" id="adcopy-tone" placeholder="예: 담백하고 신뢰감 있게, 과장 금지, 교육 정보형"></textarea>
-                        </label>
-                      </div>
-                      <div class="grid-2">
-                        <label class="field">
-                          금지 표현
-                          <textarea class="textarea" id="adcopy-banned-terms" placeholder="줄바꿈 또는 쉼표로 입력"></textarea>
-                        </label>
-                        <label class="field">
-                          필수 포함 문구
-                          <textarea class="textarea" id="adcopy-required-phrases" placeholder="광고별로 반드시 들어가야 하는 문구가 있으면 입력"></textarea>
-                        </label>
-                      </div>
+                        <div class="grid-2">
+                          <label class="field">
+                            <span class="field-label">타깃·상황</span>
+                            <textarea class="textarea" id="adcopy-audience" placeholder="누가, 어떤 상황에서, 어떤 문제를 해결하려는지 적어 주세요."></textarea>
+                          </label>
+                          <label class="field">
+                            <span class="field-label">톤앤매너</span>
+                            <textarea class="textarea" id="adcopy-tone" placeholder="예: 담백하고 신뢰감 있게, 과장 금지, 교육 정보형"></textarea>
+                          </label>
+                        </div>
+                      </section>
+
+                      <section class="adcopy-form-section">
+                        <div class="adcopy-form-section-head">
+                          <span>04</span>
+                          <div>
+                            <h3>정책·검수 조건</h3>
+                            <p>금지 표현과 필수 문구는 자동 검수 리포트에도 함께 반영됩니다.</p>
+                          </div>
+                        </div>
+                        <div class="grid-2">
+                          <label class="field">
+                            <span class="field-label">금지 표현</span>
+                            <textarea class="textarea" id="adcopy-banned-terms" placeholder="줄바꿈 또는 쉼표로 입력"></textarea>
+                          </label>
+                          <label class="field">
+                            <span class="field-label">필수 포함 문구</span>
+                            <textarea class="textarea" id="adcopy-required-phrases" placeholder="광고별로 반드시 들어가야 하는 문구가 있으면 입력"></textarea>
+                          </label>
+                        </div>
+                      </section>
                       <div class="form-actions">
                         <button class="btn-command" type="submit" id="generate-adcopy">
                           <i class="ti ti-sparkles"></i>

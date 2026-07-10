@@ -643,7 +643,9 @@ body.dev-console :focus-visible {
 
 .required-mark {
   color: var(--oa-red);
+  font-style: normal;
   font-weight: 950;
+  line-height: 1;
 }
 
 .field .help,
@@ -1712,10 +1714,83 @@ body.dev-console.modal-open {
   min-width: 0;
 }
 
+.adcopy-form {
+  display: grid;
+  gap: 12px;
+}
+
+.adcopy-form-section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius);
+  background: #fff;
+  padding: 14px;
+}
+
+.adcopy-form-section-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.adcopy-form-section-head > span {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-form-section-head h3 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.adcopy-form-section-head p {
+  margin: 3px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-form .field {
+  gap: 6px;
+}
+
+.adcopy-form .field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.adcopy-form .textarea {
+  min-height: 112px;
+}
+
 .adcopy-count-control {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.adcopy-count-control label {
+  display: grid;
+  gap: 4px;
+}
+
+.adcopy-count-control label > span {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 850;
 }
 
 .adcopy-preview {
@@ -1727,6 +1802,14 @@ body.dev-console.modal-open {
   border-radius: var(--oa-radius);
   background: #fbfcff;
   padding: 14px;
+}
+
+.adcopy-preview .empty-pane {
+  border-style: dashed;
+  background: #fffdf8;
+  color: var(--oa-muted);
+  padding: 24px;
+  text-align: center;
 }
 
 .adcopy-preview-head {
