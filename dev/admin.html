@@ -661,6 +661,10 @@
                       <i class="ti ti-download"></i>
                       JSON 다운로드
                     </button>
+                    <button class="btn-secondary" type="button" id="download-adcopy-report" disabled>
+                      <i class="ti ti-file-report"></i>
+                      검수 리포트
+                    </button>
                     <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
                       <i class="ti ti-checkup-list"></i>
                       수정 재검수
@@ -3604,6 +3608,10 @@
         $("#adcopy-landing-insight").hidden = true;
         $("#adcopy-landing-insight").innerHTML = "";
         adcopyLastResult = null;
+        $("#copy-adcopy-json").disabled = true;
+        $("#download-adcopy-json").disabled = true;
+        $("#download-adcopy-report").disabled = true;
+        $("#validate-adcopy-json").disabled = true;
         renderAdcopyResult(null);
         renderAdcopyBriefMeter();
         setStatus("adcopy-generator-status", "입력값을 초기화했습니다.");
@@ -3673,6 +3681,7 @@
         $("#adcopy-validation-badge").textContent = badge.text;
         $("#copy-adcopy-json").disabled = !result;
         $("#download-adcopy-json").disabled = !result;
+        $("#download-adcopy-report").disabled = !result;
         $("#validate-adcopy-json").disabled = !result;
         $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
         $("#adcopy-result-note").textContent = result
@@ -3695,8 +3704,26 @@
         $("#adcopy-json-preview").textContent = JSON.stringify(adcopyLastResult.generated, null, 2);
         $("#adcopy-validation-badge").className = "tag tag-amber";
         $("#adcopy-validation-badge").textContent = "재검수 필요";
+        $("#download-adcopy-report").disabled = true;
         $("#validate-adcopy-json").disabled = false;
-        setStatus("adcopy-generator-status", "제목 또는 카피가 수정되었습니다. 수정 재검수를 눌러 품질 점수를 갱신해 주세요.", "warning");
+        setStatus("adcopy-generator-status", "제목 또는 카피가 수정되었습니다. 수정 재검수를 누르면 품질 점수와 검수 리포트를 다시 받을 수 있습니다.", "warning");
+      }
+
+      function adcopyLengthMeta(field, value) {
+        const length = String(value || "").length;
+        if (field === "title") {
+          if (length > 24) return { text: `${length}/24자 · 초과`, cls: "is-error" };
+          if (length < 10 || length > 18) return { text: `${length}/24자 · 권장 16~18`, cls: "is-warning" };
+          return { text: `${length}/24자`, cls: "is-ok" };
+        }
+        if (length > 48) return { text: `${length}/48자 · 초과`, cls: "is-error" };
+        if (length < 18 || length > 42) return { text: `${length}/48자 · 권장 18~42`, cls: "is-warning" };
+        return { text: `${length}/48자`, cls: "is-ok" };
+      }
+
+      function renderAdcopyLengthBadge(field, value) {
+        const meta = adcopyLengthMeta(field, value);
+        return `<small class="${meta.cls}" data-adcopy-length data-adcopy-field="${field}">${escapeHtml(meta.text)}</small>`;
       }
 
       function handleAdcopyEdit(event) {
@@ -3709,7 +3736,11 @@
         if (!ad) return;
         ad[field] = target.value;
         const lengthLabel = target.closest("td")?.querySelector("[data-adcopy-length]");
-        if (lengthLabel) lengthLabel.textContent = `${target.value.length}자`;
+        if (lengthLabel) {
+          const meta = adcopyLengthMeta(field, target.value);
+          lengthLabel.textContent = meta.text;
+          lengthLabel.className = meta.cls;
+        }
         markAdcopyValidationStale();
       }
 
@@ -3744,11 +3775,11 @@
               <td>${escapeHtml(ad.ad_name || "-")}</td>
               <td>
                 <textarea class="adcopy-edit-control" data-adcopy-edit="title" data-ad-index="${index}" rows="2">${escapeHtml(ad.title || "")}</textarea>
-                <small data-adcopy-length>${String(ad.title || "").length}자</small>
+                ${renderAdcopyLengthBadge("title", ad.title)}
               </td>
               <td>
                 <textarea class="adcopy-edit-control" data-adcopy-edit="copy" data-ad-index="${index}" rows="3">${escapeHtml(ad.copy || "")}</textarea>
-                <small data-adcopy-length>${String(ad.copy || "").length}자</small>
+                ${renderAdcopyLengthBadge("copy", ad.copy)}
                 <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
                 ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
               </td>
@@ -3822,6 +3853,10 @@
         setStatus("adcopy-generator-status", "generated.json 내용을 클립보드에 복사했습니다.", "ok");
       }
 
+      function adcopySafeDownloadName(name, fallback = "openai_ads") {
+        return String(name || fallback).replace(/[\\/:*?"<>|]+/g, "_").slice(0, 80) || fallback;
+      }
+
       function downloadAdcopyJson() {
         if (!adcopyLastResult?.generated) return;
         const json = JSON.stringify(adcopyLastResult.generated, null, 2);
@@ -3829,7 +3864,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
-        const safeName = String(campaignName).replace(/[\\/:*?"<>|]+/g, "_").slice(0, 80) || "openai_ads";
+        const safeName = adcopySafeDownloadName(campaignName);
         link.href = url;
         link.download = `${safeName}_generated.json`;
         document.body.appendChild(link);
@@ -3837,6 +3872,126 @@
         link.remove();
         URL.revokeObjectURL(url);
         setStatus("adcopy-generator-status", "현재 수정본 generated.json 파일을 다운로드했습니다.", "ok");
+      }
+
+      function adcopyMarkdownCell(value) {
+        const text = String(value ?? "-").replace(/\r?\n/g, "<br>").replace(/\|/g, "\\|").trim();
+        return text || "-";
+      }
+
+      function adcopyListLines(items, mapper) {
+        return (items || []).length
+          ? items.map((item, index) => `${index + 1}. ${mapper(item, index)}`).join("\n")
+          : "-";
+      }
+
+      function buildAdcopyReviewMarkdown() {
+        const generated = adcopyLastResult?.generated;
+        const report = adcopyLastResult?.validation_report || {};
+        const summary = report.summary || {};
+        const quality = report.quality || {};
+        const campaign = generated?.campaigns?.[0] || {};
+        const payload = (() => {
+          try {
+            return readAdcopyPayload();
+          } catch {
+            return {};
+          }
+        })();
+        const createdAt = new Date().toLocaleString("ko-KR", {
+          timeZone: "Asia/Seoul",
+          hour12: false,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const findings = [...(report.errors || []), ...(report.warnings || [])];
+        const recommendations = quality.recommendations || [];
+        const creativeChecks = report.creative_checks || [];
+        const adgroups = generated?.adgroups || [];
+        const ads = generated?.ads || [];
+        const lines = [
+          `# OpenAI Ads AI 카피 검수 리포트`,
+          "",
+          `- 생성 시각: ${createdAt} KST`,
+          `- 모델: ${adcopyMarkdownCell(adcopyLastResult?.model || "-")}`,
+          `- 광고주: ${adcopyMarkdownCell(payload.advertiser_name || campaign.advertiser_name || "-")}`,
+          `- 캠페인: ${adcopyMarkdownCell(campaign.campaign_name || payload.campaign_name || "-")}`,
+          `- 업종/목표: ${adcopyMarkdownCell(payload.industry || "-")} / ${adcopyMarkdownCell(campaign.objective || payload.objective || "-")}`,
+          `- 랜딩 URL: ${adcopyMarkdownCell(payload.landing_url || "-")}`,
+          "",
+          "## 1. 생성 요약",
+          "",
+          `| 항목 | 값 |`,
+          `| --- | ---: |`,
+          `| 캠페인 | ${formatNumber(summary.campaigns || 0)} |`,
+          `| 광고그룹 | ${formatNumber(summary.adgroups || adgroups.length || 0)} |`,
+          `| 소재 | ${formatNumber(summary.ads || ads.length || 0)} |`,
+          `| 오류 | ${formatNumber(summary.errors || 0)} |`,
+          `| 주의 | ${formatNumber(summary.warnings || 0)} |`,
+          `| 품질 스코어 | ${formatNumber(quality.score || 0)} / 100 |`,
+          `| 판정 | ${adcopyMarkdownCell(quality.readiness || (report.ok ? "자동 검수 통과" : "운영 검수 필요"))} |`,
+          "",
+          "## 2. 운영 수정 포인트",
+          "",
+          adcopyListLines(recommendations, (item) => `**${adcopyMarkdownCell(item.title || "추천")}** — ${adcopyMarkdownCell(item.message || "")}`),
+          "",
+          "## 3. 오류·주의 항목",
+          "",
+          findings.length
+            ? findings.map((item) => `- [${item.level === "error" ? "오류" : "주의"}] ${adcopyMarkdownCell(item.rule)} · ${adcopyMarkdownCell(item.scope)} / ${adcopyMarkdownCell(item.item)} / ${adcopyMarkdownCell(item.field)} — ${adcopyMarkdownCell(item.message)}`).join("\n")
+            : "- 자동 검수에서 오류나 주의 항목이 발견되지 않았습니다. 최종 업로드 전 광고주명, URL, 이미지, 정책 표현은 수동 확인하세요.",
+          "",
+          "## 4. 광고그룹 Context Hints",
+          "",
+          "| 광고그룹 | Context Hints |",
+          "| --- | --- |",
+          ...(adgroups.length
+            ? adgroups.map((group) => {
+                const keywords = (group.keywords || []).map((keyword) => typeof keyword === "object" ? keyword.text : keyword).filter(Boolean).join(", ");
+                return `| ${adcopyMarkdownCell(group.adgroup_name)} | ${adcopyMarkdownCell(keywords || "-")} |`;
+              })
+            : ["| - | - |"]),
+          "",
+          "## 5. 소재별 검수",
+          "",
+          "| 소재명 | 제목 | 카피 | 판정 |",
+          "| --- | --- | --- | --- |",
+          ...(ads.length
+            ? ads.map((ad) => {
+                const check = creativeChecks.find((item) => item.ad_name === ad.ad_name) || {};
+                const status = check.status === "error" ? "오류" : (check.status === "warning" ? "주의" : "양호");
+                const issues = (check.issues || []).map((issue) => issue.message).join("<br>");
+                return `| ${adcopyMarkdownCell(ad.ad_name)} | ${adcopyMarkdownCell(ad.title)} | ${adcopyMarkdownCell(ad.copy)} | ${adcopyMarkdownCell(issues ? `${status}: ${issues}` : status)} |`;
+              })
+            : ["| - | - | - | - |"]),
+          "",
+          "## 6. 업로드 전 확인",
+          "",
+          "- 이 리포트는 자동 검수 보조 자료입니다.",
+          "- OpenAI Ads 업로드 전 landing_url, image_link, 금지 표현, 필수 문구를 운영자가 최종 확인해야 합니다.",
+          "- generated.json은 별도 다운로드 버튼의 최신 수정본을 사용하세요.",
+          "",
+        ];
+        return lines.join("\n");
+      }
+
+      function downloadAdcopyReviewReport() {
+        if (!adcopyLastResult?.generated) return;
+        const markdown = buildAdcopyReviewMarkdown();
+        const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
+        link.href = url;
+        link.download = `${adcopySafeDownloadName(campaignName)}_review.md`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("adcopy-generator-status", "운영 검수용 마크다운 리포트를 다운로드했습니다.", "ok");
       }
 
       async function validateEditedAdcopy() {
@@ -6897,6 +7052,7 @@
         copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#download-adcopy-json").addEventListener("click", downloadAdcopyJson);
+      $("#download-adcopy-report").addEventListener("click", downloadAdcopyReviewReport);
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });

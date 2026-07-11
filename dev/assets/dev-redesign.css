@@ -2183,6 +2183,19 @@ body.dev-console.modal-open {
   margin-top: 3px;
   color: var(--oa-muted);
   font-size: 11px;
+  font-weight: 850;
+}
+
+.adcopy-mini-table small.is-ok {
+  color: var(--oa-green);
+}
+
+.adcopy-mini-table small.is-warning {
+  color: var(--oa-gold);
+}
+
+.adcopy-mini-table small.is-error {
+  color: var(--oa-red-dark);
 }
 
 .adcopy-edit-control {
