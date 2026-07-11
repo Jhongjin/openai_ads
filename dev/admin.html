@@ -677,8 +677,14 @@
                 </div>
                 <div class="surface-body stack">
                   <div class="adcopy-safe-note">
-                    <strong>초안 전용</strong>
-                    <span>이 화면은 캠페인·광고그룹·소재를 생성하지 않습니다. 결과는 운영 검수 후 수동 업로드 또는 다음 단계의 draft 세팅 흐름으로만 넘깁니다.</span>
+                    <div>
+                      <strong>초안 전용</strong>
+                      <span>이 화면은 캠페인·광고그룹·소재를 생성하지 않습니다. 결과는 운영 검수 후 수동 업로드 또는 다음 단계의 draft 세팅 흐름으로만 넘깁니다.</span>
+                    </div>
+                    <button class="btn-secondary btn-compact" type="button" id="fill-adcopy-sample">
+                      <i class="ti ti-flask"></i>
+                      테스트 브리프
+                    </button>
                   </div>
                   <div class="adcopy-generator-layout">
                     <form class="adcopy-form" id="adcopy-generator-form">
@@ -1430,6 +1436,80 @@
         "수송",
       ];
       const ADCOPY_DEFAULT_BANNED_TERMS = ["무조건", "누구나", "최고", "반드시", "혜택 보장", "업계 1위"];
+      const ADCOPY_SAMPLE_BRIEFS = {
+        교육: {
+          productName: "초등 영어 레벨테스트",
+          objective: "Views",
+          sellingPoints: [
+            "초등학생 영어 수준을 짧은 문항으로 확인할 수 있는 온라인 레벨테스트",
+            "결과에 따라 학습 단계와 추천 자료를 안내하되 성적 향상을 보장하지 않음",
+            "무료 체험 또는 상담 조건이 있다면 랜딩에서 확인 필요",
+          ],
+          audience: "자녀의 현재 영어 수준을 확인하고 학습 방향을 비교하려는 보호자",
+          tone: "교육 정보형, 차분하고 신뢰감 있게, 단기간 향상·성적 보장 표현 금지",
+          requiredPhrases: "레벨테스트\n영어 학습",
+        },
+        금융: {
+          productName: "자산관리 리포트 상담",
+          objective: "Clicks",
+          sellingPoints: [
+            "투자 성향과 보유 자산을 점검하는 상담형 서비스",
+            "수익률, 원금 보장, 확정 이익처럼 오해될 표현 금지",
+            "상담 가능 시간과 유의사항은 랜딩에서 확인하도록 안내",
+          ],
+          audience: "투자 조건과 리스크를 비교하며 신중하게 상담을 검토하는 사용자",
+          tone: "신뢰감 있는 안내형, 불안 조장·수익 단정 금지",
+          requiredPhrases: "상담\n유의사항",
+        },
+        식음료: {
+          productName: "프리미엄 커피 캡슐",
+          objective: "Views",
+          sellingPoints: [
+            "집에서 간편하게 즐기는 커피 캡슐 구성과 맛 특징 안내",
+            "구매처, 구성, 기간 혜택은 랜딩 기준으로 확인",
+            "건강 효능이나 효과를 단정하지 않고 경험 중심으로 표현",
+          ],
+          audience: "집이나 사무실에서 간편한 커피 옵션을 비교하는 소비자",
+          tone: "감각적이지만 담백하게, 과장된 효능 표현 금지",
+          requiredPhrases: "커피 캡슐",
+        },
+        패션: {
+          productName: "여름 데일리 셔츠",
+          objective: "Views",
+          sellingPoints: [
+            "소재, 핏, 컬러, 착용 상황을 구체적으로 안내",
+            "사이즈와 구매 조건은 랜딩에서 확인하도록 표현",
+            "외모 개선이나 착용 결과를 보장하는 표현 금지",
+          ],
+          audience: "출근과 주말에 함께 입을 수 있는 실용적인 스타일을 찾는 소비자",
+          tone: "세련되고 실용적인 톤, 과도한 외모 평가 표현 금지",
+          requiredPhrases: "데일리 셔츠",
+        },
+        화장품: {
+          productName: "수분 케어 세럼",
+          objective: "Views",
+          sellingPoints: [
+            "사용감, 성분 특징, 사용 순서를 객관적으로 안내",
+            "피부 타입별 개인차가 있음을 전제",
+            "미백, 주름, 치료 효과처럼 효능을 단정하지 않음",
+          ],
+          audience: "피부 타입과 사용감을 비교하고 신중히 선택하려는 소비자",
+          tone: "차분하고 신뢰감 있는 뷰티 정보형, 개인차 고려",
+          requiredPhrases: "수분 케어",
+        },
+        수송: {
+          productName: "렌터카 예약 서비스",
+          objective: "Clicks",
+          sellingPoints: [
+            "차종, 예약 가능 기간, 이용 조건, 비용 확인 경로를 명확히 안내",
+            "정시성, 최저가, 안전을 보장하는 단정 표현 금지",
+            "보험, 반납, 추가 요금 조건은 랜딩에서 확인 필요",
+          ],
+          audience: "여행이나 업무 이동을 위해 차량 조건과 비용을 비교하는 사용자",
+          tone: "간결하고 신뢰감 있는 안내형, 보장 표현 금지",
+          requiredPhrases: "렌터카 예약",
+        },
+      };
       let adcopyLastResult = null;
       let adcopyPreviewFilter = "all";
       let officialPage = 1;
@@ -3454,6 +3534,54 @@
         $("#adcopy-advertiser-name").value = item.advertiser_name || "";
         $("#adcopy-industry").value = ADS_INDUSTRIES.includes(item.industry) ? item.industry : "";
         renderAdcopyBriefMeter();
+      }
+
+      function selectedAdcopySampleAdvertiser() {
+        const selectedName = $("#adcopy-existing-advertiser").value || "";
+        const selected = selectedName ? adsKeyItems.find((item) => item.advertiser_name === selectedName) : null;
+        const fallback = adsKeyItems.find((item) => item.enabled) || adsKeyItems[0] || null;
+        const item = selected || fallback;
+        return {
+          name: item?.advertiser_name || "테스트 광고주",
+          industry: ADS_INDUSTRIES.includes(item?.industry) ? item.industry : "교육",
+          fromExisting: Boolean(item),
+        };
+      }
+
+      function applyAdcopySampleBrief() {
+        const sampleAdvertiser = selectedAdcopySampleAdvertiser();
+        const sample = ADCOPY_SAMPLE_BRIEFS[sampleAdvertiser.industry] || ADCOPY_SAMPLE_BRIEFS.교육;
+        const startDate = shiftDateString(kstTodayString(), 1);
+        const endDate = shiftDateString(startDate, 30);
+        $("#adcopy-advertiser-name").value = sampleAdvertiser.name;
+        $("#adcopy-industry").value = sampleAdvertiser.industry;
+        $("#adcopy-campaign-name").value = `${sampleAdvertiser.name}_${sample.productName}_테스트`;
+        $("#adcopy-objective").value = sample.objective;
+        $("#adcopy-target-countries").value = "KR";
+        $("#adcopy-budget-type").value = "daily";
+        $("#adcopy-budget-max").value = "30000";
+        $("#adcopy-adgroup-count").value = "2";
+        $("#adcopy-ads-per-adgroup").value = "3";
+        $("#adcopy-launch-date").value = startDate;
+        $("#adcopy-end-date").value = endDate;
+        $("#adcopy-product-name").value = sample.productName;
+        $("#adcopy-landing-url").value = "https://example.com/openai-ads-sample";
+        $("#adcopy-image-link").value = "https://example.com/openai-ads-sample.jpg";
+        $("#adcopy-selling-points").value = sample.sellingPoints.join("\n");
+        $("#adcopy-audience").value = sample.audience;
+        $("#adcopy-tone").value = sample.tone;
+        $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
+        $("#adcopy-required-phrases").value = [sampleAdvertiser.name, sample.requiredPhrases].filter(Boolean).join("\n");
+        $("#adcopy-landing-insight").hidden = true;
+        $("#adcopy-landing-insight").innerHTML = "";
+        clearAdcopyFieldIssues();
+        renderAdcopyBriefMeter();
+        setStatus(
+          "adcopy-generator-status",
+          `테스트 브리프를 채웠습니다. 실제 업로드 전 랜딩 URL과 이미지 URL은 광고주 자료로 교체해 주세요.`,
+          "ok",
+        );
+        $("#adcopy-product-name").scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
       function readAdcopyPayload() {
@@ -7391,6 +7519,7 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#adcopy-existing-advertiser").addEventListener("change", applyAdcopyAdvertiserSelection);
+      $("#fill-adcopy-sample").addEventListener("click", applyAdcopySampleBrief);
       $("#inspect-adcopy-landing").addEventListener("click", () => {
         inspectAdcopyLanding().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });

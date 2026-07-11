@@ -1700,7 +1700,8 @@ body.dev-console.modal-open {
 
 .adcopy-safe-note {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   border: 1px solid #c7dbef;
   border-left: 4px solid var(--oa-blue);
@@ -1712,10 +1713,22 @@ body.dev-console.modal-open {
   line-height: 1.55;
 }
 
+.adcopy-safe-note > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
 .adcopy-safe-note strong {
   color: #194f91;
   font-weight: 950;
   white-space: nowrap;
+}
+
+.adcopy-safe-note .btn-secondary {
+  flex: 0 0 auto;
+  background: #fff;
 }
 
 .adcopy-generator-layout {
@@ -3377,6 +3390,15 @@ body.dev-console.modal-open {
   .doc-actions,
   .performance-panel-head {
     justify-content: flex-start;
+  }
+
+  .adcopy-safe-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .adcopy-safe-note > div {
+    display: grid;
   }
 
   .adcopy-summary-grid,
