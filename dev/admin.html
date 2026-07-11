@@ -661,6 +661,10 @@
                       <i class="ti ti-download"></i>
                       JSON 다운로드
                     </button>
+                    <button class="btn-secondary" type="button" id="download-adcopy-csv" disabled>
+                      <i class="ti ti-table-export"></i>
+                      소재 CSV
+                    </button>
                     <button class="btn-secondary" type="button" id="download-adcopy-report" disabled>
                       <i class="ti ti-file-report"></i>
                       검수 리포트
@@ -3757,6 +3761,7 @@
         adcopyPreviewFilter = "all";
         $("#copy-adcopy-json").disabled = true;
         $("#download-adcopy-json").disabled = true;
+        $("#download-adcopy-csv").disabled = true;
         $("#download-adcopy-report").disabled = true;
         $("#validate-adcopy-json").disabled = true;
         renderAdcopyResult(null);
@@ -3828,6 +3833,7 @@
         $("#adcopy-validation-badge").textContent = badge.text;
         $("#copy-adcopy-json").disabled = !result;
         $("#download-adcopy-json").disabled = !result;
+        $("#download-adcopy-csv").disabled = !result;
         $("#download-adcopy-report").disabled = !result;
         $("#validate-adcopy-json").disabled = !result;
         $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
@@ -4060,6 +4066,66 @@
         link.remove();
         URL.revokeObjectURL(url);
         setStatus("adcopy-generator-status", "현재 수정본 generated.json 파일을 다운로드했습니다.", "ok");
+      }
+
+      function adcopyCsvCell(value) {
+        const text = String(value ?? "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+
+      function adcopyReviewStatusText(status) {
+        if (status === "error") return "오류";
+        if (status === "warning") return "주의";
+        if (status === "stale") return "재검수 필요";
+        return "양호";
+      }
+
+      function buildAdcopyCreativeCsv() {
+        const generated = adcopyLastResult?.generated || {};
+        const report = adcopyLastResult?.validation_report || {};
+        const stale = $("#adcopy-validation-badge").textContent.trim() === "재검수 필요";
+        const checksByAd = new Map((report.creative_checks || []).map((item) => [item.ad_name, item]));
+        const adgroupsByName = new Map((generated.adgroups || []).map((group) => [group.adgroup_name, group]));
+        const rows = [
+          ["광고그룹", "소재명", "제목", "제목 길이", "카피", "카피 길이", "검수 상태", "검수 이슈", "Context Hints", "랜딩 URL", "이미지 URL"],
+          ...(generated.ads || []).map((ad) => {
+            const check = checksByAd.get(ad.ad_name || "") || {};
+            const status = stale ? "stale" : (check.status || "pass");
+            const issues = (stale ? ["제목 또는 카피가 수정되어 자동 검수 결과가 최신이 아닙니다."] : (check.issues || []).map((issue) => issue.message)).join(" · ");
+            const group = adgroupsByName.get(ad.adgroup_name || "") || {};
+            const keywords = (group.keywords || []).map((keyword) => typeof keyword === "object" ? keyword.text : keyword).filter(Boolean).join(", ");
+            return [
+              ad.adgroup_name || "",
+              ad.ad_name || "",
+              ad.title || "",
+              adcopyLengthMeta("title", ad.title).text,
+              ad.copy || "",
+              adcopyLengthMeta("copy", ad.copy).text,
+              adcopyReviewStatusText(status),
+              issues,
+              keywords,
+              ad.link || "",
+              ad.image_link || "",
+            ];
+          }),
+        ];
+        return `\ufeff${rows.map((row) => row.map(adcopyCsvCell).join(",")).join("\r\n")}`;
+      }
+
+      function downloadAdcopyCreativeCsv() {
+        if (!adcopyLastResult?.generated) return;
+        const csv = buildAdcopyCreativeCsv();
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
+        link.href = url;
+        link.download = `${adcopySafeDownloadName(campaignName)}_creatives.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("adcopy-generator-status", "소재 검수용 CSV 파일을 다운로드했습니다.", "ok");
       }
 
       function adcopyMarkdownCell(value) {
@@ -7245,6 +7311,7 @@
         copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#download-adcopy-json").addEventListener("click", downloadAdcopyJson);
+      $("#download-adcopy-csv").addEventListener("click", downloadAdcopyCreativeCsv);
       $("#download-adcopy-report").addEventListener("click", downloadAdcopyReviewReport);
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
