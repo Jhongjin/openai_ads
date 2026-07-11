@@ -670,6 +670,16 @@
                   </div>
                   <div class="adcopy-generator-layout">
                     <form class="adcopy-form" id="adcopy-generator-form">
+                      <section class="adcopy-brief-meter" id="adcopy-brief-meter">
+                        <div class="adcopy-brief-score">
+                          <span>브리프 완성도</span>
+                          <strong>-</strong>
+                        </div>
+                        <div class="adcopy-brief-checks">
+                          <span class="tag">입력 전</span>
+                          <p>필수 정보와 소구점이 충분할수록 생성 품질이 안정됩니다.</p>
+                        </div>
+                      </section>
                       <section class="adcopy-form-section">
                         <div class="adcopy-form-section-head">
                           <span>01</span>
@@ -3403,6 +3413,7 @@
         if (!item) return;
         $("#adcopy-advertiser-name").value = item.advertiser_name || "";
         $("#adcopy-industry").value = ADS_INDUSTRIES.includes(item.industry) ? item.industry : "";
+        renderAdcopyBriefMeter();
       }
 
       function readAdcopyPayload() {
@@ -3447,6 +3458,84 @@
         if (payload.ads_per_adgroup < 1 || payload.ads_per_adgroup > 8) throw new Error("그룹당 소재 수는 1~8 사이로 입력해 주세요.");
       }
 
+      function adcopyBriefReadiness() {
+        const payload = readAdcopyPayload();
+        const checks = [
+          {
+            label: "필수값",
+            ok: Boolean(payload.advertiser_name && payload.campaign_name && payload.product_name && payload.landing_url && payload.image_link),
+            help: "광고주, 캠페인, 제품, 랜딩, 이미지를 채워 주세요.",
+            weight: 30,
+          },
+          {
+            label: "소구점",
+            ok: payload.selling_points.length >= 30,
+            help: "제품 장점과 주의 표현을 30자 이상 적으면 안정적입니다.",
+            weight: 20,
+          },
+          {
+            label: "타깃·상황",
+            ok: payload.audience.length >= 20,
+            help: "누가 어떤 상황에서 쓰는지 적어 주세요.",
+            weight: 15,
+          },
+          {
+            label: "톤앤매너",
+            ok: payload.tone.length >= 8,
+            help: "문체와 금지 톤을 짧게라도 적어 주세요.",
+            weight: 10,
+          },
+          {
+            label: "정책 조건",
+            ok: payload.banned_terms.length >= 8,
+            help: "금지 표현을 최소 1개 이상 유지해 주세요.",
+            weight: 10,
+          },
+          {
+            label: "필수 문구",
+            ok: payload.required_phrases.length > 0,
+            help: "브랜드명처럼 반드시 들어갈 문구가 있으면 더 정확합니다.",
+            weight: 10,
+          },
+          {
+            label: "수량",
+            ok: payload.adgroup_count >= 1 && payload.ads_per_adgroup >= 1,
+            help: "광고그룹과 소재 수량을 확인해 주세요.",
+            weight: 5,
+          },
+        ];
+        const score = checks.reduce((sum, item) => sum + (item.ok ? item.weight : 0), 0);
+        return { score, checks, payload };
+      }
+
+      function adcopyBriefTag(score) {
+        if (score >= 85) return { label: "생성 적합", cls: "tag tag-green" };
+        if (score >= 65) return { label: "생성 가능", cls: "tag tag-blue" };
+        if (score >= 40) return { label: "보강 권장", cls: "tag tag-amber" };
+        return { label: "입력 부족", cls: "tag tag-red" };
+      }
+
+      function renderAdcopyBriefMeter() {
+        const root = $("#adcopy-brief-meter");
+        const { score, checks } = adcopyBriefReadiness();
+        const tag = adcopyBriefTag(score);
+        const missing = checks.filter((item) => !item.ok).slice(0, 3);
+        root.className = `adcopy-brief-meter ${score >= 85 ? "is-strong" : score >= 65 ? "is-ready" : score >= 40 ? "is-caution" : "is-risk"}`;
+        root.innerHTML = `
+          <div class="adcopy-brief-score">
+            <span>브리프 완성도</span>
+            <strong>${formatNumber(score)}</strong>
+          </div>
+          <div class="adcopy-brief-checks">
+            <span class="${tag.cls}">${tag.label}</span>
+            <p>${missing.length ? missing.map((item) => item.help).join(" ") : "현재 입력값은 생성에 충분합니다. 정책 표현과 랜딩 내용만 최종 확인하세요."}</p>
+            <div class="adcopy-brief-chip-row">
+              ${checks.map((item) => `<span class="adcopy-brief-chip ${item.ok ? "is-on" : ""}">${item.ok ? "✓" : "·"} ${escapeHtml(item.label)}</span>`).join("")}
+            </div>
+          </div>
+        `;
+      }
+
       function resetAdcopyGenerator() {
         $("#adcopy-generator-form").reset();
         $("#adcopy-target-countries").value = "KR";
@@ -3455,6 +3544,7 @@
         $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
         adcopyLastResult = null;
         renderAdcopyResult(null);
+        renderAdcopyBriefMeter();
         setStatus("adcopy-generator-status", "입력값을 초기화했습니다.");
       }
 
@@ -6627,6 +6717,7 @@
 
       $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
       renderAdcopyAdvertiserSelect();
+      renderAdcopyBriefMeter();
 
       $("#login-button").addEventListener("click", async () => {
         adminPassword = $("#admin-password").value;
@@ -6714,6 +6805,8 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#adcopy-existing-advertiser").addEventListener("change", applyAdcopyAdvertiserSelection);
+      $("#adcopy-generator-form").addEventListener("input", renderAdcopyBriefMeter);
+      $("#adcopy-generator-form").addEventListener("change", renderAdcopyBriefMeter);
       $("#adcopy-generator-form").addEventListener("submit", (event) => {
         generateAdcopy(event).catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });

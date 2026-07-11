@@ -1720,6 +1720,91 @@ body.dev-console.modal-open {
   gap: 12px;
 }
 
+.adcopy-brief-meter {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius);
+  background: #fff;
+  padding: 13px 14px;
+}
+
+.adcopy-brief-meter.is-strong {
+  border-color: #bfe7d5;
+  background: #f5fcf8;
+}
+
+.adcopy-brief-meter.is-ready {
+  border-color: #c7dbef;
+  background: #f7fbff;
+}
+
+.adcopy-brief-meter.is-caution {
+  border-color: #f6d790;
+  background: #fffaf0;
+}
+
+.adcopy-brief-meter.is-risk {
+  border-color: #ffc9cc;
+  background: #fff7f7;
+}
+
+.adcopy-brief-score {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.adcopy-brief-score span {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.adcopy-brief-score strong {
+  color: var(--oa-ink);
+  font-size: 36px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.adcopy-brief-checks {
+  min-width: 0;
+}
+
+.adcopy-brief-checks p {
+  margin: 7px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.adcopy-brief-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.adcopy-brief-chip {
+  border: 1px solid #e1e7f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--oa-muted);
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.adcopy-brief-chip.is-on {
+  border-color: #bfe7d5;
+  background: #effaf5;
+  color: var(--oa-green);
+}
+
 .adcopy-form-section {
   display: grid;
   gap: 12px;
