@@ -983,6 +983,10 @@
                             <p>generated.json 기준으로 OpenAI Ads draft를 단계별 생성합니다. 신규 객체는 모두 paused 상태입니다.</p>
                           </div>
                           <div class="adcopy-draft-head-actions">
+                            <button class="btn-secondary btn-compact" type="button" id="run-adcopy-draft-preflight" disabled>
+                              <i class="ti ti-shield-check"></i>
+                              리허설
+                            </button>
                             <button class="btn-secondary btn-compact" type="button" id="download-adcopy-draft-plan" disabled>
                               <i class="ti ti-download"></i>
                               plan JSON
@@ -4405,6 +4409,7 @@
       function adcopyDraftActionLabel(action) {
         const labels = {
           verify_account: "계정 확인",
+          preflight: "검증 리허설",
           create_campaign: "캠페인 draft",
           upload_assets: "이미지 업로드",
           create_ad_groups: "광고그룹 draft",
@@ -4577,7 +4582,9 @@
 
       function renderAdcopyDraftPanel() {
         const downloadButton = $("#download-adcopy-draft-plan");
+        const preflightButton = $("#run-adcopy-draft-preflight");
         if (downloadButton) downloadButton.disabled = !adcopyLastResult?.generated;
+        if (preflightButton) preflightButton.disabled = !adcopyLastResult?.generated || Boolean(adcopyDraftRunningAction);
         adcopyDraftStatusBadge();
         renderAdcopyDraftSummary();
         renderAdcopyDraftSteps();
@@ -4620,13 +4627,48 @@
         nextLogs.forEach((item) => {
           adcopyDraftLogs.push({
             action,
-            title: adcopyDraftActionLabel(action),
+            title: item.title || adcopyDraftActionLabel(action),
             level: item.level || "info",
             message: item.message || "",
             id: item.id || item.file_id || "",
           });
         });
         adcopyDraftLogs = adcopyDraftLogs.slice(-16);
+      }
+
+      async function executeAdcopyDraftPreflight() {
+        if (!adcopyLastResult?.generated) return;
+        adcopyDraftRunningAction = "preflight";
+        renderAdcopyDraftPanel();
+        try {
+          const data = await adminFetch("/api/admin/adcopy/draft-preflight", {
+            method: "POST",
+            body: JSON.stringify(buildAdcopyDraftRequest()),
+            loadingMessage: "OpenAI Ads draft 리허설을 실행하는 중입니다.",
+          });
+          adcopyDraftPlan = data.plan || adcopyDraftPlan;
+          if (data.state_patch && typeof data.state_patch === "object") {
+            adcopyDraftState = { ...adcopyDraftState, ...data.state_patch };
+          }
+          const checks = Array.isArray(data.checks) ? data.checks : [];
+          pushAdcopyDraftLogs("preflight", checks.map((check) => ({
+            level: check.level === "success" ? "success" : (check.level === "error" ? "error" : "warning"),
+            title: check.title || "리허설",
+            message: check.message || "",
+          })));
+          const blocking = Number(data.blocking_count || 0);
+          const warning = Number(data.warning_count || 0);
+          setStatus(
+            "adcopy-generator-status",
+            data.ok
+              ? `Draft 리허설 통과: 차단 0개 · 주의 ${formatNumber(warning)}개입니다. 생성 단계는 paused draft로만 진행됩니다.`
+              : `Draft 리허설에서 차단 ${formatNumber(blocking)}개를 확인했습니다. 로그를 먼저 수정해 주세요.`,
+            data.ok ? "ok" : "error",
+          );
+        } finally {
+          adcopyDraftRunningAction = "";
+          renderAdcopyDraftPanel();
+        }
       }
 
       async function executeAdcopyDraftAction(action) {
@@ -8620,6 +8662,9 @@
       $("#reset-adcopy-review-status").addEventListener("click", resetAdcopyReviewStatus);
       $("#download-adcopy-draft-plan").addEventListener("click", () => {
         downloadAdcopyDraftPlan().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#run-adcopy-draft-preflight").addEventListener("click", () => {
+        executeAdcopyDraftPreflight().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#adcopy-export-mode").addEventListener("change", (event) => {
         const allowed = new Set(["all", "approved", "without_excluded"]);

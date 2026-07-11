@@ -596,6 +596,46 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["ads"][0]["api_payload"]["status"], "paused")
         self.assertEqual(body["summary"]["ads"], 2)
 
+    def test_admin_adcopy_draft_preflight_is_read_only(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 102600,
+                "budget_type": "daily",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+        account = {"ok": True, "ad_account": {"name": "Catsenglish", "currency_code": "KRW", "timezone": "Asia/Seoul"}}
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"advertiser_name": "캐츠잉글리시", "industry": "교육", "api_key": "sk-test"}), patch(
+            "rag_chatbot.ads_api.fetch_ad_account_metadata",
+            AsyncMock(return_value=account),
+        ), patch("app._ads_draft_api_request", AsyncMock()) as mocked_request:
+            response = client.post(
+                "/api/admin/adcopy/draft-preflight",
+                json={
+                    "advertiser_name": "캐츠잉글리시",
+                    "generated": generated,
+                    "default_max_bid_krw": 7000,
+                    "location_ids": ["2000043"],
+                },
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["readiness"], "draft_ready")
+        self.assertTrue(body["state_patch"]["account_verified_at"])
+        self.assertTrue(any(item["code"] == "activation_blocked" for item in body["checks"]))
+        self.assertFalse(mocked_request.await_args_list)
+
     def test_admin_adcopy_draft_execute_requires_confirm_for_mutation(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()
@@ -664,6 +704,69 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(called_args[1], "POST")
         self.assertEqual(called_args[2], "/v1/campaigns")
         self.assertEqual(called_args[3]["status"], "paused")
+
+    def test_admin_adcopy_draft_execute_completes_paused_setup_sequence(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 100000,
+                "budget_type": "total",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+        calls: list[tuple[str, dict]] = []
+
+        async def mocked_request(api_key: str, method: str, path: str, json_body: dict | None = None) -> dict:
+            calls.append((path, json_body or {}))
+            if path == "/v1/campaigns":
+                return {"id": "cmpn_test", "status": "paused"}
+            if path == "/v1/upload":
+                return {"file_id": "file_test"}
+            if path == "/v1/ad_groups":
+                return {"id": "adgrp_test", "status": "paused"}
+            if path == "/v1/ads":
+                return {"id": f"ad_test_{sum(1 for item in calls if item[0] == '/v1/ads')}", "status": "paused"}
+            raise AssertionError(path)
+
+        base_payload = {
+            "advertiser_name": "캐츠잉글리시",
+            "generated": generated,
+            "default_max_bid_krw": 7000,
+            "location_ids": ["2000043"],
+        }
+        state: dict = {}
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test", "industry": "교육"}), patch("app._ads_draft_api_request", mocked_request):
+            for action in ["create_campaign", "upload_assets", "create_ad_groups", "create_ads"]:
+                response = client.post(
+                    "/api/admin/adcopy/draft-execute",
+                    json={
+                        **base_payload,
+                        "action": action,
+                        "state": state,
+                        "confirm": True,
+                    },
+                    headers=ADMIN_HEADERS,
+                )
+                self.assertEqual(response.status_code, 200)
+                state = response.json()["state"]
+
+        paths = [path for path, _payload in calls]
+        self.assertEqual(paths, ["/v1/campaigns", "/v1/upload", "/v1/ad_groups", "/v1/ads", "/v1/ads"])
+        self.assertTrue(all("/activate" not in path for path in paths))
+        self.assertEqual(calls[0][1]["status"], "paused")
+        self.assertEqual(calls[2][1]["status"], "paused")
+        self.assertEqual(calls[2][1]["campaign_id"], "cmpn_test")
+        self.assertEqual(calls[3][1]["status"], "paused")
+        self.assertEqual(calls[3][1]["ad_group_id"], "adgrp_test")
+        self.assertEqual(calls[3][1]["creative"]["file_id"], "file_test")
+        self.assertEqual(len(state["ad_ids"]), 2)
 
 
 if __name__ == "__main__":

@@ -1822,6 +1822,102 @@ def _ads_response_id(data: dict[str, Any]) -> str:
     return ""
 
 
+def _adcopy_draft_check(level: str, title: str, message: str, *, code: str = "") -> dict[str, str]:
+    return {"level": level, "title": title, "message": message, "code": code}
+
+
+def _adcopy_draft_preflight_result(
+    plan: dict[str, Any],
+    credential: dict[str, str],
+    account: dict[str, Any],
+) -> dict[str, Any]:
+    checks: list[dict[str, str]] = []
+    summary = plan.get("summary") if isinstance(plan.get("summary"), dict) else {}
+    campaign_payload = (plan.get("campaign") or {}).get("api_payload") or {}
+    campaign_budget = ((campaign_payload.get("budget") or {}).get("lifetime_spend_limit_micros") or 0)
+    ad_groups = plan.get("ad_groups") if isinstance(plan.get("ad_groups"), list) else []
+    ads = plan.get("ads") if isinstance(plan.get("ads"), list) else []
+    assets = plan.get("assets") if isinstance(plan.get("assets"), list) else []
+    validation_errors = int(summary.get("validation_errors") or 0)
+    validation_warnings = int(summary.get("validation_warnings") or 0)
+
+    if credential.get("api_key"):
+        if account.get("ok") is False:
+            checks.append(
+                _adcopy_draft_check(
+                    "error",
+                    "계정 확인 실패",
+                    str(account.get("error") or "Ads API 키로 광고 계정을 확인하지 못했습니다."),
+                    code="account_error",
+                )
+            )
+        else:
+            ad_account = account.get("ad_account") if isinstance(account.get("ad_account"), dict) else {}
+            account_label = " · ".join(str(value) for value in [ad_account.get("name"), ad_account.get("currency_code"), ad_account.get("timezone")] if value)
+            checks.append(_adcopy_draft_check("success", "계정 확인", account_label or "Ads API 키가 등록되어 있고 계정 조회가 가능합니다.", code="account_ok"))
+    else:
+        checks.append(_adcopy_draft_check("error", "Ads API 키 필요", "활성화된 광고주 API 키가 있어야 draft를 생성할 수 있습니다.", code="api_key_missing"))
+
+    if (plan.get("safety") or {}).get("default_status") == "paused":
+        checks.append(_adcopy_draft_check("success", "paused 생성", "캠페인, 광고그룹, 소재 생성 payload의 기본 상태가 paused입니다.", code="paused_default"))
+    else:
+        checks.append(_adcopy_draft_check("error", "상태 확인 필요", "생성 payload의 기본 상태가 paused인지 확인해야 합니다.", code="paused_missing"))
+
+    if (plan.get("safety") or {}).get("activation_disabled", True):
+        checks.append(_adcopy_draft_check("success", "live 전환 차단", "현재 환경에서는 active 전환 단계가 서버에서 차단됩니다.", code="activation_blocked"))
+    else:
+        checks.append(_adcopy_draft_check("warning", "live 전환 가능 환경", "환경변수상 active 전환이 허용되어 있습니다. 운영 승인 전 실행하지 마세요.", code="activation_enabled"))
+
+    if validation_errors:
+        checks.append(_adcopy_draft_check("error", "검수 오류", f"자동 검수 오류 {validation_errors}개를 먼저 수정해야 합니다.", code="validation_error"))
+    elif validation_warnings:
+        checks.append(_adcopy_draft_check("warning", "검수 주의", f"자동 검수 주의 {validation_warnings}개가 있습니다. 운영 검수 후 진행하세요.", code="validation_warning"))
+    else:
+        checks.append(_adcopy_draft_check("success", "검수 상태", "자동 검수에서 차단 오류가 없습니다.", code="validation_ok"))
+
+    if campaign_budget > 0:
+        checks.append(_adcopy_draft_check("success", "예산", f"총 예산 {int(campaign_budget / 1_000_000):,}원 기준으로 draft plan을 만들었습니다.", code="budget_ok"))
+    else:
+        checks.append(_adcopy_draft_check("warning", "예산 확인", "예산이 0원입니다. 생성 전 캠페인 예산을 확인하세요.", code="budget_empty"))
+
+    if ad_groups:
+        max_bid_values = [int(((item.get("api_payload") or {}).get("bidding_config") or {}).get("max_bid_micros") or 0) for item in ad_groups]
+        if all(value > 0 for value in max_bid_values):
+            checks.append(_adcopy_draft_check("success", "입찰가", f"광고그룹 {len(ad_groups)}개의 CPM 입찰가가 설정되어 있습니다.", code="bid_ok"))
+        else:
+            checks.append(_adcopy_draft_check("error", "입찰가 필요", "광고그룹 생성 전 기본 CPM 입찰가를 0보다 크게 입력해야 합니다.", code="bid_missing"))
+    else:
+        checks.append(_adcopy_draft_check("error", "광고그룹 없음", "draft 생성 대상 광고그룹이 없습니다.", code="adgroup_missing"))
+
+    if assets:
+        checks.append(_adcopy_draft_check("success", "이미지 URL", f"업로드 대상 이미지 {len(assets)}개가 있습니다.", code="asset_ok"))
+    else:
+        checks.append(_adcopy_draft_check("error", "이미지 URL 필요", "소재 draft까지 만들려면 http/https 이미지 URL이 필요합니다.", code="asset_missing"))
+
+    if ads:
+        checks.append(_adcopy_draft_check("success", "소재", f"생성 대상 소재 {len(ads)}개를 확인했습니다.", code="ads_ok"))
+    else:
+        checks.append(_adcopy_draft_check("error", "소재 없음", "draft 생성 대상 소재가 없습니다.", code="ads_missing"))
+
+    plan_warnings = plan.get("warnings") if isinstance(plan.get("warnings"), list) else []
+    for warning in plan_warnings[:5]:
+        checks.append(_adcopy_draft_check("warning", "plan 주의", str(warning), code="plan_warning"))
+
+    blocking = [check for check in checks if check["level"] == "error"]
+    ready = not blocking
+    state_patch: dict[str, str] = {}
+    if ready and account.get("ok") is not False and credential.get("api_key"):
+        state_patch["account_verified_at"] = datetime.now(KST).isoformat()
+    return {
+        "ok": ready,
+        "readiness": "draft_ready" if ready else "needs_fix",
+        "checks": checks,
+        "state_patch": state_patch,
+        "blocking_count": len(blocking),
+        "warning_count": sum(1 for check in checks if check["level"] == "warning"),
+    }
+
+
 def _ads_api_error_detail(exc: httpx.HTTPStatusError) -> str:
     response = exc.response
     detail = response.text[:1000] if response is not None else str(exc)
@@ -2472,6 +2568,31 @@ async def admin_adcopy_draft_plan(request: Request) -> dict[str, Any]:
     _require_admin(request)
     payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "draft 세팅 본문이 올바르지 않습니다.")
     return _build_adcopy_draft_plan(payload)
+
+
+@app.post("/api/admin/adcopy/draft-preflight", include_in_schema=False)
+async def admin_adcopy_draft_preflight(request: Request) -> dict[str, Any]:
+    from admin_store import get_ads_api_key_credential
+    from rag_chatbot.ads_api import fetch_ad_account_metadata
+
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "draft 리허설 본문이 올바르지 않습니다.")
+    plan = _build_adcopy_draft_plan(payload)
+    credential = get_ads_api_key_credential(payload.advertiser_name)
+    api_key = credential.get("api_key", "")
+    account = await fetch_ad_account_metadata(api_key) if api_key else {"ok": False, "error": "활성 Ads API 키가 없습니다."}
+    preflight = _adcopy_draft_preflight_result(plan, credential, account)
+    return {
+        **preflight,
+        "plan": plan,
+        "account": account,
+        "credential": {
+            "advertiser_name": credential.get("advertiser_name") or payload.advertiser_name,
+            "industry": credential.get("industry") or "",
+            "has_ads_api_key": bool(api_key),
+        },
+        "notice": "read-only draft 리허설입니다. 캠페인, 광고그룹, 소재를 생성하지 않았고 live 전환도 하지 않았습니다.",
+    }
 
 
 @app.post("/api/admin/adcopy/draft-execute", include_in_schema=False)

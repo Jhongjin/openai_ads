@@ -121,16 +121,19 @@
 
 `POST /api/admin/adcopy/draft-plan`은 API payload만 계산한다.
 
+`POST /api/admin/adcopy/draft-preflight`는 read-only 리허설이다. 광고주 Ads API 키와 계정 메타, paused payload, 검수 오류, 예산, 입찰가, 이미지 URL, 소재 수를 확인하지만 캠페인·광고그룹·소재를 생성하지 않는다.
+
 `POST /api/admin/adcopy/draft-execute`는 단계별 실행이며 `confirm=true`가 필요하다.
 
 실행 단계:
 
-1. 계정 확인
-2. 캠페인 draft 생성
+0. Draft 리허설: read-only, 생성 없음
+1. 계정 확인: read-only
+2. 캠페인 draft 생성: paused
 3. 이미지 업로드
-4. 광고그룹 draft 생성
-5. 소재 draft 생성
-6. 운영자 최종 확인 후 active 전환
+4. 광고그룹 draft 생성: paused
+5. 소재 draft 생성: paused
+6. 운영자 최종 확인 후 active 전환: 현재 금지
 
 광고그룹 기본 CPM 입찰가는 운영자가 입력한 KRW 값을 `max_bid_micros`로 변환한다. 예: `7,000원` -> `7,000,000`.
 
