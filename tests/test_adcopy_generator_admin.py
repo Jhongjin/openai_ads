@@ -192,6 +192,95 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertIn("title_len_recommended", warning_rules)
         self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
 
+    def test_admin_adcopy_import_requires_admin_password(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post("/api/admin/adcopy/import", json={"generated": generated_payload()})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_adcopy_import_normalizes_native_generated_json(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 102600,
+                "budget_type": "daily",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-31",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+
+        response = client.post(
+            "/api/admin/adcopy/import",
+            json={
+                "generated": generated,
+                "advertiser_name": "캐츠잉글리시",
+                "landing_url": "https://example.com/landing",
+                "image_link": "https://example.com/image.png",
+            },
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["model"], "외부 JSON 정규화")
+        self.assertEqual(body["import_report"]["source_format"], "native")
+        self.assertEqual(body["generated"]["campaigns"][0]["campaign_name"], "01_학습자료")
+        self.assertNotIn("max_bid", body["generated"]["adgroups"][0])
+        self.assertEqual(body["summary"]["ads"], 2)
+
+    def test_admin_adcopy_import_accepts_ai_team_style_json(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        external = {
+            "campaign": {
+                "캠페인명": "초등영어_테스트",
+                "예산": "25,000원",
+                "예산유형": "일 예산",
+                "시작일": "2026-07-10",
+                "종료일": "2026-07-31",
+                "목표": "노출",
+                "국가": "KR",
+            },
+            "ad_groups": [
+                {
+                    "광고그룹명": "01_학습습관",
+                    "확장 키워드": ["초등 영어 앱", "매일 영어 학습", "파닉스 연습", "영어 루틴", "학부모 영어"],
+                    "필수 포함 문구": ["영어 루틴"],
+                }
+            ],
+            "creatives": [
+                {
+                    "소재명": "AD_001",
+                    "광고그룹명": "01_학습습관",
+                    "제목": "초등 영어 습관 만들기",
+                    "카피": "영어 루틴으로 매일 짧게 학습을 이어가요",
+                    "랜딩 URL": "https://example.com/landing",
+                    "이미지 URL": "https://example.com/image.png",
+                    "휴먼 체크": "확인 완료 검수",
+                }
+            ],
+            "policy": {"banned_terms": ["무조건"]},
+        }
+
+        response = client.post(
+            "/api/admin/adcopy/import",
+            json={"generated": external, "advertiser_name": "캐츠잉글리시"},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["generated"]["campaigns"][0]["budget_type"], "daily")
+        self.assertEqual(body["generated"]["campaigns"][0]["objective"], "Views")
+        self.assertEqual(body["generated"]["adgroups"][0]["keywords"][0]["text"], "초등 영어 앱")
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
+        self.assertIn("무조건", body["generated"]["policy"]["banned_terms"])
+
     def test_admin_adcopy_landing_inspect_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 

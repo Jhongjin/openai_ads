@@ -698,6 +698,32 @@
                       테스트 브리프
                     </button>
                   </div>
+                  <details class="adcopy-import-panel">
+                    <summary>
+                      <span>
+                        <i class="ti ti-file-import"></i>
+                        외부 JSON 흡수
+                      </span>
+                      <small>AI팀 산출물도 우리 generated.json 스키마로 정규화합니다.</small>
+                    </summary>
+                    <div class="adcopy-import-body">
+                      <label class="field">
+                        <span class="field-label">외부 generated.json 또는 review JSON</span>
+                        <textarea class="textarea" id="adcopy-import-json" spellcheck="false" placeholder='{"campaign": {...}, "ad_groups": [...], "creatives": [...]}'></textarea>
+                      </label>
+                      <div class="adcopy-import-actions">
+                        <button class="btn-secondary" type="button" id="import-adcopy-json">
+                          <i class="ti ti-transform"></i>
+                          정규화·검수
+                        </button>
+                        <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
+                          <i class="ti ti-x"></i>
+                          비우기
+                        </button>
+                        <p class="status-line" id="adcopy-import-status">외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.</p>
+                      </div>
+                    </div>
+                  </details>
                   <div class="adcopy-generator-layout">
                     <form class="adcopy-form" id="adcopy-generator-form">
                       <section class="adcopy-brief-meter" id="adcopy-brief-meter">
@@ -3706,6 +3732,91 @@
         };
       }
 
+      function readAdcopyImportDefaults() {
+        const payload = readAdcopyPayload();
+        return {
+          advertiser_name: payload.advertiser_name,
+          industry: payload.industry,
+          campaign_name: payload.campaign_name,
+          objective: payload.objective,
+          budget_max: payload.budget_max,
+          budget_type: payload.budget_type,
+          launch_date: payload.launch_date,
+          end_date: payload.end_date,
+          target_countries: payload.target_countries,
+          landing_url: payload.landing_url,
+          image_link: payload.image_link,
+          banned_terms: payload.banned_terms,
+          required_phrases: payload.required_phrases,
+          source_label: "외부 JSON",
+        };
+      }
+
+      function applyAdcopyImportedDefaults(generated) {
+        const campaign = generated?.campaigns?.[0] || {};
+        const firstAd = generated?.ads?.[0] || {};
+        if (!$("#adcopy-campaign-name").value && campaign.campaign_name) $("#adcopy-campaign-name").value = campaign.campaign_name;
+        if (!$("#adcopy-budget-max").value && Number(campaign.budget_max || 0) > 0) $("#adcopy-budget-max").value = String(Math.round(Number(campaign.budget_max)));
+        if (campaign.budget_type) $("#adcopy-budget-type").value = String(campaign.budget_type).toLowerCase() === "total" ? "total" : "daily";
+        if (campaign.objective) {
+          const objective = String(campaign.objective);
+          $("#adcopy-objective").value = ["Views", "Clicks", "Conversions"].includes(objective) ? objective : "Views";
+        }
+        if (!$("#adcopy-launch-date").value && campaign.launch_date) $("#adcopy-launch-date").value = String(campaign.launch_date).slice(0, 10);
+        if (!$("#adcopy-end-date").value && campaign.end_date) $("#adcopy-end-date").value = String(campaign.end_date).slice(0, 10);
+        if (!$("#adcopy-target-countries").value && Array.isArray(campaign.target_countries)) $("#adcopy-target-countries").value = campaign.target_countries.join(", ");
+        if (!$("#adcopy-landing-url").value && firstAd.link) $("#adcopy-landing-url").value = firstAd.link;
+        if (!$("#adcopy-image-link").value && firstAd.image_link) $("#adcopy-image-link").value = firstAd.image_link;
+        const importedBannedTerms = generated?.policy?.banned_terms || [];
+        if (!$("#adcopy-banned-terms").value && importedBannedTerms.length) $("#adcopy-banned-terms").value = importedBannedTerms.join("\n");
+        renderAdcopyBriefMeter();
+      }
+
+      async function importExternalAdcopyJson() {
+        const textarea = $("#adcopy-import-json");
+        const button = $("#import-adcopy-json");
+        const raw = textarea.value.trim();
+        if (!raw) {
+          setStatus("adcopy-import-status", "붙여넣을 JSON을 입력해 주세요.", "warning");
+          textarea.focus();
+          return;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          setStatus("adcopy-import-status", "JSON 형식을 확인해 주세요. 쉼표, 따옴표, 중괄호가 올바른지 봐 주세요.", "error");
+          textarea.focus();
+          return;
+        }
+        setButtonBusy(button, true, "정규화 중...");
+        setStatus("adcopy-import-status", "외부 산출물을 우리 generated.json 스키마로 변환하는 중입니다.");
+        try {
+          const data = await adminFetch("/api/admin/adcopy/import", {
+            method: "POST",
+            body: JSON.stringify({ generated: parsed, ...readAdcopyImportDefaults() }),
+            loadingMessage: "외부 generated.json을 정규화하는 중입니다.",
+          });
+          adcopyLastResult = data;
+          adcopyPreviewFilter = "all";
+          adcopyReviewFilter = "all";
+          adcopyExportMode = "all";
+          resetAdcopyDraftWorkflow({ render: false });
+          applyAdcopyImportedDefaults(data.generated);
+          renderAdcopyResult(data);
+          const report = data.import_report || {};
+          const warningText = (report.warnings || []).length ? ` · ${report.warnings.join(" ")}` : "";
+          setStatus(
+            "adcopy-import-status",
+            `정규화 완료: 광고그룹 ${formatNumber(report.adgroups || 0)}개, 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
+            data.ok ? "ok" : "warning",
+          );
+          setStatus("adcopy-generator-status", data.ok ? "외부 JSON 흡수와 자동 검수를 완료했습니다." : "외부 JSON 흡수 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+        } finally {
+          setButtonBusy(button, false);
+        }
+      }
+
       function validateAdcopyPayload(payload) {
         clearAdcopyFieldIssues();
         const issues = [];
@@ -4037,6 +4148,8 @@
         $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
         $("#adcopy-landing-insight").hidden = true;
         $("#adcopy-landing-insight").innerHTML = "";
+        $("#adcopy-import-json").value = "";
+        setStatus("adcopy-import-status", "외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.");
         adcopyLastResult = null;
         adcopyPreviewFilter = "all";
         adcopyReviewFilter = "all";
@@ -8200,6 +8313,16 @@
         generateAdcopy(event).catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#reset-adcopy-generator").addEventListener("click", resetAdcopyGenerator);
+      $("#import-adcopy-json").addEventListener("click", () => {
+        importExternalAdcopyJson().catch((error) => {
+          setStatus("adcopy-import-status", error.message, "error");
+          setStatus("adcopy-generator-status", error.message, "error");
+        });
+      });
+      $("#clear-adcopy-import-json").addEventListener("click", () => {
+        $("#adcopy-import-json").value = "";
+        setStatus("adcopy-import-status", "외부 JSON 입력을 비웠습니다.");
+      });
       $("#copy-adcopy-json").addEventListener("click", () => {
         copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });

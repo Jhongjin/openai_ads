@@ -1756,6 +1756,83 @@ body.dev-console.modal-open {
   background: #fff;
 }
 
+.adcopy-import-panel {
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  overflow: hidden;
+}
+
+.adcopy-import-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--oa-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.adcopy-import-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-import-panel summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-import-panel summary i {
+  color: var(--oa-blue);
+  font-size: 17px;
+}
+
+.adcopy-import-panel summary small {
+  min-width: 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adcopy-import-panel[open] summary {
+  border-bottom: 1px solid #e5edf6;
+  background: #f8fbff;
+}
+
+.adcopy-import-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
+.adcopy-import-body .textarea {
+  min-height: 138px;
+  font-family: var(--oa-font-mono, "Consolas", monospace);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.adcopy-import-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adcopy-import-actions .status-line {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
 .adcopy-generator-layout {
   display: grid;
   grid-template-columns: minmax(520px, 1fr) minmax(360px, 520px);
@@ -3879,6 +3956,18 @@ body.dev-console.modal-open {
 
   .adcopy-safe-note > div {
     display: grid;
+  }
+
+  .adcopy-import-panel summary {
+    display: grid;
+    align-items: start;
+    min-height: 0;
+    padding-block: 12px;
+  }
+
+  .adcopy-import-panel summary small {
+    text-align: left;
+    white-space: normal;
   }
 
   .adcopy-summary-grid,

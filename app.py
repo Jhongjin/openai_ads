@@ -291,6 +291,24 @@ class AdsAdcopyLandingInspectRequest(BaseModel):
     landing_url: str = Field(..., min_length=1, max_length=1000)
 
 
+class AdsAdcopyImportRequest(BaseModel):
+    generated: dict[str, Any] = Field(default_factory=dict)
+    advertiser_name: str | None = Field(default="", max_length=120)
+    industry: str | None = Field(default="", max_length=40)
+    campaign_name: str | None = Field(default="", max_length=160)
+    objective: str | None = Field(default="Views", max_length=40)
+    budget_max: float | None = Field(default=None, ge=0)
+    budget_type: str | None = Field(default="daily", max_length=20)
+    launch_date: str | None = Field(default="", max_length=20)
+    end_date: str | None = Field(default="", max_length=20)
+    target_countries: list[str] = Field(default_factory=lambda: ["KR"], max_length=20)
+    landing_url: str | None = Field(default="", max_length=1000)
+    image_link: str | None = Field(default="", max_length=1000)
+    banned_terms: str | None = Field(default="", max_length=1500)
+    required_phrases: str | None = Field(default="", max_length=1500)
+    source_label: str | None = Field(default="외부 generated.json", max_length=120)
+
+
 class AdsAdcopyDraftPlanRequest(BaseModel):
     advertiser_name: str = Field(..., min_length=1, max_length=120)
     generated: dict[str, Any] = Field(default_factory=dict)
@@ -789,6 +807,350 @@ def _normalize_generated_adcopy(data: dict[str, Any], payload: AdsAdcopyGenerate
             "trace": {**_adcopy_trace(), **trace, "review_comment": "", "exclusion_reason": ""},
         })
     return {"policy": {"banned_terms": merged_banned_terms}, "campaigns": [campaign], "adgroups": adgroups, "ads": ads}
+
+
+ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS = (
+    "campaigns",
+    "campaign_rows",
+    "campaign_list",
+    "캠페인",
+    "캠페인 목록",
+)
+ADCOPY_IMPORT_CAMPAIGN_OBJECT_KEYS = ("campaign", "campaign_meta", "campaign_info", "캠페인정보", "캠페인 정보")
+ADCOPY_IMPORT_ADGROUP_LIST_KEYS = (
+    "adgroups",
+    "ad_groups",
+    "adgroup_rows",
+    "ad_group_rows",
+    "groups",
+    "광고그룹",
+    "광고그룹 목록",
+)
+ADCOPY_IMPORT_AD_LIST_KEYS = (
+    "ads",
+    "ad_rows",
+    "creatives",
+    "creative_rows",
+    "copies",
+    "copy_rows",
+    "소재",
+    "소재 목록",
+    "카피",
+    "카피 목록",
+)
+
+
+def _adcopy_import_text(source: dict[str, Any], keys: tuple[str, ...] | list[str], fallback: str = "") -> str:
+    if not isinstance(source, dict):
+        return fallback
+    for key in keys:
+        if key not in source:
+            continue
+        value = source.get(key)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            text = value.strip()
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            text = str(value).strip()
+        else:
+            text = ""
+        if text:
+            return text
+    return fallback
+
+
+def _adcopy_import_first_value(source: dict[str, Any], keys: tuple[str, ...] | list[str]) -> Any:
+    if not isinstance(source, dict):
+        return None
+    for key in keys:
+        value = source.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _adcopy_import_number(value: Any, fallback: float = 0) -> float:
+    if value in (None, ""):
+        return fallback
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    text = re.sub(r"[^\d.\-]", "", str(value))
+    if not text:
+        return fallback
+    try:
+        return float(text)
+    except ValueError:
+        return fallback
+
+
+def _adcopy_import_items(value: Any) -> list[Any]:
+    if value in (None, ""):
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return list(value.values())
+    return [item.strip() for item in re.split(r"[\n,;|]+", str(value)) if item.strip()]
+
+
+def _adcopy_import_rows(source: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
+    if not isinstance(source, dict):
+        return []
+    for key in keys:
+        value = source.get(key)
+        rows: list[dict[str, Any]] = []
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    rows.append(dict(item))
+            if rows:
+                return rows
+        elif isinstance(value, dict):
+            if any(isinstance(item, dict) for item in value.values()):
+                for row_key, item in value.items():
+                    if not isinstance(item, dict):
+                        continue
+                    row = dict(item)
+                    row.setdefault("name", row_key)
+                    rows.append(row)
+                if rows:
+                    return rows
+            elif value:
+                return [dict(value)]
+    return []
+
+
+def _adcopy_import_campaign_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = _adcopy_import_rows(source, ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS)
+    if rows:
+        return rows
+    for key in ADCOPY_IMPORT_CAMPAIGN_OBJECT_KEYS:
+        value = source.get(key) if isinstance(source, dict) else None
+        if isinstance(value, dict):
+            return [dict(value)]
+    return []
+
+
+def _adcopy_import_nested_ads(group_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for group in group_rows:
+        adgroup_name = _adcopy_import_text(
+            group,
+            ("adgroup_name", "ad_group_name", "adgroup", "ad_group", "name", "광고그룹명", "광고그룹"),
+        )
+        for key in ADCOPY_IMPORT_AD_LIST_KEYS:
+            for item in _adcopy_import_items(group.get(key)):
+                if not isinstance(item, dict):
+                    continue
+                row = dict(item)
+                if adgroup_name:
+                    row.setdefault("adgroup_name", adgroup_name)
+                    row.setdefault("광고그룹명", adgroup_name)
+                rows.append(row)
+    return rows
+
+
+def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
+    trace = raw if isinstance(raw, dict) else {}
+    status_text = str(status_source or trace.get("validation_status") or trace.get("status") or "").strip().lower()
+    validation_status = "운영 검수 필요"
+    if any(token in status_text for token in ("확인 완료", "승인", "approved", "approve", "ok", "pass")):
+        validation_status = "승인"
+    elif any(token in status_text for token in ("제외", "excluded", "exclude", "drop")):
+        validation_status = "제외"
+    elif any(token in status_text for token in ("수정", "보류", "revise", "hold", "needs")):
+        validation_status = "수정 필요"
+    return {
+        **_adcopy_trace(source_type="외부 JSON", generation_basis="외부 산출물 호환 정규화", confidence_score=0.62),
+        **trace,
+        "validation_status": validation_status,
+        "review_comment": str(trace.get("review_comment") or trace.get("memo") or trace.get("검수 메모") or "").strip(),
+        "exclusion_reason": str(trace.get("exclusion_reason") or trace.get("제외 사유") or "").strip(),
+    }
+
+
+def _adcopy_import_objective(value: Any, fallback: str = "Views") -> str:
+    text = str(value or "").strip()
+    normalized = text.lower()
+    if normalized in {"click", "clicks", "클릭"}:
+        return "Clicks"
+    if normalized in {"conversion", "conversions", "전환"}:
+        return "Conversions"
+    if normalized in {"view", "views", "reach", "impression", "impressions", "노출"}:
+        return "Views"
+    return text or fallback or "Views"
+
+
+def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dict[str, Any]:
+    source = payload.generated if isinstance(payload.generated, dict) else {}
+    if not source:
+        raise HTTPException(status_code=400, detail="흡수할 generated.json 객체를 입력해 주세요.")
+
+    campaign_rows = _adcopy_import_campaign_rows(source)
+    group_rows = _adcopy_import_rows(source, ADCOPY_IMPORT_ADGROUP_LIST_KEYS)
+    ad_rows = [
+        *_adcopy_import_rows(source, ADCOPY_IMPORT_AD_LIST_KEYS),
+        *_adcopy_import_nested_ads(group_rows),
+    ]
+    first_campaign = campaign_rows[0] if campaign_rows else {}
+    first_group = group_rows[0] if group_rows else {}
+    first_ad = ad_rows[0] if ad_rows else {}
+    source_label = str(payload.source_label or "외부 generated.json").strip()
+
+    campaign_name = _adcopy_import_text(
+        first_campaign,
+        ("campaign_name", "campaign", "name", "Campaign", "캠페인명", "캠페인"),
+        str(payload.campaign_name or "").strip(),
+    ) or _adcopy_import_text(first_group, ("campaign_name", "campaign", "캠페인명", "캠페인")) or _adcopy_import_text(first_ad, ("campaign_name", "campaign", "캠페인명", "캠페인")) or "외부_캠페인"
+    budget_value = _adcopy_import_first_value(first_campaign, ("budget_max", "budget", "daily_budget", "total_budget", "예산", "일예산", "총예산"))
+    budget_max = _adcopy_import_number(budget_value, float(payload.budget_max or 0))
+    budget_type = _adcopy_import_text(first_campaign, ("budget_type", "budgetType", "예산유형", "예산 유형"), str(payload.budget_type or "daily").strip() or "daily")
+    if budget_type in {"일 예산", "일예산"}:
+        budget_type = "daily"
+    elif budget_type in {"총 예산", "총예산"}:
+        budget_type = "total"
+    target_countries = [
+        str(item).strip().upper()
+        for item in _adcopy_import_items(_adcopy_import_first_value(first_campaign, ("target_countries", "countries", "국가", "타겟 국가")) or payload.target_countries)
+        if str(item).strip()
+    ] or ["KR"]
+    banned_terms = list(dict.fromkeys([
+        *_split_admin_list(payload.banned_terms),
+        *[
+            str(item).strip()
+            for item in _adcopy_import_items((source.get("policy") if isinstance(source.get("policy"), dict) else {}).get("banned_terms"))
+            if str(item).strip()
+        ],
+        *[
+            str(item).strip()
+            for item in _adcopy_import_items(_adcopy_import_first_value(source, ("banned_terms", "금지 표현", "금지어")))
+            if str(item).strip()
+        ],
+    ]))
+    default_required_phrases = _split_admin_list(payload.required_phrases)
+    default_link = str(payload.landing_url or "").strip()
+    default_image = str(payload.image_link or "").strip()
+
+    campaign = {
+        "campaign_name": campaign_name,
+        "budget_max": budget_max,
+        "budget_type": budget_type or "daily",
+        "launch_date": _adcopy_import_text(first_campaign, ("launch_date", "start_date", "start", "시작일"), str(payload.launch_date or "").strip()),
+        "end_date": _adcopy_import_text(first_campaign, ("end_date", "end", "종료일"), str(payload.end_date or "").strip()),
+        "objective": _adcopy_import_objective(
+            _adcopy_import_text(first_campaign, ("objective", "goal", "campaign_objective", "목표", "유형"), str(payload.objective or "Views").strip()),
+            str(payload.objective or "Views").strip(),
+        ),
+        "target_countries": target_countries,
+    }
+
+    adgroups: list[dict[str, Any]] = []
+    seen_adgroups: set[str] = set()
+    for index, item in enumerate(group_rows, start=1):
+        name = _adcopy_import_text(item, ("adgroup_name", "ad_group_name", "adgroup", "ad_group", "name", "광고그룹명", "광고그룹"), f"{index:02d}_광고그룹")
+        if name in seen_adgroups:
+            name = f"{name}_{index:02d}"
+        seen_adgroups.add(name)
+        keywords = []
+        raw_keywords = _adcopy_import_first_value(item, ("keywords", "context_hints", "expanded_keywords", "키워드", "확장 키워드", "컨텍스트 힌트", "Context Hints"))
+        for keyword in _adcopy_import_items(raw_keywords):
+            if isinstance(keyword, dict):
+                text = _adcopy_import_text(keyword, ("text", "keyword", "name", "키워드"))
+                origin = _adcopy_import_text(keyword, ("origin", "source", "출처"), "ai_inferred")
+            else:
+                text = str(keyword or "").strip()
+                origin = "customer_data" if source_label else "ai_inferred"
+            if text:
+                keywords.append({"text": text, "origin": origin if origin in {"customer_data", "ai_inferred"} else "ai_inferred"})
+        required = [
+            str(value).strip()
+            for value in _adcopy_import_items(_adcopy_import_first_value(item, ("required_phrases", "required_terms", "필수 포함 문구", "필수 문구")) or default_required_phrases)
+            if str(value).strip()
+        ]
+        adgroups.append(
+            {
+                "campaign_name": campaign_name,
+                "adgroup_name": name,
+                "keywords": keywords,
+                "required_phrases": list(dict.fromkeys(required)),
+                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "validation_status", "휴먼 체크", "검수"))),
+            }
+        )
+
+    valid_group_names = {item["adgroup_name"] for item in adgroups}
+    inferred_group_names: list[str] = []
+    for item in ad_rows:
+        name = _adcopy_import_text(item, ("adgroup_name", "ad_group_name", "adgroup", "ad_group", "광고그룹명", "광고그룹"))
+        if name and name not in valid_group_names and name not in inferred_group_names:
+            inferred_group_names.append(name)
+    for name in inferred_group_names:
+        adgroups.append(
+            {
+                "campaign_name": campaign_name,
+                "adgroup_name": name,
+                "keywords": [],
+                "required_phrases": default_required_phrases,
+                "trace": _adcopy_import_trace(None),
+            }
+        )
+    if not adgroups and ad_rows:
+        adgroups.append(
+            {
+                "campaign_name": campaign_name,
+                "adgroup_name": "01_광고그룹",
+                "keywords": [],
+                "required_phrases": default_required_phrases,
+                "trace": _adcopy_import_trace(None),
+            }
+        )
+    valid_group_names = {item["adgroup_name"] for item in adgroups}
+    fallback_group = adgroups[0]["adgroup_name"] if adgroups else ""
+
+    ads: list[dict[str, Any]] = []
+    for index, item in enumerate(ad_rows, start=1):
+        adgroup_name = _adcopy_import_text(item, ("adgroup_name", "ad_group_name", "adgroup", "ad_group", "광고그룹명", "광고그룹"), fallback_group)
+        if adgroup_name not in valid_group_names:
+            adgroup_name = fallback_group
+        ad_name = _adcopy_import_text(item, ("ad_name", "creative_name", "copy_name", "name", "소재명", "광고명"), f"AD_{index:03d}")
+        ads.append(
+            {
+                "ad_name": ad_name,
+                "adgroup_name": adgroup_name,
+                "title": _adcopy_import_text(item, ("title", "headline", "heading", "제목", "타이틀")),
+                "copy": _adcopy_import_text(item, ("copy", "body", "description", "text", "카피", "본문", "설명")),
+                "link": _adcopy_import_text(item, ("link", "landing_url", "target_url", "url", "랜딩 URL", "랜딩URL"), default_link),
+                "image_link": _adcopy_import_text(item, ("image_link", "image_url", "image", "이미지 URL", "이미지URL"), default_image),
+                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "validation_status", "휴먼 체크", "검수"))),
+            }
+        )
+
+    generated = {
+        "policy": {"banned_terms": banned_terms},
+        "campaigns": [campaign],
+        "adgroups": adgroups,
+        "ads": ads,
+    }
+    source_format = "native" if all(isinstance(source.get(key), list) for key in ("campaigns", "adgroups", "ads")) else "compat"
+    return {
+        "generated": generated,
+        "import_report": {
+            "source_format": source_format,
+            "source_label": source_label,
+            "campaigns": len(generated["campaigns"]),
+            "adgroups": len(adgroups),
+            "ads": len(ads),
+            "warnings": [
+                message
+                for message in [
+                    "" if campaign_rows else "캠페인 행이 없어 현재 입력값으로 campaign을 보강했습니다.",
+                    "" if group_rows else "광고그룹 행이 없어 소재의 광고그룹명 또는 기본 광고그룹으로 보강했습니다.",
+                    "" if ad_rows else "소재 행을 찾지 못했습니다.",
+                ]
+                if message
+            ],
+        },
+    }
 
 
 def _adcopy_finding(level: str, scope: str, item: str, field: str, rule: str, message: str) -> dict[str, str]:
@@ -1787,6 +2149,24 @@ async def admin_validate_adcopy(request: Request) -> dict[str, Any]:
         "validation_report": validation_report,
         "summary": validation_report["summary"],
         "notice": "수정된 generated.json을 다시 검수했습니다. 업로드 전 운영자 최종 확인이 필요합니다.",
+    }
+
+
+@app.post("/api/admin/adcopy/import", include_in_schema=False)
+async def admin_import_adcopy(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyImportRequest, "흡수할 외부 generated.json 본문이 올바르지 않습니다.")
+    imported = _normalize_external_generated_adcopy(payload)
+    generated = imported["generated"]
+    validation_report = _validate_generated_adcopy(generated)
+    return {
+        "ok": validation_report["ok"],
+        "model": "외부 JSON 정규화",
+        "generated": generated,
+        "validation_report": validation_report,
+        "summary": validation_report["summary"],
+        "import_report": imported["import_report"],
+        "notice": "외부 산출물을 우리 generated.json 스키마로 정규화했습니다. 생성 엔진 의존 없이 검수와 draft 세팅에 사용할 수 있습니다.",
     }
 
 
