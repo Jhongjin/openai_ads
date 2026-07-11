@@ -291,6 +291,19 @@ class AdsAdcopyLandingInspectRequest(BaseModel):
     landing_url: str = Field(..., min_length=1, max_length=1000)
 
 
+class AdsAdcopyDraftPlanRequest(BaseModel):
+    advertiser_name: str = Field(..., min_length=1, max_length=120)
+    generated: dict[str, Any] = Field(default_factory=dict)
+    default_max_bid_krw: float | None = Field(default=7000, ge=0)
+    location_ids: list[str] = Field(default_factory=list, max_length=50)
+
+
+class AdsAdcopyDraftExecuteRequest(AdsAdcopyDraftPlanRequest):
+    action: str = Field(..., min_length=1, max_length=40)
+    state: dict[str, Any] = Field(default_factory=dict)
+    confirm: bool = False
+
+
 PAGE_LABELS = {
     "root": "메인",
     "chat": "광고 Q&A",
@@ -993,6 +1006,277 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _safe_float(value: Any) -> float:
+    try:
+        return float(str(value or 0).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _money_to_micros(value: Any) -> int:
+    return max(0, int(round(_safe_float(value) * 1_000_000)))
+
+
+def _cpm_krw_to_max_bid_micros(value: Any) -> int:
+    # OpenAI Ads max_bid_micros is per impression. Operators enter CPM in KRW.
+    return max(0, int(round(_safe_float(value) * 1000)))
+
+
+def _date_to_kst_timestamp(value: Any, *, end_of_day: bool = False) -> int | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text[:10])
+    except ValueError:
+        return None
+    hour, minute, second = (23, 59, 59) if end_of_day else (0, 0, 0)
+    parsed = parsed.replace(hour=hour, minute=minute, second=second, microsecond=0, tzinfo=KST)
+    return int(parsed.timestamp())
+
+
+def _campaign_day_count(start_date: Any, end_date: Any) -> int:
+    try:
+        start = datetime.fromisoformat(str(start_date or "")[:10]).date()
+        end = datetime.fromisoformat(str(end_date or "")[:10]).date()
+    except ValueError:
+        return 1
+    return max(1, (end - start).days + 1)
+
+
+def _adcopy_trace_status(item: dict[str, Any]) -> str:
+    trace = item.get("trace") if isinstance(item.get("trace"), dict) else {}
+    return str(trace.get("validation_status") or "").strip()
+
+
+def _adcopy_is_excluded(item: dict[str, Any]) -> bool:
+    return _adcopy_trace_status(item) in {"제외", "excluded", "exclude"}
+
+
+def _adcopy_keyword_texts(group: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    for keyword in group.get("keywords") or []:
+        if isinstance(keyword, dict):
+            text = str(keyword.get("text") or "").strip()
+        else:
+            text = str(keyword or "").strip()
+        if text:
+            values.append(text)
+    return list(dict.fromkeys(values))
+
+
+def _first_campaign(data: dict[str, Any]) -> dict[str, Any]:
+    campaigns = data.get("campaigns") if isinstance(data.get("campaigns"), list) else []
+    for campaign in campaigns:
+        if isinstance(campaign, dict):
+            return campaign
+    return {}
+
+
+def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, Any]:
+    generated = payload.generated if isinstance(payload.generated, dict) else {}
+    validation_report = _validate_generated_adcopy(generated)
+    campaign = _first_campaign(generated)
+    campaign_name = str(campaign.get("campaign_name") or "").strip()
+    if not campaign_name:
+        raise HTTPException(status_code=400, detail="draft 세팅을 만들 캠페인명이 없습니다. 먼저 카피 초안을 생성하거나 generated.json을 확인해 주세요.")
+    adgroups = [item for item in (generated.get("adgroups") or []) if isinstance(item, dict)]
+    ads_all = [item for item in (generated.get("ads") or []) if isinstance(item, dict)]
+    ads = [item for item in ads_all if not _adcopy_is_excluded(item)]
+    if not ads:
+        raise HTTPException(status_code=400, detail="draft 세팅에 포함할 소재가 없습니다. 운영 상태가 제외가 아닌 소재를 1개 이상 남겨 주세요.")
+    adgroup_names = {str(ad.get("adgroup_name") or "").strip() for ad in ads if str(ad.get("adgroup_name") or "").strip()}
+    included_adgroups = [group for group in adgroups if str(group.get("adgroup_name") or "").strip() in adgroup_names]
+    if not included_adgroups and adgroups:
+        included_adgroups = adgroups
+
+    warnings: list[str] = []
+    budget_type = str(campaign.get("budget_type") or "daily").strip().lower()
+    budget_max = _safe_float(campaign.get("budget_max"))
+    days = _campaign_day_count(campaign.get("launch_date"), campaign.get("end_date"))
+    lifetime_budget = budget_max * days if budget_type in {"daily", "일 예산", "일예산"} else budget_max
+    if budget_type in {"daily", "일 예산", "일예산"}:
+        warnings.append(f"일 예산 {int(budget_max):,}원을 캠페인 기간 {days}일 기준 총 예산 {int(lifetime_budget):,}원으로 변환합니다.")
+    if lifetime_budget <= 0:
+        warnings.append("캠페인 예산이 0원입니다. 실제 생성 전 예산을 확인해야 합니다.")
+
+    default_bid_krw = _safe_float(payload.default_max_bid_krw)
+    default_bid_micros = _cpm_krw_to_max_bid_micros(default_bid_krw)
+    if default_bid_micros <= 0:
+        warnings.append("기본 CPM 입찰가가 0원입니다. 광고그룹 생성 단계는 입찰가를 입력해야 진행할 수 있습니다.")
+    if not payload.location_ids:
+        warnings.append("Location ID가 비어 있어 위치 타깃 payload를 보내지 않습니다. 필요 시 국가/지역 location id를 입력해 주세요.")
+
+    objective = str(campaign.get("objective") or "").strip()
+    if objective and objective.lower() not in {"views", "view", "reach", "impression", "impressions", "노출"}:
+        warnings.append("캠페인 목표값은 운영 메타와 검수 기준으로만 사용합니다. OpenAI Ads 생성 payload에는 별도 목표 필드를 보내지 않습니다.")
+
+    campaign_payload: dict[str, Any] = {
+        "name": campaign_name,
+        "status": "paused",
+        "budget": {"lifetime_spend_limit_micros": _money_to_micros(lifetime_budget)},
+    }
+    start_time = _date_to_kst_timestamp(campaign.get("launch_date"))
+    end_time = _date_to_kst_timestamp(campaign.get("end_date"), end_of_day=True)
+    if start_time:
+        campaign_payload["start_time"] = start_time
+    if end_time:
+        campaign_payload["end_time"] = end_time
+    locations = [str(item).strip() for item in payload.location_ids if str(item or "").strip()]
+    if locations:
+        campaign_payload["targeting"] = {"locations": {"include": [{"id": item} for item in locations]}}
+
+    adgroup_payloads: list[dict[str, Any]] = []
+    for index, group in enumerate(included_adgroups, start=1):
+        name = str(group.get("adgroup_name") or f"{index:02d}_광고그룹").strip()
+        context_hints = _adcopy_keyword_texts(group)
+        if not context_hints:
+            warnings.append(f"{name} 광고그룹의 Context Hints가 비어 있습니다.")
+        adgroup_payloads.append(
+            {
+                "name": name,
+                "ad_count": sum(1 for ad in ads if str(ad.get("adgroup_name") or "").strip() == name),
+                "context_hints": context_hints,
+                "api_payload": {
+                    "name": name,
+                    "status": "paused",
+                    "context_hints": context_hints,
+                    "bidding_config": {
+                        "billing_event_type": "impression",
+                        "max_bid_micros": default_bid_micros,
+                    },
+                },
+            }
+        )
+
+    image_urls = list(dict.fromkeys(str(ad.get("image_link") or "").strip() for ad in ads if re.match(r"^https?://", str(ad.get("image_link") or "").strip(), re.I)))
+    assets = [{"image_url": url} for url in image_urls]
+    if not assets:
+        warnings.append("업로드할 이미지 URL이 없습니다. 소재 생성 전 이미지 URL을 확인해야 합니다.")
+
+    ad_payloads: list[dict[str, Any]] = []
+    for index, ad in enumerate(ads, start=1):
+        ad_name = str(ad.get("ad_name") or f"AD_{index:03d}").strip()
+        adgroup_name = str(ad.get("adgroup_name") or "").strip()
+        target_url = str(ad.get("link") or "").strip()
+        image_url = str(ad.get("image_link") or "").strip()
+        if not re.match(r"^https?://", target_url, re.I):
+            warnings.append(f"{ad_name} 소재의 랜딩 URL이 올바르지 않습니다.")
+        if not re.match(r"^https?://", image_url, re.I):
+            warnings.append(f"{ad_name} 소재의 이미지 URL이 올바르지 않습니다.")
+        ad_payloads.append(
+            {
+                "key": f"{adgroup_name}::{ad_name}",
+                "name": ad_name,
+                "adgroup_name": adgroup_name,
+                "image_url": image_url,
+                "api_payload": {
+                    "name": ad_name,
+                    "status": "paused",
+                    "creative": {
+                        "type": "chat_card",
+                        "title": str(ad.get("title") or "").strip(),
+                        "body": str(ad.get("copy") or "").strip(),
+                        "target_url": target_url,
+                    },
+                },
+            }
+        )
+
+    return {
+        "ok": True,
+        "advertiser_name": payload.advertiser_name,
+        "mode": "draft_paused",
+        "safety": {
+            "default_status": "paused",
+            "activation_requires_explicit_confirm": True,
+            "operator_step_required": True,
+        },
+        "summary": {
+            "campaigns": 1,
+            "adgroups": len(adgroup_payloads),
+            "ads": len(ad_payloads),
+            "assets": len(assets),
+            "excluded_ads": len(ads_all) - len(ads),
+            "validation_errors": len(validation_report.get("errors") or []),
+            "validation_warnings": len(validation_report.get("warnings") or []),
+        },
+        "warnings": list(dict.fromkeys(warnings)),
+        "campaign": {
+            "name": campaign_name,
+            "objective": objective,
+            "budget_type": budget_type or "-",
+            "budget_krw": lifetime_budget,
+            "start_date": campaign.get("launch_date") or "",
+            "end_date": campaign.get("end_date") or "",
+            "api_payload": campaign_payload,
+        },
+        "ad_groups": adgroup_payloads,
+        "assets": assets,
+        "ads": ad_payloads,
+        "next_steps": [
+            "광고주 계정 확인",
+            "paused 캠페인 draft 생성",
+            "이미지 파일 업로드",
+            "paused 광고그룹 draft 생성",
+            "paused 소재 draft 생성",
+            "운영자 최종 확인 후 명시적 활성화",
+        ],
+        "validation_report": validation_report,
+    }
+
+
+async def _ads_draft_api_request(
+    api_key: str,
+    method: str,
+    path: str,
+    json_body: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    from rag_chatbot.ads_api import load_ads_api_settings
+
+    settings = load_ads_api_settings(api_key=api_key)
+    url = f"{settings.base_url}{path}"
+    headers = {
+        "Authorization": f"Bearer {settings.api_key}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.request(method.upper(), url, headers=headers, json=json_body)
+    if response.status_code >= 400:
+        raise httpx.HTTPStatusError(
+            f"HTTP {response.status_code}",
+            request=response.request,
+            response=response,
+        )
+    if not response.text.strip():
+        return {}
+    return response.json()
+
+
+def _state_mapping(state: dict[str, Any], key: str) -> dict[str, str]:
+    value = state.get(key)
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _ads_response_id(data: dict[str, Any]) -> str:
+    for key in ("id", "campaign_id", "ad_group_id", "ad_id", "file_id"):
+        value = str(data.get(key) or "").strip()
+        if value:
+            return value
+    nested = data.get("data")
+    if isinstance(nested, dict):
+        return _ads_response_id(nested)
+    return ""
+
+
+def _ads_api_error_detail(exc: httpx.HTTPStatusError) -> str:
+    response = exc.response
+    detail = response.text[:1000] if response is not None else str(exc)
+    status = response.status_code if response is not None else "?"
+    return f"OpenAI Ads API draft 실행 실패: HTTP {status} · {detail}"
+
+
 def _ads_dashboard_cached_payload(cache_row: dict[str, Any]) -> dict[str, Any]:
     payload = dict(cache_row.get("payload") or {})
     refreshed_at = str(cache_row.get("refreshed_at") or "")
@@ -1519,6 +1803,141 @@ async def admin_inspect_adcopy_landing(request: Request) -> dict[str, Any]:
         "metadata": metadata,
         "notice": "랜딩 페이지의 공개 메타 정보를 읽었습니다. 자동 입력 전 운영자가 내용을 확인해야 합니다.",
     }
+
+
+@app.post("/api/admin/adcopy/draft-plan", include_in_schema=False)
+async def admin_adcopy_draft_plan(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "draft 세팅 본문이 올바르지 않습니다.")
+    return _build_adcopy_draft_plan(payload)
+
+
+@app.post("/api/admin/adcopy/draft-execute", include_in_schema=False)
+async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
+    from admin_store import get_ads_api_key_credential
+    from rag_chatbot.ads_api import fetch_ad_account_metadata
+
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftExecuteRequest, "draft 실행 본문이 올바르지 않습니다.")
+    action = payload.action.strip()
+    state = dict(payload.state or {})
+    credential = get_ads_api_key_credential(payload.advertiser_name)
+    api_key = credential.get("api_key", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail=f"{payload.advertiser_name}의 활성 Ads API 키가 필요합니다.")
+    plan = _build_adcopy_draft_plan(payload)
+
+    if action == "verify_account":
+        account = await fetch_ad_account_metadata(api_key)
+        state["account_verified_at"] = datetime.now(KST).isoformat()
+        return {"ok": True, "action": action, "plan": plan, "state": state, "account": account}
+
+    if action not in {"create_campaign", "upload_assets", "create_ad_groups", "create_ads", "activate_all"}:
+        raise HTTPException(status_code=400, detail="지원하지 않는 draft 실행 단계입니다.")
+    if not payload.confirm:
+        raise HTTPException(status_code=400, detail="실행 확인이 필요합니다. 각 단계는 운영자 확인 후에만 진행됩니다.")
+
+    logs: list[dict[str, Any]] = []
+    try:
+        if action == "create_campaign":
+            if state.get("campaign_id"):
+                logs.append({"level": "info", "message": "이미 생성된 캠페인 ID를 사용합니다.", "id": state.get("campaign_id")})
+            else:
+                data = await _ads_draft_api_request(api_key, "POST", "/v1/campaigns", plan["campaign"]["api_payload"])
+                campaign_id = _ads_response_id(data)
+                if not campaign_id:
+                    raise HTTPException(status_code=502, detail="캠페인 생성 응답에서 campaign id를 찾지 못했습니다.")
+                state["campaign_id"] = campaign_id
+                logs.append({"level": "success", "message": "paused 캠페인 draft를 생성했습니다.", "id": campaign_id})
+
+        elif action == "upload_assets":
+            file_ids = _state_mapping(state, "file_ids")
+            for asset in plan["assets"]:
+                image_url = asset["image_url"]
+                if file_ids.get(image_url):
+                    logs.append({"level": "info", "message": "이미 업로드된 이미지를 재사용합니다.", "url": image_url, "id": file_ids[image_url]})
+                    continue
+                data = await _ads_draft_api_request(api_key, "POST", "/v1/upload", {"image_url": image_url})
+                file_id = str(data.get("file_id") or _ads_response_id(data)).strip()
+                if not file_id:
+                    raise HTTPException(status_code=502, detail=f"이미지 업로드 응답에서 file_id를 찾지 못했습니다: {image_url}")
+                file_ids[image_url] = file_id
+                logs.append({"level": "success", "message": "소재 이미지를 업로드했습니다.", "url": image_url, "id": file_id})
+            state["file_ids"] = file_ids
+
+        elif action == "create_ad_groups":
+            campaign_id = str(state.get("campaign_id") or "").strip()
+            if not campaign_id:
+                raise HTTPException(status_code=400, detail="광고그룹 생성 전 캠페인 draft를 먼저 생성해야 합니다.")
+            ad_group_ids = _state_mapping(state, "ad_group_ids")
+            for group in plan["ad_groups"]:
+                name = group["name"]
+                if ad_group_ids.get(name):
+                    logs.append({"level": "info", "message": "이미 생성된 광고그룹을 재사용합니다.", "name": name, "id": ad_group_ids[name]})
+                    continue
+                api_payload = dict(group["api_payload"])
+                if _safe_float(api_payload.get("bidding_config", {}).get("max_bid_micros")) <= 0:
+                    raise HTTPException(status_code=400, detail="광고그룹 생성 전 기본 CPM 입찰가를 0보다 크게 입력해 주세요.")
+                api_payload["campaign_id"] = campaign_id
+                data = await _ads_draft_api_request(api_key, "POST", "/v1/ad_groups", api_payload)
+                ad_group_id = _ads_response_id(data)
+                if not ad_group_id:
+                    raise HTTPException(status_code=502, detail=f"광고그룹 생성 응답에서 ad group id를 찾지 못했습니다: {name}")
+                ad_group_ids[name] = ad_group_id
+                logs.append({"level": "success", "message": "paused 광고그룹 draft를 생성했습니다.", "name": name, "id": ad_group_id})
+            state["ad_group_ids"] = ad_group_ids
+
+        elif action == "create_ads":
+            ad_group_ids = _state_mapping(state, "ad_group_ids")
+            file_ids = _state_mapping(state, "file_ids")
+            if not ad_group_ids:
+                raise HTTPException(status_code=400, detail="소재 생성 전 광고그룹 draft를 먼저 생성해야 합니다.")
+            ad_ids = _state_mapping(state, "ad_ids")
+            for ad in plan["ads"]:
+                ad_name = ad["name"]
+                ad_key = ad.get("key") or ad_name
+                if ad_ids.get(ad_key):
+                    logs.append({"level": "info", "message": "이미 생성된 소재를 재사용합니다.", "name": ad_name, "id": ad_ids[ad_key]})
+                    continue
+                ad_group_id = ad_group_ids.get(ad["adgroup_name"])
+                file_id = file_ids.get(ad["image_url"])
+                if not ad_group_id:
+                    raise HTTPException(status_code=400, detail=f"{ad['adgroup_name']} 광고그룹 ID가 없습니다. 광고그룹 생성 단계를 먼저 완료해 주세요.")
+                if not file_id:
+                    raise HTTPException(status_code=400, detail=f"{ad_name} 소재 이미지 file_id가 없습니다. 이미지 업로드 단계를 먼저 완료해 주세요.")
+                api_payload = json.loads(json.dumps(ad["api_payload"]))
+                api_payload["ad_group_id"] = ad_group_id
+                api_payload["creative"]["file_id"] = file_id
+                data = await _ads_draft_api_request(api_key, "POST", "/v1/ads", api_payload)
+                ad_id = _ads_response_id(data)
+                if not ad_id:
+                    raise HTTPException(status_code=502, detail=f"소재 생성 응답에서 ad id를 찾지 못했습니다: {ad_name}")
+                ad_ids[ad_key] = ad_id
+                logs.append({"level": "success", "message": "paused 소재 draft를 생성했습니다.", "name": ad_name, "id": ad_id})
+            state["ad_ids"] = ad_ids
+
+        elif action == "activate_all":
+            campaign_id = str(state.get("campaign_id") or "").strip()
+            ad_group_ids = _state_mapping(state, "ad_group_ids")
+            ad_ids = _state_mapping(state, "ad_ids")
+            if not campaign_id or not ad_group_ids or not ad_ids:
+                raise HTTPException(status_code=400, detail="활성화 전 캠페인, 광고그룹, 소재 draft 생성이 모두 완료되어야 합니다.")
+            for name, ad_id in ad_ids.items():
+                await _ads_draft_api_request(api_key, "POST", f"/v1/ads/{ad_id}/activate", {})
+                logs.append({"level": "success", "message": "소재를 활성화했습니다.", "name": name.rsplit("::", 1)[-1], "id": ad_id})
+            for name, ad_group_id in ad_group_ids.items():
+                await _ads_draft_api_request(api_key, "POST", f"/v1/ad_groups/{ad_group_id}/activate", {})
+                logs.append({"level": "success", "message": "광고그룹을 활성화했습니다.", "name": name, "id": ad_group_id})
+            await _ads_draft_api_request(api_key, "POST", f"/v1/campaigns/{campaign_id}/activate", {})
+            logs.append({"level": "success", "message": "캠페인을 활성화했습니다.", "id": campaign_id})
+            state["activated_at"] = datetime.now(KST).isoformat()
+
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail=_ads_api_error_detail(exc)) from exc
+
+    state["last_action"] = action
+    state["updated_at"] = datetime.now(KST).isoformat()
+    return {"ok": True, "action": action, "plan": plan, "state": state, "logs": logs}
 
 
 @app.get("/api/admin/ads-api-keys/{advertiser_name}/reveal", include_in_schema=False)

@@ -2235,6 +2235,216 @@ body.dev-console.modal-open {
   color: var(--oa-muted);
 }
 
+.adcopy-draft-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  padding: 12px;
+}
+
+.adcopy-draft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.adcopy-draft-head h4 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.adcopy-draft-head p {
+  margin: 4px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-draft-head .tag {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.adcopy-draft-controls {
+  display: grid;
+  grid-template-columns: minmax(140px, .85fr) minmax(180px, 1.15fr);
+  gap: 8px;
+}
+
+.adcopy-draft-summary {
+  display: grid;
+  gap: 5px;
+  border: 1px dashed #c9d6e8;
+  border-radius: var(--oa-radius-sm);
+  background: #f8fbff;
+  padding: 10px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-draft-summary strong {
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-draft-summary span,
+.adcopy-draft-summary small {
+  color: var(--oa-muted);
+  font-weight: 800;
+}
+
+.adcopy-draft-summary ul {
+  display: grid;
+  gap: 3px;
+  margin: 2px 0 0;
+  padding-left: 16px;
+  color: var(--oa-gold);
+  font-weight: 850;
+}
+
+.adcopy-draft-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.adcopy-draft-step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 2px 7px;
+  align-items: center;
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid #dbe4ef;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  padding: 8px;
+  color: var(--oa-ink);
+  text-align: left;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.adcopy-draft-step:not(:disabled):hover {
+  border-color: #a9bad0;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+.adcopy-draft-step:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.adcopy-draft-step span {
+  grid-row: 1 / span 2;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eef3f9;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-draft-step strong {
+  min-width: 0;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adcopy-draft-step small {
+  min-width: 0;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adcopy-draft-step.is-complete {
+  border-color: #bfe7d5;
+  background: #f5fcf8;
+  color: var(--oa-green);
+  opacity: 1;
+}
+
+.adcopy-draft-step.is-complete span {
+  background: #dff6ea;
+  color: var(--oa-green);
+}
+
+.adcopy-draft-step.is-running {
+  border-color: #b8ccff;
+  background: #f5f8ff;
+  color: #2457c5;
+  opacity: 1;
+}
+
+.adcopy-draft-step.is-danger:not(:disabled) {
+  border-color: #ffc9cc;
+  background: #fff7f7;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-draft-log {
+  display: grid;
+  gap: 5px;
+  min-height: 38px;
+  max-height: 150px;
+  overflow: auto;
+  border-radius: var(--oa-radius-sm);
+  background: #101827;
+  padding: 8px;
+  color: #b9c4d3;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.adcopy-draft-log-item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adcopy-draft-log-item strong {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.adcopy-draft-log-item span,
+.adcopy-draft-log-item code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.adcopy-draft-log-item.is-success strong {
+  color: #7dd3a8;
+}
+
+.adcopy-draft-log-item.is-warning strong {
+  color: #f8c66a;
+}
+
+.adcopy-draft-log-item.is-error strong {
+  color: #ff8a91;
+}
+
 .adcopy-result-section {
   display: grid;
   gap: 8px;
@@ -3627,6 +3837,10 @@ body.dev-console.modal-open {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .adcopy-draft-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hourly-insight-strip {
     grid-template-columns: 1fr;
   }
@@ -3669,6 +3883,8 @@ body.dev-console.modal-open {
 
   .adcopy-summary-grid,
   .adcopy-upload-checklist,
+  .adcopy-draft-controls,
+  .adcopy-draft-steps,
   .adcopy-form .grid-2,
   .adcopy-form .grid-3 {
     grid-template-columns: 1fr;

@@ -242,6 +242,113 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_admin_adcopy_draft_plan_builds_paused_payloads(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 102600,
+                "budget_type": "daily",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+
+        response = client.post(
+            "/api/admin/adcopy/draft-plan",
+            json={
+                "advertiser_name": "캐츠잉글리시",
+                "generated": generated,
+                "default_max_bid_krw": 7000,
+                "location_ids": ["2000043"],
+            },
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["safety"]["default_status"], "paused")
+        self.assertEqual(body["campaign"]["api_payload"]["status"], "paused")
+        self.assertEqual(body["campaign"]["api_payload"]["budget"]["lifetime_spend_limit_micros"], 307800000000)
+        self.assertEqual(body["ad_groups"][0]["api_payload"]["status"], "paused")
+        self.assertEqual(body["ad_groups"][0]["api_payload"]["bidding_config"]["max_bid_micros"], 7000000)
+        self.assertEqual(body["ads"][0]["api_payload"]["status"], "paused")
+        self.assertEqual(body["summary"]["ads"], 2)
+
+    def test_admin_adcopy_draft_execute_requires_confirm_for_mutation(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 100000,
+                "budget_type": "total",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test", "industry": "교육"}):
+            response = client.post(
+                "/api/admin/adcopy/draft-execute",
+                json={
+                    "advertiser_name": "캐츠잉글리시",
+                    "generated": generated,
+                    "action": "create_campaign",
+                    "confirm": False,
+                },
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("실행 확인", response.json()["detail"])
+
+    def test_admin_adcopy_draft_execute_creates_campaign_paused(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "01_학습자료",
+                "budget_max": 100000,
+                "budget_type": "total",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+        mocked_request = AsyncMock(return_value={"id": "cmpn_test", "status": "paused"})
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test", "industry": "교육"}):
+            with patch("app._ads_draft_api_request", mocked_request):
+                response = client.post(
+                    "/api/admin/adcopy/draft-execute",
+                    json={
+                        "advertiser_name": "캐츠잉글리시",
+                        "generated": generated,
+                        "action": "create_campaign",
+                        "confirm": True,
+                    },
+                    headers=ADMIN_HEADERS,
+                )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["state"]["campaign_id"], "cmpn_test")
+        called_args = mocked_request.await_args.args
+        self.assertEqual(called_args[1], "POST")
+        self.assertEqual(called_args[2], "/v1/campaigns")
+        self.assertEqual(called_args[3]["status"], "paused")
+
 
 if __name__ == "__main__":
     unittest.main()

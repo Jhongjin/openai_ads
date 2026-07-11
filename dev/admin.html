@@ -916,6 +916,51 @@
                           <span>업로드 준비 체크는 생성 후 표시됩니다.</span>
                         </div>
                       </div>
+                      <div class="adcopy-draft-panel" id="adcopy-draft-panel">
+                        <div class="adcopy-draft-head">
+                          <div>
+                            <h4>Draft 세팅 자동화</h4>
+                            <p>generated.json 기준으로 OpenAI Ads draft를 단계별 생성합니다. 신규 객체는 모두 paused 상태입니다.</p>
+                          </div>
+                          <span class="tag" id="adcopy-draft-badge">대기</span>
+                        </div>
+                        <div class="adcopy-draft-controls">
+                          <label class="field">
+                            <span class="field-label">기본 CPM 입찰가(원)</span>
+                            <input class="control" id="adcopy-draft-max-bid" type="number" min="0" step="100" value="7000" />
+                          </label>
+                          <label class="field">
+                            <span class="field-label">Location IDs</span>
+                            <input class="control" id="adcopy-draft-location-ids" placeholder="예: 2000043, 3000194" />
+                          </label>
+                        </div>
+                        <div class="adcopy-draft-summary" id="adcopy-draft-summary">
+                          초안을 생성하면 draft plan을 확인할 수 있습니다.
+                        </div>
+                        <div class="adcopy-draft-steps" id="adcopy-draft-steps">
+                          <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="verify_account" disabled>
+                            <span>1</span><strong>계정 확인</strong><small>API 키 상태 확인</small>
+                          </button>
+                          <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_campaign" disabled>
+                            <span>2</span><strong>캠페인 draft</strong><small>paused 생성</small>
+                          </button>
+                          <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="upload_assets" disabled>
+                            <span>3</span><strong>이미지 업로드</strong><small>file_id 확보</small>
+                          </button>
+                          <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_ad_groups" disabled>
+                            <span>4</span><strong>광고그룹 draft</strong><small>paused 생성</small>
+                          </button>
+                          <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_ads" disabled>
+                            <span>5</span><strong>소재 draft</strong><small>paused 생성</small>
+                          </button>
+                          <button class="adcopy-draft-step is-danger" type="button" data-adcopy-draft-action="activate_all" disabled>
+                            <span>6</span><strong>활성화</strong><small>최종 확인 후 active</small>
+                          </button>
+                        </div>
+                        <div class="adcopy-draft-log" id="adcopy-draft-log">
+                          실행 로그가 여기에 표시됩니다.
+                        </div>
+                      </div>
                       <div class="adcopy-result-section">
                         <div class="adcopy-result-section-head">
                           <h4>광고그룹·소재 미리보기</h4>
@@ -1557,6 +1602,10 @@
       let adcopyPreviewFilter = "all";
       let adcopyReviewFilter = "all";
       let adcopyExportMode = "all";
+      let adcopyDraftPlan = null;
+      let adcopyDraftState = {};
+      let adcopyDraftLogs = [];
+      let adcopyDraftRunningAction = "";
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -3999,6 +4048,7 @@
         $("#validate-adcopy-json").disabled = true;
         $("#adcopy-export-mode").disabled = true;
         $("#adcopy-export-mode").value = "all";
+        resetAdcopyDraftWorkflow({ render: false });
         renderAdcopyResult(null);
         renderAdcopyBriefMeter();
         setStatus("adcopy-generator-status", "입력값을 초기화했습니다.");
@@ -4136,6 +4186,250 @@
         `).join("");
       }
 
+      function adcopyDraftActionLabel(action) {
+        const labels = {
+          verify_account: "계정 확인",
+          create_campaign: "캠페인 draft",
+          upload_assets: "이미지 업로드",
+          create_ad_groups: "광고그룹 draft",
+          create_ads: "소재 draft",
+          activate_all: "최종 활성화",
+        };
+        return labels[action] || action;
+      }
+
+      function adcopyDraftConfirmMessage(action) {
+        const messages = {
+          create_campaign: "OpenAI Ads에 paused 캠페인 draft를 생성합니다. 아직 active 상태가 아닙니다. 진행할까요?",
+          upload_assets: "소재 이미지 URL을 OpenAI Ads에 업로드해 file_id를 생성합니다. 진행할까요?",
+          create_ad_groups: "캠페인 아래에 paused 광고그룹 draft를 생성합니다. 진행할까요?",
+          create_ads: "광고그룹 아래에 paused 소재 draft를 생성합니다. 진행할까요?",
+          activate_all: "마지막 단계입니다. 생성된 캠페인, 광고그룹, 소재를 active로 전환하면 실제 집행될 수 있습니다. 진행할까요?",
+        };
+        return messages[action] || "선택한 draft 단계를 실행할까요?";
+      }
+
+      function readAdcopyDraftOptions() {
+        const locationText = String($("#adcopy-draft-location-ids")?.value || "");
+        return {
+          default_max_bid_krw: Number($("#adcopy-draft-max-bid")?.value || 0),
+          location_ids: locationText.split(/[\s,]+/).map((item) => item.trim()).filter(Boolean),
+        };
+      }
+
+      function buildAdcopyDraftRequest() {
+        const exported = buildAdcopyExportGenerated(adcopyExportMode, { allowEmpty: true });
+        const options = readAdcopyDraftOptions();
+        const advertiserName = readAdcopyPayload().advertiser_name || adcopyLastResult?.generated?.campaigns?.[0]?.advertiser_name || "";
+        return {
+          advertiser_name: advertiserName,
+          generated: exported.generated,
+          default_max_bid_krw: options.default_max_bid_krw,
+          location_ids: options.location_ids,
+        };
+      }
+
+      function resetAdcopyDraftWorkflow(options = {}) {
+        const shouldRender = options.render !== false;
+        adcopyDraftPlan = null;
+        adcopyDraftState = {};
+        adcopyDraftLogs = [];
+        adcopyDraftRunningAction = "";
+        if (shouldRender) renderAdcopyDraftPanel();
+      }
+
+      function adcopyDraftMapSize(key) {
+        const value = adcopyDraftState?.[key];
+        return value && typeof value === "object" ? Object.keys(value).length : 0;
+      }
+
+      function adcopyDraftIsComplete(action) {
+        if (action === "verify_account") return Boolean(adcopyDraftState.account_verified_at);
+        if (action === "create_campaign") return Boolean(adcopyDraftState.campaign_id);
+        if (action === "upload_assets") return Boolean(adcopyDraftPlan?.assets?.length) && adcopyDraftMapSize("file_ids") >= (adcopyDraftPlan.assets || []).length;
+        if (action === "create_ad_groups") return Boolean(adcopyDraftPlan?.ad_groups?.length) && adcopyDraftMapSize("ad_group_ids") >= (adcopyDraftPlan.ad_groups || []).length;
+        if (action === "create_ads") return Boolean(adcopyDraftPlan?.ads?.length) && adcopyDraftMapSize("ad_ids") >= (adcopyDraftPlan.ads || []).length;
+        if (action === "activate_all") return Boolean(adcopyDraftState.activated_at);
+        return false;
+      }
+
+      function adcopyDraftCanRun(action) {
+        if (!adcopyLastResult?.generated || adcopyDraftRunningAction) return false;
+        if (action === "verify_account") return true;
+        if (action === "create_campaign") return !adcopyDraftState.campaign_id;
+        if (action === "upload_assets") return Boolean(adcopyDraftState.campaign_id) && !adcopyDraftIsComplete(action);
+        if (action === "create_ad_groups") return Boolean(adcopyDraftState.campaign_id) && !adcopyDraftIsComplete(action);
+        if (action === "create_ads") {
+          const hasAssets = !adcopyDraftPlan?.assets?.length || adcopyDraftIsComplete("upload_assets");
+          return hasAssets && adcopyDraftIsComplete("create_ad_groups") && !adcopyDraftIsComplete(action);
+        }
+        if (action === "activate_all") {
+          return adcopyDraftIsComplete("create_campaign")
+            && adcopyDraftIsComplete("create_ad_groups")
+            && adcopyDraftIsComplete("create_ads")
+            && !adcopyDraftIsComplete(action);
+        }
+        return false;
+      }
+
+      function adcopyDraftStatusBadge() {
+        const badge = $("#adcopy-draft-badge");
+        if (!badge) return;
+        if (adcopyDraftRunningAction) {
+          badge.className = "tag tag-blue";
+          badge.textContent = `${adcopyDraftActionLabel(adcopyDraftRunningAction)} 중`;
+          return;
+        }
+        if (adcopyDraftState.activated_at) {
+          badge.className = "tag tag-red";
+          badge.textContent = "active 완료";
+          return;
+        }
+        if (adcopyDraftState.campaign_id || adcopyDraftMapSize("ad_group_ids") || adcopyDraftMapSize("ad_ids")) {
+          badge.className = "tag tag-blue";
+          badge.textContent = "draft 진행";
+          return;
+        }
+        if (adcopyDraftPlan) {
+          badge.className = "tag tag-green";
+          badge.textContent = "plan 준비";
+          return;
+        }
+        badge.className = "tag";
+        badge.textContent = adcopyLastResult?.generated ? "초안 준비" : "대기";
+      }
+
+      function renderAdcopyDraftSummary() {
+        const root = $("#adcopy-draft-summary");
+        if (!root) return;
+        if (!adcopyLastResult?.generated) {
+          root.innerHTML = "초안을 생성하면 draft plan을 확인할 수 있습니다.";
+          return;
+        }
+        const exported = buildAdcopyExportGenerated(adcopyExportMode, { allowEmpty: true });
+        const stateLine = [
+          adcopyDraftState.campaign_id ? `캠페인 ${escapeHtml(adcopyDraftState.campaign_id)}` : "캠페인 미생성",
+          `이미지 ${formatNumber(adcopyDraftMapSize("file_ids"))}`,
+          `광고그룹 ${formatNumber(adcopyDraftMapSize("ad_group_ids"))}`,
+          `소재 ${formatNumber(adcopyDraftMapSize("ad_ids"))}`,
+        ].join(" · ");
+        if (!adcopyDraftPlan) {
+          root.innerHTML = `
+            <strong>${escapeHtml(exported.label)} 기준 · ${formatNumber(exported.ads)}개 소재</strong>
+            <span>계정 확인 또는 draft 실행 시 OpenAI Ads 생성용 plan을 계산합니다.</span>
+            <small>${stateLine}</small>
+          `;
+          return;
+        }
+        const summary = adcopyDraftPlan.summary || {};
+        const warnings = (adcopyDraftPlan.warnings || []).slice(0, 3);
+        root.innerHTML = `
+          <strong>${escapeHtml(exported.label)} 기준 · 캠페인 ${formatNumber(summary.campaigns || 0)} · 광고그룹 ${formatNumber(summary.adgroups || 0)} · 소재 ${formatNumber(summary.ads || 0)} · 이미지 ${formatNumber(summary.assets || 0)}</strong>
+          <span>기본 상태는 paused입니다. active 전환은 마지막 단계에서만 가능합니다.</span>
+          <small>${stateLine}</small>
+          ${warnings.length ? `<ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : ""}
+        `;
+      }
+
+      function renderAdcopyDraftSteps() {
+        $$("[data-adcopy-draft-action]").forEach((button) => {
+          const action = button.dataset.adcopyDraftAction || "";
+          const complete = adcopyDraftIsComplete(action);
+          const running = adcopyDraftRunningAction === action;
+          button.classList.toggle("is-complete", complete);
+          button.classList.toggle("is-running", running);
+          button.disabled = !adcopyDraftCanRun(action);
+          const icon = button.querySelector("span");
+          if (icon) icon.textContent = complete ? "✓" : (running ? "…" : icon.dataset.originalStep || icon.textContent);
+          if (icon && !icon.dataset.originalStep && !complete && !running) icon.dataset.originalStep = icon.textContent;
+        });
+      }
+
+      function renderAdcopyDraftLog() {
+        const root = $("#adcopy-draft-log");
+        if (!root) return;
+        if (!adcopyDraftLogs.length) {
+          root.innerHTML = "실행 로그가 여기에 표시됩니다.";
+          return;
+        }
+        root.innerHTML = adcopyDraftLogs.slice(-8).map((item) => `
+          <div class="adcopy-draft-log-item is-${escapeHtml(item.level || "info")}">
+            <strong>${escapeHtml(item.title || adcopyDraftActionLabel(item.action || "") || "로그")}</strong>
+            <span>${escapeHtml(item.message || "")}</span>
+            ${item.id ? `<code>${escapeHtml(item.id)}</code>` : ""}
+          </div>
+        `).join("");
+      }
+
+      function renderAdcopyDraftPanel() {
+        adcopyDraftStatusBadge();
+        renderAdcopyDraftSummary();
+        renderAdcopyDraftSteps();
+        renderAdcopyDraftLog();
+      }
+
+      async function refreshAdcopyDraftPlan() {
+        const payload = buildAdcopyDraftRequest();
+        const data = await adminFetch("/api/admin/adcopy/draft-plan", {
+          method: "POST",
+          body: JSON.stringify(payload),
+          loadingMessage: "OpenAI Ads draft plan을 계산하는 중입니다.",
+        });
+        adcopyDraftPlan = data;
+        renderAdcopyDraftPanel();
+        return data;
+      }
+
+      function pushAdcopyDraftLogs(action, logs = [], fallback = "") {
+        const nextLogs = logs.length ? logs : [{ level: "info", message: fallback || `${adcopyDraftActionLabel(action)} 단계를 완료했습니다.` }];
+        nextLogs.forEach((item) => {
+          adcopyDraftLogs.push({
+            action,
+            title: adcopyDraftActionLabel(action),
+            level: item.level || "info",
+            message: item.message || "",
+            id: item.id || item.file_id || "",
+          });
+        });
+        adcopyDraftLogs = adcopyDraftLogs.slice(-16);
+      }
+
+      async function executeAdcopyDraftAction(action) {
+        if (!adcopyLastResult?.generated) return;
+        if (!adcopyDraftPlan) {
+          await refreshAdcopyDraftPlan();
+        }
+        const needsConfirm = action !== "verify_account";
+        if (needsConfirm && !window.confirm(adcopyDraftConfirmMessage(action))) return;
+        const payload = {
+          ...buildAdcopyDraftRequest(),
+          action,
+          state: adcopyDraftState,
+          confirm: needsConfirm,
+        };
+        adcopyDraftRunningAction = action;
+        renderAdcopyDraftPanel();
+        try {
+          const data = await adminFetch("/api/admin/adcopy/draft-execute", {
+            method: "POST",
+            body: JSON.stringify(payload),
+            loadingMessage: `${adcopyDraftActionLabel(action)} 단계를 실행하는 중입니다.`,
+          });
+          adcopyDraftPlan = data.plan || adcopyDraftPlan;
+          adcopyDraftState = data.state || {};
+          if (action === "verify_account") {
+            const ok = data.account?.ok !== false;
+            pushAdcopyDraftLogs(action, [{ level: ok ? "success" : "warning", message: ok ? "광고주 계정을 확인했습니다." : (data.account?.error || "계정 확인 응답을 확인해 주세요.") }]);
+          } else {
+            pushAdcopyDraftLogs(action, data.logs || []);
+          }
+          setStatus("adcopy-generator-status", `${adcopyDraftActionLabel(action)} 단계를 완료했습니다.`, action === "activate_all" ? "warning" : "ok");
+        } finally {
+          adcopyDraftRunningAction = "";
+          renderAdcopyDraftPanel();
+        }
+      }
+
       function renderAdcopyResult(data) {
         const result = data?.generated || null;
         const report = data?.validation_report || null;
@@ -4164,6 +4458,7 @@
         `;
         renderAdcopyQualityPanel(report);
         renderAdcopyUploadChecklist(result, report);
+        renderAdcopyDraftPanel();
         renderAdcopyPreviewList(result, report);
         renderAdcopyValidationList(report);
       }
@@ -4238,6 +4533,8 @@
         if (!adcopyLastResult?.generated) return;
         renderAdcopyJsonPreview();
         renderAdcopyUploadChecklist(adcopyLastResult.generated, adcopyLastResult.validation_report);
+        adcopyDraftPlan = null;
+        renderAdcopyDraftPanel();
       }
 
       function handleAdcopyEdit(event) {
@@ -4550,6 +4847,7 @@
           adcopyPreviewFilter = "all";
           adcopyReviewFilter = "all";
           adcopyExportMode = "all";
+          resetAdcopyDraftWorkflow({ render: false });
           renderAdcopyResult(data);
           setStatus("adcopy-generator-status", data.ok ? "초안 생성과 자동 검수를 완료했습니다." : "초안 생성 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
@@ -7921,8 +8219,24 @@
             ? counts.approved
             : (adcopyExportMode === "without_excluded" ? counts.all - counts.excluded : counts.all);
           renderAdcopyJsonPreview();
+          adcopyDraftPlan = null;
+          renderAdcopyDraftPanel();
           setStatus("adcopy-generator-status", `generated.json 내보내기 기준을 ${adcopyExportModeLabel()}로 변경했습니다. 예상 소재 ${formatNumber(estimate)}개입니다.`, estimate ? "ok" : "warning");
         }
+      });
+      ["adcopy-draft-max-bid", "adcopy-draft-location-ids"].forEach((id) => {
+        $(`#${id}`).addEventListener("change", () => {
+          adcopyDraftPlan = null;
+          renderAdcopyDraftPanel();
+          if (adcopyLastResult?.generated) {
+            setStatus("adcopy-generator-status", "draft 세팅 옵션이 변경되었습니다. 다음 실행 전 plan을 다시 계산합니다.", "warning");
+          }
+        });
+      });
+      $("#adcopy-draft-panel").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-adcopy-draft-action]");
+        if (!button || button.disabled) return;
+        executeAdcopyDraftAction(button.dataset.adcopyDraftAction || "").catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
