@@ -4044,6 +4044,8 @@
         const lengthErrors = ads.filter((ad) => adcopyLengthMeta("title", ad.title).cls === "is-error" || adcopyLengthMeta("copy", ad.copy).cls === "is-error").length;
         const requiredPhraseCount = adgroups.reduce((sum, group) => sum + (group.required_phrases || []).length, 0);
         const policyErrorCount = errors.filter((item) => ["banned_term", "required_phrase_missing", "url_required", "title_max_24", "copy_max_48"].includes(item.rule)).length;
+        const approvedCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "승인").length;
+        const blockedReviewCount = ads.filter((ad) => ["수정 필요", "제외"].includes(adcopyTrace(ad).validation_status)).length;
         const items = [
           {
             icon: "ti-link",
@@ -4074,6 +4076,12 @@
             label: "필수 문구",
             value: requiredPhraseCount ? `${formatNumber(requiredPhraseCount)}개 기준` : "기준 없음",
             cls: adcopyUploadCheckClass(requiredPhraseCount > 0, true),
+          },
+          {
+            icon: "ti-user-check",
+            label: "운영 승인",
+            value: `${formatNumber(approvedCount)} / ${formatNumber(ads.length)}`,
+            cls: adcopyUploadCheckClass(ads.length > 0 && approvedCount === ads.length, blockedReviewCount > 0 || approvedCount > 0),
           },
         ];
         root.innerHTML = items.map((item) => `
@@ -4140,9 +4148,81 @@
         return `<small class="${meta.cls}" data-adcopy-length data-adcopy-field="${field}">${escapeHtml(meta.text)}</small>`;
       }
 
+      function adcopyTrace(ad) {
+        if (!ad.trace || typeof ad.trace !== "object") ad.trace = {};
+        ad.trace.validation_status = ad.trace.validation_status || "운영 검수 필요";
+        ad.trace.review_comment = ad.trace.review_comment || "";
+        ad.trace.exclusion_reason = ad.trace.exclusion_reason || "";
+        return ad.trace;
+      }
+
+      function adcopyReviewStatusClass(status) {
+        if (status === "승인") return "is-approved";
+        if (status === "수정 필요") return "is-revise";
+        if (status === "제외") return "is-excluded";
+        return "is-pending";
+      }
+
+      function renderAdcopyReviewControls(ad, index) {
+        const trace = adcopyTrace(ad);
+        const status = trace.validation_status || "운영 검수 필요";
+        const statuses = ["운영 검수 필요", "승인", "수정 필요", "제외"];
+        return `
+          <div class="adcopy-review-controls ${adcopyReviewStatusClass(status)}" data-adcopy-review-card data-review-status="${escapeHtml(status)}">
+            <label>
+              <span>운영 검수</span>
+              <select class="adcopy-review-select" data-adcopy-review="validation_status" data-ad-index="${index}">
+                ${statuses.map((item) => `<option value="${escapeHtml(item)}" ${item === status ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}
+              </select>
+            </label>
+            <label>
+              <span>메모</span>
+              <textarea class="adcopy-review-input" data-adcopy-review="review_comment" data-ad-index="${index}" rows="2" placeholder="수정 요청이나 광고주 확인 사항">${escapeHtml(trace.review_comment || "")}</textarea>
+            </label>
+            <label class="adcopy-exclusion-field">
+              <span>제외 사유</span>
+              <input class="adcopy-review-input" data-adcopy-review="exclusion_reason" data-ad-index="${index}" value="${escapeHtml(trace.exclusion_reason || "")}" placeholder="제외 시 사유 입력" ${status === "제외" ? "" : "disabled"} />
+            </label>
+          </div>
+        `;
+      }
+
+      function syncAdcopyJsonPreview() {
+        if (!adcopyLastResult?.generated) return;
+        $("#adcopy-json-preview").textContent = JSON.stringify(adcopyLastResult.generated, null, 2);
+        renderAdcopyUploadChecklist(adcopyLastResult.generated, adcopyLastResult.validation_report);
+      }
+
       function handleAdcopyEdit(event) {
         const target = event.target.closest("[data-adcopy-edit]");
-        if (!target || !adcopyLastResult?.generated?.ads) return;
+        const reviewTarget = event.target.closest("[data-adcopy-review]");
+        if ((!target && !reviewTarget) || !adcopyLastResult?.generated?.ads) return;
+        if (reviewTarget) {
+          const index = Number(reviewTarget.dataset.adIndex);
+          const field = reviewTarget.dataset.adcopyReview;
+          if (!Number.isInteger(index) || !["validation_status", "review_comment", "exclusion_reason"].includes(field)) return;
+          const ad = adcopyLastResult.generated.ads[index];
+          if (!ad) return;
+          const trace = adcopyTrace(ad);
+          trace[field] = reviewTarget.value;
+          if (field === "validation_status") {
+            if (reviewTarget.value !== "제외") {
+              trace.exclusion_reason = "";
+            }
+            const card = reviewTarget.closest("[data-adcopy-review-card]");
+            if (card) {
+              card.dataset.reviewStatus = reviewTarget.value;
+              card.className = `adcopy-review-controls ${adcopyReviewStatusClass(reviewTarget.value)}`;
+              const exclusionInput = card.querySelector('[data-adcopy-review="exclusion_reason"]');
+              if (exclusionInput) {
+                exclusionInput.disabled = reviewTarget.value !== "제외";
+                if (reviewTarget.value !== "제외") exclusionInput.value = "";
+              }
+            }
+          }
+          syncAdcopyJsonPreview();
+          return;
+        }
         const index = Number(target.dataset.adIndex);
         const field = target.dataset.adcopyEdit;
         if (!Number.isInteger(index) || !["title", "copy"].includes(field)) return;
@@ -4265,6 +4345,7 @@
                 ${renderAdcopyLengthBadge("copy", ad.copy)}
                 <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
                 ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
+                ${renderAdcopyReviewControls(ad, index)}
               </td>
             </tr>
               `;
@@ -4388,13 +4469,14 @@
         const checksByAd = new Map((report.creative_checks || []).map((item) => [item.ad_name, item]));
         const adgroupsByName = new Map((generated.adgroups || []).map((group) => [group.adgroup_name, group]));
         const rows = [
-          ["광고그룹", "소재명", "제목", "제목 길이", "카피", "카피 길이", "검수 상태", "검수 이슈", "Context Hints", "랜딩 URL", "이미지 URL"],
+          ["광고그룹", "소재명", "제목", "제목 길이", "카피", "카피 길이", "자동 검수", "검수 이슈", "운영 상태", "운영 메모", "제외 사유", "Context Hints", "랜딩 URL", "이미지 URL"],
           ...(generated.ads || []).map((ad) => {
             const check = checksByAd.get(ad.ad_name || "") || {};
             const status = stale ? "stale" : (check.status || "pass");
             const issues = (stale ? ["제목 또는 카피가 수정되어 자동 검수 결과가 최신이 아닙니다."] : (check.issues || []).map((issue) => issue.message)).join(" · ");
             const group = adgroupsByName.get(ad.adgroup_name || "") || {};
             const keywords = (group.keywords || []).map((keyword) => typeof keyword === "object" ? keyword.text : keyword).filter(Boolean).join(", ");
+            const trace = adcopyTrace(ad);
             return [
               ad.adgroup_name || "",
               ad.ad_name || "",
@@ -4404,6 +4486,9 @@
               adcopyLengthMeta("copy", ad.copy).text,
               adcopyReviewStatusText(status),
               issues,
+              trace.validation_status || "운영 검수 필요",
+              trace.review_comment || "",
+              trace.exclusion_reason || "",
               keywords,
               ad.link || "",
               ad.image_link || "",
@@ -4467,6 +4552,9 @@
         const creativeChecks = report.creative_checks || [];
         const adgroups = generated?.adgroups || [];
         const ads = generated?.ads || [];
+        const approvedCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "승인").length;
+        const excludedCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "제외").length;
+        const reviseCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "수정 필요").length;
         const lines = [
           `# OpenAI Ads AI 카피 검수 리포트`,
           "",
@@ -4488,6 +4576,9 @@
           `| 주의 | ${formatNumber(summary.warnings || 0)} |`,
           `| 품질 스코어 | ${formatNumber(quality.score || 0)} / 100 |`,
           `| 판정 | ${adcopyMarkdownCell(quality.readiness || (report.ok ? "자동 검수 통과" : "운영 검수 필요"))} |`,
+          `| 운영 승인 | ${formatNumber(approvedCount)} / ${formatNumber(ads.length)} |`,
+          `| 수정 필요 | ${formatNumber(reviseCount)} |`,
+          `| 제외 | ${formatNumber(excludedCount)} |`,
           "",
           "## 2. 운영 수정 포인트",
           "",
@@ -4512,16 +4603,17 @@
           "",
           "## 5. 소재별 검수",
           "",
-          "| 소재명 | 제목 | 카피 | 판정 |",
-          "| --- | --- | --- | --- |",
+          "| 소재명 | 제목 | 카피 | 자동 판정 | 운영 상태 | 운영 메모 | 제외 사유 |",
+          "| --- | --- | --- | --- | --- | --- | --- |",
           ...(ads.length
             ? ads.map((ad) => {
                 const check = creativeChecks.find((item) => item.ad_name === ad.ad_name) || {};
                 const status = check.status === "error" ? "오류" : (check.status === "warning" ? "주의" : "양호");
                 const issues = (check.issues || []).map((issue) => issue.message).join("<br>");
-                return `| ${adcopyMarkdownCell(ad.ad_name)} | ${adcopyMarkdownCell(ad.title)} | ${adcopyMarkdownCell(ad.copy)} | ${adcopyMarkdownCell(issues ? `${status}: ${issues}` : status)} |`;
+                const trace = adcopyTrace(ad);
+                return `| ${adcopyMarkdownCell(ad.ad_name)} | ${adcopyMarkdownCell(ad.title)} | ${adcopyMarkdownCell(ad.copy)} | ${adcopyMarkdownCell(issues ? `${status}: ${issues}` : status)} | ${adcopyMarkdownCell(trace.validation_status || "운영 검수 필요")} | ${adcopyMarkdownCell(trace.review_comment || "-")} | ${adcopyMarkdownCell(trace.exclusion_reason || "-")} |`;
               })
-            : ["| - | - | - | - |"]),
+            : ["| - | - | - | - | - | - | - |"]),
           "",
           "## 6. 업로드 전 확인",
           "",
@@ -7628,6 +7720,7 @@
         button.addEventListener("click", () => setAdcopyPreviewFilter(button.dataset.adcopyPreviewFilter || "all"));
       });
       $("#adcopy-preview-list").addEventListener("input", handleAdcopyEdit);
+      $("#adcopy-preview-list").addEventListener("change", handleAdcopyEdit);
       $("#adcopy-validation-list").addEventListener("click", (event) => {
         const button = event.target.closest("[data-adcopy-focus-index]");
         if (!button) return;

@@ -2138,7 +2138,7 @@ body.dev-console.modal-open {
 
 .adcopy-upload-checklist {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -2427,6 +2427,72 @@ body.dev-console.modal-open {
 .adcopy-row-check.is-error {
   border-color: #ffc9cc;
   background: #fff4f4;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-review-controls {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: #f8fafc;
+  padding: 8px;
+}
+
+.adcopy-review-controls label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adcopy-review-controls label > span {
+  color: var(--oa-muted);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.adcopy-review-select,
+.adcopy-review-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dce5f1;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--oa-ink);
+  padding: 6px 7px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.adcopy-review-input {
+  resize: vertical;
+}
+
+.adcopy-review-input:disabled {
+  background: #eef2f7;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.adcopy-review-controls.is-approved {
+  border-color: #bfe7d5;
+  background: #f5fcf8;
+}
+
+.adcopy-review-controls.is-revise {
+  border-color: #f6d790;
+  background: #fffaf0;
+}
+
+.adcopy-review-controls.is-excluded {
+  border-color: #ffc9cc;
+  background: #fff7f7;
+}
+
+.adcopy-review-controls.is-excluded .adcopy-exclusion-field span {
   color: var(--oa-red-dark);
 }
 
