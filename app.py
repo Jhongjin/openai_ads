@@ -448,6 +448,11 @@ def _meta_content(soup: BeautifulSoup, *names: str) -> str:
     return ""
 
 
+def _link_rel_contains(value: Any, token: str) -> bool:
+    items = value if isinstance(value, list) else str(value or "").split()
+    return token.lower() in {str(item).lower() for item in items}
+
+
 def _inspect_landing_html(html: str, final_url: str) -> dict[str, Any]:
     soup = BeautifulSoup(html or "", "html.parser")
     title = _clean_meta_text(_meta_content(soup, "og:title", "twitter:title") or (soup.title.string if soup.title else ""), 180)
@@ -455,7 +460,7 @@ def _inspect_landing_html(html: str, final_url: str) -> dict[str, Any]:
     image_url = _clean_meta_text(_meta_content(soup, "og:image", "twitter:image"), 1000)
     if image_url:
         image_url = urljoin(final_url, image_url)
-    canonical_tag = soup.find("link", attrs={"rel": lambda value: value and "canonical" in (value if isinstance(value, list) else [value])})
+    canonical_tag = soup.find("link", attrs={"rel": lambda value: _link_rel_contains(value, "canonical")})
     canonical_url = urljoin(final_url, canonical_tag.get("href")) if canonical_tag and canonical_tag.get("href") else final_url
     suggestions = [item for item in [title, description] if item]
     selling_points = "\n".join(suggestions)

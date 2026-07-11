@@ -206,6 +206,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
             <meta property="og:title" content="카누 디카페인 캡슐 커피">
             <meta name="description" content="부드러운 캐러멜 향과 돌체구스토 호환 캡슐">
             <meta property="og:image" content="/image.jpg">
+            <link rel="Canonical" href="/canonical-product">
           </head>
         </html>
         """
@@ -224,6 +225,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["metadata"]["title"], "카누 디카페인 캡슐 커피")
         self.assertIn("돌체구스토 호환", body["metadata"]["description"])
         self.assertEqual(body["metadata"]["image_url"], "https://example.com/image.jpg")
+        self.assertEqual(body["metadata"]["canonical_url"], "https://example.com/canonical-product")
 
     def test_admin_adcopy_landing_inspect_rejects_private_ip_url(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
