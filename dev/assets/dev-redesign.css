@@ -914,11 +914,18 @@ body.dev-console :focus-visible {
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 160ms ease;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 160ms;
 }
 
 .global-loading.is-active {
   opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 0s;
 }
 
 .global-loading-bar {
