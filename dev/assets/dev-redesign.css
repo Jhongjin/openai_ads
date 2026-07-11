@@ -2704,10 +2704,20 @@ body.dev-console.modal-open {
 }
 
 .adcopy-json-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   cursor: pointer;
   padding: 10px 12px;
   color: var(--oa-ink);
   font-size: 13px;
+  font-weight: 900;
+}
+
+.adcopy-json-details summary small {
+  color: var(--oa-muted);
+  font-size: 11px;
   font-weight: 900;
 }
 

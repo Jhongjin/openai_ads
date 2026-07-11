@@ -959,7 +959,10 @@
                         </div>
                       </div>
                       <details class="adcopy-json-details">
-                        <summary>generated.json 보기</summary>
+                        <summary>
+                          <span>generated.json 보기</span>
+                          <small id="adcopy-json-preview-mode">전체 소재 기준</small>
+                        </summary>
                         <pre id="adcopy-json-preview">{}</pre>
                       </details>
                     </aside>
@@ -4148,7 +4151,7 @@
         $("#adcopy-export-mode").value = adcopyExportMode;
         $("#apply-adcopy-auto-review").disabled = !result;
         $("#reset-adcopy-review-status").disabled = !result;
-        $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
+        renderAdcopyJsonPreview();
         $("#adcopy-result-note").textContent = result
           ? `${data.model || "모델"} 생성 · ${data.notice || "운영 검수 필요"}`
           : "아직 생성된 초안이 없습니다.";
@@ -4167,7 +4170,7 @@
 
       function markAdcopyValidationStale() {
         if (!adcopyLastResult?.generated) return;
-        $("#adcopy-json-preview").textContent = JSON.stringify(adcopyLastResult.generated, null, 2);
+        renderAdcopyJsonPreview();
         $("#adcopy-validation-badge").className = "tag tag-amber";
         $("#adcopy-validation-badge").textContent = "재검수 필요";
         $("#download-adcopy-report").disabled = true;
@@ -4233,7 +4236,7 @@
 
       function syncAdcopyJsonPreview() {
         if (!adcopyLastResult?.generated) return;
-        $("#adcopy-json-preview").textContent = JSON.stringify(adcopyLastResult.generated, null, 2);
+        renderAdcopyJsonPreview();
         renderAdcopyUploadChecklist(adcopyLastResult.generated, adcopyLastResult.validation_report);
       }
 
@@ -4588,9 +4591,10 @@
         return true;
       }
 
-      function buildAdcopyExportGenerated(mode = adcopyExportMode) {
+      function buildAdcopyExportGenerated(mode = adcopyExportMode, options = {}) {
         const generated = adcopyLastResult?.generated;
         if (!generated) return { generated: {}, label: adcopyExportModeLabel(mode), ads: 0 };
+        const allowEmpty = Boolean(options.allowEmpty);
         const next = JSON.parse(JSON.stringify(generated));
         const ads = (next.ads || []).filter((ad) => adcopyShouldIncludeInExport(ad, mode));
         const adgroupNames = new Set(ads.map((ad) => ad.adgroup_name).filter(Boolean));
@@ -4598,10 +4602,23 @@
         if (mode !== "all") {
           next.adgroups = (next.adgroups || []).filter((group) => adgroupNames.has(group.adgroup_name));
         }
-        if (!ads.length) {
+        if (!allowEmpty && !ads.length) {
           throw new Error(`${adcopyExportModeLabel(mode)} 기준으로 내보낼 소재가 없습니다. 운영 상태를 먼저 확인해 주세요.`);
         }
         return { generated: next, label: adcopyExportModeLabel(mode), ads: ads.length };
+      }
+
+      function renderAdcopyJsonPreview() {
+        const preview = $("#adcopy-json-preview");
+        const modeLabel = $("#adcopy-json-preview-mode");
+        if (!adcopyLastResult?.generated) {
+          preview.textContent = "{}";
+          modeLabel.textContent = "전체 소재 기준";
+          return;
+        }
+        const exported = buildAdcopyExportGenerated(adcopyExportMode, { allowEmpty: true });
+        preview.textContent = JSON.stringify(exported.generated, null, 2);
+        modeLabel.textContent = `${exported.label} 기준 · ${formatNumber(exported.ads)}개 소재`;
       }
 
       function downloadAdcopyJson() {
@@ -7903,6 +7920,7 @@
           const estimate = adcopyExportMode === "approved"
             ? counts.approved
             : (adcopyExportMode === "without_excluded" ? counts.all - counts.excluded : counts.all);
+          renderAdcopyJsonPreview();
           setStatus("adcopy-generator-status", `generated.json 내보내기 기준을 ${adcopyExportModeLabel()}로 변경했습니다. 예상 소재 ${formatNumber(estimate)}개입니다.`, estimate ? "ok" : "warning");
         }
       });
