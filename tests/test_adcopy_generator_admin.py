@@ -121,6 +121,11 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["generated"]["ads"][0]["trace"]["review_comment"], "")
         self.assertEqual(body["summary"]["adgroups"], 1)
         self.assertEqual(body["summary"]["ads"], 2)
+        self.assertIn("quality", body["validation_report"])
+        self.assertIn("creative_checks", body["validation_report"])
+        self.assertGreaterEqual(body["validation_report"]["quality"]["score"], 1)
+        self.assertEqual(body["validation_report"]["creative_checks"][0]["ad_name"], "KID_01_001")
+        self.assertIn("readiness", body["summary"])
 
     def test_admin_adcopy_generation_reports_policy_errors(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
@@ -141,6 +146,28 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         body = response.json()
         self.assertFalse(body["ok"])
         self.assertIn("banned_term", {item["rule"] for item in body["validation_report"]["errors"]})
+
+    def test_admin_adcopy_generation_reports_quality_warnings(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["ads"][0]["copy"] = "학습을 고려한 영어 앱"
+        mocked_call = AsyncMock(
+            return_value={
+                "model": "gpt-test",
+                "raw_response_id": "resp_test",
+                "generated": generated,
+            }
+        )
+
+        with patch("app._call_openai_adcopy", mocked_call):
+            response = client.post("/api/admin/adcopy/generate", json=adcopy_payload(), headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        warning_rules = {item["rule"] for item in body["validation_report"]["warnings"]}
+        self.assertIn("awkward_phrase", warning_rules)
+        self.assertLess(body["validation_report"]["quality"]["score"], 100)
+        self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
 
 
 if __name__ == "__main__":

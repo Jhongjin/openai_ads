@@ -491,9 +491,13 @@ def _adcopy_system_prompt() -> str:
         "Do not create or activate campaigns. The output is only a human-review draft. "
         "Keep campaigns from the user brief unchanged. Generate only adgroups and ads. "
         "Never include max_bid. Titles must be 24 Korean characters or fewer. "
-        "Ad copy must be 48 Korean characters or fewer. Avoid unverifiable superlatives, guarantees, "
-        "sensitive targeting language, and banned terms. Context hint keywords must be concrete Korean search "
-        "or intent phrases and each keyword origin must be customer_data or ai_inferred."
+        "Prefer Korean titles around 16 to 18 characters when possible. "
+        "Ad copy must be 48 Korean characters or fewer and should usually be 18 to 42 characters. "
+        "Write natural Korean that a Korean ads operator would approve; avoid stiff phrases like '고려한', "
+        "generic filler, awkward noun stacks, unverifiable superlatives, guarantees, sensitive targeting language, "
+        "and banned terms. Each ad must carry one concrete product benefit or usage situation from the brief, "
+        "and ads inside the same adgroup must not repeat the same title/copy structure. Context hint keywords "
+        "must be concrete Korean search or intent phrases and each keyword origin must be customer_data or ai_inferred."
     )
 
 
@@ -531,6 +535,11 @@ def _adcopy_user_prompt(payload: AdsAdcopyGenerateRequest) -> str:
         "- Create the requested number of adgroups and ads.\n"
         "- Set adgroups.required_phrases to the brief required_phrases array.\n"
         "- Use landing_url and image_link for every ad.\n"
+        "- Make adgroup themes distinct by audience intent, product benefit, or usage situation.\n"
+        "- Prefer title length 16~18 Korean characters; never exceed 24 characters.\n"
+        "- Prefer copy length 18~42 Korean characters; never exceed 48 characters.\n"
+        "- If a required phrase exists, include it in every ad title or copy without forcing awkward grammar.\n"
+        "- Keep Korean phrasing crisp, specific, and natural enough to be used after a human review.\n"
         "- Set trace.review_comment and trace.exclusion_reason to empty strings.\n"
         "- Set trace.validation_status to '운영 검수 필요' unless a concrete warning is needed.\n"
         f"\nBRIEF_JSON:\n{json.dumps(brief, ensure_ascii=False, indent=2)}"
@@ -656,9 +665,37 @@ def _adcopy_finding(level: str, scope: str, item: str, field: str, rule: str, me
     return {"level": level, "scope": scope, "item": item, "field": field, "rule": rule, "message": message}
 
 
+ADCOPY_AWKWARD_PATTERNS = (
+    "고려한",
+    "누려보세요",
+    "만나보세요",
+    "도와드립니다",
+    "최적의",
+    "완벽한",
+    "획기적인",
+)
+
+
+def _adcopy_recommendation(kind: str, title: str, message: str) -> dict[str, str]:
+    return {"kind": kind, "title": title, "message": message}
+
+
+def _adcopy_quality_grade(score: int) -> str:
+    if score >= 90:
+        return "A"
+    if score >= 80:
+        return "B"
+    if score >= 70:
+        return "C"
+    if score >= 55:
+        return "D"
+    return "F"
+
+
 def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
+    creative_checks: list[dict[str, Any]] = []
     campaigns = data.get("campaigns") if isinstance(data.get("campaigns"), list) else []
     adgroups = data.get("adgroups") if isinstance(data.get("adgroups"), list) else []
     ads = data.get("ads") if isinstance(data.get("ads"), list) else []
@@ -702,45 +739,139 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
         title = str(ad.get("title") or "").strip()
         copy = str(ad.get("copy") or "").strip()
         combined = f"{title} {copy}"
+        ad_issues: list[dict[str, str]] = []
         if adgroup_name not in adgroup_names:
             errors.append(_adcopy_finding("error", "ads", ad_name, "adgroup_name", "adgroup_missing", "존재하지 않는 광고그룹을 참조합니다."))
+            ad_issues.append({"level": "error", "rule": "adgroup_missing", "message": "존재하지 않는 광고그룹을 참조합니다."})
         if not title:
             errors.append(_adcopy_finding("error", "ads", ad_name, "title", "title_required", "제목이 비어 있습니다."))
+            ad_issues.append({"level": "error", "rule": "title_required", "message": "제목이 비어 있습니다."})
         elif len(title) > 24:
             errors.append(_adcopy_finding("error", "ads", ad_name, "title", "title_max_24", f"제목 {len(title)}자 — 최대 24자"))
+            ad_issues.append({"level": "error", "rule": "title_max_24", "message": f"제목 {len(title)}자 — 최대 24자"})
         elif len(title) < 16 or len(title) > 18:
             warnings.append(_adcopy_finding("warning", "ads", ad_name, "title", "title_len_recommended", f"제목 {len(title)}자 — 권장 16~18자"))
+            ad_issues.append({"level": "warning", "rule": "title_len_recommended", "message": f"제목 {len(title)}자 — 권장 16~18자"})
         if not copy:
             errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_required", "카피가 비어 있습니다."))
+            ad_issues.append({"level": "error", "rule": "copy_required", "message": "카피가 비어 있습니다."})
         elif len(copy) > 48:
             errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_max_48", f"카피 {len(copy)}자 — 최대 48자"))
+            ad_issues.append({"level": "error", "rule": "copy_max_48", "message": f"카피 {len(copy)}자 — 최대 48자"})
+        elif len(copy) < 18 or len(copy) > 42:
+            warnings.append(_adcopy_finding("warning", "ads", ad_name, "copy", "copy_len_recommended", f"카피 {len(copy)}자 — 권장 18~42자"))
+            ad_issues.append({"level": "warning", "rule": "copy_len_recommended", "message": f"카피 {len(copy)}자 — 권장 18~42자"})
+        awkward_hits = [pattern for pattern in ADCOPY_AWKWARD_PATTERNS if pattern and pattern in combined]
+        if awkward_hits:
+            message = f"운영 검수에서 어색할 수 있는 표현: {', '.join(awkward_hits)}"
+            warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "awkward_phrase", message))
+            ad_issues.append({"level": "warning", "rule": "awkward_phrase", "message": message})
         if title and title == copy:
             errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_equals_title", "카피가 제목과 동일합니다."))
+            ad_issues.append({"level": "error", "rule": "copy_equals_title", "message": "카피가 제목과 동일합니다."})
         creative_key = title + "\x00" + copy
         if title and creative_key in seen_creatives:
             errors.append(_adcopy_finding("error", "ads", ad_name, "title", "creative_duplicate", f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."))
+            ad_issues.append({"level": "error", "rule": "creative_duplicate", "message": f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."})
         seen_creatives[creative_key] = ad_name
         for field in ("link", "image_link"):
             url = str(ad.get(field) or "").strip()
             if not re.match(r"^https?://", url):
                 errors.append(_adcopy_finding("error", "ads", ad_name, field, "url_required", f"{field}는 http 또는 https URL이어야 합니다."))
+                ad_issues.append({"level": "error", "rule": "url_required", "message": f"{field}는 http 또는 https URL이어야 합니다."})
         for term in banned_terms:
             if term and term in combined:
                 errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "banned_term", f"금지어 포함: {term}"))
+                ad_issues.append({"level": "error", "rule": "banned_term", "message": f"금지어 포함: {term}"})
         group = next((group for group in adgroups if str(group.get("adgroup_name") or "").strip() == adgroup_name), None)
         for phrase in [str(value).strip() for value in (group or {}).get("required_phrases") or [] if str(value).strip()]:
             if phrase not in combined:
                 errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "required_phrase_missing", f"필수 문구 누락: {phrase}"))
+                ad_issues.append({"level": "error", "rule": "required_phrase_missing", "message": f"필수 문구 누락: {phrase}"})
+        status = "error" if any(issue["level"] == "error" for issue in ad_issues) else ("warning" if ad_issues else "pass")
+        creative_checks.append(
+            {
+                "ad_name": ad_name,
+                "adgroup_name": adgroup_name,
+                "title_length": len(title),
+                "copy_length": len(copy),
+                "status": status,
+                "issues": ad_issues[:5],
+            }
+        )
+    warning_rules = [item.get("rule", "") for item in warnings]
+    total_keywords = 0
+    customer_keywords = 0
+    confidence_values: list[float] = []
+    for adgroup in adgroups:
+        for keyword in adgroup.get("keywords") or []:
+            total_keywords += 1
+            if isinstance(keyword, dict) and keyword.get("origin") == "customer_data":
+                customer_keywords += 1
+        trace = adgroup.get("trace") if isinstance(adgroup.get("trace"), dict) else {}
+        try:
+            confidence = float(trace.get("confidence_score"))
+            if 0 <= confidence <= 1:
+                confidence_values.append(confidence)
+        except (TypeError, ValueError):
+            pass
+    for ad in ads:
+        trace = ad.get("trace") if isinstance(ad.get("trace"), dict) else {}
+        try:
+            confidence = float(trace.get("confidence_score"))
+            if 0 <= confidence <= 1:
+                confidence_values.append(confidence)
+        except (TypeError, ValueError):
+            pass
+    average_confidence = round(sum(confidence_values) / len(confidence_values), 2) if confidence_values else None
+    quality_score = 0 if not ads else max(0, min(100, 100 - (len(errors) * 24) - (len(warnings) * 6)))
+    grade = _adcopy_quality_grade(quality_score)
+    if errors:
+        readiness = "업로드 보류"
+    elif quality_score >= 90 and not warnings:
+        readiness = "초안 양호"
+    elif quality_score >= 75:
+        readiness = "운영 검수 권장"
+    else:
+        readiness = "수정 권장"
+    recommendations: list[dict[str, str]] = []
+    if errors:
+        recommendations.append(_adcopy_recommendation("error", "오류 우선 수정", "필수 문구 누락, URL, 길이 초과 같은 오류를 먼저 해결해야 합니다."))
+    if "title_len_recommended" in warning_rules:
+        recommendations.append(_adcopy_recommendation("copy", "제목 길이 보정", "제목은 가능하면 16~18자로 맞추면 노출 영역에서 더 안정적으로 보입니다."))
+    if "copy_len_recommended" in warning_rules:
+        recommendations.append(_adcopy_recommendation("copy", "카피 밀도 조정", "카피는 18~42자 안에서 구체적 혜택이나 사용 상황을 한 가지 넣는 편이 좋습니다."))
+    if "awkward_phrase" in warning_rules:
+        recommendations.append(_adcopy_recommendation("tone", "자연어 표현 수정", "'고려한', '누려보세요' 같은 문어체 표현은 더 구체적인 사용 장면으로 바꾸는 편이 좋습니다."))
+    if total_keywords and customer_keywords == 0:
+        recommendations.append(_adcopy_recommendation("brief", "브리프 기반 키워드 보강", "모든 Context Hints가 AI 추론입니다. 광고주가 제공한 검색어 또는 제품 표현을 1개 이상 넣어 주세요."))
+    if average_confidence is not None and average_confidence < 0.75:
+        recommendations.append(_adcopy_recommendation("review", "검수 강도 상향", "모델 confidence가 낮습니다. 랜딩 페이지와 소재 이미지의 실제 표현을 한 번 더 대조해 주세요."))
+    if not recommendations and not errors:
+        recommendations.append(_adcopy_recommendation("ok", "수동 검수 후 사용 가능", "자동 검수에서 큰 문제는 없습니다. 광고주명, 랜딩, 이미지, 정책 표현만 최종 확인하세요."))
     return {
         "ok": not errors,
         "errors": errors,
         "warnings": warnings,
+        "creative_checks": creative_checks,
+        "quality": {
+            "score": quality_score,
+            "grade": grade,
+            "readiness": readiness,
+            "average_confidence": average_confidence,
+            "customer_keyword_count": customer_keywords,
+            "keyword_count": total_keywords,
+            "recommendations": recommendations[:5],
+        },
         "summary": {
             "campaigns": len(campaigns),
             "adgroups": len(adgroups),
             "ads": len(ads),
             "errors": len(errors),
             "warnings": len(warnings),
+            "quality_score": quality_score,
+            "quality_grade": grade,
+            "readiness": readiness,
         },
     }
 

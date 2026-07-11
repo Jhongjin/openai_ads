@@ -1865,6 +1865,96 @@ body.dev-console.modal-open {
   font-weight: 950;
 }
 
+.adcopy-quality-panel {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--oa-line);
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  padding: 12px;
+}
+
+.adcopy-quality-panel.is-strong {
+  border-color: #bfe7d5;
+  background: #f5fcf8;
+}
+
+.adcopy-quality-panel.is-ready {
+  border-color: #c7dbef;
+  background: #f7fbff;
+}
+
+.adcopy-quality-panel.is-caution {
+  border-color: #f6d790;
+  background: #fffaf0;
+}
+
+.adcopy-quality-panel.is-risk {
+  border-color: #ffc9cc;
+  background: #fff7f7;
+}
+
+.adcopy-quality-score {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adcopy-quality-score span,
+.adcopy-quality-score small {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.adcopy-quality-score strong {
+  color: var(--oa-ink);
+  font-size: 34px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.adcopy-quality-meta {
+  min-width: 0;
+}
+
+.adcopy-quality-meta p {
+  margin: 7px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-quality-meta ul {
+  display: grid;
+  gap: 5px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adcopy-quality-meta li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adcopy-quality-meta li strong {
+  color: var(--oa-ink);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-quality-meta li span {
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .adcopy-result-section {
   display: grid;
   gap: 8px;
@@ -1976,6 +2066,48 @@ body.dev-console.modal-open {
   margin-top: 3px;
   color: var(--oa-muted);
   font-size: 11px;
+}
+
+.adcopy-row-check {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  border: 1px solid #dfe7f1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--oa-muted);
+  padding: 2px 7px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.adcopy-row-check.is-pass {
+  border-color: #bfe7d5;
+  background: #effaf5;
+  color: var(--oa-green);
+}
+
+.adcopy-row-check.is-warning {
+  border-color: #f6d790;
+  background: #fff8e7;
+  color: var(--oa-gold);
+}
+
+.adcopy-row-check.is-error {
+  border-color: #ffc9cc;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-mini-table em {
+  display: block;
+  margin-top: 5px;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.4;
 }
 
 .adcopy-validation-empty,

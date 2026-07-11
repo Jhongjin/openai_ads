@@ -837,6 +837,16 @@
                         <div><span>소재</span><strong>-</strong></div>
                         <div><span>검수</span><strong>-</strong></div>
                       </div>
+                      <div class="adcopy-quality-panel" id="adcopy-quality-panel">
+                        <div class="adcopy-quality-score">
+                          <span>품질 스코어</span>
+                          <strong>-</strong>
+                        </div>
+                        <div class="adcopy-quality-meta">
+                          <span class="tag">생성 전</span>
+                          <p>초안을 생성하면 운영 검수 기준의 점수와 추천 수정 포인트가 표시됩니다.</p>
+                        </div>
+                      </div>
                       <div class="adcopy-result-section">
                         <h4>광고그룹·소재 미리보기</h4>
                         <div class="adcopy-preview-list" id="adcopy-preview-list">
@@ -3450,6 +3460,56 @@
         return { text: `${formatNumber(report.summary?.errors || 0)}개 오류`, cls: "tag tag-red" };
       }
 
+      function adcopyQualityClass(score) {
+        if (score >= 90) return "is-strong";
+        if (score >= 75) return "is-ready";
+        if (score >= 55) return "is-caution";
+        return "is-risk";
+      }
+
+      function adcopyQualityTagClass(report, score) {
+        if (!report?.ok) return "tag-red";
+        if (score >= 90) return "tag-green";
+        if (score >= 75) return "tag-blue";
+        return "tag-amber";
+      }
+
+      function renderAdcopyQualityPanel(report) {
+        const root = $("#adcopy-quality-panel");
+        if (!report?.quality) {
+          root.className = "adcopy-quality-panel";
+          root.innerHTML = `
+            <div class="adcopy-quality-score">
+              <span>품질 스코어</span>
+              <strong>-</strong>
+            </div>
+            <div class="adcopy-quality-meta">
+              <span class="tag">생성 전</span>
+              <p>초안을 생성하면 운영 검수 기준의 점수와 추천 수정 포인트가 표시됩니다.</p>
+            </div>
+          `;
+          return;
+        }
+        const quality = report.quality;
+        const score = Number(quality.score || 0);
+        const recommendations = (quality.recommendations || []).slice(0, 3);
+        root.className = `adcopy-quality-panel ${adcopyQualityClass(score)}`;
+        root.innerHTML = `
+          <div class="adcopy-quality-score">
+            <span>품질 스코어</span>
+            <strong>${formatNumber(score)}</strong>
+            <small>${escapeHtml(quality.grade || "-")} 등급</small>
+          </div>
+          <div class="adcopy-quality-meta">
+            <span class="tag ${adcopyQualityTagClass(report, score)}">${escapeHtml(quality.readiness || "운영 검수 필요")}</span>
+            <p>Context Hints ${formatNumber(quality.customer_keyword_count || 0)} / ${formatNumber(quality.keyword_count || 0)}개가 브리프 기반입니다.</p>
+            <ul>
+              ${recommendations.map((item) => `<li><strong>${escapeHtml(item.title || "추천")}</strong><span>${escapeHtml(item.message || "")}</span></li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
       function renderAdcopyResult(data) {
         const result = data?.generated || null;
         const report = data?.validation_report || null;
@@ -3468,16 +3528,18 @@
           <div><span>소재</span><strong>${formatNumber(summary.ads || 0)}</strong></div>
           <div><span>검수</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
         `;
-        renderAdcopyPreviewList(result);
+        renderAdcopyQualityPanel(report);
+        renderAdcopyPreviewList(result, report);
         renderAdcopyValidationList(report);
       }
 
-      function renderAdcopyPreviewList(result) {
+      function renderAdcopyPreviewList(result, report) {
         const root = $("#adcopy-preview-list");
         if (!result) {
           root.innerHTML = '<div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
           return;
         }
+        const checksByAd = new Map((report?.creative_checks || []).map((item) => [item.ad_name, item]));
         const adsByGroup = new Map();
         (result.ads || []).forEach((ad) => {
           const key = ad.adgroup_name || "-";
@@ -3491,11 +3553,28 @@
             return `<span class="adcopy-keyword ${origin === "customer_data" ? "is-customer" : ""}">${escapeHtml(text || "")}</span>`;
           }).join("");
           const rows = (adsByGroup.get(group.adgroup_name) || []).map((ad) => `
+            ${(() => {
+              const check = checksByAd.get(ad.ad_name || "") || {};
+              const status = check.status || "pass";
+              const issues = (check.issues || []).slice(0, 2);
+              const label = status === "error" ? "오류" : (status === "warning" ? "주의" : "양호");
+              const issueText = issues.map((issue) => issue.message).join(" · ");
+              return `
             <tr>
               <td>${escapeHtml(ad.ad_name || "-")}</td>
-              <td><strong>${escapeHtml(ad.title || "-")}</strong><small>${String(ad.title || "").length}자</small></td>
-              <td>${escapeHtml(ad.copy || "-")}<small>${String(ad.copy || "").length}자</small></td>
+              <td>
+                <strong>${escapeHtml(ad.title || "-")}</strong>
+                <small>${String(ad.title || "").length}자</small>
+              </td>
+              <td>
+                ${escapeHtml(ad.copy || "-")}
+                <small>${String(ad.copy || "").length}자</small>
+                <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
+                ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
+              </td>
             </tr>
+              `;
+            })()}
           `).join("");
           return `
             <article class="adcopy-group-card">
