@@ -2661,7 +2661,7 @@ async def admin_adcopy_draft_preflight(request: Request) -> dict[str, Any]:
 
 @app.post("/api/admin/adcopy/draft-execute", include_in_schema=False)
 async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
-    from admin_store import get_ads_api_key_credential
+    from admin_store import get_ads_api_key_credential, save_adcopy_draft_audit_log
     from rag_chatbot.ads_api import fetch_ad_account_metadata
 
     _require_admin(request)
@@ -2684,7 +2684,18 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
     if action == "verify_account":
         account = await fetch_ad_account_metadata(api_key)
         state["account_verified_at"] = datetime.now(KST).isoformat()
-        return {"ok": True, "action": action, "plan": plan, "state": state, "account": account}
+        audit = save_adcopy_draft_audit_log(
+            {
+                "advertiser_name": payload.advertiser_name,
+                "campaign_name": str((plan.get("campaign") or {}).get("name") or ""),
+                "action": action,
+                "status": "success" if account.get("ok") is not False else "warning",
+                "message": "광고주 계정 확인을 완료했습니다.",
+                "state": state,
+                "logs": [{"level": "success" if account.get("ok") is not False else "warning", "message": "광고주 계정 확인"}],
+            }
+        )
+        return {"ok": True, "action": action, "plan": plan, "state": state, "account": account, "audit_log": audit.get("item")}
 
     if not payload.confirm:
         raise HTTPException(status_code=400, detail="실행 확인이 필요합니다. 각 단계는 운영자 확인 후에만 진행됩니다.")
@@ -2789,7 +2800,27 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
 
     state["last_action"] = action
     state["updated_at"] = datetime.now(KST).isoformat()
-    return {"ok": True, "action": action, "plan": plan, "state": state, "logs": logs}
+    audit = save_adcopy_draft_audit_log(
+        {
+            "advertiser_name": payload.advertiser_name,
+            "campaign_name": str((plan.get("campaign") or {}).get("name") or ""),
+            "action": action,
+            "status": "success",
+            "message": f"{action} 단계를 완료했습니다.",
+            "state": state,
+            "logs": logs,
+        }
+    )
+    return {"ok": True, "action": action, "plan": plan, "state": state, "logs": logs, "audit_log": audit.get("item")}
+
+
+@app.get("/api/admin/adcopy/draft-audit", include_in_schema=False)
+def admin_list_adcopy_draft_audit(request: Request) -> dict[str, Any]:
+    from admin_store import list_adcopy_draft_audit_logs
+
+    _require_admin(request)
+    limit = int(request.query_params.get("limit") or 20)
+    return list_adcopy_draft_audit_logs(limit=limit)
 
 
 @app.get("/api/admin/ads-api-keys/{advertiser_name}/reveal", include_in_schema=False)

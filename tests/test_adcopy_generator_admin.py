@@ -633,6 +633,35 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         missing_response = client.get(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
         self.assertEqual(missing_response.status_code, 404)
 
+    def test_admin_adcopy_draft_audit_requires_admin_and_lists_recent_logs(self) -> None:
+        from admin_store import save_adcopy_draft_audit_log
+
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked = client.get("/api/admin/adcopy/draft-audit")
+        self.assertEqual(blocked.status_code, 403)
+
+        campaign_name = f"감사_{os.urandom(4).hex()}"
+        saved = save_adcopy_draft_audit_log(
+            {
+                "advertiser_name": "캐츠잉글리시",
+                "campaign_name": campaign_name,
+                "action": "create_campaign",
+                "status": "success",
+                "message": "테스트 감사 로그",
+                "state": {"campaign_id": "cmpn_audit", "ad_group_ids": {"01": "adgrp_1"}, "ad_ids": {}, "file_ids": {}},
+                "logs": [{"level": "success", "message": "paused 캠페인 draft 생성", "id": "cmpn_audit"}],
+            }
+        )
+        self.assertTrue(saved["ok"])
+
+        response = client.get("/api/admin/adcopy/draft-audit?limit=10", headers=ADMIN_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        items = response.json()["items"]
+        match = next(item for item in items if item["campaign_name"] == campaign_name)
+        self.assertEqual(match["action"], "create_campaign")
+        self.assertEqual(match["state"]["campaign_id"], "cmpn_audit")
+        self.assertEqual(match["state"]["ad_group_count"], 1)
+
     def test_admin_adcopy_draft_execute_blocks_live_activation_by_default(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()

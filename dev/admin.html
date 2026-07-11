@@ -999,6 +999,10 @@
                               <i class="ti ti-download"></i>
                               plan JSON
                             </button>
+                            <button class="btn-secondary btn-compact" type="button" id="load-adcopy-draft-audit">
+                              <i class="ti ti-history"></i>
+                              최근 기록
+                            </button>
                             <span class="tag" id="adcopy-draft-badge">대기</span>
                           </div>
                         </div>
@@ -4788,6 +4792,38 @@
         } finally {
           adcopyDraftRunningAction = "";
           renderAdcopyDraftPanel();
+        }
+      }
+
+      async function loadAdcopyDraftAuditLogs() {
+        const button = $("#load-adcopy-draft-audit");
+        setButtonBusy(button, true, "조회 중...");
+        try {
+          const data = await adminFetch("/api/admin/adcopy/draft-audit?limit=8", {
+            loadingMessage: "최근 draft 실행 기록을 불러오는 중입니다.",
+          });
+          const items = Array.isArray(data.items) ? data.items : [];
+          adcopyDraftLogs = items.reverse().map((item) => {
+            const state = item.state || {};
+            const counts = [
+              state.campaign_id ? `캠페인 ${state.campaign_id}` : "",
+              state.file_count ? `이미지 ${formatNumber(state.file_count)}` : "",
+              state.ad_group_count ? `광고그룹 ${formatNumber(state.ad_group_count)}` : "",
+              state.ad_count ? `소재 ${formatNumber(state.ad_count)}` : "",
+            ].filter(Boolean).join(" · ");
+            const who = [item.advertiser_name, item.campaign_name].filter(Boolean).join(" · ");
+            return {
+              action: item.action || "",
+              title: `기록 · ${adcopyDraftActionLabel(item.action || "") || item.action || "draft"}`,
+              level: item.status === "success" ? "success" : (item.status === "warning" ? "warning" : "info"),
+              message: `${formatDateTime(item.created_at)} · ${who || "광고주 미기재"}${counts ? ` · ${counts}` : ""}`,
+              id: item.id || "",
+            };
+          });
+          renderAdcopyDraftPanel();
+          setStatus("adcopy-generator-status", `최근 draft 실행 기록 ${formatNumber(items.length)}건을 불러왔습니다.`, "ok");
+        } finally {
+          setButtonBusy(button, false);
         }
       }
 
@@ -8757,6 +8793,9 @@
       });
       $("#run-adcopy-draft-preflight").addEventListener("click", () => {
         executeAdcopyDraftPreflight().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#load-adcopy-draft-audit").addEventListener("click", () => {
+        loadAdcopyDraftAuditLogs().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#adcopy-export-mode").addEventListener("change", (event) => {
         const allowed = new Set(["all", "approved", "without_excluded"]);

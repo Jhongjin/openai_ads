@@ -372,6 +372,7 @@ _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _memory_ads_dashboard_cache: dict[str, dict[str, Any]] = {}
 _memory_ads_campaign_objectives: dict[str, dict[str, Any]] = {}
 _memory_adcopy_review_snapshots: dict[str, dict[str, Any]] = {}
+_memory_adcopy_draft_audit_logs: dict[str, dict[str, Any]] = {}
 _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_categories: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_items: dict[str, dict[str, Any]] = {}
@@ -1658,6 +1659,27 @@ def _ensure_tables() -> None:
                 f"""
                 CREATE INDEX IF NOT EXISTS adcopy_review_snapshots_updated_idx
                 ON {schema}.adcopy_review_snapshots (updated_at DESC)
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.adcopy_draft_audit_logs (
+                    id text PRIMARY KEY,
+                    advertiser_name text NOT NULL DEFAULT '',
+                    campaign_name text NOT NULL DEFAULT '',
+                    action text NOT NULL DEFAULT '',
+                    status text NOT NULL DEFAULT '',
+                    message text NOT NULL DEFAULT '',
+                    state_snapshot jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    logs jsonb NOT NULL DEFAULT '[]'::jsonb,
+                    created_at timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS adcopy_draft_audit_logs_created_idx
+                ON {schema}.adcopy_draft_audit_logs (created_at DESC)
                 """
             )
             cur.execute(
@@ -3127,6 +3149,142 @@ def delete_adcopy_review_snapshot(snapshot_id: str) -> dict[str, Any]:
         if not existed:
             raise ValueError("삭제할 저장본을 찾을 수 없습니다.") from exc
         return {"ok": True, "id": snapshot_id, **_storage_info("memory", str(exc))}
+
+
+def _public_adcopy_draft_audit_log_row(row: dict[str, Any]) -> dict[str, Any]:
+    logs = row.get("logs")
+    if isinstance(logs, str):
+        try:
+            logs = json.loads(logs)
+        except json.JSONDecodeError:
+            logs = []
+    if not isinstance(logs, list):
+        logs = []
+    state_snapshot = _json_object(row.get("state_snapshot"))
+    return {
+        "id": str(row.get("id") or ""),
+        "advertiser_name": str(row.get("advertiser_name") or ""),
+        "campaign_name": str(row.get("campaign_name") or ""),
+        "action": str(row.get("action") or ""),
+        "status": str(row.get("status") or ""),
+        "message": str(row.get("message") or ""),
+        "state": {
+            "campaign_id": str(state_snapshot.get("campaign_id") or ""),
+            "ad_group_count": len(state_snapshot.get("ad_group_ids") or {}),
+            "ad_count": len(state_snapshot.get("ad_ids") or {}),
+            "file_count": len(state_snapshot.get("file_ids") or {}),
+        },
+        "logs": logs[:8],
+        "created_at": _iso_value(row.get("created_at")),
+    }
+
+
+def save_adcopy_draft_audit_log(payload: dict[str, Any]) -> dict[str, Any]:
+    log_id = str(payload.get("id") or uuid.uuid4()).strip()
+    advertiser_name = str(payload.get("advertiser_name") or "").strip()
+    campaign_name = str(payload.get("campaign_name") or "").strip()
+    action = str(payload.get("action") or "").strip()
+    status = str(payload.get("status") or "success").strip()
+    message = str(payload.get("message") or "").strip()
+    state_snapshot = _json_object(payload.get("state"))
+    safe_logs = json.loads(json.dumps(payload.get("logs") if isinstance(payload.get("logs"), list) else [], ensure_ascii=False, default=str))
+    safe_state = json.loads(json.dumps(state_snapshot, ensure_ascii=False, default=str))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.adcopy_draft_audit_logs
+                        (id, advertiser_name, campaign_name, action, status, message, state_snapshot, logs)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                    RETURNING id, created_at
+                    """,
+                    (
+                        log_id,
+                        advertiser_name,
+                        campaign_name,
+                        action,
+                        status,
+                        message,
+                        json.dumps(safe_state, ensure_ascii=False),
+                        json.dumps(safe_logs, ensure_ascii=False),
+                    ),
+                )
+                row = cur.fetchone()
+        return {
+            "ok": True,
+            "item": _public_adcopy_draft_audit_log_row(
+                {
+                    "id": str(row.get("id") or log_id),
+                    "advertiser_name": advertiser_name,
+                    "campaign_name": campaign_name,
+                    "action": action,
+                    "status": status,
+                    "message": message,
+                    "state_snapshot": safe_state,
+                    "logs": safe_logs,
+                    "created_at": row.get("created_at"),
+                }
+            ),
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        created_at = datetime.now(KST).isoformat()
+        row = {
+            "id": log_id,
+            "advertiser_name": advertiser_name,
+            "campaign_name": campaign_name,
+            "action": action,
+            "status": status,
+            "message": message,
+            "state_snapshot": safe_state,
+            "logs": safe_logs,
+            "created_at": created_at,
+        }
+        _memory_adcopy_draft_audit_logs[log_id] = row
+        return {
+            "ok": True,
+            "item": _public_adcopy_draft_audit_log_row(row),
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def list_adcopy_draft_audit_logs(*, limit: int = 20) -> dict[str, Any]:
+    safe_limit = max(1, min(50, int(limit or 20)))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT id, advertiser_name, campaign_name, action, status, message,
+                           state_snapshot, logs, created_at
+                    FROM {schema}.adcopy_draft_audit_logs
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                    """,
+                    (safe_limit,),
+                )
+                rows = cur.fetchall()
+        return {
+            "ok": True,
+            "items": [_public_adcopy_draft_audit_log_row(dict(row)) for row in rows],
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        rows = sorted(
+            _memory_adcopy_draft_audit_logs.values(),
+            key=lambda item: str(item.get("created_at") or ""),
+            reverse=True,
+        )[:safe_limit]
+        return {
+            "ok": True,
+            "items": [_public_adcopy_draft_audit_log_row(row) for row in rows],
+            **_storage_info("memory", str(exc)),
+        }
 
 
 def _ads_campaign_objective_key(advertiser_name: str, campaign_id: str) -> str:
