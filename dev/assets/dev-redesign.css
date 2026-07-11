@@ -2225,11 +2225,36 @@ body.dev-console.modal-open {
   min-width: 0;
 }
 
+.adcopy-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
 .adcopy-preview-filter {
   display: inline-flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 4px;
+}
+
+.adcopy-bulk-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.adcopy-bulk-actions .btn-compact {
+  min-height: 28px;
+  padding-inline: 8px;
+}
+
+.adcopy-bulk-actions .btn-compact:disabled {
+  cursor: not-allowed;
+  opacity: .5;
 }
 
 .adcopy-preview-filter button {
@@ -3600,6 +3625,11 @@ body.dev-console.modal-open {
   .adcopy-result-section-head {
     display: grid;
     justify-items: start;
+  }
+
+  .adcopy-preview-actions,
+  .adcopy-bulk-actions {
+    justify-content: flex-start;
   }
 
   .adcopy-preview-filter {

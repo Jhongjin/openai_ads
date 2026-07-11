@@ -907,11 +907,23 @@
                       <div class="adcopy-result-section">
                         <div class="adcopy-result-section-head">
                           <h4>광고그룹·소재 미리보기</h4>
-                          <div class="adcopy-preview-filter" role="group" aria-label="소재 검수 필터">
-                            <button class="is-active" type="button" data-adcopy-preview-filter="all" disabled>전체</button>
-                            <button type="button" data-adcopy-preview-filter="issue" disabled>문제</button>
-                            <button type="button" data-adcopy-preview-filter="warning" disabled>주의</button>
-                            <button type="button" data-adcopy-preview-filter="error" disabled>오류</button>
+                          <div class="adcopy-preview-actions">
+                            <div class="adcopy-preview-filter" role="group" aria-label="소재 검수 필터">
+                              <button class="is-active" type="button" data-adcopy-preview-filter="all" disabled>전체</button>
+                              <button type="button" data-adcopy-preview-filter="issue" disabled>문제</button>
+                              <button type="button" data-adcopy-preview-filter="warning" disabled>주의</button>
+                              <button type="button" data-adcopy-preview-filter="error" disabled>오류</button>
+                            </div>
+                            <div class="adcopy-bulk-actions">
+                              <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" disabled>
+                                <i class="ti ti-wand"></i>
+                                자동 판정 반영
+                              </button>
+                              <button class="btn-secondary btn-compact" type="button" id="reset-adcopy-review-status" disabled>
+                                <i class="ti ti-rotate-2"></i>
+                                검수 초기화
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div class="adcopy-preview-list" id="adcopy-preview-list">
@@ -4104,6 +4116,8 @@
         $("#download-adcopy-csv").disabled = !result;
         $("#download-adcopy-report").disabled = !result;
         $("#validate-adcopy-json").disabled = !result;
+        $("#apply-adcopy-auto-review").disabled = !result;
+        $("#reset-adcopy-review-status").disabled = !result;
         $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
         $("#adcopy-result-note").textContent = result
           ? `${data.model || "모델"} 생성 · ${data.notice || "운영 검수 필요"}`
@@ -4273,6 +4287,33 @@
         const allowed = new Set(["all", "issue", "warning", "error"]);
         adcopyPreviewFilter = allowed.has(filter) ? filter : "all";
         renderAdcopyPreviewList(adcopyLastResult?.generated || null, adcopyLastResult?.validation_report || null);
+      }
+
+      function applyAdcopyAutoReview() {
+        const ads = adcopyLastResult?.generated?.ads || [];
+        if (!ads.length) return;
+        const checksByAd = new Map((adcopyLastResult?.validation_report?.creative_checks || []).map((item) => [item.ad_name, item]));
+        ads.forEach((ad) => {
+          const trace = adcopyTrace(ad);
+          const checkStatus = checksByAd.get(ad.ad_name || "")?.status || "pass";
+          trace.validation_status = checkStatus === "pass" ? "승인" : "수정 필요";
+          trace.exclusion_reason = "";
+        });
+        renderAdcopyResult(adcopyLastResult);
+        setStatus("adcopy-generator-status", "자동 검수 판정을 운영 검수 초안에 반영했습니다. 제외 판단은 운영자가 직접 선택해 주세요.", "ok");
+      }
+
+      function resetAdcopyReviewStatus() {
+        const ads = adcopyLastResult?.generated?.ads || [];
+        if (!ads.length) return;
+        ads.forEach((ad) => {
+          const trace = adcopyTrace(ad);
+          trace.validation_status = "운영 검수 필요";
+          trace.review_comment = "";
+          trace.exclusion_reason = "";
+        });
+        renderAdcopyResult(adcopyLastResult);
+        setStatus("adcopy-generator-status", "소재별 운영 검수 상태와 메모를 초기화했습니다.", "warning");
       }
 
       function adcopyFindingTargetField(finding) {
@@ -7713,6 +7754,8 @@
       $("#download-adcopy-json").addEventListener("click", downloadAdcopyJson);
       $("#download-adcopy-csv").addEventListener("click", downloadAdcopyCreativeCsv);
       $("#download-adcopy-report").addEventListener("click", downloadAdcopyReviewReport);
+      $("#apply-adcopy-auto-review").addEventListener("click", applyAdcopyAutoReview);
+      $("#reset-adcopy-review-status").addEventListener("click", resetAdcopyReviewStatus);
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
