@@ -169,6 +169,27 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertLess(body["validation_report"]["quality"]["score"], 100)
         self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
 
+    def test_admin_adcopy_validate_requires_admin_password(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post("/api/admin/adcopy/validate", json={"generated": generated_payload()})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_adcopy_validate_reviews_edited_generated_json(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["ads"][0]["title"] = "짧음"
+
+        response = client.post("/api/admin/adcopy/validate", json={"generated": generated}, headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("validation_report", body)
+        warning_rules = {item["rule"] for item in body["validation_report"]["warnings"]}
+        self.assertIn("title_len_recommended", warning_rules)
+        self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -657,6 +657,10 @@
                       <i class="ti ti-copy"></i>
                       JSON 복사
                     </button>
+                    <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
+                      <i class="ti ti-checkup-list"></i>
+                      수정 재검수
+                    </button>
                   </div>
                 </div>
                 <div class="surface-body stack">
@@ -3517,6 +3521,7 @@
         $("#adcopy-validation-badge").className = badge.cls;
         $("#adcopy-validation-badge").textContent = badge.text;
         $("#copy-adcopy-json").disabled = !result;
+        $("#validate-adcopy-json").disabled = !result;
         $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
         $("#adcopy-result-note").textContent = result
           ? `${data.model || "모델"} 생성 · ${data.notice || "운영 검수 필요"}`
@@ -3533,6 +3538,29 @@
         renderAdcopyValidationList(report);
       }
 
+      function markAdcopyValidationStale() {
+        if (!adcopyLastResult?.generated) return;
+        $("#adcopy-json-preview").textContent = JSON.stringify(adcopyLastResult.generated, null, 2);
+        $("#adcopy-validation-badge").className = "tag tag-amber";
+        $("#adcopy-validation-badge").textContent = "재검수 필요";
+        $("#validate-adcopy-json").disabled = false;
+        setStatus("adcopy-generator-status", "제목 또는 카피가 수정되었습니다. 수정 재검수를 눌러 품질 점수를 갱신해 주세요.", "warning");
+      }
+
+      function handleAdcopyEdit(event) {
+        const target = event.target.closest("[data-adcopy-edit]");
+        if (!target || !adcopyLastResult?.generated?.ads) return;
+        const index = Number(target.dataset.adIndex);
+        const field = target.dataset.adcopyEdit;
+        if (!Number.isInteger(index) || !["title", "copy"].includes(field)) return;
+        const ad = adcopyLastResult.generated.ads[index];
+        if (!ad) return;
+        ad[field] = target.value;
+        const lengthLabel = target.closest("td")?.querySelector("[data-adcopy-length]");
+        if (lengthLabel) lengthLabel.textContent = `${target.value.length}자`;
+        markAdcopyValidationStale();
+      }
+
       function renderAdcopyPreviewList(result, report) {
         const root = $("#adcopy-preview-list");
         if (!result) {
@@ -3544,7 +3572,7 @@
         (result.ads || []).forEach((ad) => {
           const key = ad.adgroup_name || "-";
           if (!adsByGroup.has(key)) adsByGroup.set(key, []);
-          adsByGroup.get(key).push(ad);
+          adsByGroup.get(key).push({ ad, index });
         });
         root.innerHTML = (result.adgroups || []).map((group) => {
           const keywords = (group.keywords || []).map((keyword) => {
@@ -3552,7 +3580,7 @@
             const origin = typeof keyword === "object" ? keyword.origin : "ai_inferred";
             return `<span class="adcopy-keyword ${origin === "customer_data" ? "is-customer" : ""}">${escapeHtml(text || "")}</span>`;
           }).join("");
-          const rows = (adsByGroup.get(group.adgroup_name) || []).map((ad) => `
+          const rows = (adsByGroup.get(group.adgroup_name) || []).map(({ ad, index }) => `
             ${(() => {
               const check = checksByAd.get(ad.ad_name || "") || {};
               const status = check.status || "pass";
@@ -3563,12 +3591,12 @@
             <tr>
               <td>${escapeHtml(ad.ad_name || "-")}</td>
               <td>
-                <strong>${escapeHtml(ad.title || "-")}</strong>
-                <small>${String(ad.title || "").length}자</small>
+                <textarea class="adcopy-edit-control" data-adcopy-edit="title" data-ad-index="${index}" rows="2">${escapeHtml(ad.title || "")}</textarea>
+                <small data-adcopy-length>${String(ad.title || "").length}자</small>
               </td>
               <td>
-                ${escapeHtml(ad.copy || "-")}
-                <small>${String(ad.copy || "").length}자</small>
+                <textarea class="adcopy-edit-control" data-adcopy-edit="copy" data-ad-index="${index}" rows="3">${escapeHtml(ad.copy || "")}</textarea>
+                <small data-adcopy-length>${String(ad.copy || "").length}자</small>
                 <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
                 ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
               </td>
@@ -3640,6 +3668,22 @@
         if (!adcopyLastResult?.generated) return;
         await navigator.clipboard.writeText(JSON.stringify(adcopyLastResult.generated, null, 2));
         setStatus("adcopy-generator-status", "generated.json 내용을 클립보드에 복사했습니다.", "ok");
+      }
+
+      async function validateEditedAdcopy() {
+        if (!adcopyLastResult?.generated) return;
+        const data = await adminFetch("/api/admin/adcopy/validate", {
+          method: "POST",
+          body: JSON.stringify({ generated: adcopyLastResult.generated }),
+          loadingMessage: "수정된 카피를 다시 검수하는 중입니다.",
+        });
+        adcopyLastResult = {
+          ...adcopyLastResult,
+          ...data,
+          generated: data.generated || adcopyLastResult.generated,
+        };
+        renderAdcopyResult(adcopyLastResult);
+        setStatus("adcopy-generator-status", data.ok ? "수정본 재검수를 완료했습니다." : "수정본 재검수 완료 · 오류와 주의 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
       }
 
       function resetAdsKeyForm() {
@@ -6677,6 +6721,10 @@
       $("#copy-adcopy-json").addEventListener("click", () => {
         copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
+      $("#validate-adcopy-json").addEventListener("click", () => {
+        validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#adcopy-preview-list").addEventListener("input", handleAdcopyEdit);
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       $("#inspect-ads-key").addEventListener("click", () => inspectAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       ["ads-key-preview", "conversion-key-preview"].forEach((id) => {

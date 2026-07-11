@@ -2068,6 +2068,29 @@ body.dev-console.modal-open {
   font-size: 11px;
 }
 
+.adcopy-edit-control {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  resize: vertical;
+  border: 1px solid #dce5f1;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--oa-ink);
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.adcopy-edit-control:focus {
+  outline: 2px solid rgb(215 17 30 / 16%);
+  border-color: #f2a5aa;
+  box-shadow: 0 0 0 3px rgb(215 17 30 / 8%);
+}
+
 .adcopy-row-check {
   display: inline-flex;
   align-items: center;

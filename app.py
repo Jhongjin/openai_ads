@@ -1357,6 +1357,26 @@ async def admin_generate_adcopy(request: Request, payload: AdsAdcopyGenerateRequ
     }
 
 
+@app.post("/api/admin/adcopy/validate", include_in_schema=False)
+async def admin_validate_adcopy(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="검수할 generated.json 본문이 올바르지 않습니다.") from exc
+    generated = body.get("generated") if isinstance(body, dict) and isinstance(body.get("generated"), dict) else body
+    if not isinstance(generated, dict):
+        raise HTTPException(status_code=400, detail="generated 객체를 전달해 주세요.")
+    validation_report = _validate_generated_adcopy(generated)
+    return {
+        "ok": validation_report["ok"],
+        "generated": generated,
+        "validation_report": validation_report,
+        "summary": validation_report["summary"],
+        "notice": "수정된 generated.json을 다시 검수했습니다. 업로드 전 운영자 최종 확인이 필요합니다.",
+    }
+
+
 @app.get("/api/admin/ads-api-keys/{advertiser_name}/reveal", include_in_schema=False)
 def admin_reveal_ads_api_key(advertiser_name: str, request: Request) -> dict[str, Any]:
     from admin_store import get_ads_api_key_secrets
