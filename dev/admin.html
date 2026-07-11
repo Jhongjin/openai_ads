@@ -712,9 +712,14 @@
                         <textarea class="textarea" id="adcopy-import-json" spellcheck="false" placeholder='{"campaign": {...}, "ad_groups": [...], "creatives": [...]}'></textarea>
                       </label>
                       <div class="adcopy-import-actions">
+                        <input class="sr-only" id="adcopy-import-workbook" type="file" accept=".xlsx" />
                         <button class="btn-secondary" type="button" id="import-adcopy-json">
                           <i class="ti ti-transform"></i>
                           정규화·검수
+                        </button>
+                        <button class="btn-secondary" type="button" id="import-adcopy-workbook">
+                          <i class="ti ti-file-spreadsheet"></i>
+                          엑셀 흡수
                         </button>
                         <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
                           <i class="ti ti-x"></i>
@@ -722,6 +727,35 @@
                         </button>
                         <p class="status-line" id="adcopy-import-status">외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.</p>
                       </div>
+                    </div>
+                  </details>
+                  <details class="adcopy-import-panel adcopy-snapshot-panel">
+                    <summary>
+                      <span>
+                        <i class="ti ti-history"></i>
+                        검수 저장본
+                      </span>
+                      <small>저장한 운영 검수 상태를 다시 불러옵니다.</small>
+                    </summary>
+                    <div class="adcopy-import-body">
+                      <div class="adcopy-snapshot-controls">
+                        <select class="control" id="adcopy-review-snapshot-select" disabled>
+                          <option value="">저장본 없음</option>
+                        </select>
+                        <button class="btn-secondary" type="button" id="refresh-adcopy-review-snapshots">
+                          <i class="ti ti-refresh"></i>
+                          새로고침
+                        </button>
+                        <button class="btn-secondary" type="button" id="load-adcopy-review-snapshot" disabled>
+                          <i class="ti ti-folder-open"></i>
+                          불러오기
+                        </button>
+                        <button class="btn-secondary" type="button" id="delete-adcopy-review-snapshot" disabled>
+                          <i class="ti ti-trash"></i>
+                          삭제
+                        </button>
+                      </div>
+                      <p class="status-line" id="adcopy-review-snapshot-status">최근 저장본을 불러오면 draft plan과 내보내기 기준도 함께 갱신됩니다.</p>
                     </div>
                   </details>
                   <div class="adcopy-generator-layout">
@@ -948,7 +982,13 @@
                             <h4>Draft 세팅 자동화</h4>
                             <p>generated.json 기준으로 OpenAI Ads draft를 단계별 생성합니다. 신규 객체는 모두 paused 상태입니다.</p>
                           </div>
-                          <span class="tag" id="adcopy-draft-badge">대기</span>
+                          <div class="adcopy-draft-head-actions">
+                            <button class="btn-secondary btn-compact" type="button" id="download-adcopy-draft-plan" disabled>
+                              <i class="ti ti-download"></i>
+                              plan JSON
+                            </button>
+                            <span class="tag" id="adcopy-draft-badge">대기</span>
+                          </div>
                         </div>
                         <div class="adcopy-draft-controls">
                           <label class="field">
@@ -980,7 +1020,7 @@
                             <span>5</span><strong>소재 draft</strong><small>paused 생성</small>
                           </button>
                           <button class="adcopy-draft-step is-danger" type="button" data-adcopy-draft-action="activate_all" disabled>
-                            <span>6</span><strong>활성화</strong><small>최종 확인 후 active</small>
+                            <span>6</span><strong>활성화</strong><small>현재 금지</small>
                           </button>
                         </div>
                         <div class="adcopy-draft-log" id="adcopy-draft-log">
@@ -1636,6 +1676,7 @@
       let adcopyDraftState = {};
       let adcopyDraftLogs = [];
       let adcopyDraftRunningAction = "";
+      let adcopyReviewSnapshots = [];
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -2336,15 +2377,19 @@
         const { headers = {}, loadingMessage = "관리자 데이터를 불러오는 중입니다.", ...fetchOptions } = options;
         setGlobalLoading(true, loadingMessage);
         try {
+          const isFormData = typeof FormData !== "undefined" && fetchOptions.body instanceof FormData;
+          const requestHeaders = {
+            "Accept": "application/json",
+            "x-admin-password": adminPassword,
+            ...headers,
+          };
+          if (!isFormData && !Object.keys(requestHeaders).some((key) => key.toLowerCase() === "content-type")) {
+            requestHeaders["Content-Type"] = "application/json";
+          }
           const response = await fetch(url, {
             credentials: "same-origin",
             ...fetchOptions,
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/json",
-              "x-admin-password": adminPassword,
-              ...headers,
-            },
+            headers: requestHeaders,
           });
           const body = await readResponseBody(response);
           if (!response.ok) {
@@ -3821,6 +3866,51 @@
         }
       }
 
+      async function importAdcopyWorkbook(file) {
+        const button = $("#import-adcopy-workbook");
+        const input = $("#adcopy-import-workbook");
+        const selectedFile = file || input.files?.[0];
+        if (!selectedFile) {
+          setStatus("adcopy-import-status", "업로드할 xlsx 파일을 선택해 주세요.", "warning");
+          return;
+        }
+        if (!/\.xlsx$/i.test(selectedFile.name || "")) {
+          setStatus("adcopy-import-status", "xlsx 파일만 흡수할 수 있습니다.", "error");
+          input.value = "";
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        setButtonBusy(button, true, "흡수 중...");
+        setStatus("adcopy-import-status", `${selectedFile.name} 파일을 generated.json 스키마로 정규화하는 중입니다.`);
+        try {
+          const data = await adminFetch("/api/admin/adcopy/import-workbook", {
+            method: "POST",
+            body: formData,
+            loadingMessage: "review.xlsx를 정규화하는 중입니다.",
+          });
+          adcopyLastResult = data;
+          adcopyPreviewFilter = "all";
+          adcopyReviewFilter = "all";
+          adcopyExportMode = "all";
+          resetAdcopyDraftWorkflow({ render: false });
+          applyAdcopyImportedDefaults(data.generated);
+          renderAdcopyResult(data);
+          const report = data.import_report || {};
+          const workbook = data.workbook || {};
+          const warningText = (report.warnings || []).length ? ` · ${report.warnings.join(" ")}` : "";
+          setStatus(
+            "adcopy-import-status",
+            `엑셀 흡수 완료: 시트 ${formatNumber(workbook.sheets || 0)}개 · 광고그룹 ${formatNumber(report.adgroups || 0)}개 · 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
+            data.ok ? "ok" : "warning",
+          );
+          setStatus("adcopy-generator-status", data.ok ? "엑셀 흡수와 자동 검수를 완료했습니다." : "엑셀 흡수 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+        } finally {
+          setButtonBusy(button, false);
+          input.value = "";
+        }
+      }
+
       function validateAdcopyPayload(payload) {
         clearAdcopyFieldIssues();
         const issues = [];
@@ -4153,6 +4243,7 @@
         $("#adcopy-landing-insight").hidden = true;
         $("#adcopy-landing-insight").innerHTML = "";
         $("#adcopy-import-json").value = "";
+        $("#adcopy-import-workbook").value = "";
         setStatus("adcopy-import-status", "외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.");
         adcopyLastResult = null;
         adcopyPreviewFilter = "all";
@@ -4385,10 +4476,7 @@
           return hasAssets && adcopyDraftIsComplete("create_ad_groups") && !adcopyDraftIsComplete(action);
         }
         if (action === "activate_all") {
-          return adcopyDraftIsComplete("create_campaign")
-            && adcopyDraftIsComplete("create_ad_groups")
-            && adcopyDraftIsComplete("create_ads")
-            && !adcopyDraftIsComplete(action);
+          return false;
         }
         return false;
       }
@@ -4444,9 +4532,10 @@
         }
         const summary = adcopyDraftPlan.summary || {};
         const warnings = (adcopyDraftPlan.warnings || []).slice(0, 3);
+        const liveDisabled = adcopyDraftPlan.safety?.activation_disabled !== false;
         root.innerHTML = `
           <strong>${escapeHtml(exported.label)} 기준 · 캠페인 ${formatNumber(summary.campaigns || 0)} · 광고그룹 ${formatNumber(summary.adgroups || 0)} · 소재 ${formatNumber(summary.ads || 0)} · 이미지 ${formatNumber(summary.assets || 0)}</strong>
-          <span>기본 상태는 paused입니다. active 전환은 마지막 단계에서만 가능합니다.</span>
+          <span>${liveDisabled ? "기본 상태는 paused입니다. 현재 운영 정책상 live 전환은 비활성화되어 있습니다." : "기본 상태는 paused입니다. active 전환은 별도 최종 확인 후에만 가능합니다."}</span>
           <small>${stateLine}</small>
           ${warnings.length ? `<ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : ""}
         `;
@@ -4483,6 +4572,8 @@
       }
 
       function renderAdcopyDraftPanel() {
+        const downloadButton = $("#download-adcopy-draft-plan");
+        if (downloadButton) downloadButton.disabled = !adcopyLastResult?.generated;
         adcopyDraftStatusBadge();
         renderAdcopyDraftSummary();
         renderAdcopyDraftSteps();
@@ -4501,6 +4592,25 @@
         return data;
       }
 
+      async function downloadAdcopyDraftPlan() {
+        if (!adcopyLastResult?.generated) return;
+        if (!adcopyDraftPlan) {
+          await refreshAdcopyDraftPlan();
+        }
+        const json = JSON.stringify(adcopyDraftPlan, null, 2);
+        const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
+        link.href = url;
+        link.download = `${adcopySafeDownloadName(campaignName)}_draft_plan.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("adcopy-generator-status", "OpenAI Ads paused draft plan JSON을 다운로드했습니다. live 전환 정보는 포함하지 않습니다.", "ok");
+      }
+
       function pushAdcopyDraftLogs(action, logs = [], fallback = "") {
         const nextLogs = logs.length ? logs : [{ level: "info", message: fallback || `${adcopyDraftActionLabel(action)} 단계를 완료했습니다.` }];
         nextLogs.forEach((item) => {
@@ -4517,6 +4627,10 @@
 
       async function executeAdcopyDraftAction(action) {
         if (!adcopyLastResult?.generated) return;
+        if (action === "activate_all") {
+          setStatus("adcopy-generator-status", "현재 운영 정책상 live 전환은 금지되어 있습니다. paused draft 생성까지만 진행할 수 있습니다.", "warning");
+          return;
+        }
         if (!adcopyDraftPlan) {
           await refreshAdcopyDraftPlan();
         }
@@ -4849,9 +4963,105 @@
           renderAdcopyResult(adcopyLastResult);
           const savedAt = formatDateTime(data.snapshot?.updated_at);
           setStatus("adcopy-generator-status", `운영 검수 상태를 저장했습니다. 저장 시각 ${savedAt}`, "ok");
+          loadAdcopyReviewSnapshots().catch(() => {});
         } finally {
           setButtonBusy(button, false);
         }
+      }
+
+      function renderAdcopyReviewSnapshots() {
+        const select = $("#adcopy-review-snapshot-select");
+        const loadButton = $("#load-adcopy-review-snapshot");
+        const deleteButton = $("#delete-adcopy-review-snapshot");
+        if (!select) return;
+        if (!adcopyReviewSnapshots.length) {
+          select.innerHTML = '<option value="">저장본 없음</option>';
+          select.disabled = true;
+          if (loadButton) loadButton.disabled = true;
+          if (deleteButton) deleteButton.disabled = true;
+          return;
+        }
+        const currentValue = select.value;
+        select.innerHTML = adcopyReviewSnapshots.map((item) => {
+          const updatedAt = formatDateTime(item.updated_at);
+          const label = [
+            item.advertiser_name || "광고주 미지정",
+            item.campaign_name || "캠페인 미지정",
+            updatedAt,
+          ].filter(Boolean).join(" · ");
+          return `<option value="${escapeHtml(item.id)}">${escapeHtml(label)}</option>`;
+        }).join("");
+        if (currentValue && adcopyReviewSnapshots.some((item) => item.id === currentValue)) {
+          select.value = currentValue;
+        }
+        select.disabled = false;
+        if (loadButton) loadButton.disabled = false;
+        if (deleteButton) deleteButton.disabled = false;
+      }
+
+      async function loadAdcopyReviewSnapshots() {
+        const data = await adminFetch("/api/admin/adcopy/review-state?limit=20", {
+          loadingMessage: "검수 저장본을 불러오는 중입니다.",
+        });
+        adcopyReviewSnapshots = Array.isArray(data.items) ? data.items : [];
+        renderAdcopyReviewSnapshots();
+        const storage = data.storage === "memory" ? "메모리 임시 저장소" : "저장소";
+        setStatus(
+          "adcopy-review-snapshot-status",
+          adcopyReviewSnapshots.length
+            ? `최근 저장본 ${formatNumber(adcopyReviewSnapshots.length)}개를 불러왔습니다. (${storage})`
+            : "아직 저장된 검수본이 없습니다.",
+          adcopyReviewSnapshots.length ? "ok" : "",
+        );
+        return data;
+      }
+
+      async function loadAdcopyReviewSnapshot() {
+        const select = $("#adcopy-review-snapshot-select");
+        const snapshotId = select?.value || "";
+        if (!snapshotId) {
+          setStatus("adcopy-review-snapshot-status", "불러올 저장본을 선택해 주세요.", "warning");
+          return;
+        }
+        const data = await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
+          loadingMessage: "선택한 검수 저장본을 불러오는 중입니다.",
+        });
+        const item = data.item || {};
+        adcopyLastResult = {
+          ok: Boolean(item.validation_report?.ok),
+          model: item.source_label || "검수 저장본",
+          generated: item.generated || {},
+          validation_report: item.validation_report || {},
+          summary: item.validation_report?.summary || {},
+          notice: "저장된 운영 검수 상태를 불러왔습니다.",
+        };
+        adcopyPreviewFilter = "all";
+        adcopyReviewFilter = "all";
+        adcopyExportMode = "all";
+        resetAdcopyDraftWorkflow({ render: false });
+        applyAdcopyImportedDefaults(adcopyLastResult.generated);
+        renderAdcopyResult(adcopyLastResult);
+        setStatus("adcopy-review-snapshot-status", `${item.campaign_name || "검수 저장본"}을 불러왔습니다.`, "ok");
+        setStatus("adcopy-generator-status", "저장된 운영 검수 상태를 화면에 반영했습니다. draft plan은 다음 실행 전 다시 계산됩니다.", "ok");
+      }
+
+      async function deleteAdcopyReviewSnapshot() {
+        const select = $("#adcopy-review-snapshot-select");
+        const snapshotId = select?.value || "";
+        if (!snapshotId) {
+          setStatus("adcopy-review-snapshot-status", "삭제할 저장본을 선택해 주세요.", "warning");
+          return;
+        }
+        const item = adcopyReviewSnapshots.find((snapshot) => snapshot.id === snapshotId);
+        const label = item?.campaign_name || item?.advertiser_name || "선택한 저장본";
+        if (!window.confirm(`${label} 저장본을 삭제할까요? 생성된 draft 객체에는 영향을 주지 않습니다.`)) return;
+        await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
+          method: "DELETE",
+          loadingMessage: "검수 저장본을 삭제하는 중입니다.",
+        });
+        adcopyReviewSnapshots = adcopyReviewSnapshots.filter((snapshot) => snapshot.id !== snapshotId);
+        renderAdcopyReviewSnapshots();
+        setStatus("adcopy-review-snapshot-status", `${label} 저장본을 삭제했습니다.`, "ok");
       }
 
       function adcopyFindingTargetField(finding) {
@@ -8238,6 +8448,7 @@
           loadFaqAdmin(),
           loadCampaignIntakes(),
           loadManualRagItems(),
+          loadAdcopyReviewSnapshots(),
         ]);
         await loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
       }
@@ -8359,6 +8570,25 @@
           setStatus("adcopy-generator-status", error.message, "error");
         });
       });
+      $("#import-adcopy-workbook").addEventListener("click", () => {
+        $("#adcopy-import-workbook").click();
+      });
+      $("#adcopy-import-workbook").addEventListener("change", (event) => {
+        importAdcopyWorkbook(event.target.files?.[0]).catch((error) => {
+          setStatus("adcopy-import-status", error.message, "error");
+          setStatus("adcopy-generator-status", error.message, "error");
+          event.target.value = "";
+        });
+      });
+      $("#refresh-adcopy-review-snapshots").addEventListener("click", () => {
+        loadAdcopyReviewSnapshots().catch((error) => setStatus("adcopy-review-snapshot-status", error.message, "error"));
+      });
+      $("#load-adcopy-review-snapshot").addEventListener("click", () => {
+        loadAdcopyReviewSnapshot().catch((error) => setStatus("adcopy-review-snapshot-status", error.message, "error"));
+      });
+      $("#delete-adcopy-review-snapshot").addEventListener("click", () => {
+        deleteAdcopyReviewSnapshot().catch((error) => setStatus("adcopy-review-snapshot-status", error.message, "error"));
+      });
       $("#clear-adcopy-import-json").addEventListener("click", () => {
         $("#adcopy-import-json").value = "";
         setStatus("adcopy-import-status", "외부 JSON 입력을 비웠습니다.");
@@ -8372,6 +8602,9 @@
       $("#apply-adcopy-auto-review").addEventListener("click", applyAdcopyAutoReview);
       $("#save-adcopy-review-state").addEventListener("click", saveAdcopyReviewState);
       $("#reset-adcopy-review-status").addEventListener("click", resetAdcopyReviewStatus);
+      $("#download-adcopy-draft-plan").addEventListener("click", () => {
+        downloadAdcopyDraftPlan().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
       $("#adcopy-export-mode").addEventListener("change", (event) => {
         const allowed = new Set(["all", "approved", "without_excluded"]);
         const mode = event.target.value || "all";

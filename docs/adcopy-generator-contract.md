@@ -97,6 +97,26 @@
 
 저장은 검수 상태 보존용이며, OpenAI Ads 객체 생성이나 활성화와 무관하다.
 
+저장본 관리:
+
+- `GET /api/admin/adcopy/review-state?limit=20`: 최근 저장본 목록
+- `GET /api/admin/adcopy/review-state/{id}`: 저장본 상세와 `generated.json` 복원
+- `DELETE /api/admin/adcopy/review-state/{id}`: 저장본 삭제
+
+운영 UI에서는 저장본을 불러오면 미리보기, 검수 상태, 내보내기 기준, draft plan 기준을 모두 해당 저장본으로 갱신한다.
+
+## 엑셀 흡수
+
+`POST /api/admin/adcopy/import-workbook`는 `review.xlsx` 파일을 업로드받아 외부 JSON 흡수와 동일한 `generated.json` 스키마로 정규화한다.
+
+지원 시트명:
+
+- 캠페인: `campaigns`, `campaigns_검수`, `캠페인`, `캠페인 목록`
+- 광고그룹: `adgroups`, `adgroups_검수`, `광고그룹`, `광고그룹 목록`
+- 소재: `ads`, `ads_검수`, `소재`, `소재 목록`, `카피`, `카피 목록`
+
+첫 번째 데이터 행 전에 단일 셀 안내문이 있으면 preamble로 처리하고, 첫 번째 다중 셀 행을 헤더로 사용한다. 파일 크기는 8MB 이하의 `.xlsx`만 허용한다.
+
 ## draft 세팅 경계
 
 `POST /api/admin/adcopy/draft-plan`은 API payload만 계산한다.
@@ -113,3 +133,5 @@
 6. 운영자 최종 확인 후 active 전환
 
 광고그룹 기본 CPM 입찰가는 운영자가 입력한 KRW 값을 `max_bid_micros`로 변환한다. 예: `7,000원` -> `7,000,000`.
+
+현재 운영 정책상 `activate_all`은 기본 비활성화되어 있으며, `ADS_DRAFT_ALLOW_ACTIVATION=1`을 명시하지 않으면 API가 400으로 차단한다. UI도 활성화 버튼을 실행 불가 상태로 둔다. 실제 캠페인 live 전환은 별도 승인 전까지 금지한다.

@@ -3018,6 +3018,117 @@ def save_adcopy_review_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
         }
 
 
+def _public_adcopy_review_snapshot_row(row: dict[str, Any], *, include_payload: bool = False) -> dict[str, Any]:
+    item = {
+        "id": str(row.get("id") or ""),
+        "advertiser_name": str(row.get("advertiser_name") or ""),
+        "campaign_name": str(row.get("campaign_name") or ""),
+        "source_label": str(row.get("source_label") or ""),
+        "updated_at": _iso_value(row.get("updated_at")),
+        "created_at": _iso_value(row.get("created_at")),
+    }
+    if include_payload:
+        item["generated"] = _json_object(row.get("generated"))
+        item["validation_report"] = _json_object(row.get("validation_report"))
+    return item
+
+
+def list_adcopy_review_snapshots(*, limit: int = 20) -> dict[str, Any]:
+    safe_limit = max(1, min(50, int(limit or 20)))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT id, advertiser_name, campaign_name, source_label, created_at, updated_at
+                    FROM {schema}.adcopy_review_snapshots
+                    ORDER BY updated_at DESC
+                    LIMIT %s
+                    """,
+                    (safe_limit,),
+                )
+                rows = cur.fetchall()
+        return {
+            "ok": True,
+            "items": [_public_adcopy_review_snapshot_row(dict(row)) for row in rows],
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        rows = sorted(
+            _memory_adcopy_review_snapshots.values(),
+            key=lambda item: str(item.get("updated_at") or ""),
+            reverse=True,
+        )[:safe_limit]
+        return {
+            "ok": True,
+            "items": [_public_adcopy_review_snapshot_row(row) for row in rows],
+            **_storage_info("memory", str(exc)),
+        }
+
+
+def get_adcopy_review_snapshot(snapshot_id: str) -> dict[str, Any]:
+    snapshot_id = str(snapshot_id or "").strip()
+    if not snapshot_id:
+        raise ValueError("저장본 ID가 필요합니다.")
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    SELECT id, advertiser_name, campaign_name, source_label, generated,
+                           validation_report, created_at, updated_at
+                    FROM {schema}.adcopy_review_snapshots
+                    WHERE id = %s
+                    """,
+                    (snapshot_id,),
+                )
+                row = cur.fetchone()
+        if not row:
+            raise ValueError("저장본을 찾을 수 없습니다.")
+        return {"ok": True, "item": _public_adcopy_review_snapshot_row(dict(row), include_payload=True), **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        row = _memory_adcopy_review_snapshots.get(snapshot_id)
+        if not row:
+            raise ValueError("저장본을 찾을 수 없습니다.") from exc
+        return {"ok": True, "item": _public_adcopy_review_snapshot_row(row, include_payload=True), **_storage_info("memory", str(exc))}
+
+
+def delete_adcopy_review_snapshot(snapshot_id: str) -> dict[str, Any]:
+    snapshot_id = str(snapshot_id or "").strip()
+    if not snapshot_id:
+        raise ValueError("저장본 ID가 필요합니다.")
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    DELETE FROM {schema}.adcopy_review_snapshots
+                    WHERE id = %s
+                    RETURNING id
+                    """,
+                    (snapshot_id,),
+                )
+                row = cur.fetchone()
+        if not row:
+            raise ValueError("삭제할 저장본을 찾을 수 없습니다.")
+        return {"ok": True, "id": snapshot_id, **_storage_info("supabase")}
+    except ValueError:
+        raise
+    except Exception as exc:
+        existed = _memory_adcopy_review_snapshots.pop(snapshot_id, None)
+        if not existed:
+            raise ValueError("삭제할 저장본을 찾을 수 없습니다.") from exc
+        return {"ok": True, "id": snapshot_id, **_storage_info("memory", str(exc))}
+
+
 def _ads_campaign_objective_key(advertiser_name: str, campaign_id: str) -> str:
     return f"{advertiser_name}\u241f{campaign_id}"
 

@@ -1833,6 +1833,17 @@ body.dev-console.modal-open {
   margin: 0;
 }
 
+.adcopy-snapshot-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.adcopy-snapshot-controls .control {
+  min-width: 0;
+}
+
 .adcopy-generator-layout {
   display: grid;
   grid-template-columns: minmax(520px, 1fr) minmax(360px, 520px);
@@ -2346,6 +2357,14 @@ body.dev-console.modal-open {
 .adcopy-draft-head .tag {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+.adcopy-draft-head-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .adcopy-draft-controls {
@@ -3972,6 +3991,7 @@ body.dev-console.modal-open {
 
   .adcopy-summary-grid,
   .adcopy-upload-checklist,
+  .adcopy-snapshot-controls,
   .adcopy-draft-controls,
   .adcopy-draft-steps,
   .adcopy-form .grid-2,

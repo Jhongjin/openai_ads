@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from io import BytesIO
+import os
 import unittest
 from unittest.mock import AsyncMock, patch
 
@@ -369,6 +371,52 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertGreaterEqual(body["validation_report"]["summary"]["policy_risk_count"], 1)
         self.assertGreaterEqual(body["validation_report"]["summary"]["landing_domain_count"], 2)
 
+    def test_admin_adcopy_import_workbook_normalizes_review_xlsx(self) -> None:
+        from openpyxl import Workbook
+
+        client = TestClient(app, raise_server_exceptions=False)
+        workbook = Workbook()
+        ws = workbook.active
+        ws.title = "campaigns"
+        ws.append(["campaign_name", "advertiser_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"])
+        ws.append(["엑셀흡수_캠페인", "캐츠잉글리시", "102600", "daily", "2026-07-01", "2026-07-31", "Views", "KR"])
+
+        groups = workbook.create_sheet("adgroups")
+        groups.append(["adgroup_name", "keywords", "required_phrases", "검수상태"])
+        groups.append(["01_검수그룹", "초등 영어 앱, 반복 학습, 파닉스, 무료 체험, 학부모", "초등 영어", "확인 완료 검수"])
+
+        ads = workbook.create_sheet("ads")
+        ads.append(["ad_name", "adgroup_name", "title", "copy", "link", "image_link", "검수상태"])
+        ads.append([
+            "AD_001",
+            "01_검수그룹",
+            "초등 영어 반복 학습",
+            "학습 흐름을 확인하고 시작해 보세요",
+            "https://example.com/landing",
+            "https://example.com/image.png",
+            "확인 완료 검수",
+        ])
+        buffer = BytesIO()
+        workbook.save(buffer)
+        workbook.close()
+        buffer.seek(0)
+
+        response = client.post(
+            "/api/admin/adcopy/import-workbook",
+            files={"file": ("review.xlsx", buffer.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["model"], "엑셀 정규화")
+        self.assertEqual(body["workbook"]["sheets"], 3)
+        self.assertEqual(body["import_report"]["adgroups"], 1)
+        self.assertEqual(body["import_report"]["ads"], 1)
+        self.assertEqual(body["generated"]["campaigns"][0]["campaign_name"], "엑셀흡수_캠페인")
+        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
+
     def test_admin_adcopy_review_state_saves_current_review_snapshot(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()
@@ -403,6 +451,62 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertTrue(body["snapshot"]["id"])
         self.assertEqual(body["snapshot"]["campaign_name"], "검수저장_캠페인")
         self.assertIn("validation_report", body)
+        snapshot_id = body["snapshot"]["id"]
+
+        list_response = client.get("/api/admin/adcopy/review-state?limit=20", headers=ADMIN_HEADERS)
+        self.assertEqual(list_response.status_code, 200)
+        self.assertIn(snapshot_id, {item["id"] for item in list_response.json()["items"]})
+
+        get_response = client.get(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
+        self.assertEqual(get_response.status_code, 200)
+        item = get_response.json()["item"]
+        self.assertEqual(item["campaign_name"], "검수저장_캠페인")
+        self.assertEqual(item["generated"]["campaigns"][0]["campaign_name"], "검수저장_캠페인")
+
+        delete_response = client.delete(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
+        self.assertEqual(delete_response.status_code, 200)
+
+        missing_response = client.get(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
+        self.assertEqual(missing_response.status_code, 404)
+
+    def test_admin_adcopy_draft_execute_blocks_live_activation_by_default(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "live차단_캠페인",
+                "budget_max": 100000,
+                "budget_type": "total",
+                "launch_date": "2026-07-10",
+                "end_date": "2026-07-12",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+        state = {
+            "campaign_id": "cmpn_test",
+            "ad_group_ids": {"01_반복훈련": "adgrp_test"},
+            "ad_ids": {"01_반복훈련::AD_001": "ad_test"},
+        }
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test"}), patch.dict(os.environ, {"ADS_DRAFT_ALLOW_ACTIVATION": "0"}):
+            response = client.post(
+                "/api/admin/adcopy/draft-execute",
+                json={
+                    "advertiser_name": "캐츠잉글리시",
+                    "generated": generated,
+                    "default_max_bid_krw": 7000,
+                    "location_ids": [],
+                    "action": "activate_all",
+                    "state": state,
+                    "confirm": True,
+                },
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("live 전환은 비활성화", response.json()["detail"])
 
     def test_admin_adcopy_landing_inspect_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)

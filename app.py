@@ -993,6 +993,44 @@ def _adcopy_import_rows(source: dict[str, Any], keys: tuple[str, ...]) -> list[d
     return []
 
 
+def _adcopy_workbook_dump(content: bytes, filename: str) -> dict[str, Any]:
+    try:
+        from openpyxl import load_workbook
+
+        workbook = load_workbook(BytesIO(content), data_only=True, read_only=True)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"워크북을 읽을 수 없습니다: {exc}") from exc
+
+    sheets: list[dict[str, Any]] = []
+    try:
+        for sheet in workbook.worksheets:
+            headers: list[str] = []
+            rows: list[dict[str, Any]] = []
+            preamble: list[str] = []
+            for raw_row in sheet.iter_rows(values_only=True):
+                values = ["" if value is None else str(value).strip() for value in raw_row]
+                while values and values[-1] == "":
+                    values.pop()
+                if not values or not any(values):
+                    continue
+                if not headers:
+                    non_empty = [value for value in values if value]
+                    if len(non_empty) == 1:
+                        preamble.append(non_empty[0])
+                        continue
+                    headers = [value or f"COL_{index + 1}" for index, value in enumerate(values)]
+                    continue
+                row: dict[str, Any] = {}
+                for index, header in enumerate(headers):
+                    row[header] = values[index] if index < len(values) else ""
+                if any(str(value or "").strip() for value in row.values()):
+                    rows.append(row)
+            sheets.append({"name": sheet.title, "preamble": preamble, "headers": headers, "rows": rows})
+    finally:
+        workbook.close()
+    return {"file": filename, "sheets": sheets}
+
+
 def _adcopy_import_campaign_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
     rows = _adcopy_import_rows(source, ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS)
     if rows:
@@ -1703,6 +1741,7 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
         "safety": {
             "default_status": "paused",
             "activation_requires_explicit_confirm": True,
+            "activation_disabled": os.getenv("ADS_DRAFT_ALLOW_ACTIVATION", "").strip().lower() not in {"1", "true", "yes"},
             "operator_step_required": True,
         },
         "summary": {
@@ -1733,7 +1772,7 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
             "이미지 파일 업로드",
             "paused 광고그룹 draft 생성",
             "paused 소재 draft 생성",
-            "운영자 최종 확인 후 명시적 활성화",
+            "운영자 최종 확인 후 활성화는 현재 정책상 비활성화",
         ],
         "validation_report": validation_report,
     }
@@ -2348,6 +2387,66 @@ async def admin_save_adcopy_review_state(request: Request) -> dict[str, Any]:
     }
 
 
+@app.get("/api/admin/adcopy/review-state", include_in_schema=False)
+def admin_list_adcopy_review_state(request: Request) -> dict[str, Any]:
+    from admin_store import list_adcopy_review_snapshots
+
+    _require_admin(request)
+    limit = int(request.query_params.get("limit") or 20)
+    return list_adcopy_review_snapshots(limit=limit)
+
+
+@app.get("/api/admin/adcopy/review-state/{snapshot_id}", include_in_schema=False)
+def admin_get_adcopy_review_state(snapshot_id: str, request: Request) -> dict[str, Any]:
+    from admin_store import get_adcopy_review_snapshot
+
+    _require_admin(request)
+    try:
+        return get_adcopy_review_snapshot(snapshot_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.delete("/api/admin/adcopy/review-state/{snapshot_id}", include_in_schema=False)
+def admin_delete_adcopy_review_state(snapshot_id: str, request: Request) -> dict[str, Any]:
+    from admin_store import delete_adcopy_review_snapshot
+
+    _require_admin(request)
+    try:
+        return delete_adcopy_review_snapshot(snapshot_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/adcopy/import-workbook", include_in_schema=False)
+async def admin_import_adcopy_workbook(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
+    _require_admin(request)
+    filename = file.filename or "review.xlsx"
+    if not filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="xlsx 파일만 업로드할 수 있습니다.")
+    content = await file.read()
+    if len(content) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일은 8MB 이하만 업로드할 수 있습니다.")
+    workbook_dump = _adcopy_workbook_dump(content, filename)
+    payload = AdsAdcopyImportRequest(
+        generated=workbook_dump,
+        source_label=f"엑셀 흡수: {Path(filename).name}",
+    )
+    imported = _normalize_external_generated_adcopy(payload)
+    generated = imported["generated"]
+    validation_report = _validate_generated_adcopy(generated)
+    return {
+        "ok": validation_report["ok"],
+        "model": "엑셀 정규화",
+        "generated": generated,
+        "validation_report": validation_report,
+        "summary": validation_report["summary"],
+        "import_report": imported["import_report"],
+        "workbook": {"file": filename, "sheets": len(workbook_dump.get("sheets") or [])},
+        "notice": "업로드한 review.xlsx를 우리 generated.json 스키마로 정규화했습니다.",
+    }
+
+
 @app.post("/api/admin/adcopy/inspect-landing", include_in_schema=False)
 async def admin_inspect_adcopy_landing(request: Request) -> dict[str, Any]:
     _require_admin(request)
@@ -2379,6 +2478,13 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
     payload = await _validated_admin_payload(request, AdsAdcopyDraftExecuteRequest, "draft 실행 본문이 올바르지 않습니다.")
     action = payload.action.strip()
     state = dict(payload.state or {})
+    if action not in {"verify_account", "create_campaign", "upload_assets", "create_ad_groups", "create_ads", "activate_all"}:
+        raise HTTPException(status_code=400, detail="지원하지 않는 draft 실행 단계입니다.")
+    if action == "activate_all" and os.getenv("ADS_DRAFT_ALLOW_ACTIVATION", "").strip().lower() not in {"1", "true", "yes"}:
+        raise HTTPException(
+            status_code=400,
+            detail="현재 운영 정책상 캠페인 live 전환은 비활성화되어 있습니다. paused draft 생성까지만 진행할 수 있습니다.",
+        )
     credential = get_ads_api_key_credential(payload.advertiser_name)
     api_key = credential.get("api_key", "")
     if not api_key:
@@ -2390,8 +2496,6 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
         state["account_verified_at"] = datetime.now(KST).isoformat()
         return {"ok": True, "action": action, "plan": plan, "state": state, "account": account}
 
-    if action not in {"create_campaign", "upload_assets", "create_ad_groups", "create_ads", "activate_all"}:
-        raise HTTPException(status_code=400, detail="지원하지 않는 draft 실행 단계입니다.")
     if not payload.confirm:
         raise HTTPException(status_code=400, detail="실행 확인이 필요합니다. 각 단계는 운영자 확인 후에만 진행됩니다.")
 
