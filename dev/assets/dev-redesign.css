@@ -1698,6 +1698,24 @@ body.dev-console.modal-open {
   align-items: flex-start;
 }
 
+.adcopy-generator-surface .doc-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.adcopy-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adcopy-action-group .btn-secondary {
+  padding-inline: 10px;
+}
+
 .adcopy-safe-note {
   display: flex;
   align-items: center;
@@ -3612,6 +3630,14 @@ body.dev-console.modal-open {
 @media (max-width: 760px) {
   .doc-actions,
   .performance-panel-head {
+    justify-content: flex-start;
+  }
+
+  .adcopy-generator-surface .doc-actions {
+    justify-items: start;
+  }
+
+  .adcopy-action-group {
     justify-content: flex-start;
   }
 

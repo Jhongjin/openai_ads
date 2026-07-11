@@ -648,39 +648,43 @@
                     <h2 class="surface-title">AI 카피 생성기</h2>
                     <p class="surface-copy">OpenAI 모델로 OpenAI Ads 업로드용 generated.json 초안을 만들고, 제목·카피·정책 검수 결과를 함께 확인합니다.</p>
                   </div>
-                  <div class="doc-actions">
-                    <button class="btn-secondary" type="button" id="reset-adcopy-generator">
-                      <i class="ti ti-eraser"></i>
-                      입력 초기화
-                    </button>
-                    <label class="adcopy-export-filter">
-                      <span>JSON 기준</span>
-                      <select id="adcopy-export-mode" disabled>
-                        <option value="all">전체 소재</option>
-                        <option value="approved">승인만</option>
-                        <option value="without_excluded">제외 제외</option>
-                      </select>
-                    </label>
-                    <button class="btn-secondary" type="button" id="copy-adcopy-json" disabled>
-                      <i class="ti ti-copy"></i>
-                      JSON 복사
-                    </button>
-                    <button class="btn-secondary" type="button" id="download-adcopy-json" disabled>
-                      <i class="ti ti-download"></i>
-                      JSON 다운로드
-                    </button>
-                    <button class="btn-secondary" type="button" id="download-adcopy-csv" disabled>
-                      <i class="ti ti-table-export"></i>
-                      소재 CSV
-                    </button>
-                    <button class="btn-secondary" type="button" id="download-adcopy-report" disabled>
-                      <i class="ti ti-file-report"></i>
-                      검수 리포트
-                    </button>
-                    <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
-                      <i class="ti ti-checkup-list"></i>
-                      수정 재검수
-                    </button>
+                  <div class="doc-actions adcopy-doc-actions">
+                    <div class="adcopy-action-group">
+                      <label class="adcopy-export-filter">
+                        <span>JSON 기준</span>
+                        <select id="adcopy-export-mode" disabled>
+                          <option value="all">전체 소재</option>
+                          <option value="approved">승인만</option>
+                          <option value="without_excluded">제외 제외</option>
+                        </select>
+                      </label>
+                      <button class="btn-secondary" type="button" id="copy-adcopy-json" disabled>
+                        <i class="ti ti-copy"></i>
+                        JSON 복사
+                      </button>
+                      <button class="btn-secondary" type="button" id="download-adcopy-json" disabled>
+                        <i class="ti ti-download"></i>
+                        JSON 다운로드
+                      </button>
+                    </div>
+                    <div class="adcopy-action-group">
+                      <button class="btn-secondary" type="button" id="download-adcopy-csv" disabled>
+                        <i class="ti ti-table-export"></i>
+                        소재 CSV
+                      </button>
+                      <button class="btn-secondary" type="button" id="download-adcopy-report" disabled>
+                        <i class="ti ti-file-report"></i>
+                        검수 리포트
+                      </button>
+                      <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
+                        <i class="ti ti-checkup-list"></i>
+                        수정 재검수
+                      </button>
+                      <button class="btn-secondary" type="button" id="reset-adcopy-generator" aria-label="입력 초기화">
+                        <i class="ti ti-eraser"></i>
+                        초기화
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="surface-body stack">
