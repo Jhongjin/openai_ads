@@ -2136,6 +2136,80 @@ body.dev-console.modal-open {
   overflow-wrap: anywhere;
 }
 
+.adcopy-upload-checklist {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.adcopy-upload-check {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  padding: 9px;
+}
+
+.adcopy-upload-check i {
+  color: var(--oa-muted);
+  font-size: 16px;
+}
+
+.adcopy-upload-check span {
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adcopy-upload-check strong {
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.adcopy-upload-check.is-ok {
+  border-color: #bfe7d5;
+  background: #f5fcf8;
+}
+
+.adcopy-upload-check.is-ok i,
+.adcopy-upload-check.is-ok strong {
+  color: var(--oa-green);
+}
+
+.adcopy-upload-check.is-caution {
+  border-color: #f6d790;
+  background: #fffaf0;
+}
+
+.adcopy-upload-check.is-caution i,
+.adcopy-upload-check.is-caution strong {
+  color: var(--oa-gold);
+}
+
+.adcopy-upload-check.is-risk {
+  border-color: #ffc9cc;
+  background: #fff7f7;
+}
+
+.adcopy-upload-check.is-risk i,
+.adcopy-upload-check.is-risk strong {
+  color: var(--oa-red-dark);
+}
+
+.adcopy-upload-check.is-muted {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  color: var(--oa-muted);
+}
+
 .adcopy-result-section {
   display: grid;
   gap: 8px;
@@ -3369,6 +3443,10 @@ body.dev-console.modal-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .adcopy-upload-checklist {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .hourly-insight-strip {
     grid-template-columns: 1fr;
   }
@@ -3402,6 +3480,7 @@ body.dev-console.modal-open {
   }
 
   .adcopy-summary-grid,
+  .adcopy-upload-checklist,
   .adcopy-form .grid-2,
   .adcopy-form .grid-3 {
     grid-template-columns: 1fr;

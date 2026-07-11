@@ -898,6 +898,12 @@
                           <p>초안을 생성하면 운영 검수 기준의 점수와 추천 수정 포인트가 표시됩니다.</p>
                         </div>
                       </div>
+                      <div class="adcopy-upload-checklist" id="adcopy-upload-checklist">
+                        <div class="adcopy-upload-check is-muted">
+                          <i class="ti ti-list-check"></i>
+                          <span>업로드 준비 체크는 생성 후 표시됩니다.</span>
+                        </div>
+                      </div>
                       <div class="adcopy-result-section">
                         <div class="adcopy-result-section-head">
                           <h4>광고그룹·소재 미리보기</h4>
@@ -4011,6 +4017,74 @@
         `;
       }
 
+      function adcopyUploadCheckClass(ok, caution = false) {
+        if (ok) return "is-ok";
+        if (caution) return "is-caution";
+        return "is-risk";
+      }
+
+      function renderAdcopyUploadChecklist(result, report) {
+        const root = $("#adcopy-upload-checklist");
+        if (!root) return;
+        if (!result) {
+          root.innerHTML = `
+            <div class="adcopy-upload-check is-muted">
+              <i class="ti ti-list-check"></i>
+              <span>업로드 준비 체크는 생성 후 표시됩니다.</span>
+            </div>
+          `;
+          return;
+        }
+        const ads = result.ads || [];
+        const adgroups = result.adgroups || [];
+        const errors = report?.errors || [];
+        const warnings = report?.warnings || [];
+        const urlOk = ads.length > 0 && ads.every((ad) => /^https?:\/\//i.test(ad.link || ""));
+        const imageOk = ads.length > 0 && ads.every((ad) => /^https?:\/\//i.test(ad.image_link || ""));
+        const lengthErrors = ads.filter((ad) => adcopyLengthMeta("title", ad.title).cls === "is-error" || adcopyLengthMeta("copy", ad.copy).cls === "is-error").length;
+        const requiredPhraseCount = adgroups.reduce((sum, group) => sum + (group.required_phrases || []).length, 0);
+        const policyErrorCount = errors.filter((item) => ["banned_term", "required_phrase_missing", "url_required", "title_max_24", "copy_max_48"].includes(item.rule)).length;
+        const items = [
+          {
+            icon: "ti-link",
+            label: "랜딩 URL",
+            value: `${formatNumber(ads.filter((ad) => /^https?:\/\//i.test(ad.link || "")).length)} / ${formatNumber(ads.length)}`,
+            cls: adcopyUploadCheckClass(urlOk, ads.length === 0),
+          },
+          {
+            icon: "ti-photo",
+            label: "이미지 URL",
+            value: `${formatNumber(ads.filter((ad) => /^https?:\/\//i.test(ad.image_link || "")).length)} / ${formatNumber(ads.length)}`,
+            cls: adcopyUploadCheckClass(imageOk, ads.length === 0),
+          },
+          {
+            icon: "ti-text-size",
+            label: "문구 길이",
+            value: lengthErrors ? `${formatNumber(lengthErrors)}개 초과` : "초과 없음",
+            cls: adcopyUploadCheckClass(lengthErrors === 0, ads.length === 0),
+          },
+          {
+            icon: "ti-shield-check",
+            label: "정책 검수",
+            value: policyErrorCount ? `${formatNumber(policyErrorCount)}개 오류` : `${formatNumber(warnings.length)}개 주의`,
+            cls: adcopyUploadCheckClass(policyErrorCount === 0, warnings.length > 0),
+          },
+          {
+            icon: "ti-message-check",
+            label: "필수 문구",
+            value: requiredPhraseCount ? `${formatNumber(requiredPhraseCount)}개 기준` : "기준 없음",
+            cls: adcopyUploadCheckClass(requiredPhraseCount > 0, true),
+          },
+        ];
+        root.innerHTML = items.map((item) => `
+          <div class="adcopy-upload-check ${item.cls}">
+            <i class="ti ${item.icon}"></i>
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </div>
+        `).join("");
+      }
+
       function renderAdcopyResult(data) {
         const result = data?.generated || null;
         const report = data?.validation_report || null;
@@ -4034,6 +4108,7 @@
           <div><span>검수</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
         `;
         renderAdcopyQualityPanel(report);
+        renderAdcopyUploadChecklist(result, report);
         renderAdcopyPreviewList(result, report);
         renderAdcopyValidationList(report);
       }
