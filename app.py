@@ -371,6 +371,14 @@ def _join_unique_messages(*messages: str) -> str:
     return " · ".join(dict.fromkeys(str(message or "").strip() for message in messages if str(message or "").strip()))
 
 
+def _query_int(request: Request, key: str, default: int, *, minimum: int = 1, maximum: int = 200) -> int:
+    try:
+        value = int(str(request.query_params.get(key) or default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
 def _date_label(value: str) -> str:
     text = str(value or "").strip()
     if not text:
@@ -2547,7 +2555,7 @@ def admin_list_adcopy_review_state(request: Request) -> dict[str, Any]:
     from admin_store import list_adcopy_review_snapshots
 
     _require_admin(request)
-    limit = int(request.query_params.get("limit") or 20)
+    limit = _query_int(request, "limit", 20, maximum=50)
     return list_adcopy_review_snapshots(limit=limit)
 
 
@@ -2842,7 +2850,7 @@ def admin_list_adcopy_draft_audit(request: Request) -> dict[str, Any]:
     from admin_store import list_adcopy_draft_audit_logs
 
     _require_admin(request)
-    limit = int(request.query_params.get("limit") or 20)
+    limit = _query_int(request, "limit", 20, maximum=50)
     return list_adcopy_draft_audit_logs(limit=limit)
 
 
@@ -2851,7 +2859,7 @@ def admin_download_adcopy_draft_audit_csv(request: Request) -> Response:
     from admin_store import list_adcopy_draft_audit_logs
 
     _require_admin(request)
-    limit = int(request.query_params.get("limit") or 50)
+    limit = _query_int(request, "limit", 50, maximum=50)
     result = list_adcopy_draft_audit_logs(limit=limit)
     output = StringIO(newline="")
     writer = csv.writer(output)
