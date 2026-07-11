@@ -1021,6 +1021,17 @@ def _validation_error_details(exc: ValidationError) -> list[dict[str, Any]]:
     return exc.errors(include_url=False, include_input=False, include_context=False)
 
 
+async def _validated_admin_payload(request: Request, model: type[BaseModel], invalid_message: str) -> Any:
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=invalid_message) from exc
+    try:
+        return model.model_validate(body)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=_validation_error_details(exc)) from exc
+
+
 def _production_guide_decks() -> dict[str, str]:
     root = project_root()
     source_candidates = [
@@ -1458,8 +1469,9 @@ def admin_save_ads_campaign_objective(
 
 
 @app.post("/api/admin/adcopy/generate", include_in_schema=False)
-async def admin_generate_adcopy(request: Request, payload: AdsAdcopyGenerateRequest) -> dict[str, Any]:
+async def admin_generate_adcopy(request: Request) -> dict[str, Any]:
     _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyGenerateRequest, "생성할 카피 브리프 본문이 올바르지 않습니다.")
     generated_payload = await _call_openai_adcopy(payload)
     generated = _normalize_generated_adcopy(generated_payload.get("generated") or {}, payload)
     validation_report = _validate_generated_adcopy(generated)
@@ -1495,8 +1507,9 @@ async def admin_validate_adcopy(request: Request) -> dict[str, Any]:
 
 
 @app.post("/api/admin/adcopy/inspect-landing", include_in_schema=False)
-async def admin_inspect_adcopy_landing(request: Request, payload: AdsAdcopyLandingInspectRequest) -> dict[str, Any]:
+async def admin_inspect_adcopy_landing(request: Request) -> dict[str, Any]:
     _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyLandingInspectRequest, "읽을 랜딩 URL 본문이 올바르지 않습니다.")
     html, final_url = await _fetch_landing_html(payload.landing_url)
     metadata = _inspect_landing_html(html, final_url)
     return {

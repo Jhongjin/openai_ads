@@ -93,8 +93,10 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         client = TestClient(app, raise_server_exceptions=False)
 
         response = client.post("/api/admin/adcopy/generate", json=adcopy_payload())
+        empty_response = client.post("/api/admin/adcopy/generate", json={})
 
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(empty_response.status_code, 403)
 
     def test_admin_adcopy_generation_normalizes_and_validates_generated_json(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
@@ -194,8 +196,10 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         client = TestClient(app, raise_server_exceptions=False)
 
         response = client.post("/api/admin/adcopy/inspect-landing", json={"landing_url": "https://example.com"})
+        empty_response = client.post("/api/admin/adcopy/inspect-landing", json={})
 
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(empty_response.status_code, 403)
 
     def test_admin_adcopy_landing_inspect_extracts_public_metadata(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
