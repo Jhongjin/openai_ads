@@ -309,6 +309,14 @@ class AdsAdcopyImportRequest(BaseModel):
     source_label: str | None = Field(default="외부 generated.json", max_length=120)
 
 
+class AdsAdcopyReviewStateRequest(BaseModel):
+    advertiser_name: str | None = Field(default="", max_length=120)
+    campaign_name: str | None = Field(default="", max_length=160)
+    source_label: str | None = Field(default="AI 카피 생성기", max_length=120)
+    generated: dict[str, Any] = Field(default_factory=dict)
+    validation_report: dict[str, Any] = Field(default_factory=dict)
+
+
 class AdsAdcopyDraftPlanRequest(BaseModel):
     advertiser_name: str = Field(..., min_length=1, max_length=120)
     generated: dict[str, Any] = Field(default_factory=dict)
@@ -811,26 +819,35 @@ def _normalize_generated_adcopy(data: dict[str, Any], payload: AdsAdcopyGenerate
 
 ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS = (
     "campaigns",
+    "campaigns_검수",
     "campaign_rows",
     "campaign_list",
+    "campaign_review",
+    "campaign_review_rows",
     "캠페인",
     "캠페인 목록",
 )
 ADCOPY_IMPORT_CAMPAIGN_OBJECT_KEYS = ("campaign", "campaign_meta", "campaign_info", "캠페인정보", "캠페인 정보")
 ADCOPY_IMPORT_ADGROUP_LIST_KEYS = (
     "adgroups",
+    "adgroups_검수",
     "ad_groups",
     "adgroup_rows",
     "ad_group_rows",
+    "adgroup_review",
+    "adgroup_review_rows",
     "groups",
     "광고그룹",
     "광고그룹 목록",
 )
 ADCOPY_IMPORT_AD_LIST_KEYS = (
     "ads",
+    "ads_검수",
     "ad_rows",
     "creatives",
     "creative_rows",
+    "ads_review",
+    "ads_review_rows",
     "copies",
     "copy_rows",
     "소재",
@@ -884,40 +901,95 @@ def _adcopy_import_number(value: Any, fallback: float = 0) -> float:
         return fallback
 
 
+def _adcopy_try_json(value: str) -> Any:
+    text = str(value or "").strip()
+    if not text or text[0] not in "[{":
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+
 def _adcopy_import_items(value: Any) -> list[Any]:
     if value in (None, ""):
         return []
     if isinstance(value, list):
         return value
     if isinstance(value, dict):
+        if any(key in value for key in ("text", "keyword", "name", "키워드")):
+            return [value]
         return list(value.values())
+    if isinstance(value, str):
+        parsed = _adcopy_try_json(value)
+        if parsed is not None:
+            return _adcopy_import_items(parsed)
     return [item.strip() for item in re.split(r"[\n,;|]+", str(value)) if item.strip()]
+
+
+def _adcopy_rows_from_value(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, str):
+        parsed = _adcopy_try_json(value)
+        if parsed is not None:
+            value = parsed
+    rows: list[dict[str, Any]] = []
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                rows.append(dict(item))
+        return rows
+    if isinstance(value, dict):
+        nested_rows = value.get("rows")
+        if isinstance(nested_rows, list):
+            return _adcopy_rows_from_value(nested_rows)
+        if any(isinstance(item, dict) for item in value.values()):
+            for row_key, item in value.items():
+                if not isinstance(item, dict):
+                    continue
+                row = dict(item)
+                row.setdefault("name", row_key)
+                rows.append(row)
+            return rows
+        return [dict(value)] if value else []
+    return []
+
+
+def _adcopy_import_source_containers(source: dict[str, Any]) -> list[dict[str, Any]]:
+    containers: list[dict[str, Any]] = [source]
+    for key in ("generated", "result", "data", "review", "workbook"):
+        value = source.get(key)
+        if isinstance(value, dict):
+            containers.append(value)
+    return containers
+
+
+def _adcopy_import_sheet_rows(source: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
+    sheets = source.get("sheets")
+    if not isinstance(sheets, list):
+        return []
+    normalized_keys = {str(key).strip().lower() for key in keys}
+    for sheet in sheets:
+        if not isinstance(sheet, dict):
+            continue
+        name = str(sheet.get("name") or sheet.get("sheet") or "").strip().lower()
+        if name in normalized_keys:
+            rows = _adcopy_rows_from_value(sheet.get("rows"))
+            if rows:
+                return rows
+    return []
 
 
 def _adcopy_import_rows(source: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
     if not isinstance(source, dict):
         return []
-    for key in keys:
-        value = source.get(key)
-        rows: list[dict[str, Any]] = []
-        if isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict):
-                    rows.append(dict(item))
+    for container in _adcopy_import_source_containers(source):
+        sheet_rows = _adcopy_import_sheet_rows(container, keys)
+        if sheet_rows:
+            return sheet_rows
+        for key in keys:
+            rows = _adcopy_rows_from_value(container.get(key))
             if rows:
                 return rows
-        elif isinstance(value, dict):
-            if any(isinstance(item, dict) for item in value.values()):
-                for row_key, item in value.items():
-                    if not isinstance(item, dict):
-                        continue
-                    row = dict(item)
-                    row.setdefault("name", row_key)
-                    rows.append(row)
-                if rows:
-                    return rows
-            elif value:
-                return [dict(value)]
     return []
 
 
@@ -953,19 +1025,35 @@ def _adcopy_import_nested_ads(group_rows: list[dict[str, Any]]) -> list[dict[str
 
 def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
     trace = raw if isinstance(raw, dict) else {}
-    status_text = str(status_source or trace.get("validation_status") or trace.get("status") or "").strip().lower()
+    status_text = str(
+        status_source
+        or trace.get("review_status")
+        or trace.get("검수상태")
+        or trace.get("human_check")
+        or trace.get("휴먼 체크")
+        or trace.get("validation_status")
+        or trace.get("status")
+        or ""
+    ).strip().lower()
     validation_status = "운영 검수 필요"
-    if any(token in status_text for token in ("확인 완료", "승인", "approved", "approve", "ok", "pass")):
+    if any(token in status_text for token in ("무수정 승인", "수정 후 승인", "확인 완료", "승인", "approved", "approve", "ok", "pass")):
         validation_status = "승인"
-    elif any(token in status_text for token in ("제외", "excluded", "exclude", "drop")):
+    elif any(token in status_text for token in ("사용 불가", "사용불가", "불가", "제외", "excluded", "exclude", "drop", "reject")):
         validation_status = "제외"
-    elif any(token in status_text for token in ("수정", "보류", "revise", "hold", "needs")):
+    elif any(token in status_text for token in ("부분 재생성", "광고주 확인 필요", "확인 필요", "수정", "보류", "재생성", "revise", "hold", "needs")):
         validation_status = "수정 필요"
     return {
         **_adcopy_trace(source_type="외부 JSON", generation_basis="외부 산출물 호환 정규화", confidence_score=0.62),
         **trace,
         "validation_status": validation_status,
-        "review_comment": str(trace.get("review_comment") or trace.get("memo") or trace.get("검수 메모") or "").strip(),
+        "review_comment": str(
+            trace.get("review_comment")
+            or trace.get("memo")
+            or trace.get("검수 메모")
+            or trace.get("review_note")
+            or trace.get("운영 메모")
+            or ""
+        ).strip(),
         "exclusion_reason": str(trace.get("exclusion_reason") or trace.get("제외 사유") or "").strip(),
     }
 
@@ -1054,13 +1142,18 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
         seen_adgroups.add(name)
         keywords = []
         raw_keywords = _adcopy_import_first_value(item, ("keywords", "context_hints", "expanded_keywords", "키워드", "확장 키워드", "컨텍스트 힌트", "Context Hints"))
-        for keyword in _adcopy_import_items(raw_keywords):
+        keyword_origins = [
+            str(origin).strip()
+            for origin in _adcopy_import_items(_adcopy_import_first_value(item, ("keywords_origin", "keyword_origins", "키워드 출처", "출처")))
+            if str(origin).strip()
+        ]
+        for keyword_index, keyword in enumerate(_adcopy_import_items(raw_keywords)):
             if isinstance(keyword, dict):
                 text = _adcopy_import_text(keyword, ("text", "keyword", "name", "키워드"))
                 origin = _adcopy_import_text(keyword, ("origin", "source", "출처"), "ai_inferred")
             else:
                 text = str(keyword or "").strip()
-                origin = "customer_data" if source_label else "ai_inferred"
+                origin = keyword_origins[keyword_index] if keyword_index < len(keyword_origins) else ("customer_data" if source_label else "ai_inferred")
             if text:
                 keywords.append({"text": text, "origin": origin if origin in {"customer_data", "ai_inferred"} else "ai_inferred"})
         required = [
@@ -1074,7 +1167,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "adgroup_name": name,
                 "keywords": keywords,
                 "required_phrases": list(dict.fromkeys(required)),
-                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "validation_status", "휴먼 체크", "검수"))),
+                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
             }
         )
 
@@ -1121,7 +1214,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "copy": _adcopy_import_text(item, ("copy", "body", "description", "text", "카피", "본문", "설명")),
                 "link": _adcopy_import_text(item, ("link", "landing_url", "target_url", "url", "랜딩 URL", "랜딩URL"), default_link),
                 "image_link": _adcopy_import_text(item, ("image_link", "image_url", "image", "이미지 URL", "이미지URL"), default_image),
-                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "validation_status", "휴먼 체크", "검수"))),
+                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
             }
         )
 
@@ -1166,6 +1259,31 @@ ADCOPY_AWKWARD_PATTERNS = (
     "완벽한",
     "획기적인",
 )
+
+
+ADCOPY_POLICY_RISK_PATTERNS = (
+    "무조건",
+    "누구나",
+    "최고",
+    "최저가",
+    "1위",
+    "100%",
+    "보장",
+    "완치",
+    "무료",
+    "공짜",
+    "당첨",
+    "수익",
+    "환불 보장",
+)
+
+
+def _adcopy_hostname(value: Any) -> str:
+    try:
+        parsed = urlparse(str(value or "").strip())
+    except ValueError:
+        return ""
+    return parsed.netloc.lower().replace("www.", "")
 
 
 def _adcopy_recommendation(kind: str, title: str, message: str) -> dict[str, str]:
@@ -1223,6 +1341,9 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             if any(term in keyword_text for term in banned_terms):
                 errors.append(_adcopy_finding("error", "adgroups", name or "-", "keywords", "banned_term", f"금지어 포함: {keyword_text}"))
     seen_creatives: dict[str, str] = {}
+    seen_titles: dict[str, str] = {}
+    landing_hosts: list[str] = []
+    risk_finding_count = 0
     if not ads:
         errors.append(_adcopy_finding("error", "ads", "-", "title", "ads_required", "광고 소재가 생성되지 않았습니다."))
     for ad in ads:
@@ -1258,19 +1379,36 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             message = f"운영 검수에서 어색할 수 있는 표현: {', '.join(awkward_hits)}"
             warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "awkward_phrase", message))
             ad_issues.append({"level": "warning", "rule": "awkward_phrase", "message": message})
+        risk_hits = [pattern for pattern in ADCOPY_POLICY_RISK_PATTERNS if pattern and pattern in combined]
+        if risk_hits:
+            risk_finding_count += 1
+            message = f"정책·광고주 검수에서 민감할 수 있는 표현: {', '.join(risk_hits)}"
+            warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "policy_risk_phrase", message))
+            ad_issues.append({"level": "warning", "rule": "policy_risk_phrase", "message": message})
         if title and title == copy:
             errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_equals_title", "카피가 제목과 동일합니다."))
             ad_issues.append({"level": "error", "rule": "copy_equals_title", "message": "카피가 제목과 동일합니다."})
         creative_key = title + "\x00" + copy
-        if title and creative_key in seen_creatives:
+        exact_duplicate = bool(title and creative_key in seen_creatives)
+        if exact_duplicate:
             errors.append(_adcopy_finding("error", "ads", ad_name, "title", "creative_duplicate", f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."))
             ad_issues.append({"level": "error", "rule": "creative_duplicate", "message": f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."})
         seen_creatives[creative_key] = ad_name
+        title_key = re.sub(r"\s+", "", title).lower()
+        if title_key and title_key in seen_titles and not exact_duplicate:
+            warnings.append(_adcopy_finding("warning", "ads", ad_name, "title", "title_duplicate", f"제목이 {seen_titles[title_key]}와 거의 같습니다."))
+            ad_issues.append({"level": "warning", "rule": "title_duplicate", "message": f"제목이 {seen_titles[title_key]}와 거의 같습니다."})
+        if title_key:
+            seen_titles.setdefault(title_key, ad_name)
         for field in ("link", "image_link"):
             url = str(ad.get(field) or "").strip()
             if not re.match(r"^https?://", url):
                 errors.append(_adcopy_finding("error", "ads", ad_name, field, "url_required", f"{field}는 http 또는 https URL이어야 합니다."))
                 ad_issues.append({"level": "error", "rule": "url_required", "message": f"{field}는 http 또는 https URL이어야 합니다."})
+            elif field == "link":
+                host = _adcopy_hostname(url)
+                if host:
+                    landing_hosts.append(host)
         for term in banned_terms:
             if term and term in combined:
                 errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "banned_term", f"금지어 포함: {term}"))
@@ -1291,6 +1429,10 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
                 "issues": ad_issues[:5],
             }
         )
+    unique_landing_hosts = sorted(set(landing_hosts))
+    if len(unique_landing_hosts) > 1:
+        message = f"소재 랜딩 도메인이 {len(unique_landing_hosts)}개입니다: {', '.join(unique_landing_hosts[:4])}"
+        warnings.append(_adcopy_finding("warning", "ads", "-", "link", "landing_domain_mismatch", message))
     warning_rules = [item.get("rule", "") for item in warnings]
     total_keywords = 0
     customer_keywords = 0
@@ -1335,6 +1477,10 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
         recommendations.append(_adcopy_recommendation("copy", "카피 밀도 조정", "카피는 18~42자 안에서 구체적 혜택이나 사용 상황을 한 가지 넣는 편이 좋습니다."))
     if "awkward_phrase" in warning_rules:
         recommendations.append(_adcopy_recommendation("tone", "자연어 표현 수정", "'고려한', '누려보세요' 같은 문어체 표현은 더 구체적인 사용 장면으로 바꾸는 편이 좋습니다."))
+    if "policy_risk_phrase" in warning_rules:
+        recommendations.append(_adcopy_recommendation("policy", "민감 표현 재검토", "'최고', '보장', '무료' 같은 표현은 근거와 광고주 확인 없이 그대로 쓰지 않는 편이 안전합니다."))
+    if "landing_domain_mismatch" in warning_rules:
+        recommendations.append(_adcopy_recommendation("landing", "랜딩 도메인 통일 확인", "소재별 랜딩 도메인이 다릅니다. 의도된 분기인지, 잘못 붙은 URL인지 확인해 주세요."))
     if total_keywords and customer_keywords == 0:
         recommendations.append(_adcopy_recommendation("brief", "브리프 기반 키워드 보강", "모든 Context Hints가 AI 추론입니다. 광고주가 제공한 검색어 또는 제품 표현을 1개 이상 넣어 주세요."))
     if average_confidence is not None and average_confidence < 0.75:
@@ -1353,6 +1499,9 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             "average_confidence": average_confidence,
             "customer_keyword_count": customer_keywords,
             "keyword_count": total_keywords,
+            "policy_risk_count": risk_finding_count,
+            "landing_domain_count": len(unique_landing_hosts),
+            "landing_domains": unique_landing_hosts[:8],
             "recommendations": recommendations[:5],
         },
         "summary": {
@@ -1364,6 +1513,8 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             "quality_score": quality_score,
             "quality_grade": grade,
             "readiness": readiness,
+            "policy_risk_count": risk_finding_count,
+            "landing_domain_count": len(unique_landing_hosts),
         },
     }
 
@@ -2167,6 +2318,33 @@ async def admin_import_adcopy(request: Request) -> dict[str, Any]:
         "summary": validation_report["summary"],
         "import_report": imported["import_report"],
         "notice": "외부 산출물을 우리 generated.json 스키마로 정규화했습니다. 생성 엔진 의존 없이 검수와 draft 세팅에 사용할 수 있습니다.",
+    }
+
+
+@app.post("/api/admin/adcopy/review-state", include_in_schema=False)
+async def admin_save_adcopy_review_state(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyReviewStateRequest, "저장할 카피 검수 상태 본문이 올바르지 않습니다.")
+    generated = payload.generated if isinstance(payload.generated, dict) else {}
+    if not generated:
+        raise HTTPException(status_code=400, detail="저장할 generated.json이 없습니다.")
+    validation_report = _validate_generated_adcopy(generated)
+    from admin_store import save_adcopy_review_snapshot
+
+    snapshot = save_adcopy_review_snapshot(
+        {
+            "advertiser_name": payload.advertiser_name,
+            "campaign_name": payload.campaign_name,
+            "source_label": payload.source_label,
+            "generated": generated,
+            "validation_report": validation_report or payload.validation_report,
+        }
+    )
+    return {
+        "ok": True,
+        "snapshot": snapshot,
+        "validation_report": validation_report,
+        "notice": "현재 운영 검수 상태를 저장했습니다. 저장은 draft 생성·활성화와 무관합니다.",
     }
 
 

@@ -1012,6 +1012,10 @@
                                 <i class="ti ti-wand"></i>
                                 자동 판정 반영
                               </button>
+                              <button class="btn-secondary btn-compact" type="button" id="save-adcopy-review-state" disabled>
+                                <i class="ti ti-device-floppy"></i>
+                                검수 저장
+                              </button>
                               <button class="btn-secondary btn-compact" type="button" id="reset-adcopy-review-status" disabled>
                                 <i class="ti ti-rotate-2"></i>
                                 검수 초기화
@@ -4206,6 +4210,10 @@
         const quality = report.quality;
         const score = Number(quality.score || 0);
         const recommendations = (quality.recommendations || []).slice(0, 3);
+        const riskCount = Number(quality.policy_risk_count || 0);
+        const domainCount = Number(quality.landing_domain_count || 0);
+        const domainText = domainCount > 1 ? ` · 랜딩 도메인 ${formatNumber(domainCount)}개` : "";
+        const riskText = riskCount ? ` · 민감 표현 ${formatNumber(riskCount)}건` : "";
         root.className = `adcopy-quality-panel ${adcopyQualityClass(score)}`;
         root.innerHTML = `
           <div class="adcopy-quality-score">
@@ -4215,7 +4223,7 @@
           </div>
           <div class="adcopy-quality-meta">
             <span class="tag ${adcopyQualityTagClass(report, score)}">${escapeHtml(quality.readiness || "운영 검수 필요")}</span>
-            <p>Context Hints ${formatNumber(quality.customer_keyword_count || 0)} / ${formatNumber(quality.keyword_count || 0)}개가 브리프 기반입니다.</p>
+            <p>Context Hints ${formatNumber(quality.customer_keyword_count || 0)} / ${formatNumber(quality.keyword_count || 0)}개가 브리프 기반입니다${escapeHtml(riskText + domainText)}.</p>
             <ul>
               ${recommendations.map((item) => `<li><strong>${escapeHtml(item.title || "추천")}</strong><span>${escapeHtml(item.message || "")}</span></li>`).join("")}
             </ul>
@@ -4557,6 +4565,7 @@
         $("#adcopy-export-mode").disabled = !result;
         $("#adcopy-export-mode").value = adcopyExportMode;
         $("#apply-adcopy-auto-review").disabled = !result;
+        $("#save-adcopy-review-state").disabled = !result;
         $("#reset-adcopy-review-status").disabled = !result;
         renderAdcopyJsonPreview();
         $("#adcopy-result-note").textContent = result
@@ -4812,6 +4821,37 @@
         });
         renderAdcopyResult(adcopyLastResult);
         setStatus("adcopy-generator-status", "소재별 운영 검수 상태와 메모를 초기화했습니다.", "warning");
+      }
+
+      async function saveAdcopyReviewState() {
+        if (!adcopyLastResult?.generated) return;
+        const button = $("#save-adcopy-review-state");
+        const campaign = adcopyLastResult.generated.campaigns?.[0] || {};
+        const payload = {
+          advertiser_name: $("#adcopy-advertiser-name").value.trim(),
+          campaign_name: campaign.campaign_name || $("#adcopy-campaign-name").value.trim(),
+          source_label: adcopyLastResult.model || "AI 카피 생성기",
+          generated: adcopyLastResult.generated,
+          validation_report: adcopyLastResult.validation_report || {},
+        };
+        setButtonBusy(button, true, "저장 중...");
+        try {
+          const data = await adminFetch("/api/admin/adcopy/review-state", {
+            method: "POST",
+            body: JSON.stringify(payload),
+            loadingMessage: "운영 검수 상태를 저장하는 중입니다.",
+          });
+          adcopyLastResult = {
+            ...adcopyLastResult,
+            validation_report: data.validation_report || adcopyLastResult.validation_report,
+            summary: data.validation_report?.summary || adcopyLastResult.summary,
+          };
+          renderAdcopyResult(adcopyLastResult);
+          const savedAt = formatDateTime(data.snapshot?.updated_at);
+          setStatus("adcopy-generator-status", `운영 검수 상태를 저장했습니다. 저장 시각 ${savedAt}`, "ok");
+        } finally {
+          setButtonBusy(button, false);
+        }
       }
 
       function adcopyFindingTargetField(finding) {
@@ -8330,6 +8370,7 @@
       $("#download-adcopy-csv").addEventListener("click", downloadAdcopyCreativeCsv);
       $("#download-adcopy-report").addEventListener("click", downloadAdcopyReviewReport);
       $("#apply-adcopy-auto-review").addEventListener("click", applyAdcopyAutoReview);
+      $("#save-adcopy-review-state").addEventListener("click", saveAdcopyReviewState);
       $("#reset-adcopy-review-status").addEventListener("click", resetAdcopyReviewStatus);
       $("#adcopy-export-mode").addEventListener("change", (event) => {
         const allowed = new Set(["all", "approved", "without_excluded"]);

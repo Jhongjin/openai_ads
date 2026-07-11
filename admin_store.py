@@ -371,6 +371,7 @@ _memory_chat_questions: list[dict[str, Any]] = []
 _memory_ads_api_keys: dict[str, dict[str, Any]] = {}
 _memory_ads_dashboard_cache: dict[str, dict[str, Any]] = {}
 _memory_ads_campaign_objectives: dict[str, dict[str, Any]] = {}
+_memory_adcopy_review_snapshots: dict[str, dict[str, Any]] = {}
 _memory_campaign_intake_ops: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_categories: dict[str, dict[str, Any]] = {}
 _memory_operating_faq_items: dict[str, dict[str, Any]] = {}
@@ -1637,6 +1638,26 @@ def _ensure_tables() -> None:
                     updated_at timestamptz NOT NULL DEFAULT now(),
                     PRIMARY KEY (advertiser_name, campaign_id)
                 )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.adcopy_review_snapshots (
+                    id text PRIMARY KEY,
+                    advertiser_name text NOT NULL DEFAULT '',
+                    campaign_name text NOT NULL DEFAULT '',
+                    source_label text NOT NULL DEFAULT '',
+                    generated jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    validation_report jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                    created_at timestamptz NOT NULL DEFAULT now(),
+                    updated_at timestamptz NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS adcopy_review_snapshots_updated_idx
+                ON {schema}.adcopy_review_snapshots (updated_at DESC)
                 """
             )
             cur.execute(
@@ -2916,6 +2937,85 @@ def delete_ads_dashboard_cache(cache_key: str = "active_advertisers") -> dict[st
     except Exception as exc:
         _memory_ads_dashboard_cache.pop(cache_key, None)
         return {"ok": True, "cache_key": cache_key, **_storage_info("memory", str(exc))}
+
+
+def _adcopy_campaign_name(generated: dict[str, Any], fallback: str = "") -> str:
+    campaigns = generated.get("campaigns") if isinstance(generated.get("campaigns"), list) else []
+    for campaign in campaigns:
+        if isinstance(campaign, dict):
+            name = str(campaign.get("campaign_name") or "").strip()
+            if name:
+                return name
+    return str(fallback or "").strip()
+
+
+def save_adcopy_review_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+    generated = _json_object(payload.get("generated"))
+    validation_report = _json_object(payload.get("validation_report"))
+    advertiser_name = str(payload.get("advertiser_name") or "").strip()
+    campaign_name = _adcopy_campaign_name(generated, str(payload.get("campaign_name") or ""))
+    source_label = str(payload.get("source_label") or "AI 카피 생성기").strip()
+    snapshot_id = str(payload.get("id") or uuid.uuid4()).strip()
+    safe_generated = json.loads(json.dumps(generated, ensure_ascii=False, default=str))
+    safe_report = json.loads(json.dumps(validation_report, ensure_ascii=False, default=str))
+    try:
+        _ensure_tables()
+        schema = _schema()
+        with _connect() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {schema}.adcopy_review_snapshots
+                        (id, advertiser_name, campaign_name, source_label, generated, validation_report, updated_at)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, now())
+                    ON CONFLICT (id) DO UPDATE SET
+                        advertiser_name = EXCLUDED.advertiser_name,
+                        campaign_name = EXCLUDED.campaign_name,
+                        source_label = EXCLUDED.source_label,
+                        generated = EXCLUDED.generated,
+                        validation_report = EXCLUDED.validation_report,
+                        updated_at = now()
+                    RETURNING id, updated_at
+                    """,
+                    (
+                        snapshot_id,
+                        advertiser_name,
+                        campaign_name,
+                        source_label,
+                        json.dumps(safe_generated, ensure_ascii=False),
+                        json.dumps(safe_report, ensure_ascii=False),
+                    ),
+                )
+                row = cur.fetchone()
+        return {
+            "ok": True,
+            "id": str(row.get("id") or snapshot_id),
+            "advertiser_name": advertiser_name,
+            "campaign_name": campaign_name,
+            "source_label": source_label,
+            "updated_at": _iso_value(row.get("updated_at")),
+            **_storage_info("supabase"),
+        }
+    except Exception as exc:
+        updated_at = datetime.now(KST).isoformat()
+        _memory_adcopy_review_snapshots[snapshot_id] = {
+            "id": snapshot_id,
+            "advertiser_name": advertiser_name,
+            "campaign_name": campaign_name,
+            "source_label": source_label,
+            "generated": safe_generated,
+            "validation_report": safe_report,
+            "updated_at": updated_at,
+        }
+        return {
+            "ok": True,
+            "id": snapshot_id,
+            "advertiser_name": advertiser_name,
+            "campaign_name": campaign_name,
+            "source_label": source_label,
+            "updated_at": updated_at,
+            **_storage_info("memory", str(exc)),
+        }
 
 
 def _ads_campaign_objective_key(advertiser_name: str, campaign_id: str) -> str:

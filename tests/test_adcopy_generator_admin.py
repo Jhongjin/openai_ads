@@ -281,6 +281,129 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
         self.assertIn("무조건", body["generated"]["policy"]["banned_terms"])
 
+    def test_admin_adcopy_import_accepts_ai_team_workbook_dump_json(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        external = {
+            "file": "review.xlsx",
+            "sheets": [
+                {
+                    "name": "campaigns",
+                    "rows": [
+                        {
+                            "campaign_name": "워크북_캠페인",
+                            "budget_max": "50,000",
+                            "budget_type": "daily",
+                            "launch_date": "2026-07-10",
+                            "end_date": "2026-07-12",
+                            "objective": "Views",
+                            "target_countries": '["KR"]',
+                        }
+                    ],
+                },
+                {
+                    "name": "adgroups_검수",
+                    "rows": [
+                        {
+                            "campaign_name": "워크북_캠페인",
+                            "adgroup_name": "01_검수그룹",
+                            "keywords": '["초등 영어", "학습 습관", "파닉스", "영어 루틴", "학부모"]',
+                            "keywords_origin": '["customer_data", "ai_inferred", "ai_inferred", "customer_data", "ai_inferred"]',
+                            "validation_status": "통과",
+                            "검수상태": "수정 후 승인",
+                            "review_comment": "문구 확인 완료",
+                        }
+                    ],
+                },
+                {
+                    "name": "ads_검수",
+                    "rows": [
+                        {
+                            "ad_name": "AD_001",
+                            "adgroup_name": "01_검수그룹",
+                            "title": "초등 영어 루틴 시작",
+                            "copy": "매일 짧게 반복하는 영어 학습 습관",
+                            "link": "https://example.com/landing",
+                            "image_link": "https://example.com/image.png",
+                            "validation_status": "통과",
+                            "검수상태": "무수정 승인",
+                            "review_comment": "사용 가능",
+                        },
+                        {
+                            "ad_name": "AD_002",
+                            "adgroup_name": "01_검수그룹",
+                            "title": "초등 영어 무료 체험",
+                            "copy": "무료 혜택은 광고주 확인 후 사용",
+                            "link": "https://alt.example.com/landing",
+                            "image_link": "https://example.com/image.png",
+                            "검수상태": "광고주 확인 필요",
+                        },
+                        {
+                            "ad_name": "AD_003",
+                            "adgroup_name": "01_검수그룹",
+                            "title": "사용 불가 소재",
+                            "copy": "제외 상태 확인용 문구입니다",
+                            "link": "https://example.com/landing",
+                            "image_link": "https://example.com/image.png",
+                            "검수상태": "사용 불가",
+                        },
+                    ],
+                },
+            ],
+        }
+
+        response = client.post(
+            "/api/admin/adcopy/import",
+            json={"generated": external, "advertiser_name": "캐츠잉글리시"},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["import_report"]["adgroups"], 1)
+        self.assertEqual(body["import_report"]["ads"], 3)
+        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["adgroups"][0]["keywords"][0]["origin"], "customer_data")
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["ads"][1]["trace"]["validation_status"], "수정 필요")
+        self.assertEqual(body["generated"]["ads"][2]["trace"]["validation_status"], "제외")
+        self.assertGreaterEqual(body["validation_report"]["summary"]["policy_risk_count"], 1)
+        self.assertGreaterEqual(body["validation_report"]["summary"]["landing_domain_count"], 2)
+
+    def test_admin_adcopy_review_state_saves_current_review_snapshot(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [
+            {
+                "campaign_name": "검수저장_캠페인",
+                "budget_max": 50000,
+                "budget_type": "daily",
+                "launch_date": "2026-07-10",
+                "end_date": "2026-07-12",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        generated["adgroups"][0].pop("max_bid", None)
+        generated["ads"][0]["trace"]["validation_status"] = "승인"
+
+        response = client.post(
+            "/api/admin/adcopy/review-state",
+            json={
+                "advertiser_name": "캐츠잉글리시",
+                "campaign_name": "검수저장_캠페인",
+                "source_label": "unit-test",
+                "generated": generated,
+            },
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertTrue(body["snapshot"]["id"])
+        self.assertEqual(body["snapshot"]["campaign_name"], "검수저장_캠페인")
+        self.assertIn("validation_report", body)
+
     def test_admin_adcopy_landing_inspect_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 
