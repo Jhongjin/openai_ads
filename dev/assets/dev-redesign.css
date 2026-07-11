@@ -2373,6 +2373,41 @@ body.dev-console.modal-open {
   gap: 8px;
 }
 
+.adcopy-draft-guardrail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adcopy-draft-guardrail span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  border: 1px solid #dbe7f3;
+  border-radius: 999px;
+  background: #f8fbff;
+  padding: 4px 9px;
+  color: #516174;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.adcopy-draft-guardrail i {
+  color: #0f8f66;
+  font-size: 14px;
+}
+
+.adcopy-draft-guardrail .is-locked {
+  border-color: #f3d1d6;
+  background: #fff7f8;
+  color: #b4232d;
+}
+
+.adcopy-draft-guardrail .is-locked i {
+  color: #d91825;
+}
+
 .adcopy-draft-summary {
   display: grid;
   gap: 5px;

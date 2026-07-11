@@ -417,6 +417,151 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
         self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
 
+    def test_admin_adcopy_workbook_to_paused_draft_e2e(self) -> None:
+        from openpyxl import Workbook
+
+        client = TestClient(app, raise_server_exceptions=False)
+        workbook = Workbook()
+        campaign_sheet = workbook.active
+        campaign_sheet.title = "campaigns_검수"
+        campaign_sheet.append(["광고팀 전달 워크북"])
+        campaign_sheet.append(["campaign_name", "advertiser_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"])
+        campaign_sheet.append(["워크북E2E_캠페인", "캐츠잉글리시", "150000", "total", "2026-07-20", "2026-08-02", "Views", "KR"])
+
+        groups_sheet = workbook.create_sheet("adgroups_검수")
+        groups_sheet.append(["adgroup_name", "keywords", "required_phrases", "검수상태"])
+        groups_sheet.append(["01_반복훈련", "초등 영어 앱, 영어 반복 학습, 파닉스, 학습 리포트, 집 공부", "", "확인 완료 검수"])
+        groups_sheet.append(["02_학부모설득", "초등 영어 학부모, 수준별 영어, 영어 습관, 학습 진단, 영어 자신감", "", "확인 완료 검수"])
+
+        ads_sheet = workbook.create_sheet("ads_검수")
+        ads_sheet.append(["ad_name", "adgroup_name", "title", "copy", "link", "image_link", "검수상태"])
+        ads_sheet.append([
+            "AD_001",
+            "01_반복훈련",
+            "초등 영어 반복 루틴",
+            "매일 짧게 이어지는 영어 학습 흐름을 확인하세요",
+            "https://example.com/cats/landing",
+            "https://example.com/cats/image.png",
+            "확인 완료 검수",
+        ])
+        ads_sheet.append([
+            "AD_002",
+            "01_반복훈련",
+            "반복 학습 보류 소재",
+            "운영자가 제외한 소재는 draft 생성에서 제외됩니다",
+            "https://example.com/cats/landing",
+            "https://example.com/cats/excluded.png",
+            "사용 불가",
+        ])
+        ads_sheet.append([
+            "AD_003",
+            "02_학부모설득",
+            "학부모가 보는 영어",
+            "수준별 학습 리포트로 아이의 변화를 살펴보세요",
+            "https://example.com/cats/landing",
+            "https://example.com/cats/image.png",
+            "확인 완료 검수",
+        ])
+        buffer = BytesIO()
+        workbook.save(buffer)
+        workbook.close()
+        buffer.seek(0)
+
+        import_response = client.post(
+            "/api/admin/adcopy/import-workbook",
+            files={"file": ("ad-team-review.xlsx", buffer.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            headers=ADMIN_HEADERS,
+        )
+        self.assertEqual(import_response.status_code, 200)
+        imported = import_response.json()
+        self.assertEqual(imported["import_report"]["adgroups"], 2)
+        self.assertEqual(imported["import_report"]["ads"], 3)
+        generated = imported["generated"]
+
+        save_response = client.post(
+            "/api/admin/adcopy/review-state",
+            json={
+                "advertiser_name": "캐츠잉글리시",
+                "campaign_name": "워크북E2E_캠페인",
+                "source_label": "워크북 E2E",
+                "generated": generated,
+            },
+            headers=ADMIN_HEADERS,
+        )
+        self.assertEqual(save_response.status_code, 200)
+        snapshot_id = save_response.json()["snapshot"]["id"]
+
+        snapshot_response = client.get(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
+        self.assertEqual(snapshot_response.status_code, 200)
+        snapshot_generated = snapshot_response.json()["item"]["generated"]
+        account = {"ok": True, "ad_account": {"name": "Catsenglish", "currency_code": "KRW", "timezone": "Asia/Seoul"}}
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"advertiser_name": "캐츠잉글리시", "industry": "교육", "api_key": "sk-test"}), patch(
+            "rag_chatbot.ads_api.fetch_ad_account_metadata",
+            AsyncMock(return_value=account),
+        ), patch("app._ads_draft_api_request", AsyncMock()) as no_mutation_request:
+            preflight_response = client.post(
+                "/api/admin/adcopy/draft-preflight",
+                json={
+                    "advertiser_name": "캐츠잉글리시",
+                    "generated": snapshot_generated,
+                    "default_max_bid_krw": 7000,
+                    "location_ids": ["2000043"],
+                },
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(preflight_response.status_code, 200)
+        preflight = preflight_response.json()
+        self.assertTrue(preflight["ok"])
+        self.assertEqual(preflight["plan"]["summary"]["ads"], 2)
+        self.assertEqual(preflight["plan"]["summary"]["excluded_ads"], 1)
+        self.assertFalse(no_mutation_request.await_args_list)
+
+        calls: list[tuple[str, dict]] = []
+
+        async def mocked_request(api_key: str, method: str, path: str, json_body: dict | None = None) -> dict:
+            calls.append((path, json_body or {}))
+            if path == "/v1/campaigns":
+                return {"id": "cmpn_e2e", "status": "paused"}
+            if path == "/v1/upload":
+                return {"file_id": "file_shared"}
+            if path == "/v1/ad_groups":
+                return {"id": f"adgrp_{len([item for item in calls if item[0] == '/v1/ad_groups'])}", "status": "paused"}
+            if path == "/v1/ads":
+                return {"id": f"ad_{len([item for item in calls if item[0] == '/v1/ads'])}", "status": "paused"}
+            raise AssertionError(path)
+
+        state: dict = dict(preflight.get("state_patch") or {})
+        base_payload = {
+            "advertiser_name": "캐츠잉글리시",
+            "generated": snapshot_generated,
+            "default_max_bid_krw": 7000,
+            "location_ids": ["2000043"],
+        }
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test", "industry": "교육"}), patch("app._ads_draft_api_request", mocked_request):
+            for action in ["create_campaign", "upload_assets", "create_ad_groups", "create_ads"]:
+                response = client.post(
+                    "/api/admin/adcopy/draft-execute",
+                    json={**base_payload, "action": action, "state": state, "confirm": True},
+                    headers=ADMIN_HEADERS,
+                )
+                self.assertEqual(response.status_code, 200)
+                state = response.json()["state"]
+
+        paths = [path for path, _payload in calls]
+        self.assertEqual(paths, ["/v1/campaigns", "/v1/upload", "/v1/ad_groups", "/v1/ad_groups", "/v1/ads", "/v1/ads"])
+        self.assertTrue(all("/activate" not in path for path in paths))
+        self.assertEqual(calls[0][1]["status"], "paused")
+        self.assertEqual(calls[2][1]["status"], "paused")
+        self.assertEqual(calls[4][1]["status"], "paused")
+        self.assertEqual(calls[4][1]["creative"]["file_id"], "file_shared")
+        self.assertEqual(len(state["ad_group_ids"]), 2)
+        self.assertEqual(len(state["ad_ids"]), 2)
+
+        delete_response = client.delete(f"/api/admin/adcopy/review-state/{snapshot_id}", headers=ADMIN_HEADERS)
+        self.assertEqual(delete_response.status_code, 200)
+
     def test_admin_adcopy_review_state_saves_current_review_snapshot(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()
