@@ -1886,6 +1886,41 @@ body.dev-console.modal-open {
   align-items: stretch;
 }
 
+.adcopy-preset-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #e1e8f2;
+  border-radius: var(--oa-radius-sm);
+  background: #fbfdff;
+  padding: 10px 12px;
+}
+
+.adcopy-preset-panel strong {
+  display: block;
+  color: var(--oa-ink);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-preset-panel span {
+  display: block;
+  margin-top: 3px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 224px;
+}
+
 .adcopy-landing-insight {
   border: 1px solid #c7dbef;
   border-left: 4px solid var(--oa-blue);
@@ -3296,6 +3331,15 @@ body.dev-console.modal-open {
 
   .input-with-action {
     grid-template-columns: 1fr;
+  }
+
+  .adcopy-preset-panel {
+    display: grid;
+  }
+
+  .adcopy-preset-actions {
+    justify-content: flex-start;
+    min-width: 0;
   }
 }
 
