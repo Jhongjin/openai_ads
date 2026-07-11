@@ -721,6 +721,10 @@
                           <i class="ti ti-file-spreadsheet"></i>
                           엑셀 흡수
                         </button>
+                        <button class="btn-secondary" type="button" id="download-adcopy-sample-workbook">
+                          <i class="ti ti-download"></i>
+                          샘플 XLSX
+                        </button>
                         <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
                           <i class="ti ti-x"></i>
                           비우기
@@ -3921,6 +3925,44 @@
         } finally {
           setButtonBusy(button, false);
           input.value = "";
+        }
+      }
+
+      async function downloadAdcopySampleWorkbook() {
+        const button = $("#download-adcopy-sample-workbook");
+        setButtonBusy(button, true, "준비 중...");
+        setStatus("adcopy-import-status", "샘플 검수 워크북을 준비하는 중입니다.");
+        setGlobalLoading(true, "샘플 검수 워크북을 다운로드하는 중입니다.");
+        try {
+          const response = await fetch("/api/admin/adcopy/sample-workbook", {
+            credentials: "same-origin",
+            headers: {
+              "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "x-admin-password": adminPassword,
+            },
+          });
+          if (!response.ok) {
+            const message = (await response.text()) || response.statusText || "샘플 워크북 다운로드에 실패했습니다.";
+            throw new Error(message);
+          }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "openai_ads_adcopy_review_sample.xlsx";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          setStatus("adcopy-import-status", "샘플 XLSX를 다운로드했습니다. 받은 파일을 그대로 업로드해 흡수·검수·리허설 흐름을 테스트할 수 있습니다.", "ok");
+        } catch (error) {
+          if (error instanceof TypeError) {
+            throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+          }
+          throw error;
+        } finally {
+          setGlobalLoading(false);
+          setButtonBusy(button, false);
         }
       }
 
@@ -8635,6 +8677,12 @@
       });
       $("#import-adcopy-workbook").addEventListener("click", () => {
         $("#adcopy-import-workbook").click();
+      });
+      $("#download-adcopy-sample-workbook").addEventListener("click", () => {
+        downloadAdcopySampleWorkbook().catch((error) => {
+          setStatus("adcopy-import-status", error.message, "error");
+          setStatus("adcopy-generator-status", error.message, "error");
+        });
       });
       $("#adcopy-import-workbook").addEventListener("change", (event) => {
         importAdcopyWorkbook(event.target.files?.[0]).catch((error) => {

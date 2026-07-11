@@ -107,6 +107,8 @@
 
 ## 엑셀 흡수
 
+`GET /api/admin/adcopy/sample-workbook`는 운영 테스트용 샘플 `review.xlsx`를 내려준다. 이 API는 파일 생성만 수행하며 OpenAI Ads 캠페인·광고그룹·소재를 생성하지 않는다.
+
 `POST /api/admin/adcopy/import-workbook`는 `review.xlsx` 파일을 업로드받아 외부 JSON 흡수와 동일한 `generated.json` 스키마로 정규화한다.
 
 지원 시트명:

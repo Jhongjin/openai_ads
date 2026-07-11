@@ -201,6 +201,25 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 403)
 
+    def test_admin_adcopy_sample_workbook_requires_admin_and_downloads_xlsx(self) -> None:
+        from openpyxl import load_workbook
+
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked = client.get("/api/admin/adcopy/sample-workbook")
+        self.assertEqual(blocked.status_code, 403)
+
+        response = client.get("/api/admin/adcopy/sample-workbook", headers=ADMIN_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("openai_ads_adcopy_review_sample.xlsx", response.headers.get("content-disposition", ""))
+        workbook = load_workbook(BytesIO(response.content), data_only=True, read_only=True)
+        try:
+            self.assertEqual(workbook.sheetnames, ["campaigns_검수", "adgroups_검수", "ads_검수"])
+            self.assertEqual(workbook["campaigns_검수"]["A2"].value, "campaign_name")
+            self.assertEqual(workbook["adgroups_검수"]["A2"].value, "adgroup_name")
+            self.assertEqual(workbook["ads_검수"]["A2"].value, "ad_name")
+        finally:
+            workbook.close()
+
     def test_admin_adcopy_import_normalizes_native_generated_json(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()

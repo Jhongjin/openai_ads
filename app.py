@@ -1031,6 +1031,59 @@ def _adcopy_workbook_dump(content: bytes, filename: str) -> dict[str, Any]:
     return {"file": filename, "sheets": sheets}
 
 
+def _adcopy_sample_workbook_bytes() -> bytes:
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    campaign_sheet = workbook.active
+    campaign_sheet.title = "campaigns_검수"
+    campaign_sheet.append(["OpenAI Ads AI 카피 생성기 샘플 워크북"])
+    campaign_sheet.append(["campaign_name", "advertiser_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"])
+    campaign_sheet.append(["샘플_초안_캠페인", "캐츠잉글리시", "150000", "total", "2026-07-20", "2026-08-02", "Views", "KR"])
+
+    adgroup_sheet = workbook.create_sheet("adgroups_검수")
+    adgroup_sheet.append(["광고그룹 검수 목록"])
+    adgroup_sheet.append(["adgroup_name", "keywords", "required_phrases", "검수상태"])
+    adgroup_sheet.append(["01_반복훈련", "초등 영어 앱, 영어 반복 학습, 파닉스, 학습 리포트, 집 공부", "", "확인 완료 검수"])
+    adgroup_sheet.append(["02_학부모설득", "초등 영어 학부모, 수준별 영어, 영어 습관, 학습 진단, 영어 자신감", "", "확인 완료 검수"])
+
+    ads_sheet = workbook.create_sheet("ads_검수")
+    ads_sheet.append(["소재 검수 목록"])
+    ads_sheet.append(["ad_name", "adgroup_name", "title", "copy", "link", "image_link", "검수상태"])
+    ads_sheet.append([
+        "AD_001",
+        "01_반복훈련",
+        "초등 영어 반복 루틴",
+        "매일 짧게 이어지는 영어 학습 흐름을 확인하세요",
+        "https://example.com/cats/landing",
+        "https://example.com/cats/image.png",
+        "확인 완료 검수",
+    ])
+    ads_sheet.append([
+        "AD_002",
+        "01_반복훈련",
+        "반복 학습 보류 소재",
+        "운영자가 제외한 소재는 draft 생성에서 제외됩니다",
+        "https://example.com/cats/landing",
+        "https://example.com/cats/excluded.png",
+        "사용 불가",
+    ])
+    ads_sheet.append([
+        "AD_003",
+        "02_학부모설득",
+        "학부모가 보는 영어",
+        "수준별 학습 리포트로 아이의 변화를 살펴보세요",
+        "https://example.com/cats/landing",
+        "https://example.com/cats/image.png",
+        "확인 완료 검수",
+    ])
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    return buffer.getvalue()
+
+
 def _adcopy_import_campaign_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
     rows = _adcopy_import_rows(source, ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS)
     if rows:
@@ -2517,6 +2570,17 @@ def admin_delete_adcopy_review_state(snapshot_id: str, request: Request) -> dict
         return delete_adcopy_review_snapshot(snapshot_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/adcopy/sample-workbook", include_in_schema=False)
+def admin_download_adcopy_sample_workbook(request: Request) -> StreamingResponse:
+    _require_admin(request)
+    filename = "openai_ads_adcopy_review_sample.xlsx"
+    return StreamingResponse(
+        BytesIO(_adcopy_sample_workbook_bytes()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/admin/adcopy/import-workbook", include_in_schema=False)
