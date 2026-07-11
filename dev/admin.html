@@ -1003,6 +1003,10 @@
                               <i class="ti ti-history"></i>
                               최근 기록
                             </button>
+                            <button class="btn-secondary btn-compact" type="button" id="download-adcopy-draft-audit">
+                              <i class="ti ti-file-spreadsheet"></i>
+                              기록 CSV
+                            </button>
                             <span class="tag" id="adcopy-draft-badge">대기</span>
                           </div>
                         </div>
@@ -4823,6 +4827,44 @@
           renderAdcopyDraftPanel();
           setStatus("adcopy-generator-status", `최근 draft 실행 기록 ${formatNumber(items.length)}건을 불러왔습니다.`, "ok");
         } finally {
+          setButtonBusy(button, false);
+        }
+      }
+
+      async function downloadAdcopyDraftAuditCsv() {
+        const button = $("#download-adcopy-draft-audit");
+        setButtonBusy(button, true, "준비 중...");
+        setGlobalLoading(true, "최근 draft 실행 기록 CSV를 다운로드하는 중입니다.");
+        try {
+          const response = await fetch("/api/admin/adcopy/draft-audit.csv?limit=50", {
+            credentials: "same-origin",
+            headers: {
+              "Accept": "text/csv",
+              "x-admin-password": adminPassword,
+            },
+          });
+          if (!response.ok) {
+            const message = (await response.text()) || response.statusText || "draft 실행 기록 CSV 다운로드에 실패했습니다.";
+            throw new Error(message);
+          }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+          link.href = url;
+          link.download = `openai_ads_adcopy_draft_audit_${stamp}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          setStatus("adcopy-generator-status", "최근 draft 실행 기록 50건 요약 CSV를 다운로드했습니다. 키 원문과 원본 payload는 포함하지 않습니다.", "ok");
+        } catch (error) {
+          if (error instanceof TypeError) {
+            throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+          }
+          throw error;
+        } finally {
+          setGlobalLoading(false);
           setButtonBusy(button, false);
         }
       }
@@ -8796,6 +8838,9 @@
       });
       $("#load-adcopy-draft-audit").addEventListener("click", () => {
         loadAdcopyDraftAuditLogs().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#download-adcopy-draft-audit").addEventListener("click", () => {
+        downloadAdcopyDraftAuditCsv().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#adcopy-export-mode").addEventListener("change", (event) => {
         const allowed = new Set(["all", "approved", "without_excluded"]);

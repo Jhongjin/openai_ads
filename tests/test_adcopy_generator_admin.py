@@ -662,6 +662,35 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(match["state"]["campaign_id"], "cmpn_audit")
         self.assertEqual(match["state"]["ad_group_count"], 1)
 
+    def test_admin_adcopy_draft_audit_csv_requires_admin_and_downloads_summary(self) -> None:
+        from admin_store import save_adcopy_draft_audit_log
+
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked = client.get("/api/admin/adcopy/draft-audit.csv")
+        self.assertEqual(blocked.status_code, 403)
+
+        campaign_name = f"CSV감사_{os.urandom(4).hex()}"
+        save_adcopy_draft_audit_log(
+            {
+                "advertiser_name": "동서식품",
+                "campaign_name": campaign_name,
+                "action": "upload_assets",
+                "status": "success",
+                "message": "이미지 업로드 완료",
+                "state": {"campaign_id": "cmpn_csv", "file_ids": {"img": "file_1"}, "ad_group_ids": {}, "ad_ids": {}},
+                "logs": [{"level": "success", "message": "이미지 파일 등록", "file_id": "file_1"}],
+            }
+        )
+
+        response = client.get("/api/admin/adcopy/draft-audit.csv?limit=10", headers=ADMIN_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response.headers.get("content-type", ""))
+        self.assertIn("openai_ads_adcopy_draft_audit_", response.headers.get("content-disposition", ""))
+        text = response.content.decode("utf-8-sig")
+        self.assertIn("생성일,광고주,캠페인,단계,상태", text)
+        self.assertIn(campaign_name, text)
+        self.assertIn("이미지 업로드 완료", text)
+
     def test_admin_adcopy_draft_execute_blocks_live_activation_by_default(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()

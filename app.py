@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 from datetime import datetime, timedelta, timezone
 import ipaddress
-from io import BytesIO
+from io import BytesIO, StringIO
 import json
 import os
 from pathlib import Path
@@ -2821,6 +2822,46 @@ def admin_list_adcopy_draft_audit(request: Request) -> dict[str, Any]:
     _require_admin(request)
     limit = int(request.query_params.get("limit") or 20)
     return list_adcopy_draft_audit_logs(limit=limit)
+
+
+@app.get("/api/admin/adcopy/draft-audit.csv", include_in_schema=False)
+def admin_download_adcopy_draft_audit_csv(request: Request) -> Response:
+    from admin_store import list_adcopy_draft_audit_logs
+
+    _require_admin(request)
+    limit = int(request.query_params.get("limit") or 50)
+    result = list_adcopy_draft_audit_logs(limit=limit)
+    output = StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["생성일", "광고주", "캠페인", "단계", "상태", "메시지", "캠페인 ID", "이미지 수", "광고그룹 수", "소재 수", "로그 요약"])
+    for item in result.get("items") or []:
+        state = item.get("state") or {}
+        log_summary = " | ".join(
+            str(log.get("message") or "").strip()
+            for log in (item.get("logs") or [])
+            if isinstance(log, dict) and str(log.get("message") or "").strip()
+        )
+        writer.writerow(
+            [
+                item.get("created_at") or "",
+                item.get("advertiser_name") or "",
+                item.get("campaign_name") or "",
+                item.get("action") or "",
+                item.get("status") or "",
+                item.get("message") or "",
+                state.get("campaign_id") or "",
+                state.get("file_count") or 0,
+                state.get("ad_group_count") or 0,
+                state.get("ad_count") or 0,
+                log_summary,
+            ]
+        )
+    filename = f"openai_ads_adcopy_draft_audit_{datetime.now(KST):%Y%m%d_%H%M}.csv"
+    return Response(
+        content="\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/api/admin/ads-api-keys/{advertiser_name}/reveal", include_in_schema=False)

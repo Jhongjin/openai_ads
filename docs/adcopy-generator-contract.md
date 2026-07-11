@@ -129,6 +129,8 @@
 
 `GET /api/admin/adcopy/draft-audit?limit=20`은 최근 draft 실행 기록을 조회한다. 실행 기록에는 광고주명, 캠페인명, 실행 단계, 상태, 생성된 객체 수 요약만 저장하며 Ads API 키, 원본 업로드 파일, 원문 payload는 저장하지 않는다.
 
+`GET /api/admin/adcopy/draft-audit.csv?limit=50`은 동일한 요약 데이터를 운영 공유용 CSV로 내려준다. CSV 역시 키 원문, 원본 업로드 파일, 원문 payload를 포함하지 않는다.
+
 실행 단계:
 
 0. Draft 리허설: read-only, 생성 없음
