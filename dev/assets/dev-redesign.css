@@ -1707,6 +1707,7 @@ body.dev-console.modal-open {
   grid-template-columns: minmax(520px, 1fr) minmax(360px, 520px);
   gap: 16px;
   align-items: start;
+  min-width: 0;
 }
 
 .adcopy-form,
@@ -1798,6 +1799,8 @@ body.dev-console.modal-open {
   top: 18px;
   display: grid;
   gap: 12px;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius);
   background: #fbfcff;
@@ -1865,12 +1868,16 @@ body.dev-console.modal-open {
 .adcopy-result-section {
   display: grid;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .adcopy-preview-list,
 .adcopy-validation-list {
   display: grid;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
   max-height: 460px;
   overflow: auto;
   padding-right: 2px;
@@ -1879,6 +1886,9 @@ body.dev-console.modal-open {
 .adcopy-group-card {
   display: grid;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius-sm);
   background: #fff;
@@ -1932,13 +1942,33 @@ body.dev-console.modal-open {
 }
 
 .adcopy-mini-table {
+  width: 100%;
+  table-layout: fixed;
   border-radius: var(--oa-radius-sm);
 }
 
 .adcopy-mini-table th,
 .adcopy-mini-table td {
+  min-width: 0;
   padding: 8px;
   font-size: 12px;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.adcopy-mini-table th:first-child,
+.adcopy-mini-table td:first-child {
+  width: 30%;
+}
+
+.adcopy-mini-table th:nth-child(2),
+.adcopy-mini-table td:nth-child(2) {
+  width: 32%;
+}
+
+.adcopy-mini-table th:nth-child(3),
+.adcopy-mini-table td:nth-child(3) {
+  width: 38%;
 }
 
 .adcopy-mini-table small {
@@ -1953,6 +1983,8 @@ body.dev-console.modal-open {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 9px;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius-sm);
   background: #fff;
@@ -1988,9 +2020,12 @@ body.dev-console.modal-open {
 }
 
 .adcopy-validation-item strong {
+  display: block;
+  min-width: 0;
   color: var(--oa-ink);
   font-size: 12px;
   font-weight: 950;
+  overflow-wrap: anywhere;
 }
 
 .adcopy-validation-item p {
@@ -1998,9 +2033,13 @@ body.dev-console.modal-open {
   color: var(--oa-muted);
   font-size: 12px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .adcopy-json-details {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--oa-line);
   border-radius: var(--oa-radius-sm);
   background: #fff;
@@ -2015,6 +2054,9 @@ body.dev-console.modal-open {
 }
 
 .adcopy-json-details pre {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   max-height: 360px;
   margin: 0;
   border-top: 1px solid var(--oa-line);
@@ -2024,6 +2066,7 @@ body.dev-console.modal-open {
   padding: 12px;
   font-size: 12px;
   line-height: 1.55;
+  white-space: pre;
 }
 
 .performance-surface .surface-head {
