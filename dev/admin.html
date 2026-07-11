@@ -725,6 +725,10 @@
                           <i class="ti ti-download"></i>
                           샘플 XLSX
                         </button>
+                        <button class="btn-secondary" type="button" id="import-adcopy-sample-workbook">
+                          <i class="ti ti-flask"></i>
+                          샘플 바로 흡수
+                        </button>
                         <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
                           <i class="ti ti-x"></i>
                           비우기
@@ -3883,8 +3887,8 @@
         }
       }
 
-      async function importAdcopyWorkbook(file) {
-        const button = $("#import-adcopy-workbook");
+      async function importAdcopyWorkbook(file, options = {}) {
+        const button = options.button || $("#import-adcopy-workbook");
         const input = $("#adcopy-import-workbook");
         const selectedFile = file || input.files?.[0];
         if (!selectedFile) {
@@ -3962,6 +3966,35 @@
           throw error;
         } finally {
           setGlobalLoading(false);
+          setButtonBusy(button, false);
+        }
+      }
+
+      async function importAdcopySampleWorkbook() {
+        const button = $("#import-adcopy-sample-workbook");
+        setButtonBusy(button, true, "흡수 중...");
+        setStatus("adcopy-import-status", "샘플 검수 워크북을 받아 즉시 흡수하는 중입니다.");
+        try {
+          const response = await fetch("/api/admin/adcopy/sample-workbook", {
+            credentials: "same-origin",
+            headers: {
+              "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "x-admin-password": adminPassword,
+            },
+          });
+          if (!response.ok) {
+            const message = (await response.text()) || response.statusText || "샘플 워크북을 불러오지 못했습니다.";
+            throw new Error(message);
+          }
+          const blob = await response.blob();
+          const sampleFile = new File([blob], "openai_ads_adcopy_review_sample.xlsx", { type: blob.type });
+          await importAdcopyWorkbook(sampleFile, { button });
+        } catch (error) {
+          if (error instanceof TypeError) {
+            throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+          }
+          throw error;
+        } finally {
           setButtonBusy(button, false);
         }
       }
@@ -8680,6 +8713,12 @@
       });
       $("#download-adcopy-sample-workbook").addEventListener("click", () => {
         downloadAdcopySampleWorkbook().catch((error) => {
+          setStatus("adcopy-import-status", error.message, "error");
+          setStatus("adcopy-generator-status", error.message, "error");
+        });
+      });
+      $("#import-adcopy-sample-workbook").addEventListener("click", () => {
+        importAdcopySampleWorkbook().catch((error) => {
           setStatus("adcopy-import-status", error.message, "error");
           setStatus("adcopy-generator-status", error.message, "error");
         });

@@ -354,6 +354,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn('id="adcopy-import-workbook"', admin)
         self.assertIn('id="import-adcopy-workbook"', admin)
         self.assertIn('id="download-adcopy-sample-workbook"', admin)
+        self.assertIn('id="import-adcopy-sample-workbook"', admin)
+        self.assertIn("샘플 바로 흡수", admin)
         self.assertIn('id="clear-adcopy-import-json"', admin)
         self.assertIn('id="adcopy-review-snapshot-select"', admin)
         self.assertIn('id="refresh-adcopy-review-snapshots"', admin)
