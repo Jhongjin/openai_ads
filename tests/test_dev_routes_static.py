@@ -357,6 +357,8 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("adcopyFindingAdIndex", admin)
         self.assertIn("focusAdcopyCreative", admin)
         self.assertIn("data-adcopy-focus-index", admin)
+        self.assertIn("setAdcopyFieldIssue", admin)
+        self.assertIn("focusFirstAdcopyFieldIssue", admin)
         self.assertIn("validateEditedAdcopy", admin)
         self.assertIn("downloadAdcopyJson", admin)
         self.assertIn("downloadAdcopyCreativeCsv", admin)

@@ -3485,17 +3485,75 @@
       }
 
       function validateAdcopyPayload(payload) {
-        const missing = [];
-        if (!payload.advertiser_name) missing.push("광고주명");
-        if (!payload.campaign_name) missing.push("캠페인명");
-        if (!payload.product_name) missing.push("제품·서비스명");
-        if (!payload.landing_url) missing.push("랜딩 URL");
-        if (!payload.image_link) missing.push("이미지 URL");
-        if (missing.length) throw new Error(`${missing.join(", ")}을 입력해 주세요.`);
-        if (!/^https?:\/\//i.test(payload.landing_url)) throw new Error("랜딩 URL은 http 또는 https 주소여야 합니다.");
-        if (!/^https?:\/\//i.test(payload.image_link)) throw new Error("이미지 URL은 http 또는 https 주소여야 합니다.");
-        if (payload.adgroup_count < 1 || payload.adgroup_count > 12) throw new Error("광고그룹 수는 1~12 사이로 입력해 주세요.");
-        if (payload.ads_per_adgroup < 1 || payload.ads_per_adgroup > 8) throw new Error("그룹당 소재 수는 1~8 사이로 입력해 주세요.");
+        clearAdcopyFieldIssues();
+        const issues = [];
+        const requireValue = (selector, label, value) => {
+          if (!value) issues.push({ selector, message: `${label}을 입력해 주세요.` });
+        };
+        requireValue("#adcopy-advertiser-name", "광고주명", payload.advertiser_name);
+        requireValue("#adcopy-campaign-name", "캠페인명", payload.campaign_name);
+        requireValue("#adcopy-product-name", "제품·서비스명", payload.product_name);
+        requireValue("#adcopy-landing-url", "랜딩 URL", payload.landing_url);
+        requireValue("#adcopy-image-link", "이미지 URL", payload.image_link);
+        if (payload.landing_url && !/^https?:\/\//i.test(payload.landing_url)) {
+          issues.push({ selector: "#adcopy-landing-url", message: "http 또는 https 주소로 입력해 주세요." });
+        }
+        if (payload.image_link && !/^https?:\/\//i.test(payload.image_link)) {
+          issues.push({ selector: "#adcopy-image-link", message: "http 또는 https 주소로 입력해 주세요." });
+        }
+        if (payload.adgroup_count < 1 || payload.adgroup_count > 12) {
+          issues.push({ selector: "#adcopy-adgroup-count", message: "1~12 사이로 입력해 주세요." });
+        }
+        if (payload.ads_per_adgroup < 1 || payload.ads_per_adgroup > 8) {
+          issues.push({ selector: "#adcopy-ads-per-adgroup", message: "1~8 사이로 입력해 주세요." });
+        }
+        if (issues.length) {
+          issues.forEach(({ selector, message }) => setAdcopyFieldIssue(selector, message));
+          focusFirstAdcopyFieldIssue();
+          throw new Error(issues.length === 1 ? issues[0].message : `입력값 ${formatNumber(issues.length)}개를 확인해 주세요.`);
+        }
+      }
+
+      function setAdcopyFieldIssue(selector, message) {
+        const node = $(selector);
+        if (!node) return;
+        const field = node.closest(".field") || node.parentElement;
+        if (!field) return;
+        field.classList.add("has-error");
+        let messageNode = field.querySelector("[data-adcopy-field-error]");
+        if (!messageNode) {
+          messageNode = document.createElement("p");
+          messageNode.className = "field-error";
+          messageNode.dataset.adcopyFieldError = "1";
+          field.appendChild(messageNode);
+        }
+        messageNode.textContent = message;
+        node.setAttribute("aria-invalid", "true");
+      }
+
+      function clearAdcopyFieldIssue(target) {
+        const field = target?.closest?.(".field");
+        if (!field) return;
+        field.classList.remove("has-error");
+        field.querySelector("[data-adcopy-field-error]")?.remove();
+        target.removeAttribute("aria-invalid");
+      }
+
+      function clearAdcopyFieldIssues() {
+        $$("#adcopy-generator-form .field.has-error").forEach((field) => {
+          field.classList.remove("has-error");
+          field.querySelector("[data-adcopy-field-error]")?.remove();
+        });
+        $$("#adcopy-generator-form [aria-invalid='true']").forEach((node) => node.removeAttribute("aria-invalid"));
+      }
+
+      function focusFirstAdcopyFieldIssue() {
+        const target = $("#adcopy-generator-form [aria-invalid='true']");
+        if (!target) return;
+        window.requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          target.focus({ preventScroll: true });
+        });
       }
 
       function adcopyAppendUniqueText(selector, lines) {
@@ -7336,8 +7394,14 @@
       $("#inspect-adcopy-landing").addEventListener("click", () => {
         inspectAdcopyLanding().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
-      $("#adcopy-generator-form").addEventListener("input", renderAdcopyBriefMeter);
-      $("#adcopy-generator-form").addEventListener("change", renderAdcopyBriefMeter);
+      $("#adcopy-generator-form").addEventListener("input", (event) => {
+        clearAdcopyFieldIssue(event.target);
+        renderAdcopyBriefMeter();
+      });
+      $("#adcopy-generator-form").addEventListener("change", (event) => {
+        clearAdcopyFieldIssue(event.target);
+        renderAdcopyBriefMeter();
+      });
       $("#adcopy-generator-form").addEventListener("click", (event) => {
         const button = event.target.closest("[data-adcopy-preset]");
         if (!button) return;
