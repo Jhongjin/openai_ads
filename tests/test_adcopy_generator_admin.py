@@ -5,6 +5,7 @@ import os
 import unittest
 from unittest.mock import AsyncMock, patch
 
+import httpx
 from fastapi.testclient import TestClient
 
 from app import app
@@ -861,9 +862,10 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
     def test_admin_adcopy_draft_execute_requires_confirm_for_mutation(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         generated = generated_payload()
+        campaign_name = f"확인누락_{os.urandom(4).hex()}"
         generated["campaigns"] = [
             {
-                "campaign_name": "01_학습자료",
+                "campaign_name": campaign_name,
                 "budget_max": 100000,
                 "budget_type": "total",
                 "launch_date": "2026-07-01",
@@ -888,6 +890,50 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("실행 확인", response.json()["detail"])
+        audit_response = client.get("/api/admin/adcopy/draft-audit?limit=10", headers=ADMIN_HEADERS)
+        self.assertEqual(audit_response.status_code, 200)
+        audit_item = next(item for item in audit_response.json()["items"] if item["campaign_name"] == campaign_name)
+        self.assertEqual(audit_item["status"], "error")
+        self.assertIn("실행 확인", audit_item["message"])
+
+    def test_admin_adcopy_draft_execute_audits_ads_api_errors(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        campaign_name = f"API오류_{os.urandom(4).hex()}"
+        generated["campaigns"] = [
+            {
+                "campaign_name": campaign_name,
+                "budget_max": 100000,
+                "budget_type": "total",
+                "launch_date": "2026-07-01",
+                "end_date": "2026-07-03",
+                "objective": "Views",
+                "target_countries": ["KR"],
+            }
+        ]
+        request = httpx.Request("POST", "https://api.ads.openai.com/v1/campaigns")
+        response = httpx.Response(403, json={"error": {"message": "test ads api blocked"}}, request=request)
+        error = httpx.HTTPStatusError("blocked", request=request, response=response)
+
+        with patch("admin_store.get_ads_api_key_credential", return_value={"api_key": "sk-test", "industry": "교육"}):
+            with patch("app._ads_draft_api_request", AsyncMock(side_effect=error)):
+                draft_response = client.post(
+                    "/api/admin/adcopy/draft-execute",
+                    json={
+                        "advertiser_name": "캐츠잉글리시",
+                        "generated": generated,
+                        "action": "create_campaign",
+                        "confirm": True,
+                    },
+                    headers=ADMIN_HEADERS,
+                )
+
+        self.assertEqual(draft_response.status_code, 502)
+        self.assertIn("test ads api blocked", draft_response.json()["detail"])
+        audit_response = client.get("/api/admin/adcopy/draft-audit?limit=10", headers=ADMIN_HEADERS)
+        audit_item = next(item for item in audit_response.json()["items"] if item["campaign_name"] == campaign_name)
+        self.assertEqual(audit_item["status"], "error")
+        self.assertIn("test ads api blocked", audit_item["message"])
 
     def test_admin_adcopy_draft_execute_creates_campaign_paused(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)

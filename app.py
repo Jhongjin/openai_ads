@@ -2682,23 +2682,41 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"{payload.advertiser_name}의 활성 Ads API 키가 필요합니다.")
     plan = _build_adcopy_draft_plan(payload)
 
-    if action == "verify_account":
-        account = await fetch_ad_account_metadata(api_key)
-        state["account_verified_at"] = datetime.now(KST).isoformat()
+    def record_draft_audit(status: str, message: str, audit_logs: list[dict[str, Any]]) -> dict[str, Any] | None:
         audit = save_adcopy_draft_audit_log(
             {
                 "advertiser_name": payload.advertiser_name,
                 "campaign_name": str((plan.get("campaign") or {}).get("name") or ""),
                 "action": action,
-                "status": "success" if account.get("ok") is not False else "warning",
-                "message": "광고주 계정 확인을 완료했습니다.",
+                "status": status,
+                "message": message,
                 "state": state,
-                "logs": [{"level": "success" if account.get("ok") is not False else "warning", "message": "광고주 계정 확인"}],
+                "logs": audit_logs,
             }
         )
-        return {"ok": True, "action": action, "plan": plan, "state": state, "account": account, "audit_log": audit.get("item")}
+        return audit.get("item")
+
+    if action == "verify_account":
+        try:
+            account = await fetch_ad_account_metadata(api_key)
+        except httpx.HTTPStatusError as exc:
+            message = _ads_api_error_detail(exc)
+            record_draft_audit("error", message, [{"level": "error", "message": message}])
+            raise HTTPException(status_code=502, detail=message) from exc
+        state["account_verified_at"] = datetime.now(KST).isoformat()
+        audit_log = record_draft_audit(
+            "success" if account.get("ok") is not False else "warning",
+            "광고주 계정 확인을 완료했습니다.",
+            [{"level": "success" if account.get("ok") is not False else "warning", "message": "광고주 계정 확인"}],
+        )
+        return {"ok": True, "action": action, "plan": plan, "state": state, "account": account, "audit_log": audit_log}
 
     if not payload.confirm:
+        record_draft_audit(
+            "error",
+            "실행 확인이 없어 draft 단계를 진행하지 않았습니다.",
+            [{"level": "error", "message": "실행 확인 누락"}],
+        )
         raise HTTPException(status_code=400, detail="실행 확인이 필요합니다. 각 단계는 운영자 확인 후에만 진행됩니다.")
 
     logs: list[dict[str, Any]] = []
@@ -2797,22 +2815,26 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
             state["activated_at"] = datetime.now(KST).isoformat()
 
     except httpx.HTTPStatusError as exc:
-        raise HTTPException(status_code=502, detail=_ads_api_error_detail(exc)) from exc
+        message = _ads_api_error_detail(exc)
+        record_draft_audit(
+            "error",
+            message,
+            logs + [{"level": "error", "message": message}],
+        )
+        raise HTTPException(status_code=502, detail=message) from exc
+    except HTTPException as exc:
+        message = str(exc.detail or "draft 실행 중 오류가 발생했습니다.")
+        record_draft_audit(
+            "error",
+            message,
+            logs + [{"level": "error", "message": message}],
+        )
+        raise
 
     state["last_action"] = action
     state["updated_at"] = datetime.now(KST).isoformat()
-    audit = save_adcopy_draft_audit_log(
-        {
-            "advertiser_name": payload.advertiser_name,
-            "campaign_name": str((plan.get("campaign") or {}).get("name") or ""),
-            "action": action,
-            "status": "success",
-            "message": f"{action} 단계를 완료했습니다.",
-            "state": state,
-            "logs": logs,
-        }
-    )
-    return {"ok": True, "action": action, "plan": plan, "state": state, "logs": logs, "audit_log": audit.get("item")}
+    audit_log = record_draft_audit("success", f"{action} 단계를 완료했습니다.", logs)
+    return {"ok": True, "action": action, "plan": plan, "state": state, "logs": logs, "audit_log": audit_log}
 
 
 @app.get("/api/admin/adcopy/draft-audit", include_in_schema=False)

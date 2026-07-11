@@ -131,6 +131,8 @@
 
 `GET /api/admin/adcopy/draft-audit.csv?limit=50`은 동일한 요약 데이터를 운영 공유용 CSV로 내려준다. CSV 역시 키 원문, 원본 업로드 파일, 원문 payload를 포함하지 않는다.
 
+성공, 주의, 실패 상태를 모두 기록한다. 실행 확인 누락, OpenAI Ads API 오류, 단계 순서 오류도 실패 감사 로그로 남겨 운영자가 최근 기록과 CSV에서 추적할 수 있다.
+
 실행 단계:
 
 0. Draft 리허설: read-only, 생성 없음
