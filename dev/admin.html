@@ -914,6 +914,16 @@
                               <button type="button" data-adcopy-preview-filter="warning" disabled>주의</button>
                               <button type="button" data-adcopy-preview-filter="error" disabled>오류</button>
                             </div>
+                            <label class="adcopy-review-filter">
+                              <span>운영 상태</span>
+                              <select id="adcopy-review-filter" disabled>
+                                <option value="all">운영 전체</option>
+                                <option value="pending">미검수</option>
+                                <option value="approved">승인</option>
+                                <option value="revise">수정 필요</option>
+                                <option value="excluded">제외</option>
+                              </select>
+                            </label>
                             <div class="adcopy-bulk-actions">
                               <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" disabled>
                                 <i class="ti ti-wand"></i>
@@ -1530,6 +1540,7 @@
       };
       let adcopyLastResult = null;
       let adcopyPreviewFilter = "all";
+      let adcopyReviewFilter = "all";
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -3963,6 +3974,7 @@
         $("#adcopy-landing-insight").innerHTML = "";
         adcopyLastResult = null;
         adcopyPreviewFilter = "all";
+        adcopyReviewFilter = "all";
         $("#copy-adcopy-json").disabled = true;
         $("#download-adcopy-json").disabled = true;
         $("#download-adcopy-csv").disabled = true;
@@ -4235,6 +4247,11 @@
             }
           }
           syncAdcopyJsonPreview();
+          if (field === "validation_status") {
+            renderAdcopyPreviewList(adcopyLastResult.generated, adcopyLastResult.validation_report);
+          } else {
+            renderAdcopyReviewFilter(adcopyLastResult.generated);
+          }
           return;
         }
         const index = Number(target.dataset.adIndex);
@@ -4283,9 +4300,58 @@
         });
       }
 
+      function adcopyReviewFilterValue(status) {
+        if (status === "승인") return "approved";
+        if (status === "수정 필요") return "revise";
+        if (status === "제외") return "excluded";
+        return "pending";
+      }
+
+      function adcopyReviewFilterCounts(result) {
+        return (result?.ads || []).reduce((counts, ad) => {
+          const value = adcopyReviewFilterValue(adcopyTrace(ad).validation_status);
+          counts.all += 1;
+          counts[value] += 1;
+          return counts;
+        }, { all: 0, pending: 0, approved: 0, revise: 0, excluded: 0 });
+      }
+
+      function renderAdcopyReviewFilter(result) {
+        const select = $("#adcopy-review-filter");
+        if (!select) return;
+        const labels = {
+          all: "운영 전체",
+          pending: "미검수",
+          approved: "승인",
+          revise: "수정 필요",
+          excluded: "제외",
+        };
+        const counts = adcopyReviewFilterCounts(result);
+        select.disabled = !result;
+        if (!Object.prototype.hasOwnProperty.call(labels, adcopyReviewFilter)) {
+          adcopyReviewFilter = "all";
+        }
+        select.value = adcopyReviewFilter;
+        Array.from(select.options).forEach((option) => {
+          const value = option.value || "all";
+          option.textContent = `${labels[value] || value} ${formatNumber(counts[value] || 0)}`;
+        });
+      }
+
+      function adcopyReviewStatusMatches(ad, filter) {
+        if (filter === "all") return true;
+        return adcopyReviewFilterValue(adcopyTrace(ad).validation_status) === filter;
+      }
+
       function setAdcopyPreviewFilter(filter) {
         const allowed = new Set(["all", "issue", "warning", "error"]);
         adcopyPreviewFilter = allowed.has(filter) ? filter : "all";
+        renderAdcopyPreviewList(adcopyLastResult?.generated || null, adcopyLastResult?.validation_report || null);
+      }
+
+      function setAdcopyReviewFilter(filter) {
+        const allowed = new Set(["all", "pending", "approved", "revise", "excluded"]);
+        adcopyReviewFilter = allowed.has(filter) ? filter : "all";
         renderAdcopyPreviewList(adcopyLastResult?.generated || null, adcopyLastResult?.validation_report || null);
       }
 
@@ -4306,6 +4372,7 @@
       function resetAdcopyReviewStatus() {
         const ads = adcopyLastResult?.generated?.ads || [];
         if (!ads.length) return;
+        adcopyReviewFilter = "all";
         ads.forEach((ad) => {
           const trace = adcopyTrace(ad);
           trace.validation_status = "운영 검수 필요";
@@ -4331,6 +4398,7 @@
       function focusAdcopyCreative(index, field = "title") {
         if (!adcopyLastResult?.generated?.ads?.[index]) return;
         adcopyPreviewFilter = "all";
+        adcopyReviewFilter = "all";
         renderAdcopyPreviewList(adcopyLastResult.generated, adcopyLastResult.validation_report);
         renderAdcopyValidationList(adcopyLastResult.validation_report);
         window.requestAnimationFrame(() => {
@@ -4349,6 +4417,7 @@
       function renderAdcopyPreviewList(result, report) {
         const root = $("#adcopy-preview-list");
         renderAdcopyPreviewFilters(result, report);
+        renderAdcopyReviewFilter(result);
         if (!result) {
           root.innerHTML = '<div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
           return;
@@ -4371,6 +4440,7 @@
               const check = checksByAd.get(ad.ad_name || "") || {};
               const status = check.status || "pass";
               if (!adcopyPreviewStatusMatches(status, adcopyPreviewFilter)) return "";
+              if (!adcopyReviewStatusMatches(ad, adcopyReviewFilter)) return "";
               const issues = (check.issues || []).slice(0, 2);
               const label = status === "error" ? "오류" : (status === "warning" ? "주의" : "양호");
               const issueText = issues.map((issue) => issue.message).join(" · ");
@@ -4392,7 +4462,7 @@
               `;
             })()}
           `).join("").trim();
-          if (adcopyPreviewFilter !== "all" && !rows) return "";
+          if ((adcopyPreviewFilter !== "all" || adcopyReviewFilter !== "all") && !rows) return "";
           return `
             <article class="adcopy-group-card">
               <div class="adcopy-group-head">
@@ -4457,6 +4527,7 @@
           });
           adcopyLastResult = data;
           adcopyPreviewFilter = "all";
+          adcopyReviewFilter = "all";
           renderAdcopyResult(data);
           setStatus("adcopy-generator-status", data.ok ? "초안 생성과 자동 검수를 완료했습니다." : "초안 생성 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
@@ -7761,6 +7832,9 @@
       });
       $$("[data-adcopy-preview-filter]").forEach((button) => {
         button.addEventListener("click", () => setAdcopyPreviewFilter(button.dataset.adcopyPreviewFilter || "all"));
+      });
+      $("#adcopy-review-filter").addEventListener("change", (event) => {
+        setAdcopyReviewFilter(event.target.value || "all");
       });
       $("#adcopy-preview-list").addEventListener("input", handleAdcopyEdit);
       $("#adcopy-preview-list").addEventListener("change", handleAdcopyEdit);

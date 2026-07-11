@@ -2240,6 +2240,45 @@ body.dev-console.modal-open {
   gap: 4px;
 }
 
+.adcopy-review-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  border: 1px solid #dfe7f1;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 8px 0 10px;
+  color: var(--oa-muted);
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.adcopy-review-filter span {
+  color: #64748b;
+}
+
+.adcopy-review-filter select {
+  height: 26px;
+  min-width: 116px;
+  border: 0;
+  background: transparent;
+  color: var(--oa-navy);
+  font: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.adcopy-review-filter:has(select:disabled) {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.adcopy-review-filter select:disabled {
+  cursor: not-allowed;
+}
+
 .adcopy-bulk-actions {
   display: inline-flex;
   flex-wrap: wrap;
@@ -3632,7 +3671,8 @@ body.dev-console.modal-open {
     justify-content: flex-start;
   }
 
-  .adcopy-preview-filter {
+  .adcopy-preview-filter,
+  .adcopy-review-filter {
     justify-content: flex-start;
   }
 }
