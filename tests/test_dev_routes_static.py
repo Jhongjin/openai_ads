@@ -8,6 +8,14 @@ from app import app
 
 
 class DevRoutesStaticTests(unittest.TestCase):
+    def test_favicon_request_is_silent(self) -> None:
+        client = TestClient(app)
+
+        response = client.get("/favicon.ico")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.text, "")
+
     def test_dev_redesign_routes_are_available(self) -> None:
         client = TestClient(app)
 
@@ -170,6 +178,12 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("pixel_step6_event_list", home)
         self.assertIn("GTM 컨테이너 ID", home)
         self.assertIn('id="admin-app"', admin)
+        self.assertIn("loadedAdminViews = new Set()", admin)
+        self.assertIn("ensureAdsKeysLoaded", admin)
+        self.assertIn("ensureAdcopyReviewSnapshotsLoaded", admin)
+        self.assertIn("loadAdminViewData", admin)
+        self.assertIn("await loadAdminViewData(currentView, { force: true })", admin)
+        self.assertNotIn("await Promise.allSettled([", admin)
         self.assertIn('data-admin-view="menuSettings"', admin)
         self.assertIn('id="admin-view-menuSettings"', admin)
         self.assertIn('id="menu-settings-form"', admin)

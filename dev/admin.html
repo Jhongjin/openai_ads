@@ -1534,6 +1534,7 @@
         : JSON.parse(JSON.stringify(defaultMenuSettings));
       let menuSettingsLoaded = false;
       let currentView = "analytics";
+      let loadedAdminViews = new Set();
       let visitChart = null;
       let visitPieChart = null;
       let openQuestionCategory = null;
@@ -1541,6 +1542,7 @@
       const QUESTION_CATEGORY_PAGE_SIZE = 6;
       let activeGuideDeck = "advertiser";
       let adsKeyItems = [];
+      let adsKeysLoaded = false;
       let adsKeyPage = 1;
       let adsKeyQuery = "";
       let adsKeySort = "asc";
@@ -1677,6 +1679,7 @@
       let adcopyDraftLogs = [];
       let adcopyDraftRunningAction = "";
       let adcopyReviewSnapshots = [];
+      let adcopyReviewSnapshotsLoaded = false;
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -3621,6 +3624,7 @@
       async function loadAdsKeys() {
         const data = await adminFetch("/api/admin/ads-api-keys");
         adsKeyItems = Array.isArray(data.items) ? data.items : [];
+        adsKeysLoaded = true;
         adsKeyPage = 1;
         renderAdsKeyRows();
         renderPerformanceAdvertiserSelect();
@@ -5004,6 +5008,7 @@
           loadingMessage: "검수 저장본을 불러오는 중입니다.",
         });
         adcopyReviewSnapshots = Array.isArray(data.items) ? data.items : [];
+        adcopyReviewSnapshotsLoaded = true;
         renderAdcopyReviewSnapshots();
         const storage = data.storage === "memory" ? "메모리 임시 저장소" : "저장소";
         setStatus(
@@ -8417,40 +8422,51 @@
         await loadManualRagItems();
       }
 
-      async function refreshCurrent() {
-        if (currentView === "analytics") await loadAnalytics();
-        if (currentView === "notice") await loadNotice();
-        if (currentView === "guides") await loadGuides();
-        if (currentView === "menuSettings") await loadMenuSettings();
-        if (currentView === "ads") await loadAdsKeys();
-        if (currentView === "performance") {
-          await loadAdsKeys();
+      async function ensureAdsKeysLoaded(force = false) {
+        if (!force && adsKeysLoaded) return;
+        await loadAdsKeys();
+      }
+
+      async function ensureAdcopyReviewSnapshotsLoaded(force = false) {
+        if (!force && adcopyReviewSnapshotsLoaded) {
+          renderAdcopyReviewSnapshots();
+          return;
+        }
+        await loadAdcopyReviewSnapshots();
+      }
+
+      async function loadAdminViewData(name = currentView, { force = false } = {}) {
+        if (!force && loadedAdminViews.has(name)) return;
+        if (name === "analytics") await loadAnalytics();
+        if (name === "notice") await loadNotice();
+        if (name === "guides") await loadGuides();
+        if (name === "menuSettings") await loadMenuSettings();
+        if (name === "ads") await ensureAdsKeysLoaded(force);
+        if (name === "adcopyGenerator") {
+          await ensureAdsKeysLoaded(force);
+          await ensureAdcopyReviewSnapshotsLoaded(force);
+        }
+        if (name === "performance") {
+          await ensureAdsKeysLoaded(force);
           await loadPerformanceDashboard();
         }
-        if (currentView === "official") await loadOfficialChanges();
-        if (currentView === "mail") await loadMailReview();
-        if (currentView === "faqManager") await loadFaqAdmin();
-        if (currentView === "campaignIntakes") await loadCampaignIntakes();
-        if (currentView === "manualRag") await loadManualRagItems();
+        if (name === "official") await loadOfficialChanges();
+        if (name === "mail") await loadMailReview();
+        if (name === "faqManager") await loadFaqAdmin();
+        if (name === "campaignIntakes") await loadCampaignIntakes();
+        if (name === "manualRag") await loadManualRagItems();
+        loadedAdminViews.add(name);
+      }
+
+      async function refreshCurrent() {
+        await loadAdminViewData(currentView, { force: true });
       }
 
       async function bootstrap() {
         $("#login-panel").hidden = true;
         $("#admin-app").hidden = false;
-        await Promise.allSettled([
-          loadAnalytics(),
-          loadNotice(),
-          loadGuides(),
-          loadMenuSettings(),
-          loadAdsKeys(),
-          loadOfficialChanges(),
-          loadMailReview(),
-          loadFaqAdmin(),
-          loadCampaignIntakes(),
-          loadManualRagItems(),
-          loadAdcopyReviewSnapshots(),
-        ]);
-        await loadPerformanceDashboard().catch((error) => setStatus("performance-status", error.message, "error"));
+        loadedAdminViews = new Set();
+        await loadAdminViewData(currentView, { force: true });
       }
 
       $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
