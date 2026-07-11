@@ -2240,6 +2240,7 @@ body.dev-console.modal-open {
   gap: 4px;
 }
 
+.adcopy-export-filter,
 .adcopy-review-filter {
   display: inline-flex;
   align-items: center;
@@ -2255,10 +2256,18 @@ body.dev-console.modal-open {
   white-space: nowrap;
 }
 
+.adcopy-export-filter {
+  min-height: 36px;
+  border-radius: 8px;
+  padding-inline: 10px 8px;
+}
+
+.adcopy-export-filter span,
 .adcopy-review-filter span {
   color: #64748b;
 }
 
+.adcopy-export-filter select,
 .adcopy-review-filter select {
   height: 26px;
   min-width: 116px;
@@ -2270,11 +2279,17 @@ body.dev-console.modal-open {
   cursor: pointer;
 }
 
+.adcopy-export-filter select {
+  min-width: 96px;
+}
+
+.adcopy-export-filter:has(select:disabled),
 .adcopy-review-filter:has(select:disabled) {
   cursor: not-allowed;
   opacity: .5;
 }
 
+.adcopy-export-filter select:disabled,
 .adcopy-review-filter select:disabled {
   cursor: not-allowed;
 }
