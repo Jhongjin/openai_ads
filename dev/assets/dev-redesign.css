@@ -1879,6 +1879,38 @@ body.dev-console.modal-open {
   font-weight: 850;
 }
 
+.inline-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.adcopy-landing-insight {
+  border: 1px solid #c7dbef;
+  border-left: 4px solid var(--oa-blue);
+  border-radius: var(--oa-radius-sm);
+  background: #f7fbff;
+  padding: 11px 12px;
+}
+
+.adcopy-landing-insight strong {
+  display: block;
+  color: var(--oa-blue);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-landing-insight p,
+.adcopy-landing-insight small {
+  display: block;
+  margin: 5px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .adcopy-preview {
   position: sticky;
   top: 18px;

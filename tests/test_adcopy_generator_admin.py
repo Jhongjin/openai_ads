@@ -190,6 +190,52 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertIn("title_len_recommended", warning_rules)
         self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
 
+    def test_admin_adcopy_landing_inspect_requires_admin_password(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post("/api/admin/adcopy/inspect-landing", json={"landing_url": "https://example.com"})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_adcopy_landing_inspect_extracts_public_metadata(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        html = """
+        <html>
+          <head>
+            <title>카누 디카페인 캡슐</title>
+            <meta property="og:title" content="카누 디카페인 캡슐 커피">
+            <meta name="description" content="부드러운 캐러멜 향과 돌체구스토 호환 캡슐">
+            <meta property="og:image" content="/image.jpg">
+          </head>
+        </html>
+        """
+        mocked_fetch = AsyncMock(return_value=(html, "https://example.com/product"))
+
+        with patch("app._fetch_landing_html", mocked_fetch):
+            response = client.post(
+                "/api/admin/adcopy/inspect-landing",
+                json={"landing_url": "https://example.com/product"},
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["metadata"]["title"], "카누 디카페인 캡슐 커피")
+        self.assertIn("돌체구스토 호환", body["metadata"]["description"])
+        self.assertEqual(body["metadata"]["image_url"], "https://example.com/image.jpg")
+
+    def test_admin_adcopy_landing_inspect_rejects_private_ip_url(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post(
+            "/api/admin/adcopy/inspect-landing",
+            json={"landing_url": "http://127.0.0.1:8000/private"},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()

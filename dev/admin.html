@@ -791,13 +791,20 @@
                         <div class="grid-2">
                           <label class="field">
                             <span class="field-label">랜딩 URL <em class="required-mark">*</em></span>
-                            <input class="control" id="adcopy-landing-url" type="url" required placeholder="https://..." />
+                            <span class="inline-control">
+                              <input class="control" id="adcopy-landing-url" type="url" required placeholder="https://..." />
+                              <button class="btn-secondary btn-compact" type="button" id="inspect-adcopy-landing">
+                                <i class="ti ti-world-search"></i>
+                                랜딩 읽기
+                              </button>
+                            </span>
                           </label>
                           <label class="field">
                             <span class="field-label">이미지 URL <em class="required-mark">*</em></span>
                             <input class="control" id="adcopy-image-link" type="url" required placeholder="https://..." />
                           </label>
                         </div>
+                        <div class="adcopy-landing-insight" id="adcopy-landing-insight" hidden></div>
                         <label class="field">
                           <span class="field-label">핵심 소구점</span>
                           <textarea class="textarea" id="adcopy-selling-points" placeholder="혜택, 차별점, 가격, 이용 조건, 주의해야 할 표현 등을 문장으로 정리해 주세요."></textarea>
@@ -3462,6 +3469,54 @@
         if (payload.ads_per_adgroup < 1 || payload.ads_per_adgroup > 8) throw new Error("그룹당 소재 수는 1~8 사이로 입력해 주세요.");
       }
 
+      function showAdcopyLandingInsight(metadata, finalUrl) {
+        const root = $("#adcopy-landing-insight");
+        const title = metadata?.title || "";
+        const description = metadata?.description || "";
+        const imageUrl = metadata?.image_url || "";
+        root.hidden = false;
+        root.innerHTML = `
+          <div>
+            <strong>랜딩 메타 보강 완료</strong>
+            <p>${escapeHtml(title || "제목 없음")}${description ? ` · ${escapeHtml(description)}` : ""}</p>
+            ${imageUrl ? `<small>대표 이미지 후보: ${escapeHtml(imageUrl)}</small>` : ""}
+            ${finalUrl ? `<small>최종 URL: ${escapeHtml(finalUrl)}</small>` : ""}
+          </div>
+        `;
+      }
+
+      async function inspectAdcopyLanding() {
+        const landingUrl = $("#adcopy-landing-url").value.trim();
+        if (!landingUrl) throw new Error("랜딩 URL을 먼저 입력해 주세요.");
+        if (!/^https?:\/\//i.test(landingUrl)) throw new Error("랜딩 URL은 http 또는 https 주소여야 합니다.");
+        const button = $("#inspect-adcopy-landing");
+        setButtonBusy(button, true, "읽는 중...");
+        setStatus("adcopy-generator-status", "랜딩 페이지의 공개 메타 정보를 읽는 중입니다.");
+        try {
+          const data = await adminFetch("/api/admin/adcopy/inspect-landing", {
+            method: "POST",
+            body: JSON.stringify({ landing_url: landingUrl }),
+            loadingMessage: "랜딩 페이지를 읽는 중입니다.",
+          });
+          const metadata = data.metadata || {};
+          const title = metadata.title || "";
+          const description = metadata.description || "";
+          const imageUrl = metadata.image_url || "";
+          if (!$("#adcopy-product-name").value.trim() && title) $("#adcopy-product-name").value = title;
+          if (!$("#adcopy-image-link").value.trim() && imageUrl) $("#adcopy-image-link").value = imageUrl;
+          const existingPoints = $("#adcopy-selling-points").value.trim();
+          const landingPoints = [title, description].filter(Boolean).join("\n");
+          if (landingPoints && !existingPoints.includes(description || title)) {
+            $("#adcopy-selling-points").value = [existingPoints, landingPoints].filter(Boolean).join("\n");
+          }
+          showAdcopyLandingInsight(metadata, data.final_url || landingUrl);
+          renderAdcopyBriefMeter();
+          setStatus("adcopy-generator-status", "랜딩 메타 정보를 브리프에 반영했습니다. 내용은 생성 전 한 번 확인해 주세요.", "ok");
+        } finally {
+          setButtonBusy(button, false);
+        }
+      }
+
       function adcopyBriefReadiness() {
         const payload = readAdcopyPayload();
         const checks = [
@@ -3546,6 +3601,8 @@
         $("#adcopy-adgroup-count").value = "3";
         $("#adcopy-ads-per-adgroup").value = "3";
         $("#adcopy-banned-terms").value = ADCOPY_DEFAULT_BANNED_TERMS.join("\n");
+        $("#adcopy-landing-insight").hidden = true;
+        $("#adcopy-landing-insight").innerHTML = "";
         adcopyLastResult = null;
         renderAdcopyResult(null);
         renderAdcopyBriefMeter();
@@ -6827,6 +6884,9 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#adcopy-existing-advertiser").addEventListener("change", applyAdcopyAdvertiserSelection);
+      $("#inspect-adcopy-landing").addEventListener("click", () => {
+        inspectAdcopyLanding().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
       $("#adcopy-generator-form").addEventListener("input", renderAdcopyBriefMeter);
       $("#adcopy-generator-form").addEventListener("change", renderAdcopyBriefMeter);
       $("#adcopy-generator-form").addEventListener("submit", (event) => {

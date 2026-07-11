@@ -8,8 +8,10 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 from uuid import uuid4
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -285,6 +287,10 @@ class AdsAdcopyGenerateRequest(BaseModel):
     ads_per_adgroup: int = Field(default=3, ge=1, le=8)
 
 
+class AdsAdcopyLandingInspectRequest(BaseModel):
+    landing_url: str = Field(..., min_length=1, max_length=1000)
+
+
 PAGE_LABELS = {
     "root": "메인",
     "chat": "광고 Q&A",
@@ -354,6 +360,112 @@ def _ads_dashboard_payload_matches_range(payload: dict[str, Any], start_date: st
 def _split_admin_list(value: str | None) -> list[str]:
     items = re.split(r"[\n,]+", str(value or ""))
     return [item.strip() for item in items if item.strip()]
+
+
+ADCOPY_LANDING_MAX_BYTES = 300_000
+
+
+def _clean_meta_text(value: str | None, max_length: int = 500) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    return text[:max_length]
+
+
+def _landing_url_parts(url: str) -> tuple[str, str, int | None]:
+    parsed = urlparse(str(url or "").strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="랜딩 URL은 http 또는 https 주소여야 합니다.")
+    if parsed.username or parsed.password:
+        raise HTTPException(status_code=400, detail="사용자 정보가 포함된 URL은 지원하지 않습니다.")
+    return parsed.scheme, parsed.hostname, parsed.port
+
+
+def _assert_public_ip_address(address: str) -> None:
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="랜딩 URL 호스트를 확인하지 못했습니다.") from exc
+    if not ip.is_global:
+        raise HTTPException(status_code=400, detail="내부망 또는 비공개 IP로 연결되는 랜딩 URL은 읽을 수 없습니다.")
+
+
+async def _assert_public_landing_url(url: str) -> None:
+    _, host, port = _landing_url_parts(url)
+    try:
+        literal_ip = ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        literal_ip = None
+    if literal_ip is not None:
+        if not literal_ip.is_global:
+            raise HTTPException(status_code=400, detail="내부망 또는 비공개 IP로 연결되는 랜딩 URL은 읽을 수 없습니다.")
+        return
+    if host.lower() in {"localhost", "localhost.localdomain"} or host.lower().endswith(".local"):
+        raise HTTPException(status_code=400, detail="내부 호스트로 보이는 랜딩 URL은 읽을 수 없습니다.")
+    try:
+        addr_info = await asyncio.to_thread(socket.getaddrinfo, host, port or 443, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise HTTPException(status_code=400, detail="랜딩 URL 호스트를 확인하지 못했습니다.") from exc
+    for item in addr_info:
+        sockaddr = item[4]
+        if sockaddr:
+            _assert_public_ip_address(str(sockaddr[0]))
+
+
+async def _fetch_landing_html(url: str) -> tuple[str, str]:
+    current_url = str(url or "").strip()
+    headers = {
+        "User-Agent": "NasmediaOpenAIAdsAdmin/1.0 (+https://openads.admate.ai.kr)",
+        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
+    }
+    async with httpx.AsyncClient(timeout=httpx.Timeout(12.0, connect=5.0), follow_redirects=False) as client:
+        for _ in range(4):
+            await _assert_public_landing_url(current_url)
+            async with client.stream("GET", current_url, headers=headers) as response:
+                if response.status_code in {301, 302, 303, 307, 308} and response.headers.get("location"):
+                    current_url = urljoin(current_url, response.headers["location"])
+                    continue
+                if response.status_code >= 400:
+                    raise HTTPException(status_code=502, detail=f"랜딩 URL 응답 오류: HTTP {response.status_code}")
+                content_type = response.headers.get("content-type", "")
+                if content_type and "html" not in content_type.lower() and "text/" not in content_type.lower():
+                    raise HTTPException(status_code=400, detail="랜딩 URL이 HTML 문서로 응답하지 않았습니다.")
+                chunks: list[bytes] = []
+                total = 0
+                async for chunk in response.aiter_bytes():
+                    chunks.append(chunk)
+                    total += len(chunk)
+                    if total >= ADCOPY_LANDING_MAX_BYTES:
+                        break
+            raw = b"".join(chunks)[:ADCOPY_LANDING_MAX_BYTES]
+            return raw.decode("utf-8", errors="ignore"), str(response.url)
+    raise HTTPException(status_code=400, detail="랜딩 URL 리다이렉트가 너무 많습니다.")
+
+
+def _meta_content(soup: BeautifulSoup, *names: str) -> str:
+    for name in names:
+        tag = soup.find("meta", attrs={"property": name}) or soup.find("meta", attrs={"name": name})
+        if tag and tag.get("content"):
+            return _clean_meta_text(tag.get("content"))
+    return ""
+
+
+def _inspect_landing_html(html: str, final_url: str) -> dict[str, Any]:
+    soup = BeautifulSoup(html or "", "html.parser")
+    title = _clean_meta_text(_meta_content(soup, "og:title", "twitter:title") or (soup.title.string if soup.title else ""), 180)
+    description = _clean_meta_text(_meta_content(soup, "og:description", "twitter:description", "description"), 600)
+    image_url = _clean_meta_text(_meta_content(soup, "og:image", "twitter:image"), 1000)
+    if image_url:
+        image_url = urljoin(final_url, image_url)
+    canonical_tag = soup.find("link", attrs={"rel": lambda value: value and "canonical" in (value if isinstance(value, list) else [value])})
+    canonical_url = urljoin(final_url, canonical_tag.get("href")) if canonical_tag and canonical_tag.get("href") else final_url
+    suggestions = [item for item in [title, description] if item]
+    selling_points = "\n".join(suggestions)
+    return {
+        "title": title,
+        "description": description,
+        "image_url": image_url,
+        "canonical_url": canonical_url,
+        "selling_points": selling_points[:1200],
+    }
 
 
 def _adcopy_trace(
@@ -1374,6 +1486,20 @@ async def admin_validate_adcopy(request: Request) -> dict[str, Any]:
         "validation_report": validation_report,
         "summary": validation_report["summary"],
         "notice": "수정된 generated.json을 다시 검수했습니다. 업로드 전 운영자 최종 확인이 필요합니다.",
+    }
+
+
+@app.post("/api/admin/adcopy/inspect-landing", include_in_schema=False)
+async def admin_inspect_adcopy_landing(request: Request, payload: AdsAdcopyLandingInspectRequest) -> dict[str, Any]:
+    _require_admin(request)
+    html, final_url = await _fetch_landing_html(payload.landing_url)
+    metadata = _inspect_landing_html(html, final_url)
+    return {
+        "ok": True,
+        "source_url": payload.landing_url,
+        "final_url": final_url,
+        "metadata": metadata,
+        "notice": "랜딩 페이지의 공개 메타 정보를 읽었습니다. 자동 입력 전 운영자가 내용을 확인해야 합니다.",
     }
 
 
