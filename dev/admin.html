@@ -3934,6 +3934,36 @@
         renderAdcopyPreviewList(adcopyLastResult?.generated || null, adcopyLastResult?.validation_report || null);
       }
 
+      function adcopyFindingTargetField(finding) {
+        const field = String(finding?.field || "").toLowerCase();
+        if (field.includes("copy") || field.includes("description") || field.includes("body")) return "copy";
+        return "title";
+      }
+
+      function adcopyFindingAdIndex(finding) {
+        if (finding?.scope !== "ads" || !finding.item || finding.item === "-") return -1;
+        const ads = adcopyLastResult?.generated?.ads || [];
+        return ads.findIndex((ad) => ad.ad_name === finding.item);
+      }
+
+      function focusAdcopyCreative(index, field = "title") {
+        if (!adcopyLastResult?.generated?.ads?.[index]) return;
+        adcopyPreviewFilter = "all";
+        renderAdcopyPreviewList(adcopyLastResult.generated, adcopyLastResult.validation_report);
+        renderAdcopyValidationList(adcopyLastResult.validation_report);
+        window.requestAnimationFrame(() => {
+          const target = document.querySelector(`[data-ad-index="${index}"][data-adcopy-edit="${field}"]`)
+            || document.querySelector(`[data-ad-index="${index}"][data-adcopy-edit]`);
+          if (!target) return;
+          const row = target.closest("tr");
+          row?.classList.add("is-focused");
+          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          target.focus({ preventScroll: true });
+          target.select?.();
+          window.setTimeout(() => row?.classList.remove("is-focused"), 1800);
+        });
+      }
+
       function renderAdcopyPreviewList(result, report) {
         const root = $("#adcopy-preview-list");
         renderAdcopyPreviewFilters(result, report);
@@ -3943,7 +3973,7 @@
         }
         const checksByAd = new Map((report?.creative_checks || []).map((item) => [item.ad_name, item]));
         const adsByGroup = new Map();
-        (result.ads || []).forEach((ad) => {
+        (result.ads || []).forEach((ad, index) => {
           const key = ad.adgroup_name || "-";
           if (!adsByGroup.has(key)) adsByGroup.set(key, []);
           adsByGroup.get(key).push({ ad, index });
@@ -4007,16 +4037,26 @@
           root.innerHTML = '<div class="adcopy-validation-empty"><i class="ti ti-circle-check"></i><span>자동 검수에서 오류가 발견되지 않았습니다. 그래도 운영자 검수는 필요합니다.</span></div>';
           return;
         }
-        root.innerHTML = findings.map((finding) => `
-          <div class="adcopy-validation-item ${finding.level === "error" ? "is-error" : "is-warning"}">
-            <span>${finding.level === "error" ? "오류" : "주의"}</span>
-            <div>
-              <strong>${escapeHtml(finding.rule || "-")}</strong>
-              <p>${escapeHtml(finding.scope || "-")} · ${escapeHtml(finding.item || "-")} · ${escapeHtml(finding.field || "-")}</p>
-              <p>${escapeHtml(finding.message || "")}</p>
+        root.innerHTML = findings.map((finding) => {
+          const targetIndex = adcopyFindingAdIndex(finding);
+          const targetField = adcopyFindingTargetField(finding);
+          return `
+            <div class="adcopy-validation-item ${finding.level === "error" ? "is-error" : "is-warning"}">
+              <span>${finding.level === "error" ? "오류" : "주의"}</span>
+              <div>
+                <strong>${escapeHtml(finding.rule || "-")}</strong>
+                <p>${escapeHtml(finding.scope || "-")} · ${escapeHtml(finding.item || "-")} · ${escapeHtml(finding.field || "-")}</p>
+                <p>${escapeHtml(finding.message || "")}</p>
+                ${targetIndex >= 0 ? `
+                  <button class="adcopy-focus-link" type="button" data-adcopy-focus-index="${targetIndex}" data-adcopy-focus-field="${escapeHtml(targetField)}">
+                    <i class="ti ti-arrow-up-right"></i>
+                    <span>소재 보기</span>
+                  </button>
+                ` : ""}
+              </div>
             </div>
-          </div>
-        `).join("");
+          `;
+        }).join("");
       }
 
       async function generateAdcopy(event) {
@@ -7320,6 +7360,13 @@
         button.addEventListener("click", () => setAdcopyPreviewFilter(button.dataset.adcopyPreviewFilter || "all"));
       });
       $("#adcopy-preview-list").addEventListener("input", handleAdcopyEdit);
+      $("#adcopy-validation-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-adcopy-focus-index]");
+        if (!button) return;
+        const index = Number(button.dataset.adcopyFocusIndex);
+        if (!Number.isInteger(index)) return;
+        focusAdcopyCreative(index, button.dataset.adcopyFocusField || "title");
+      });
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       $("#inspect-ads-key").addEventListener("click", () => inspectAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
       ["ads-key-preview", "conversion-key-preview"].forEach((id) => {

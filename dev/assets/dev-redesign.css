@@ -2336,6 +2336,12 @@ body.dev-console.modal-open {
   line-height: 1.4;
 }
 
+.adcopy-mini-table tr.is-focused td {
+  background: #fff8e7;
+  box-shadow: inset 3px 0 0 var(--oa-gold);
+  transition: background .18s ease, box-shadow .18s ease;
+}
+
 .adcopy-validation-empty,
 .adcopy-validation-item {
   display: grid;
@@ -2392,6 +2398,34 @@ body.dev-console.modal-open {
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.adcopy-focus-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 7px;
+  border: 1px solid #dce5f1;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.adcopy-focus-link:hover {
+  border-color: #ffc4c8;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-focus-link i {
+  font-size: 13px;
 }
 
 .adcopy-json-details {
