@@ -657,6 +657,10 @@
                       <i class="ti ti-copy"></i>
                       JSON 복사
                     </button>
+                    <button class="btn-secondary" type="button" id="download-adcopy-json" disabled>
+                      <i class="ti ti-download"></i>
+                      JSON 다운로드
+                    </button>
                     <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
                       <i class="ti ti-checkup-list"></i>
                       수정 재검수
@@ -3611,6 +3615,7 @@
         $("#adcopy-validation-badge").className = badge.cls;
         $("#adcopy-validation-badge").textContent = badge.text;
         $("#copy-adcopy-json").disabled = !result;
+        $("#download-adcopy-json").disabled = !result;
         $("#validate-adcopy-json").disabled = !result;
         $("#adcopy-json-preview").textContent = result ? JSON.stringify(result, null, 2) : "{}";
         $("#adcopy-result-note").textContent = result
@@ -3758,6 +3763,23 @@
         if (!adcopyLastResult?.generated) return;
         await navigator.clipboard.writeText(JSON.stringify(adcopyLastResult.generated, null, 2));
         setStatus("adcopy-generator-status", "generated.json 내용을 클립보드에 복사했습니다.", "ok");
+      }
+
+      function downloadAdcopyJson() {
+        if (!adcopyLastResult?.generated) return;
+        const json = JSON.stringify(adcopyLastResult.generated, null, 2);
+        const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
+        const safeName = String(campaignName).replace(/[\\/:*?"<>|]+/g, "_").slice(0, 80) || "openai_ads";
+        link.href = url;
+        link.download = `${safeName}_generated.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("adcopy-generator-status", "현재 수정본 generated.json 파일을 다운로드했습니다.", "ok");
       }
 
       async function validateEditedAdcopy() {
@@ -6814,6 +6836,7 @@
       $("#copy-adcopy-json").addEventListener("click", () => {
         copyAdcopyJson().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
+      $("#download-adcopy-json").addEventListener("click", downloadAdcopyJson);
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
