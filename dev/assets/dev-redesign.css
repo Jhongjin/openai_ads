@@ -2114,6 +2114,44 @@ body.dev-console.modal-open {
   max-width: 100%;
 }
 
+.adcopy-result-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.adcopy-preview-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.adcopy-preview-filter button {
+  min-height: 28px;
+  border: 1px solid #dfe7f1;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--oa-muted);
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.adcopy-preview-filter button.is-active {
+  border-color: #ffc4c8;
+  background: #fff4f4;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-preview-filter button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
 .adcopy-preview-list,
 .adcopy-validation-list {
   display: grid;
@@ -3340,6 +3378,15 @@ body.dev-console.modal-open {
   .adcopy-preset-actions {
     justify-content: flex-start;
     min-width: 0;
+  }
+
+  .adcopy-result-section-head {
+    display: grid;
+    justify-items: start;
+  }
+
+  .adcopy-preview-filter {
+    justify-content: flex-start;
   }
 }
 

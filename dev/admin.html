@@ -889,7 +889,15 @@
                         </div>
                       </div>
                       <div class="adcopy-result-section">
-                        <h4>광고그룹·소재 미리보기</h4>
+                        <div class="adcopy-result-section-head">
+                          <h4>광고그룹·소재 미리보기</h4>
+                          <div class="adcopy-preview-filter" role="group" aria-label="소재 검수 필터">
+                            <button class="is-active" type="button" data-adcopy-preview-filter="all">전체</button>
+                            <button type="button" data-adcopy-preview-filter="issue">문제</button>
+                            <button type="button" data-adcopy-preview-filter="warning">주의</button>
+                            <button type="button" data-adcopy-preview-filter="error">오류</button>
+                          </div>
+                        </div>
                         <div class="adcopy-preview-list" id="adcopy-preview-list">
                           <div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>
                         </div>
@@ -1419,6 +1427,7 @@
       ];
       const ADCOPY_DEFAULT_BANNED_TERMS = ["무조건", "누구나", "최고", "반드시", "혜택 보장", "업계 1위"];
       let adcopyLastResult = null;
+      let adcopyPreviewFilter = "all";
       let officialPage = 1;
       const OFFICIAL_PAGE_SIZE = 15;
       let mailPage = 1;
@@ -3745,6 +3754,7 @@
         $("#adcopy-landing-insight").hidden = true;
         $("#adcopy-landing-insight").innerHTML = "";
         adcopyLastResult = null;
+        adcopyPreviewFilter = "all";
         $("#copy-adcopy-json").disabled = true;
         $("#download-adcopy-json").disabled = true;
         $("#download-adcopy-report").disabled = true;
@@ -3881,8 +3891,46 @@
         markAdcopyValidationStale();
       }
 
+      function adcopyPreviewStatusMatches(status, filter) {
+        if (filter === "issue") return status === "warning" || status === "error";
+        if (filter === "warning") return status === "warning";
+        if (filter === "error") return status === "error";
+        return true;
+      }
+
+      function adcopyPreviewFilterCounts(result, report) {
+        const checksByAd = new Map((report?.creative_checks || []).map((item) => [item.ad_name, item]));
+        const ads = result?.ads || [];
+        return ads.reduce((counts, ad) => {
+          const status = checksByAd.get(ad.ad_name || "")?.status || "pass";
+          counts.all += 1;
+          if (status === "warning" || status === "error") counts.issue += 1;
+          if (status === "warning") counts.warning += 1;
+          if (status === "error") counts.error += 1;
+          return counts;
+        }, { all: 0, issue: 0, warning: 0, error: 0 });
+      }
+
+      function renderAdcopyPreviewFilters(result, report) {
+        const labels = { all: "전체", issue: "문제", warning: "주의", error: "오류" };
+        const counts = adcopyPreviewFilterCounts(result, report);
+        $$("[data-adcopy-preview-filter]").forEach((button) => {
+          const filter = button.dataset.adcopyPreviewFilter || "all";
+          button.classList.toggle("is-active", filter === adcopyPreviewFilter);
+          button.disabled = !result || (filter !== "all" && counts[filter] === 0);
+          button.textContent = `${labels[filter] || filter} ${formatNumber(counts[filter] || 0)}`;
+        });
+      }
+
+      function setAdcopyPreviewFilter(filter) {
+        const allowed = new Set(["all", "issue", "warning", "error"]);
+        adcopyPreviewFilter = allowed.has(filter) ? filter : "all";
+        renderAdcopyPreviewList(adcopyLastResult?.generated || null, adcopyLastResult?.validation_report || null);
+      }
+
       function renderAdcopyPreviewList(result, report) {
         const root = $("#adcopy-preview-list");
+        renderAdcopyPreviewFilters(result, report);
         if (!result) {
           root.innerHTML = '<div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
           return;
@@ -3904,6 +3952,7 @@
             ${(() => {
               const check = checksByAd.get(ad.ad_name || "") || {};
               const status = check.status || "pass";
+              if (!adcopyPreviewStatusMatches(status, adcopyPreviewFilter)) return "";
               const issues = (check.issues || []).slice(0, 2);
               const label = status === "error" ? "오류" : (status === "warning" ? "주의" : "양호");
               const issueText = issues.map((issue) => issue.message).join(" · ");
@@ -3923,7 +3972,8 @@
             </tr>
               `;
             })()}
-          `).join("");
+          `).join("").trim();
+          if (adcopyPreviewFilter !== "all" && !rows) return "";
           return `
             <article class="adcopy-group-card">
               <div class="adcopy-group-head">
@@ -3937,7 +3987,7 @@
               </table>
             </article>
           `;
-        }).join("") || '<div class="empty-pane">생성된 광고그룹이 없습니다.</div>';
+        }).join("").trim() || '<div class="empty-pane">선택한 필터에 해당하는 소재가 없습니다.</div>';
       }
 
       function renderAdcopyValidationList(report) {
@@ -3977,6 +4027,7 @@
             loadingMessage: "AI 카피 초안을 생성하는 중입니다.",
           });
           adcopyLastResult = data;
+          adcopyPreviewFilter = "all";
           renderAdcopyResult(data);
           setStatus("adcopy-generator-status", data.ok ? "초안 생성과 자동 검수를 완료했습니다." : "초안 생성 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
@@ -7197,6 +7248,9 @@
       $("#download-adcopy-report").addEventListener("click", downloadAdcopyReviewReport);
       $("#validate-adcopy-json").addEventListener("click", () => {
         validateEditedAdcopy().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $$("[data-adcopy-preview-filter]").forEach((button) => {
+        button.addEventListener("click", () => setAdcopyPreviewFilter(button.dataset.adcopyPreviewFilter || "all"));
       });
       $("#adcopy-preview-list").addEventListener("input", handleAdcopyEdit);
       $("#save-ads-key").addEventListener("click", () => saveAdsKey().catch((error) => setStatus("ads-status", error.message, "error")));
