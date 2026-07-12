@@ -1756,6 +1756,122 @@ body.dev-console.modal-open {
   background: #fff;
 }
 
+.adcopy-guide-panel {
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  overflow: hidden;
+}
+
+.adcopy-guide-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--oa-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.adcopy-guide-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-guide-panel summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: max-content;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-guide-panel summary i {
+  color: var(--oa-red);
+  font-size: 17px;
+}
+
+.adcopy-guide-panel summary small {
+  min-width: 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adcopy-guide-panel[open] summary {
+  border-bottom: 1px solid #e5edf6;
+  background: #fffafa;
+}
+
+.adcopy-guide-body {
+  padding: 12px 14px 14px;
+}
+
+.adcopy-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  counter-reset: adcopy-guide;
+  list-style: none;
+}
+
+.adcopy-guide-steps li {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 132px;
+  border: 1px solid #e5edf6;
+  border-radius: var(--oa-radius-sm);
+  background: #fbfcff;
+  padding: 12px 12px 12px 42px;
+  counter-increment: adcopy-guide;
+}
+
+.adcopy-guide-steps li::before {
+  content: counter(adcopy-guide, decimal-leading-zero);
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff0f1;
+  color: var(--oa-red-dark);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.adcopy-guide-steps strong {
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-guide-steps p {
+  margin: 0;
+  color: #5d6c82;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.adcopy-guide-steps b {
+  color: #263449;
+  font-weight: 950;
+}
+
 .adcopy-import-panel {
   border: 1px solid #dfe7f1;
   border-radius: var(--oa-radius-sm);
@@ -3983,6 +4099,10 @@ body.dev-console.modal-open {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .adcopy-guide-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .adcopy-draft-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4039,7 +4159,20 @@ body.dev-console.modal-open {
     white-space: normal;
   }
 
+  .adcopy-guide-panel summary {
+    display: grid;
+    align-items: start;
+    min-height: 0;
+    padding-block: 12px;
+  }
+
+  .adcopy-guide-panel summary small {
+    text-align: left;
+    white-space: normal;
+  }
+
   .adcopy-summary-grid,
+  .adcopy-guide-steps,
   .adcopy-upload-checklist,
   .adcopy-snapshot-controls,
   .adcopy-draft-controls,
