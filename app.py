@@ -307,13 +307,13 @@ class AdsAdcopyImportRequest(BaseModel):
     image_link: str | None = Field(default="", max_length=1000)
     banned_terms: str | None = Field(default="", max_length=1500)
     required_phrases: str | None = Field(default="", max_length=1500)
-    source_label: str | None = Field(default="외부 generated.json", max_length=120)
+    source_label: str | None = Field(default="기존 작업 파일", max_length=120)
 
 
 class AdsAdcopyReviewStateRequest(BaseModel):
     advertiser_name: str | None = Field(default="", max_length=120)
     campaign_name: str | None = Field(default="", max_length=160)
-    source_label: str | None = Field(default="AI 카피 생성기", max_length=120)
+    source_label: str | None = Field(default="AI 광고 문안 생성기", max_length=120)
     generated: dict[str, Any] = Field(default_factory=dict)
     validation_report: dict[str, Any] = Field(default_factory=dict)
 
@@ -527,7 +527,7 @@ def _adcopy_trace(
     source_excerpt: str = "",
     generation_basis: str = "",
     confidence_score: float = 0.7,
-    validation_status: str = "운영 검수 필요",
+    validation_status: str = "담당자 확인 필요",
 ) -> dict[str, Any]:
     return {
         "source_type": source_type,
@@ -706,7 +706,7 @@ def _adcopy_user_prompt(payload: AdsAdcopyGenerateRequest) -> str:
         "- If a required phrase exists, include it in every ad title or copy without forcing awkward grammar.\n"
         "- Keep Korean phrasing crisp, specific, and natural enough to be used after a human review.\n"
         "- Set trace.review_comment and trace.exclusion_reason to empty strings.\n"
-        "- Set trace.validation_status to '운영 검수 필요' unless a concrete warning is needed.\n"
+        "- Set trace.validation_status to '담당자 확인 필요' unless a concrete warning is needed.\n"
         f"\nBRIEF_JSON:\n{json.dumps(brief, ensure_ascii=False, indent=2)}"
     )
 
@@ -750,15 +750,15 @@ async def _call_openai_adcopy(payload: AdsAdcopyGenerateRequest) -> dict[str, An
     async with httpx.AsyncClient(timeout=90) as client:
         response = await client.post(f"{base_url}/responses", headers=headers, json=request_body)
     if response.status_code >= 400:
-        raise HTTPException(status_code=502, detail=f"OpenAI 카피 생성 API 오류: HTTP {response.status_code} · {response.text[:600]}")
+        raise HTTPException(status_code=502, detail=f"OpenAI 광고 문안 생성 API 오류: HTTP {response.status_code} · {response.text[:600]}")
     data = response.json()
     raw_text = _extract_openai_response_text(data)
     if not raw_text.strip():
-        raise HTTPException(status_code=502, detail="OpenAI 카피 생성 응답에서 JSON 텍스트를 찾지 못했습니다.")
+        raise HTTPException(status_code=502, detail="OpenAI 광고 문안 생성 응답에서 JSON 텍스트를 찾지 못했습니다.")
     try:
         generated = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=502, detail="OpenAI 카피 생성 응답 JSON 파싱에 실패했습니다.") from exc
+        raise HTTPException(status_code=502, detail="OpenAI 광고 문안 생성 응답 JSON 파싱에 실패했습니다.") from exc
     return {"model": model, "raw_response_id": data.get("id"), "generated": generated}
 
 
@@ -1046,7 +1046,7 @@ def _adcopy_sample_workbook_bytes() -> bytes:
     workbook = Workbook()
     campaign_sheet = workbook.active
     campaign_sheet.title = "campaigns_검수"
-    campaign_sheet.append(["OpenAI Ads AI 카피 생성기 샘플 워크북"])
+    campaign_sheet.append(["OpenAI Ads AI 광고 문안 생성기 샘플 워크북"])
     campaign_sheet.append(["campaign_name", "advertiser_name", "budget_max", "budget_type", "launch_date", "end_date", "objective", "target_countries"])
     campaign_sheet.append(["샘플_초안_캠페인", "캐츠잉글리시", "150000", "total", "2026-07-20", "2026-08-02", "Views", "KR"])
 
@@ -1135,7 +1135,7 @@ def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
         or trace.get("status")
         or ""
     ).strip().lower()
-    validation_status = "운영 검수 필요"
+    validation_status = "담당자 확인 필요"
     if any(token in status_text for token in ("무수정 승인", "수정 후 승인", "확인 완료", "승인", "approved", "approve", "ok", "pass")):
         validation_status = "승인"
     elif any(token in status_text for token in ("사용 불가", "사용불가", "불가", "제외", "excluded", "exclude", "drop", "reject")):
@@ -1143,7 +1143,7 @@ def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
     elif any(token in status_text for token in ("부분 재생성", "광고주 확인 필요", "확인 필요", "수정", "보류", "재생성", "revise", "hold", "needs")):
         validation_status = "수정 필요"
     return {
-        **_adcopy_trace(source_type="외부 JSON", generation_basis="외부 산출물 호환 정규화", confidence_score=0.62),
+        **_adcopy_trace(source_type="기존 작업 파일", generation_basis="기존 작업 파일 변환", confidence_score=0.62),
         **trace,
         "validation_status": validation_status,
         "review_comment": str(
@@ -1173,7 +1173,7 @@ def _adcopy_import_objective(value: Any, fallback: str = "Views") -> str:
 def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dict[str, Any]:
     source = payload.generated if isinstance(payload.generated, dict) else {}
     if not source:
-        raise HTTPException(status_code=400, detail="흡수할 generated.json 객체를 입력해 주세요.")
+        raise HTTPException(status_code=400, detail="불러올 광고 작업 파일 내용을 입력해 주세요.")
 
     campaign_rows = _adcopy_import_campaign_rows(source)
     group_rows = _adcopy_import_rows(source, ADCOPY_IMPORT_ADGROUP_LIST_KEYS)
@@ -1184,7 +1184,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
     first_campaign = campaign_rows[0] if campaign_rows else {}
     first_group = group_rows[0] if group_rows else {}
     first_ad = ad_rows[0] if ad_rows else {}
-    source_label = str(payload.source_label or "외부 generated.json").strip()
+    source_label = str(payload.source_label or "기존 작업 파일").strip()
 
     campaign_name = _adcopy_import_text(
         first_campaign,
@@ -1432,10 +1432,10 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             errors.append(_adcopy_finding("error", "adgroups", name or "-", "max_bid", "max_bid_must_be_empty", "max_bid는 항상 빈칸이어야 합니다."))
         keywords = adgroup.get("keywords") or []
         if len(keywords) < 5:
-            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "keywords", "keyword_count_low", "Context Hints가 5개 미만입니다."))
+            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "keywords", "검색 맥락이 5개 미만입니다."))
         required_phrases = [str(value).strip() for value in adgroup.get("required_phrases") or [] if str(value).strip()]
         if required_phrases and not any(str(ad.get("adgroup_name") or "").strip() == name for ad in ads):
-            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "required_phrases", "required_phrase_no_ads", "필수 문구 검수 대상 광고가 없습니다."))
+            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "required_phrases", "required_phrase_no_ads", "필수 문구를 확인할 대상 광고가 없습니다."))
         for keyword in keywords:
             keyword_text = str(keyword.get("text") if isinstance(keyword, dict) else keyword).strip()
             if any(term in keyword_text for term in banned_terms):
@@ -1466,33 +1466,33 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             warnings.append(_adcopy_finding("warning", "ads", ad_name, "title", "title_len_recommended", f"제목 {len(title)}자 — 권장 16~18자"))
             ad_issues.append({"level": "warning", "rule": "title_len_recommended", "message": f"제목 {len(title)}자 — 권장 16~18자"})
         if not copy:
-            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_required", "카피가 비어 있습니다."))
-            ad_issues.append({"level": "error", "rule": "copy_required", "message": "카피가 비어 있습니다."})
+            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_required", "문구가 비어 있습니다."))
+            ad_issues.append({"level": "error", "rule": "copy_required", "message": "문구가 비어 있습니다."})
         elif len(copy) > 48:
-            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_max_48", f"카피 {len(copy)}자 — 최대 48자"))
-            ad_issues.append({"level": "error", "rule": "copy_max_48", "message": f"카피 {len(copy)}자 — 최대 48자"})
+            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_max_48", f"문구 {len(copy)}자 — 최대 48자"))
+            ad_issues.append({"level": "error", "rule": "copy_max_48", "message": f"문구 {len(copy)}자 — 최대 48자"})
         elif len(copy) < 18 or len(copy) > 42:
-            warnings.append(_adcopy_finding("warning", "ads", ad_name, "copy", "copy_len_recommended", f"카피 {len(copy)}자 — 권장 18~42자"))
-            ad_issues.append({"level": "warning", "rule": "copy_len_recommended", "message": f"카피 {len(copy)}자 — 권장 18~42자"})
+            warnings.append(_adcopy_finding("warning", "ads", ad_name, "copy", "copy_len_recommended", f"문구 {len(copy)}자 — 권장 18~42자"))
+            ad_issues.append({"level": "warning", "rule": "copy_len_recommended", "message": f"문구 {len(copy)}자 — 권장 18~42자"})
         awkward_hits = [pattern for pattern in ADCOPY_AWKWARD_PATTERNS if pattern and pattern in combined]
         if awkward_hits:
-            message = f"운영 검수에서 어색할 수 있는 표현: {', '.join(awkward_hits)}"
+            message = f"담당자 확인이 필요한 어색한 표현: {', '.join(awkward_hits)}"
             warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "awkward_phrase", message))
             ad_issues.append({"level": "warning", "rule": "awkward_phrase", "message": message})
         risk_hits = [pattern for pattern in ADCOPY_POLICY_RISK_PATTERNS if pattern and pattern in combined]
         if risk_hits:
             risk_finding_count += 1
-            message = f"정책·광고주 검수에서 민감할 수 있는 표현: {', '.join(risk_hits)}"
+            message = f"광고 기준 또는 광고주 확인이 필요한 표현: {', '.join(risk_hits)}"
             warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "policy_risk_phrase", message))
             ad_issues.append({"level": "warning", "rule": "policy_risk_phrase", "message": message})
         if title and title == copy:
-            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_equals_title", "카피가 제목과 동일합니다."))
-            ad_issues.append({"level": "error", "rule": "copy_equals_title", "message": "카피가 제목과 동일합니다."})
+            errors.append(_adcopy_finding("error", "ads", ad_name, "copy", "copy_equals_title", "문구가 제목과 동일합니다."))
+            ad_issues.append({"level": "error", "rule": "copy_equals_title", "message": "문구가 제목과 동일합니다."})
         creative_key = title + "\x00" + copy
         exact_duplicate = bool(title and creative_key in seen_creatives)
         if exact_duplicate:
-            errors.append(_adcopy_finding("error", "ads", ad_name, "title", "creative_duplicate", f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."))
-            ad_issues.append({"level": "error", "rule": "creative_duplicate", "message": f"제목·카피가 {seen_creatives[creative_key]}와 동일합니다."})
+            errors.append(_adcopy_finding("error", "ads", ad_name, "title", "creative_duplicate", f"제목·문구가 {seen_creatives[creative_key]}와 동일합니다."))
+            ad_issues.append({"level": "error", "rule": "creative_duplicate", "message": f"제목·문구가 {seen_creatives[creative_key]}와 동일합니다."})
         seen_creatives[creative_key] = ad_name
         title_key = re.sub(r"\s+", "", title).lower()
         if title_key and title_key in seen_titles and not exact_duplicate:
@@ -1565,7 +1565,7 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     elif quality_score >= 90 and not warnings:
         readiness = "초안 양호"
     elif quality_score >= 75:
-        readiness = "운영 검수 권장"
+        readiness = "담당자 확인 권장"
     else:
         readiness = "수정 권장"
     recommendations: list[dict[str, str]] = []
@@ -1574,7 +1574,7 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     if "title_len_recommended" in warning_rules:
         recommendations.append(_adcopy_recommendation("copy", "제목 길이 보정", "제목은 가능하면 16~18자로 맞추면 노출 영역에서 더 안정적으로 보입니다."))
     if "copy_len_recommended" in warning_rules:
-        recommendations.append(_adcopy_recommendation("copy", "카피 밀도 조정", "카피는 18~42자 안에서 구체적 혜택이나 사용 상황을 한 가지 넣는 편이 좋습니다."))
+        recommendations.append(_adcopy_recommendation("copy", "문구 밀도 조정", "문구는 18~42자 안에서 구체적 혜택이나 사용 상황을 한 가지 넣는 편이 좋습니다."))
     if "awkward_phrase" in warning_rules:
         recommendations.append(_adcopy_recommendation("tone", "자연어 표현 수정", "'고려한', '누려보세요' 같은 문어체 표현은 더 구체적인 사용 장면으로 바꾸는 편이 좋습니다."))
     if "policy_risk_phrase" in warning_rules:
@@ -1582,11 +1582,11 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     if "landing_domain_mismatch" in warning_rules:
         recommendations.append(_adcopy_recommendation("landing", "랜딩 도메인 통일 확인", "소재별 랜딩 도메인이 다릅니다. 의도된 분기인지, 잘못 붙은 URL인지 확인해 주세요."))
     if total_keywords and customer_keywords == 0:
-        recommendations.append(_adcopy_recommendation("brief", "브리프 기반 키워드 보강", "모든 Context Hints가 AI 추론입니다. 광고주가 제공한 검색어 또는 제품 표현을 1개 이상 넣어 주세요."))
+        recommendations.append(_adcopy_recommendation("brief", "브리프 기반 검색 맥락 보강", "모든 검색 맥락이 AI 추론입니다. 광고주가 제공한 검색어 또는 제품 표현을 1개 이상 넣어 주세요."))
     if average_confidence is not None and average_confidence < 0.75:
-        recommendations.append(_adcopy_recommendation("review", "검수 강도 상향", "모델 confidence가 낮습니다. 랜딩 페이지와 소재 이미지의 실제 표현을 한 번 더 대조해 주세요."))
+        recommendations.append(_adcopy_recommendation("review", "확인 강도 상향", "모델 신뢰도가 낮습니다. 랜딩 페이지와 소재 이미지의 실제 표현을 한 번 더 대조해 주세요."))
     if not recommendations and not errors:
-        recommendations.append(_adcopy_recommendation("ok", "수동 검수 후 사용 가능", "자동 검수에서 큰 문제는 없습니다. 광고주명, 랜딩, 이미지, 정책 표현만 최종 확인하세요."))
+        recommendations.append(_adcopy_recommendation("ok", "담당자 확인 후 사용 가능", "자동 점검에서 큰 문제는 없습니다. 광고주명, 랜딩, 이미지, 광고 기준 표현만 최종 확인하세요."))
     return {
         "ok": not errors,
         "errors": errors,
@@ -1692,12 +1692,12 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
     campaign = _first_campaign(generated)
     campaign_name = str(campaign.get("campaign_name") or "").strip()
     if not campaign_name:
-        raise HTTPException(status_code=400, detail="draft 세팅을 만들 캠페인명이 없습니다. 먼저 카피 초안을 생성하거나 generated.json을 확인해 주세요.")
+        raise HTTPException(status_code=400, detail="임시 등록할 캠페인명이 없습니다. 먼저 광고 문안을 생성하거나 업로드 파일을 확인해 주세요.")
     adgroups = [item for item in (generated.get("adgroups") or []) if isinstance(item, dict)]
     ads_all = [item for item in (generated.get("ads") or []) if isinstance(item, dict)]
     ads = [item for item in ads_all if not _adcopy_is_excluded(item)]
     if not ads:
-        raise HTTPException(status_code=400, detail="draft 세팅에 포함할 소재가 없습니다. 운영 상태가 제외가 아닌 소재를 1개 이상 남겨 주세요.")
+        raise HTTPException(status_code=400, detail="임시 등록에 포함할 소재가 없습니다. 제외 상태가 아닌 소재를 1개 이상 남겨 주세요.")
     adgroup_names = {str(ad.get("adgroup_name") or "").strip() for ad in ads if str(ad.get("adgroup_name") or "").strip()}
     included_adgroups = [group for group in adgroups if str(group.get("adgroup_name") or "").strip() in adgroup_names]
     if not included_adgroups and adgroups:
@@ -1722,7 +1722,7 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
 
     objective = str(campaign.get("objective") or "").strip()
     if objective and objective.lower() not in {"views", "view", "reach", "impression", "impressions", "노출"}:
-        warnings.append("캠페인 목표값은 운영 메타와 검수 기준으로만 사용합니다. OpenAI Ads 생성 payload에는 별도 목표 필드를 보내지 않습니다.")
+        warnings.append("캠페인 목표값은 화면 표시와 점검 기준으로만 사용합니다. OpenAI Ads 등록 요청에는 별도 목표 필드를 보내지 않습니다.")
 
     campaign_payload: dict[str, Any] = {
         "name": campaign_name,
@@ -1744,7 +1744,7 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
         name = str(group.get("adgroup_name") or f"{index:02d}_광고그룹").strip()
         context_hints = _adcopy_keyword_texts(group)
         if not context_hints:
-            warnings.append(f"{name} 광고그룹의 Context Hints가 비어 있습니다.")
+            warnings.append(f"{name} 광고그룹의 검색 맥락이 비어 있습니다.")
         adgroup_payloads.append(
             {
                 "name": name,
@@ -1830,11 +1830,11 @@ def _build_adcopy_draft_plan(payload: AdsAdcopyDraftPlanRequest) -> dict[str, An
         "ads": ad_payloads,
         "next_steps": [
             "광고주 계정 확인",
-            "paused 캠페인 draft 생성",
+            "비활성 캠페인 임시 등록",
             "이미지 파일 업로드",
-            "paused 광고그룹 draft 생성",
-            "paused 소재 draft 생성",
-            "운영자 최종 확인 후 활성화는 현재 정책상 비활성화",
+            "비활성 광고그룹 임시 등록",
+            "비활성 소재 임시 등록",
+            "담당자 최종 확인 후 게시 전환은 현재 정책상 비활성화",
         ],
         "validation_report": validation_report,
     }
@@ -1918,27 +1918,27 @@ def _adcopy_draft_preflight_result(
             account_label = " · ".join(str(value) for value in [ad_account.get("name"), ad_account.get("currency_code"), ad_account.get("timezone")] if value)
             checks.append(_adcopy_draft_check("success", "계정 확인", account_label or "Ads API 키가 등록되어 있고 계정 조회가 가능합니다.", code="account_ok"))
     else:
-        checks.append(_adcopy_draft_check("error", "Ads API 키 필요", "활성화된 광고주 API 키가 있어야 draft를 생성할 수 있습니다.", code="api_key_missing"))
+        checks.append(_adcopy_draft_check("error", "Ads API 키 필요", "활성화된 광고주 API 키가 있어야 임시 등록을 진행할 수 있습니다.", code="api_key_missing"))
 
     if (plan.get("safety") or {}).get("default_status") == "paused":
-        checks.append(_adcopy_draft_check("success", "paused 생성", "캠페인, 광고그룹, 소재 생성 payload의 기본 상태가 paused입니다.", code="paused_default"))
+        checks.append(_adcopy_draft_check("success", "비활성 생성", "캠페인, 광고그룹, 소재는 비활성 상태로 생성됩니다.", code="paused_default"))
     else:
-        checks.append(_adcopy_draft_check("error", "상태 확인 필요", "생성 payload의 기본 상태가 paused인지 확인해야 합니다.", code="paused_missing"))
+        checks.append(_adcopy_draft_check("error", "상태 확인 필요", "생성 요청의 기본 상태가 비활성인지 확인해야 합니다.", code="paused_missing"))
 
     if (plan.get("safety") or {}).get("activation_disabled", True):
-        checks.append(_adcopy_draft_check("success", "live 전환 차단", "현재 환경에서는 active 전환 단계가 서버에서 차단됩니다.", code="activation_blocked"))
+        checks.append(_adcopy_draft_check("success", "게시 전환 차단", "현재 환경에서는 게시 전환 단계가 서버에서 차단됩니다.", code="activation_blocked"))
     else:
-        checks.append(_adcopy_draft_check("warning", "live 전환 가능 환경", "환경변수상 active 전환이 허용되어 있습니다. 운영 승인 전 실행하지 마세요.", code="activation_enabled"))
+        checks.append(_adcopy_draft_check("warning", "게시 전환 가능 환경", "환경변수상 게시 전환이 허용되어 있습니다. 운영 승인 전 실행하지 마세요.", code="activation_enabled"))
 
     if validation_errors:
-        checks.append(_adcopy_draft_check("error", "검수 오류", f"자동 검수 오류 {validation_errors}개를 먼저 수정해야 합니다.", code="validation_error"))
+        checks.append(_adcopy_draft_check("error", "점검 오류", f"자동 점검 오류 {validation_errors}개를 먼저 수정해야 합니다.", code="validation_error"))
     elif validation_warnings:
-        checks.append(_adcopy_draft_check("warning", "검수 주의", f"자동 검수 주의 {validation_warnings}개가 있습니다. 운영 검수 후 진행하세요.", code="validation_warning"))
+        checks.append(_adcopy_draft_check("warning", "점검 주의", f"자동 점검 주의 {validation_warnings}개가 있습니다. 담당자 확인 후 진행하세요.", code="validation_warning"))
     else:
-        checks.append(_adcopy_draft_check("success", "검수 상태", "자동 검수에서 차단 오류가 없습니다.", code="validation_ok"))
+        checks.append(_adcopy_draft_check("success", "점검 상태", "자동 점검에서 차단 오류가 없습니다.", code="validation_ok"))
 
     if campaign_budget > 0:
-        checks.append(_adcopy_draft_check("success", "예산", f"총 예산 {int(campaign_budget / 1_000_000):,}원 기준으로 draft plan을 만들었습니다.", code="budget_ok"))
+        checks.append(_adcopy_draft_check("success", "예산", f"총 예산 {int(campaign_budget / 1_000_000):,}원 기준으로 임시 등록 계획을 만들었습니다.", code="budget_ok"))
     else:
         checks.append(_adcopy_draft_check("warning", "예산 확인", "예산이 0원입니다. 생성 전 캠페인 예산을 확인하세요.", code="budget_empty"))
 
@@ -1949,21 +1949,21 @@ def _adcopy_draft_preflight_result(
         else:
             checks.append(_adcopy_draft_check("error", "입찰가 필요", "광고그룹 생성 전 기본 CPM 입찰가를 0보다 크게 입력해야 합니다.", code="bid_missing"))
     else:
-        checks.append(_adcopy_draft_check("error", "광고그룹 없음", "draft 생성 대상 광고그룹이 없습니다.", code="adgroup_missing"))
+        checks.append(_adcopy_draft_check("error", "광고그룹 없음", "임시 등록할 광고그룹이 없습니다.", code="adgroup_missing"))
 
     if assets:
         checks.append(_adcopy_draft_check("success", "이미지 URL", f"업로드 대상 이미지 {len(assets)}개가 있습니다.", code="asset_ok"))
     else:
-        checks.append(_adcopy_draft_check("error", "이미지 URL 필요", "소재 draft까지 만들려면 http/https 이미지 URL이 필요합니다.", code="asset_missing"))
+        checks.append(_adcopy_draft_check("error", "이미지 URL 필요", "소재 임시 등록까지 진행하려면 http/https 이미지 URL이 필요합니다.", code="asset_missing"))
 
     if ads:
         checks.append(_adcopy_draft_check("success", "소재", f"생성 대상 소재 {len(ads)}개를 확인했습니다.", code="ads_ok"))
     else:
-        checks.append(_adcopy_draft_check("error", "소재 없음", "draft 생성 대상 소재가 없습니다.", code="ads_missing"))
+        checks.append(_adcopy_draft_check("error", "소재 없음", "임시 등록할 소재가 없습니다.", code="ads_missing"))
 
     plan_warnings = plan.get("warnings") if isinstance(plan.get("warnings"), list) else []
     for warning in plan_warnings[:5]:
-        checks.append(_adcopy_draft_check("warning", "plan 주의", str(warning), code="plan_warning"))
+        checks.append(_adcopy_draft_check("warning", "계획 확인", str(warning), code="plan_warning"))
 
     blocking = [check for check in checks if check["level"] == "error"]
     ready = not blocking
@@ -1984,7 +1984,7 @@ def _ads_api_error_detail(exc: httpx.HTTPStatusError) -> str:
     response = exc.response
     detail = response.text[:1000] if response is not None else str(exc)
     status = response.status_code if response is not None else "?"
-    return f"OpenAI Ads API draft 실행 실패: HTTP {status} · {detail}"
+    return f"OpenAI Ads API 임시 등록 실패: HTTP {status} · {detail}"
 
 
 def _ads_dashboard_cached_payload(cache_row: dict[str, Any]) -> dict[str, Any]:
@@ -2481,7 +2481,7 @@ async def admin_generate_adcopy(request: Request) -> dict[str, Any]:
         "generated": generated,
         "validation_report": validation_report,
         "summary": validation_report["summary"],
-        "notice": "초안 생성 결과입니다. 업로드 또는 캠페인 세팅 전 운영자 검수와 광고주 확인이 필요합니다.",
+        "notice": "광고 문안 생성 결과입니다. 업로드 또는 임시 등록 전 담당자와 광고주 확인이 필요합니다.",
     }
 
 
@@ -2491,45 +2491,45 @@ async def admin_validate_adcopy(request: Request) -> dict[str, Any]:
     try:
         body = await request.json()
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="검수할 generated.json 본문이 올바르지 않습니다.") from exc
+        raise HTTPException(status_code=400, detail="점검할 광고 업로드 파일 내용이 올바르지 않습니다.") from exc
     generated = body.get("generated") if isinstance(body, dict) and isinstance(body.get("generated"), dict) else body
     if not isinstance(generated, dict):
-        raise HTTPException(status_code=400, detail="generated 객체를 전달해 주세요.")
+        raise HTTPException(status_code=400, detail="광고 업로드 파일 내용을 전달해 주세요.")
     validation_report = _validate_generated_adcopy(generated)
     return {
         "ok": validation_report["ok"],
         "generated": generated,
         "validation_report": validation_report,
         "summary": validation_report["summary"],
-        "notice": "수정된 generated.json을 다시 검수했습니다. 업로드 전 운영자 최종 확인이 필요합니다.",
+        "notice": "수정된 광고 업로드 파일을 다시 점검했습니다. 업로드 전 담당자 최종 확인이 필요합니다.",
     }
 
 
 @app.post("/api/admin/adcopy/import", include_in_schema=False)
 async def admin_import_adcopy(request: Request) -> dict[str, Any]:
     _require_admin(request)
-    payload = await _validated_admin_payload(request, AdsAdcopyImportRequest, "흡수할 외부 generated.json 본문이 올바르지 않습니다.")
+    payload = await _validated_admin_payload(request, AdsAdcopyImportRequest, "불러올 기존 작업 파일 내용이 올바르지 않습니다.")
     imported = _normalize_external_generated_adcopy(payload)
     generated = imported["generated"]
     validation_report = _validate_generated_adcopy(generated)
     return {
         "ok": validation_report["ok"],
-        "model": "외부 JSON 정규화",
+        "model": "기존 작업 불러오기",
         "generated": generated,
         "validation_report": validation_report,
         "summary": validation_report["summary"],
         "import_report": imported["import_report"],
-        "notice": "외부 산출물을 우리 generated.json 스키마로 정규화했습니다. 생성 엔진 의존 없이 검수와 draft 세팅에 사용할 수 있습니다.",
+        "notice": "기존 작업 파일을 광고 업로드 형식으로 변환했습니다. 자동 점검과 임시 등록에 사용할 수 있습니다.",
     }
 
 
 @app.post("/api/admin/adcopy/review-state", include_in_schema=False)
 async def admin_save_adcopy_review_state(request: Request) -> dict[str, Any]:
     _require_admin(request)
-    payload = await _validated_admin_payload(request, AdsAdcopyReviewStateRequest, "저장할 카피 검수 상태 본문이 올바르지 않습니다.")
+    payload = await _validated_admin_payload(request, AdsAdcopyReviewStateRequest, "저장할 문안 검토 상태 내용이 올바르지 않습니다.")
     generated = payload.generated if isinstance(payload.generated, dict) else {}
     if not generated:
-        raise HTTPException(status_code=400, detail="저장할 generated.json이 없습니다.")
+        raise HTTPException(status_code=400, detail="저장할 광고 업로드 파일 내용이 없습니다.")
     validation_report = _validate_generated_adcopy(generated)
     from admin_store import save_adcopy_review_snapshot
 
@@ -2546,7 +2546,7 @@ async def admin_save_adcopy_review_state(request: Request) -> dict[str, Any]:
         "ok": True,
         "snapshot": snapshot,
         "validation_report": validation_report,
-        "notice": "현재 운영 검수 상태를 저장했습니다. 저장은 draft 생성·활성화와 무관합니다.",
+        "notice": "현재 문안 검토 상태를 저장했습니다. 저장은 임시 등록이나 게시 전환과 무관합니다.",
     }
 
 
@@ -2604,20 +2604,20 @@ async def admin_import_adcopy_workbook(request: Request, file: UploadFile = File
     workbook_dump = _adcopy_workbook_dump(content, filename)
     payload = AdsAdcopyImportRequest(
         generated=workbook_dump,
-        source_label=f"엑셀 흡수: {Path(filename).name}",
+        source_label=f"엑셀 불러오기: {Path(filename).name}",
     )
     imported = _normalize_external_generated_adcopy(payload)
     generated = imported["generated"]
     validation_report = _validate_generated_adcopy(generated)
     return {
         "ok": validation_report["ok"],
-        "model": "엑셀 정규화",
+        "model": "엑셀 불러오기",
         "generated": generated,
         "validation_report": validation_report,
         "summary": validation_report["summary"],
         "import_report": imported["import_report"],
         "workbook": {"file": filename, "sheets": len(workbook_dump.get("sheets") or [])},
-        "notice": "업로드한 review.xlsx를 우리 generated.json 스키마로 정규화했습니다.",
+        "notice": "업로드한 엑셀 작업 파일을 광고 업로드 형식으로 변환했습니다.",
     }
 
 
@@ -2632,14 +2632,14 @@ async def admin_inspect_adcopy_landing(request: Request) -> dict[str, Any]:
         "source_url": payload.landing_url,
         "final_url": final_url,
         "metadata": metadata,
-        "notice": "랜딩 페이지의 공개 메타 정보를 읽었습니다. 자동 입력 전 운영자가 내용을 확인해야 합니다.",
+        "notice": "랜딩 페이지의 공개 메타 정보를 읽었습니다. 자동 입력 전 담당자가 내용을 확인해야 합니다.",
     }
 
 
 @app.post("/api/admin/adcopy/draft-plan", include_in_schema=False)
 async def admin_adcopy_draft_plan(request: Request) -> dict[str, Any]:
     _require_admin(request)
-    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "draft 세팅 본문이 올바르지 않습니다.")
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "임시 등록 요청 내용이 올바르지 않습니다.")
     return _build_adcopy_draft_plan(payload)
 
 
@@ -2649,7 +2649,7 @@ async def admin_adcopy_draft_preflight(request: Request) -> dict[str, Any]:
     from rag_chatbot.ads_api import fetch_ad_account_metadata
 
     _require_admin(request)
-    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "draft 리허설 본문이 올바르지 않습니다.")
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftPlanRequest, "사전 점검 요청 내용이 올바르지 않습니다.")
     plan = _build_adcopy_draft_plan(payload)
     credential = get_ads_api_key_credential(payload.advertiser_name)
     api_key = credential.get("api_key", "")
@@ -2664,7 +2664,7 @@ async def admin_adcopy_draft_preflight(request: Request) -> dict[str, Any]:
             "industry": credential.get("industry") or "",
             "has_ads_api_key": bool(api_key),
         },
-        "notice": "read-only draft 리허설입니다. 캠페인, 광고그룹, 소재를 생성하지 않았고 live 전환도 하지 않았습니다.",
+        "notice": "읽기 전용 사전 점검입니다. 캠페인, 광고그룹, 소재를 생성하지 않았고 게시 전환도 하지 않았습니다.",
     }
 
 
@@ -2674,15 +2674,15 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
     from rag_chatbot.ads_api import fetch_ad_account_metadata
 
     _require_admin(request)
-    payload = await _validated_admin_payload(request, AdsAdcopyDraftExecuteRequest, "draft 실행 본문이 올바르지 않습니다.")
+    payload = await _validated_admin_payload(request, AdsAdcopyDraftExecuteRequest, "임시 등록 실행 내용이 올바르지 않습니다.")
     action = payload.action.strip()
     state = dict(payload.state or {})
     if action not in {"verify_account", "create_campaign", "upload_assets", "create_ad_groups", "create_ads", "activate_all"}:
-        raise HTTPException(status_code=400, detail="지원하지 않는 draft 실행 단계입니다.")
+        raise HTTPException(status_code=400, detail="지원하지 않는 임시 등록 단계입니다.")
     if action == "activate_all" and os.getenv("ADS_DRAFT_ALLOW_ACTIVATION", "").strip().lower() not in {"1", "true", "yes"}:
         raise HTTPException(
             status_code=400,
-            detail="현재 운영 정책상 캠페인 live 전환은 비활성화되어 있습니다. paused draft 생성까지만 진행할 수 있습니다.",
+            detail="현재 운영 정책상 캠페인 게시 전환은 비활성화되어 있습니다. 비활성 임시 등록까지만 진행할 수 있습니다.",
         )
     credential = get_ads_api_key_credential(payload.advertiser_name)
     api_key = credential.get("api_key", "")
@@ -2722,7 +2722,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
     if not payload.confirm:
         record_draft_audit(
             "error",
-            "실행 확인이 없어 draft 단계를 진행하지 않았습니다.",
+            "실행 확인이 없어 임시 등록 단계를 진행하지 않았습니다.",
             [{"level": "error", "message": "실행 확인 누락"}],
         )
         raise HTTPException(status_code=400, detail="실행 확인이 필요합니다. 각 단계는 운영자 확인 후에만 진행됩니다.")
@@ -2738,7 +2738,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
                 if not campaign_id:
                     raise HTTPException(status_code=502, detail="캠페인 생성 응답에서 campaign id를 찾지 못했습니다.")
                 state["campaign_id"] = campaign_id
-                logs.append({"level": "success", "message": "paused 캠페인 draft를 생성했습니다.", "id": campaign_id})
+                logs.append({"level": "success", "message": "비활성 캠페인을 임시 등록했습니다.", "id": campaign_id})
 
         elif action == "upload_assets":
             file_ids = _state_mapping(state, "file_ids")
@@ -2758,7 +2758,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
         elif action == "create_ad_groups":
             campaign_id = str(state.get("campaign_id") or "").strip()
             if not campaign_id:
-                raise HTTPException(status_code=400, detail="광고그룹 생성 전 캠페인 draft를 먼저 생성해야 합니다.")
+                raise HTTPException(status_code=400, detail="광고그룹 생성 전 캠페인을 먼저 임시 등록해야 합니다.")
             ad_group_ids = _state_mapping(state, "ad_group_ids")
             for group in plan["ad_groups"]:
                 name = group["name"]
@@ -2774,14 +2774,14 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
                 if not ad_group_id:
                     raise HTTPException(status_code=502, detail=f"광고그룹 생성 응답에서 ad group id를 찾지 못했습니다: {name}")
                 ad_group_ids[name] = ad_group_id
-                logs.append({"level": "success", "message": "paused 광고그룹 draft를 생성했습니다.", "name": name, "id": ad_group_id})
+                logs.append({"level": "success", "message": "비활성 광고그룹을 임시 등록했습니다.", "name": name, "id": ad_group_id})
             state["ad_group_ids"] = ad_group_ids
 
         elif action == "create_ads":
             ad_group_ids = _state_mapping(state, "ad_group_ids")
             file_ids = _state_mapping(state, "file_ids")
             if not ad_group_ids:
-                raise HTTPException(status_code=400, detail="소재 생성 전 광고그룹 draft를 먼저 생성해야 합니다.")
+                raise HTTPException(status_code=400, detail="소재 생성 전 광고그룹을 먼저 임시 등록해야 합니다.")
             ad_ids = _state_mapping(state, "ad_ids")
             for ad in plan["ads"]:
                 ad_name = ad["name"]
@@ -2803,7 +2803,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
                 if not ad_id:
                     raise HTTPException(status_code=502, detail=f"소재 생성 응답에서 ad id를 찾지 못했습니다: {ad_name}")
                 ad_ids[ad_key] = ad_id
-                logs.append({"level": "success", "message": "paused 소재 draft를 생성했습니다.", "name": ad_name, "id": ad_id})
+                logs.append({"level": "success", "message": "비활성 소재를 임시 등록했습니다.", "name": ad_name, "id": ad_id})
             state["ad_ids"] = ad_ids
 
         elif action == "activate_all":
@@ -2811,7 +2811,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
             ad_group_ids = _state_mapping(state, "ad_group_ids")
             ad_ids = _state_mapping(state, "ad_ids")
             if not campaign_id or not ad_group_ids or not ad_ids:
-                raise HTTPException(status_code=400, detail="활성화 전 캠페인, 광고그룹, 소재 draft 생성이 모두 완료되어야 합니다.")
+                raise HTTPException(status_code=400, detail="게시 전환 전 캠페인, 광고그룹, 소재 임시 등록이 모두 완료되어야 합니다.")
             for name, ad_id in ad_ids.items():
                 await _ads_draft_api_request(api_key, "POST", f"/v1/ads/{ad_id}/activate", {})
                 logs.append({"level": "success", "message": "소재를 활성화했습니다.", "name": name.rsplit("::", 1)[-1], "id": ad_id})
@@ -2831,7 +2831,7 @@ async def admin_adcopy_draft_execute(request: Request) -> dict[str, Any]:
         )
         raise HTTPException(status_code=502, detail=message) from exc
     except HTTPException as exc:
-        message = str(exc.detail or "draft 실행 중 오류가 발생했습니다.")
+        message = str(exc.detail or "임시 등록 실행 중 오류가 발생했습니다.")
         record_draft_audit(
             "error",
             message,

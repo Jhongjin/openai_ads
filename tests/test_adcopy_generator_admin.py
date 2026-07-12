@@ -45,7 +45,7 @@ def generated_payload() -> dict:
         "source_excerpt": "",
         "generation_basis": "초등 영어 반복 학습",
         "confidence_score": 0.82,
-        "validation_status": "운영 검수 필요",
+        "validation_status": "담당자 확인 필요",
         "review_comment": "should be removed",
         "exclusion_reason": "should be removed",
     }
@@ -249,7 +249,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertEqual(body["model"], "외부 JSON 정규화")
+        self.assertEqual(body["model"], "기존 작업 불러오기")
         self.assertEqual(body["import_report"]["source_format"], "native")
         self.assertEqual(body["generated"]["campaigns"][0]["campaign_name"], "01_학습자료")
         self.assertNotIn("max_bid", body["generated"]["adgroups"][0])
@@ -429,7 +429,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertEqual(body["model"], "엑셀 정규화")
+        self.assertEqual(body["model"], "엑셀 불러오기")
         self.assertEqual(body["workbook"]["sheets"], 3)
         self.assertEqual(body["import_report"]["adgroups"], 1)
         self.assertEqual(body["import_report"]["ads"], 1)
@@ -650,7 +650,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
                 "status": "success",
                 "message": "테스트 감사 로그",
                 "state": {"campaign_id": "cmpn_audit", "ad_group_ids": {"01": "adgrp_1"}, "ad_ids": {}, "file_ids": {}},
-                "logs": [{"level": "success", "message": "paused 캠페인 draft 생성", "id": "cmpn_audit"}],
+                "logs": [{"level": "success", "message": "비활성 캠페인 임시 등록", "id": "cmpn_audit"}],
             }
         )
         self.assertTrue(saved["ok"])
@@ -735,7 +735,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("live 전환은 비활성화", response.json()["detail"])
+        self.assertIn("게시 전환은 비활성화", response.json()["detail"])
 
     def test_admin_adcopy_landing_inspect_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)

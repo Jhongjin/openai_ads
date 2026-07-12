@@ -85,7 +85,7 @@
             </button>
             <button class="rail-button" type="button" data-admin-view="adcopyGenerator">
               <i class="ti ti-sparkles"></i>
-              <span>AI 카피 생성기</span>
+              <span>AI 광고 문안 생성기</span>
             </button>
             <button class="rail-button" type="button" data-admin-view="ads">
               <i class="ti ti-key"></i>
@@ -645,13 +645,13 @@
               <section class="surface adcopy-generator-surface">
                 <div class="surface-head">
                   <div>
-                    <h2 class="surface-title">AI 카피 생성기</h2>
-                    <p class="surface-copy">OpenAI 모델로 OpenAI Ads 업로드용 generated.json 초안을 만들고, 제목·카피·정책 검수 결과를 함께 확인합니다.</p>
+                    <h2 class="surface-title">AI 광고 문안 생성기</h2>
+                    <p class="surface-copy">OpenAI 모델로 광고 업로드에 필요한 문안을 만들고, 제목·문구·광고 기준 점검 결과를 함께 확인합니다.</p>
                   </div>
                   <div class="doc-actions adcopy-doc-actions">
                     <div class="adcopy-action-group">
                       <label class="adcopy-export-filter">
-                        <span>JSON 기준</span>
+                        <span>내보내기 기준</span>
                         <select id="adcopy-export-mode" disabled>
                           <option value="all">전체 소재</option>
                           <option value="approved">승인만</option>
@@ -660,11 +660,11 @@
                       </label>
                       <button class="btn-secondary" type="button" id="copy-adcopy-json" disabled>
                         <i class="ti ti-copy"></i>
-                        JSON 복사
+                        업로드 파일 복사
                       </button>
                       <button class="btn-secondary" type="button" id="download-adcopy-json" disabled>
                         <i class="ti ti-download"></i>
-                        JSON 다운로드
+                        업로드 파일 다운로드
                       </button>
                     </div>
                     <div class="adcopy-action-group">
@@ -674,11 +674,11 @@
                       </button>
                       <button class="btn-secondary" type="button" id="download-adcopy-report" disabled>
                         <i class="ti ti-file-report"></i>
-                        검수 리포트
+                        검토 리포트
                       </button>
                       <button class="btn-secondary" type="button" id="validate-adcopy-json" disabled>
                         <i class="ti ti-checkup-list"></i>
-                        수정 재검수
+                        수정 재점검
                       </button>
                       <button class="btn-secondary" type="button" id="reset-adcopy-generator" aria-label="입력 초기화">
                         <i class="ti ti-eraser"></i>
@@ -690,8 +690,8 @@
                 <div class="surface-body stack">
                   <div class="adcopy-safe-note">
                     <div>
-                      <strong>초안 전용</strong>
-                      <span>이 화면은 캠페인·광고그룹·소재를 생성하지 않습니다. 결과는 운영 검수 후 수동 업로드 또는 다음 단계의 draft 세팅 흐름으로만 넘깁니다.</span>
+                      <strong>검토용 생성</strong>
+                      <span>이 화면에서는 광고를 바로 게시하지 않습니다. 생성 결과는 담당자 확인 후 업로드하거나 임시 캠페인 등록 단계로 넘깁니다.</span>
                     </div>
                     <button class="btn-secondary btn-compact" type="button" id="fill-adcopy-sample">
                       <i class="ti ti-flask"></i>
@@ -702,24 +702,24 @@
                     <summary>
                       <span>
                         <i class="ti ti-file-import"></i>
-                        외부 JSON 흡수
+                        기존 작업 불러오기
                       </span>
-                      <small>AI팀 산출물도 우리 generated.json 스키마로 정규화합니다.</small>
+                      <small>다른 도구에서 만든 작업 파일도 광고 업로드 형식에 맞게 변환합니다.</small>
                     </summary>
                     <div class="adcopy-import-body">
                       <label class="field">
-                        <span class="field-label">외부 generated.json 또는 review JSON</span>
+                        <span class="field-label">기존 작업 JSON 또는 검토 JSON</span>
                         <textarea class="textarea" id="adcopy-import-json" spellcheck="false" placeholder='{"campaign": {...}, "ad_groups": [...], "creatives": [...]}'></textarea>
                       </label>
                       <div class="adcopy-import-actions">
                         <input class="sr-only" id="adcopy-import-workbook" type="file" accept=".xlsx" />
                         <button class="btn-secondary" type="button" id="import-adcopy-json">
                           <i class="ti ti-transform"></i>
-                          정규화·검수
+                          불러오기·점검
                         </button>
                         <button class="btn-secondary" type="button" id="import-adcopy-workbook">
                           <i class="ti ti-file-spreadsheet"></i>
-                          엑셀 흡수
+                          엑셀 불러오기
                         </button>
                         <button class="btn-secondary" type="button" id="download-adcopy-sample-workbook">
                           <i class="ti ti-download"></i>
@@ -727,13 +727,13 @@
                         </button>
                         <button class="btn-secondary" type="button" id="import-adcopy-sample-workbook">
                           <i class="ti ti-flask"></i>
-                          샘플 바로 흡수
+                          샘플 바로 적용
                         </button>
                         <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
                           <i class="ti ti-x"></i>
                           비우기
                         </button>
-                        <p class="status-line" id="adcopy-import-status">외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.</p>
+                        <p class="status-line" id="adcopy-import-status">기존 작업 파일을 광고 업로드 형식에 맞게 변환합니다.</p>
                       </div>
                     </div>
                   </details>
@@ -741,9 +741,9 @@
                     <summary>
                       <span>
                         <i class="ti ti-history"></i>
-                        검수 저장본
+                        작업 저장본
                       </span>
-                      <small>저장한 운영 검수 상태를 다시 불러옵니다.</small>
+                      <small>저장한 문안 검토 상태를 다시 불러옵니다.</small>
                     </summary>
                     <div class="adcopy-import-body">
                       <div class="adcopy-snapshot-controls">
@@ -763,7 +763,7 @@
                           삭제
                         </button>
                       </div>
-                      <p class="status-line" id="adcopy-review-snapshot-status">최근 저장본을 불러오면 draft plan과 내보내기 기준도 함께 갱신됩니다.</p>
+                      <p class="status-line" id="adcopy-review-snapshot-status">저장본을 불러오면 업로드 파일과 임시 등록 계획도 함께 갱신됩니다.</p>
                     </div>
                   </details>
                   <div class="adcopy-generator-layout">
@@ -811,7 +811,7 @@
                           <span>02</span>
                           <div>
                             <h3>캠페인 조건</h3>
-                            <p>생성 결과의 campaign 행에 그대로 반영되는 값입니다.</p>
+                            <p>생성 결과의 캠페인 정보에 그대로 반영되는 값입니다.</p>
                           </div>
                         </div>
                         <div class="grid-3">
@@ -874,8 +874,8 @@
                         <div class="adcopy-form-section-head">
                           <span>03</span>
                           <div>
-                            <h3>소재 브리프</h3>
-                            <p>AI가 광고그룹, Context Hints, 제목과 카피를 만드는 핵심 입력입니다.</p>
+                            <h3>광고 문안 브리프</h3>
+                            <p>AI가 광고그룹, 검색 맥락, 제목과 문구를 만드는 핵심 입력입니다.</p>
                           </div>
                         </div>
                         <label class="field">
@@ -931,8 +931,8 @@
                         <div class="adcopy-form-section-head">
                           <span>04</span>
                           <div>
-                            <h3>정책·검수 조건</h3>
-                            <p>금지 표현과 필수 문구는 자동 검수 리포트에도 함께 반영됩니다.</p>
+                            <h3>광고 기준</h3>
+                            <p>사용하면 안 되는 표현과 꼭 포함할 문구를 점검 기준에 반영합니다.</p>
                           </div>
                         </div>
                         <div class="grid-2">
@@ -966,38 +966,38 @@
                         <div><span>캠페인</span><strong>-</strong></div>
                         <div><span>광고그룹</span><strong>-</strong></div>
                         <div><span>소재</span><strong>-</strong></div>
-                        <div><span>검수</span><strong>-</strong></div>
+                        <div><span>점검</span><strong>-</strong></div>
                       </div>
                       <div class="adcopy-quality-panel" id="adcopy-quality-panel">
                         <div class="adcopy-quality-score">
-                          <span>품질 스코어</span>
+                          <span>완성도 점수</span>
                           <strong>-</strong>
                         </div>
                         <div class="adcopy-quality-meta">
-                          <span class="tag">생성 전</span>
-                          <p>초안을 생성하면 운영 검수 기준의 점수와 추천 수정 포인트가 표시됩니다.</p>
+                          <span class="tag">대기 중</span>
+                          <p>문안을 생성하면 완성도와 추천 수정 포인트가 표시됩니다.</p>
                         </div>
                       </div>
                       <div class="adcopy-upload-checklist" id="adcopy-upload-checklist">
                         <div class="adcopy-upload-check is-muted">
                           <i class="ti ti-list-check"></i>
-                          <span>업로드 준비 체크는 생성 후 표시됩니다.</span>
+                          <span>업로드 전 확인 항목은 생성 후 표시됩니다.</span>
                         </div>
                       </div>
                       <div class="adcopy-draft-panel" id="adcopy-draft-panel">
                         <div class="adcopy-draft-head">
                           <div>
-                            <h4>Draft 세팅 자동화</h4>
-                            <p>generated.json 기준으로 OpenAI Ads draft를 단계별 생성합니다. 신규 객체는 모두 paused 상태입니다.</p>
+                            <h4>임시 캠페인 등록</h4>
+                            <p>검토 완료한 광고 파일로 OpenAI Ads에 임시 캠페인을 단계별 등록합니다. 새 항목은 모두 비활성 상태로 생성됩니다.</p>
                           </div>
                           <div class="adcopy-draft-head-actions">
                             <button class="btn-secondary btn-compact" type="button" id="run-adcopy-draft-preflight" disabled>
                               <i class="ti ti-shield-check"></i>
-                              리허설
+                              사전 점검
                             </button>
                             <button class="btn-secondary btn-compact" type="button" id="download-adcopy-draft-plan" disabled>
                               <i class="ti ti-download"></i>
-                              plan JSON
+                              실행 계획
                             </button>
                             <button class="btn-secondary btn-compact" type="button" id="load-adcopy-draft-audit">
                               <i class="ti ti-history"></i>
@@ -1005,7 +1005,7 @@
                             </button>
                             <button class="btn-secondary btn-compact" type="button" id="download-adcopy-draft-audit">
                               <i class="ti ti-file-spreadsheet"></i>
-                              기록 CSV
+                              기록 내보내기
                             </button>
                             <span class="tag" id="adcopy-draft-badge">대기</span>
                           </div>
@@ -1016,49 +1016,49 @@
                             <input class="control" id="adcopy-draft-max-bid" type="number" min="0" step="100" value="7000" />
                           </label>
                           <label class="field">
-                            <span class="field-label">Location IDs</span>
+                            <span class="field-label">타깃 지역 ID</span>
                             <input class="control" id="adcopy-draft-location-ids" placeholder="예: 2000043, 3000194" />
                           </label>
                         </div>
-                        <div class="adcopy-draft-guardrail" aria-label="Draft 안전 경계">
-                          <span><i class="ti ti-shield-check"></i>리허설은 생성 없음</span>
-                          <span><i class="ti ti-player-pause"></i>신규 객체 paused</span>
-                          <span class="is-locked"><i class="ti ti-lock"></i>live 전환 금지</span>
+                        <div class="adcopy-draft-guardrail" aria-label="임시 등록 안전 기준">
+                          <span><i class="ti ti-shield-check"></i>사전 점검은 등록 없음</span>
+                          <span><i class="ti ti-player-pause"></i>새 항목 비활성</span>
+                          <span class="is-locked"><i class="ti ti-lock"></i>게시 전환 금지</span>
                         </div>
                         <div class="adcopy-draft-summary" id="adcopy-draft-summary">
-                          초안을 생성하면 draft plan을 확인할 수 있습니다.
+                          문안을 생성하면 임시 등록 계획을 확인할 수 있습니다.
                         </div>
                         <div class="adcopy-draft-steps" id="adcopy-draft-steps">
                           <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="verify_account" disabled>
-                            <span>1</span><strong>계정 확인</strong><small>API 키 상태 확인</small>
+                            <span>1</span><strong>광고 계정 확인</strong><small>연결 상태 확인</small>
                           </button>
                           <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_campaign" disabled>
-                            <span>2</span><strong>캠페인 draft</strong><small>paused 생성</small>
+                            <span>2</span><strong>캠페인 임시 등록</strong><small>비활성 생성</small>
                           </button>
                           <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="upload_assets" disabled>
-                            <span>3</span><strong>이미지 업로드</strong><small>file_id 확보</small>
+                            <span>3</span><strong>이미지 업로드</strong><small>광고 이미지 등록</small>
                           </button>
                           <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_ad_groups" disabled>
-                            <span>4</span><strong>광고그룹 draft</strong><small>paused 생성</small>
+                            <span>4</span><strong>광고그룹 임시 등록</strong><small>비활성 생성</small>
                           </button>
                           <button class="adcopy-draft-step" type="button" data-adcopy-draft-action="create_ads" disabled>
-                            <span>5</span><strong>소재 draft</strong><small>paused 생성</small>
+                            <span>5</span><strong>소재 임시 등록</strong><small>비활성 생성</small>
                           </button>
                           <button class="adcopy-draft-step is-danger" type="button" data-adcopy-draft-action="activate_all" disabled>
                             <span>6</span><strong>활성화</strong><small>현재 금지</small>
                           </button>
                         </div>
                         <div class="adcopy-draft-log" id="adcopy-draft-log">
-                          실행 로그가 여기에 표시됩니다.
+                          작업 진행 내역이 여기에 표시됩니다.
                         </div>
                       </div>
                       <div class="adcopy-result-section">
                         <div class="adcopy-result-section-head">
-                          <h4>광고그룹·소재 미리보기</h4>
+                          <h4>생성 결과 미리보기</h4>
                           <div class="adcopy-preview-actions">
-                            <div class="adcopy-preview-filter" role="group" aria-label="소재 검수 필터">
+                            <div class="adcopy-preview-filter" role="group" aria-label="소재 점검 필터">
                               <button class="is-active" type="button" data-adcopy-preview-filter="all" disabled>전체</button>
-                              <button type="button" data-adcopy-preview-filter="issue" disabled>문제</button>
+                              <button type="button" data-adcopy-preview-filter="issue" disabled>확인 필요</button>
                               <button type="button" data-adcopy-preview-filter="warning" disabled>주의</button>
                               <button type="button" data-adcopy-preview-filter="error" disabled>오류</button>
                             </div>
@@ -1066,7 +1066,7 @@
                               <span>운영 상태</span>
                               <select id="adcopy-review-filter" disabled>
                                 <option value="all">운영 전체</option>
-                                <option value="pending">미검수</option>
+                                <option value="pending">미확인</option>
                                 <option value="approved">승인</option>
                                 <option value="revise">수정 필요</option>
                                 <option value="excluded">제외</option>
@@ -1075,15 +1075,15 @@
                             <div class="adcopy-bulk-actions">
                               <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" disabled>
                                 <i class="ti ti-wand"></i>
-                                자동 판정 반영
+                                자동 점검 반영
                               </button>
                               <button class="btn-secondary btn-compact" type="button" id="save-adcopy-review-state" disabled>
                                 <i class="ti ti-device-floppy"></i>
-                                검수 저장
+                                검토 저장
                               </button>
                               <button class="btn-secondary btn-compact" type="button" id="reset-adcopy-review-status" disabled>
                                 <i class="ti ti-rotate-2"></i>
-                                검수 초기화
+                                검토 초기화
                               </button>
                             </div>
                           </div>
@@ -1093,14 +1093,14 @@
                         </div>
                       </div>
                       <div class="adcopy-result-section">
-                        <h4>자동 검수 리포트</h4>
+                        <h4>자동 점검 리포트</h4>
                         <div class="adcopy-validation-list" id="adcopy-validation-list">
-                          <div class="empty-pane">검수 결과가 없습니다.</div>
+                          <div class="empty-pane">점검 결과가 없습니다.</div>
                         </div>
                       </div>
                       <details class="adcopy-json-details">
                         <summary>
-                          <span>generated.json 보기</span>
+                          <span>광고 업로드 파일 보기</span>
                           <small id="adcopy-json-preview-mode">전체 소재 기준</small>
                         </summary>
                         <pre id="adcopy-json-preview">{}</pre>
@@ -1529,7 +1529,7 @@
         guides: ["안내자료 편집", "광고주 안내자료, 캠페인 세팅 가이드, 픽셀 설치 가이드를 수정합니다."],
         menuSettings: ["메뉴 노출 관리", "일반 사용자에게 공개할 운영 메뉴와 안내자료 탭을 관리합니다."],
         ads: ["광고주 API 키", "광고주별 Ads API 키를 등록하고 조회 상태를 확인합니다."],
-        adcopyGenerator: ["AI 카피 생성기", "generated.json 호환 카피 초안을 만들고 자동 검수합니다."],
+        adcopyGenerator: ["AI 광고 문안 생성기", "광고 업로드용 문안을 만들고 자동 점검합니다."],
         performance: ["Ads 성과 대시보드", "광고주 API 키 기반으로 Ads 성과를 조회합니다."],
         official: ["공식 문서 변경 로그", "공식 문서 변경 감지 결과를 검토합니다."],
         mail: ["메일 검토함", "메일 기반 운영 지식 반영 후보를 검토합니다."],
@@ -3826,7 +3826,7 @@
           image_link: payload.image_link,
           banned_terms: payload.banned_terms,
           required_phrases: payload.required_phrases,
-          source_label: "외부 JSON",
+          source_label: "기존 작업 파일",
         };
       }
 
@@ -3867,13 +3867,13 @@
           textarea.focus();
           return;
         }
-        setButtonBusy(button, true, "정규화 중...");
-        setStatus("adcopy-import-status", "외부 산출물을 우리 generated.json 스키마로 변환하는 중입니다.");
+        setButtonBusy(button, true, "점검 중...");
+        setStatus("adcopy-import-status", "기존 작업 파일을 광고 업로드 형식으로 변환하는 중입니다.");
         try {
           const data = await adminFetch("/api/admin/adcopy/import", {
             method: "POST",
             body: JSON.stringify({ generated: parsed, ...readAdcopyImportDefaults() }),
-            loadingMessage: "외부 generated.json을 정규화하는 중입니다.",
+            loadingMessage: "기존 작업 파일을 불러오는 중입니다.",
           });
           adcopyLastResult = data;
           adcopyPreviewFilter = "all";
@@ -3886,10 +3886,10 @@
           const warningText = (report.warnings || []).length ? ` · ${report.warnings.join(" ")}` : "";
           setStatus(
             "adcopy-import-status",
-            `정규화 완료: 광고그룹 ${formatNumber(report.adgroups || 0)}개, 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
+            `불러오기 완료: 광고그룹 ${formatNumber(report.adgroups || 0)}개, 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
             data.ok ? "ok" : "warning",
           );
-          setStatus("adcopy-generator-status", data.ok ? "외부 JSON 흡수와 자동 검수를 완료했습니다." : "외부 JSON 흡수 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+          setStatus("adcopy-generator-status", data.ok ? "기존 작업 불러오기와 자동 점검을 완료했습니다." : "기존 작업을 불러왔습니다. 점검 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
           setButtonBusy(button, false);
         }
@@ -3904,19 +3904,19 @@
           return;
         }
         if (!/\.xlsx$/i.test(selectedFile.name || "")) {
-          setStatus("adcopy-import-status", "xlsx 파일만 흡수할 수 있습니다.", "error");
+          setStatus("adcopy-import-status", "xlsx 파일만 불러올 수 있습니다.", "error");
           input.value = "";
           return;
         }
         const formData = new FormData();
         formData.append("file", selectedFile);
-        setButtonBusy(button, true, "흡수 중...");
-        setStatus("adcopy-import-status", `${selectedFile.name} 파일을 generated.json 스키마로 정규화하는 중입니다.`);
+        setButtonBusy(button, true, "불러오는 중...");
+        setStatus("adcopy-import-status", `${selectedFile.name} 파일을 광고 업로드 형식으로 변환하는 중입니다.`);
         try {
           const data = await adminFetch("/api/admin/adcopy/import-workbook", {
             method: "POST",
             body: formData,
-            loadingMessage: "review.xlsx를 정규화하는 중입니다.",
+            loadingMessage: "엑셀 작업 파일을 불러오는 중입니다.",
           });
           adcopyLastResult = data;
           adcopyPreviewFilter = "all";
@@ -3930,10 +3930,10 @@
           const warningText = (report.warnings || []).length ? ` · ${report.warnings.join(" ")}` : "";
           setStatus(
             "adcopy-import-status",
-            `엑셀 흡수 완료: 시트 ${formatNumber(workbook.sheets || 0)}개 · 광고그룹 ${formatNumber(report.adgroups || 0)}개 · 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
+            `엑셀 불러오기 완료: 시트 ${formatNumber(workbook.sheets || 0)}개 · 광고그룹 ${formatNumber(report.adgroups || 0)}개 · 소재 ${formatNumber(report.ads || 0)}개${warningText}`,
             data.ok ? "ok" : "warning",
           );
-          setStatus("adcopy-generator-status", data.ok ? "엑셀 흡수와 자동 검수를 완료했습니다." : "엑셀 흡수 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+          setStatus("adcopy-generator-status", data.ok ? "엑셀 불러오기와 자동 점검을 완료했습니다." : "엑셀을 불러왔습니다. 점검 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
           setButtonBusy(button, false);
           input.value = "";
@@ -3943,8 +3943,8 @@
       async function downloadAdcopySampleWorkbook() {
         const button = $("#download-adcopy-sample-workbook");
         setButtonBusy(button, true, "준비 중...");
-        setStatus("adcopy-import-status", "샘플 검수 워크북을 준비하는 중입니다.");
-        setGlobalLoading(true, "샘플 검수 워크북을 다운로드하는 중입니다.");
+        setStatus("adcopy-import-status", "샘플 작업 파일을 준비하는 중입니다.");
+        setGlobalLoading(true, "샘플 작업 파일을 다운로드하는 중입니다.");
         try {
           const response = await fetch("/api/admin/adcopy/sample-workbook", {
             credentials: "same-origin",
@@ -3966,7 +3966,7 @@
           link.click();
           link.remove();
           URL.revokeObjectURL(url);
-          setStatus("adcopy-import-status", "샘플 XLSX를 다운로드했습니다. 받은 파일을 그대로 업로드해 흡수·검수·리허설 흐름을 테스트할 수 있습니다.", "ok");
+          setStatus("adcopy-import-status", "샘플 XLSX를 다운로드했습니다. 받은 파일을 그대로 업로드해 불러오기, 점검, 사전 점검 흐름을 테스트할 수 있습니다.", "ok");
         } catch (error) {
           if (error instanceof TypeError) {
             throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
@@ -3980,8 +3980,8 @@
 
       async function importAdcopySampleWorkbook() {
         const button = $("#import-adcopy-sample-workbook");
-        setButtonBusy(button, true, "흡수 중...");
-        setStatus("adcopy-import-status", "샘플 검수 워크북을 받아 즉시 흡수하는 중입니다.");
+        setButtonBusy(button, true, "적용 중...");
+        setStatus("adcopy-import-status", "샘플 작업 파일을 받아 즉시 적용하는 중입니다.");
         try {
           const response = await fetch("/api/admin/adcopy/sample-workbook", {
             credentials: "same-origin",
@@ -4340,7 +4340,7 @@
         $("#adcopy-landing-insight").innerHTML = "";
         $("#adcopy-import-json").value = "";
         $("#adcopy-import-workbook").value = "";
-        setStatus("adcopy-import-status", "외부 엔진을 실행하지 않고 산출물만 호환 변환합니다.");
+        setStatus("adcopy-import-status", "기존 작업 파일을 광고 업로드 형식에 맞게 변환합니다.");
         adcopyLastResult = null;
         adcopyPreviewFilter = "all";
         adcopyReviewFilter = "all";
@@ -4384,12 +4384,12 @@
           root.className = "adcopy-quality-panel";
           root.innerHTML = `
             <div class="adcopy-quality-score">
-              <span>품질 스코어</span>
+              <span>완성도 점수</span>
               <strong>-</strong>
             </div>
             <div class="adcopy-quality-meta">
-              <span class="tag">생성 전</span>
-              <p>초안을 생성하면 운영 검수 기준의 점수와 추천 수정 포인트가 표시됩니다.</p>
+              <span class="tag">대기 중</span>
+              <p>문안을 생성하면 완성도와 추천 수정 포인트가 표시됩니다.</p>
             </div>
           `;
           return;
@@ -4404,13 +4404,13 @@
         root.className = `adcopy-quality-panel ${adcopyQualityClass(score)}`;
         root.innerHTML = `
           <div class="adcopy-quality-score">
-            <span>품질 스코어</span>
+            <span>완성도 점수</span>
             <strong>${formatNumber(score)}</strong>
             <small>${escapeHtml(quality.grade || "-")} 등급</small>
           </div>
           <div class="adcopy-quality-meta">
-            <span class="tag ${adcopyQualityTagClass(report, score)}">${escapeHtml(quality.readiness || "운영 검수 필요")}</span>
-            <p>Context Hints ${formatNumber(quality.customer_keyword_count || 0)} / ${formatNumber(quality.keyword_count || 0)}개가 브리프 기반입니다${escapeHtml(riskText + domainText)}.</p>
+            <span class="tag ${adcopyQualityTagClass(report, score)}">${escapeHtml(quality.readiness || "담당자 확인 필요")}</span>
+            <p>검색 맥락 ${formatNumber(quality.customer_keyword_count || 0)} / ${formatNumber(quality.keyword_count || 0)}개가 브리프 기반입니다${escapeHtml(riskText + domainText)}.</p>
             <ul>
               ${recommendations.map((item) => `<li><strong>${escapeHtml(item.title || "추천")}</strong><span>${escapeHtml(item.message || "")}</span></li>`).join("")}
             </ul>
@@ -4431,7 +4431,7 @@
           root.innerHTML = `
             <div class="adcopy-upload-check is-muted">
               <i class="ti ti-list-check"></i>
-              <span>업로드 준비 체크는 생성 후 표시됩니다.</span>
+              <span>업로드 전 확인 항목은 생성 후 표시됩니다.</span>
             </div>
           `;
           return;
@@ -4468,7 +4468,7 @@
           },
           {
             icon: "ti-shield-check",
-            label: "정책 검수",
+            label: "광고 기준",
             value: policyErrorCount ? `${formatNumber(policyErrorCount)}개 오류` : `${formatNumber(warnings.length)}개 주의`,
             cls: adcopyUploadCheckClass(policyErrorCount === 0, warnings.length > 0),
           },
@@ -4480,7 +4480,7 @@
           },
           {
             icon: "ti-user-check",
-            label: "운영 승인",
+            label: "담당자 승인",
             value: `${formatNumber(approvedCount)} / ${formatNumber(ads.length)}`,
             cls: adcopyUploadCheckClass(ads.length > 0 && approvedCount === ads.length, blockedReviewCount > 0 || approvedCount > 0),
           },
@@ -4496,26 +4496,26 @@
 
       function adcopyDraftActionLabel(action) {
         const labels = {
-          verify_account: "계정 확인",
-          preflight: "검증 리허설",
-          create_campaign: "캠페인 draft",
+          verify_account: "광고 계정 확인",
+          preflight: "사전 점검",
+          create_campaign: "캠페인 임시 등록",
           upload_assets: "이미지 업로드",
-          create_ad_groups: "광고그룹 draft",
-          create_ads: "소재 draft",
-          activate_all: "최종 활성화",
+          create_ad_groups: "광고그룹 임시 등록",
+          create_ads: "소재 임시 등록",
+          activate_all: "게시 전환",
         };
         return labels[action] || action;
       }
 
       function adcopyDraftConfirmMessage(action) {
         const messages = {
-          create_campaign: "OpenAI Ads에 paused 캠페인 draft를 생성합니다. 아직 active 상태가 아닙니다. 진행할까요?",
-          upload_assets: "소재 이미지 URL을 OpenAI Ads에 업로드해 file_id를 생성합니다. 진행할까요?",
-          create_ad_groups: "캠페인 아래에 paused 광고그룹 draft를 생성합니다. 진행할까요?",
-          create_ads: "광고그룹 아래에 paused 소재 draft를 생성합니다. 진행할까요?",
-          activate_all: "마지막 단계입니다. 생성된 캠페인, 광고그룹, 소재를 active로 전환하면 실제 집행될 수 있습니다. 진행할까요?",
+          create_campaign: "OpenAI Ads에 비활성 캠페인을 임시 등록합니다. 아직 게시 상태가 아닙니다. 진행할까요?",
+          upload_assets: "소재 이미지 URL을 OpenAI Ads에 업로드해 광고 이미지로 등록합니다. 진행할까요?",
+          create_ad_groups: "캠페인 아래에 비활성 광고그룹을 임시 등록합니다. 진행할까요?",
+          create_ads: "광고그룹 아래에 비활성 소재를 임시 등록합니다. 진행할까요?",
+          activate_all: "마지막 단계입니다. 생성된 캠페인, 광고그룹, 소재를 게시 상태로 전환하면 실제 집행될 수 있습니다. 진행할까요?",
         };
-        return messages[action] || "선택한 draft 단계를 실행할까요?";
+        return messages[action] || "선택한 임시 등록 단계를 실행할까요?";
       }
 
       function readAdcopyDraftOptions() {
@@ -4588,28 +4588,28 @@
         }
         if (adcopyDraftState.activated_at) {
           badge.className = "tag tag-red";
-          badge.textContent = "active 완료";
+          badge.textContent = "게시 완료";
           return;
         }
         if (adcopyDraftState.campaign_id || adcopyDraftMapSize("ad_group_ids") || adcopyDraftMapSize("ad_ids")) {
           badge.className = "tag tag-blue";
-          badge.textContent = "draft 진행";
+          badge.textContent = "임시 등록 진행";
           return;
         }
         if (adcopyDraftPlan) {
           badge.className = "tag tag-green";
-          badge.textContent = "plan 준비";
+          badge.textContent = "계획 준비";
           return;
         }
         badge.className = "tag";
-        badge.textContent = adcopyLastResult?.generated ? "초안 준비" : "대기";
+        badge.textContent = adcopyLastResult?.generated ? "문안 준비" : "대기";
       }
 
       function renderAdcopyDraftSummary() {
         const root = $("#adcopy-draft-summary");
         if (!root) return;
         if (!adcopyLastResult?.generated) {
-          root.innerHTML = "초안을 생성하면 draft plan을 확인할 수 있습니다.";
+          root.innerHTML = "문안을 생성하면 임시 등록 계획을 확인할 수 있습니다.";
           return;
         }
         const exported = buildAdcopyExportGenerated(adcopyExportMode, { allowEmpty: true });
@@ -4622,7 +4622,7 @@
         if (!adcopyDraftPlan) {
           root.innerHTML = `
             <strong>${escapeHtml(exported.label)} 기준 · ${formatNumber(exported.ads)}개 소재</strong>
-            <span>계정 확인 또는 draft 실행 시 OpenAI Ads 생성용 plan을 계산합니다.</span>
+            <span>광고 계정 확인 또는 임시 등록 실행 시 OpenAI Ads 등록 계획을 계산합니다.</span>
             <small>${stateLine}</small>
           `;
           return;
@@ -4632,7 +4632,7 @@
         const liveDisabled = adcopyDraftPlan.safety?.activation_disabled !== false;
         root.innerHTML = `
           <strong>${escapeHtml(exported.label)} 기준 · 캠페인 ${formatNumber(summary.campaigns || 0)} · 광고그룹 ${formatNumber(summary.adgroups || 0)} · 소재 ${formatNumber(summary.ads || 0)} · 이미지 ${formatNumber(summary.assets || 0)}</strong>
-          <span>${liveDisabled ? "기본 상태는 paused입니다. 현재 운영 정책상 live 전환은 비활성화되어 있습니다." : "기본 상태는 paused입니다. active 전환은 별도 최종 확인 후에만 가능합니다."}</span>
+          <span>${liveDisabled ? "새 항목은 비활성 상태로 생성됩니다. 현재 운영 정책상 게시 전환은 비활성화되어 있습니다." : "새 항목은 비활성 상태로 생성됩니다. 게시 전환은 별도 최종 확인 후에만 가능합니다."}</span>
           <small>${stateLine}</small>
           ${warnings.length ? `<ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : ""}
         `;
@@ -4656,7 +4656,7 @@
         const root = $("#adcopy-draft-log");
         if (!root) return;
         if (!adcopyDraftLogs.length) {
-          root.innerHTML = "실행 로그가 여기에 표시됩니다.";
+          root.innerHTML = "작업 진행 내역이 여기에 표시됩니다.";
           return;
         }
         root.innerHTML = adcopyDraftLogs.slice(-8).map((item) => `
@@ -4684,7 +4684,7 @@
         const data = await adminFetch("/api/admin/adcopy/draft-plan", {
           method: "POST",
           body: JSON.stringify(payload),
-          loadingMessage: "OpenAI Ads draft plan을 계산하는 중입니다.",
+          loadingMessage: "OpenAI Ads 임시 등록 계획을 계산하는 중입니다.",
         });
         adcopyDraftPlan = data;
         renderAdcopyDraftPanel();
@@ -4702,12 +4702,12 @@
         const link = document.createElement("a");
         const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
         link.href = url;
-        link.download = `${adcopySafeDownloadName(campaignName)}_draft_plan.json`;
+        link.download = `${adcopySafeDownloadName(campaignName)}_setup_plan.json`;
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        setStatus("adcopy-generator-status", "OpenAI Ads paused draft plan JSON을 다운로드했습니다. live 전환 정보는 포함하지 않습니다.", "ok");
+        setStatus("adcopy-generator-status", "OpenAI Ads 임시 등록 실행 계획을 다운로드했습니다. 게시 전환 정보는 포함하지 않습니다.", "ok");
       }
 
       function pushAdcopyDraftLogs(action, logs = [], fallback = "") {
@@ -4732,7 +4732,7 @@
           const data = await adminFetch("/api/admin/adcopy/draft-preflight", {
             method: "POST",
             body: JSON.stringify(buildAdcopyDraftRequest()),
-            loadingMessage: "OpenAI Ads draft 리허설을 실행하는 중입니다.",
+            loadingMessage: "OpenAI Ads 사전 점검을 실행하는 중입니다.",
           });
           adcopyDraftPlan = data.plan || adcopyDraftPlan;
           if (data.state_patch && typeof data.state_patch === "object") {
@@ -4741,7 +4741,7 @@
           const checks = Array.isArray(data.checks) ? data.checks : [];
           pushAdcopyDraftLogs("preflight", checks.map((check) => ({
             level: check.level === "success" ? "success" : (check.level === "error" ? "error" : "warning"),
-            title: check.title || "리허설",
+            title: check.title || "사전 점검",
             message: check.message || "",
           })));
           const blocking = Number(data.blocking_count || 0);
@@ -4749,8 +4749,8 @@
           setStatus(
             "adcopy-generator-status",
             data.ok
-              ? `Draft 리허설 통과: 차단 0개 · 주의 ${formatNumber(warning)}개입니다. 생성 단계는 paused draft로만 진행됩니다.`
-              : `Draft 리허설에서 차단 ${formatNumber(blocking)}개를 확인했습니다. 로그를 먼저 수정해 주세요.`,
+              ? `사전 점검 통과: 차단 0개 · 주의 ${formatNumber(warning)}개입니다. 이후 단계는 비활성 임시 등록으로만 진행됩니다.`
+              : `사전 점검에서 차단 ${formatNumber(blocking)}개를 확인했습니다. 진행 내역을 먼저 수정해 주세요.`,
             data.ok ? "ok" : "error",
           );
         } finally {
@@ -4762,7 +4762,7 @@
       async function executeAdcopyDraftAction(action) {
         if (!adcopyLastResult?.generated) return;
         if (action === "activate_all") {
-          setStatus("adcopy-generator-status", "현재 운영 정책상 live 전환은 금지되어 있습니다. paused draft 생성까지만 진행할 수 있습니다.", "warning");
+          setStatus("adcopy-generator-status", "현재 운영 정책상 게시 전환은 금지되어 있습니다. 비활성 임시 등록까지만 진행할 수 있습니다.", "warning");
           return;
         }
         if (!adcopyDraftPlan) {
@@ -4804,7 +4804,7 @@
         setButtonBusy(button, true, "조회 중...");
         try {
           const data = await adminFetch("/api/admin/adcopy/draft-audit?limit=8", {
-            loadingMessage: "최근 draft 실행 기록을 불러오는 중입니다.",
+            loadingMessage: "최근 임시 등록 기록을 불러오는 중입니다.",
           });
           const items = Array.isArray(data.items) ? data.items : [];
           adcopyDraftLogs = items.reverse().map((item) => {
@@ -4818,14 +4818,14 @@
             const who = [item.advertiser_name, item.campaign_name].filter(Boolean).join(" · ");
             return {
               action: item.action || "",
-              title: `기록 · ${adcopyDraftActionLabel(item.action || "") || item.action || "draft"}`,
+              title: `기록 · ${adcopyDraftActionLabel(item.action || "") || item.action || "임시 등록"}`,
               level: item.status === "success" ? "success" : (item.status === "warning" ? "warning" : "info"),
               message: `${formatDateTime(item.created_at)} · ${who || "광고주 미기재"}${counts ? ` · ${counts}` : ""}`,
               id: item.id || "",
             };
           });
           renderAdcopyDraftPanel();
-          setStatus("adcopy-generator-status", `최근 draft 실행 기록 ${formatNumber(items.length)}건을 불러왔습니다.`, "ok");
+          setStatus("adcopy-generator-status", `최근 임시 등록 기록 ${formatNumber(items.length)}건을 불러왔습니다.`, "ok");
         } finally {
           setButtonBusy(button, false);
         }
@@ -4834,7 +4834,7 @@
       async function downloadAdcopyDraftAuditCsv() {
         const button = $("#download-adcopy-draft-audit");
         setButtonBusy(button, true, "준비 중...");
-        setGlobalLoading(true, "최근 draft 실행 기록 CSV를 다운로드하는 중입니다.");
+        setGlobalLoading(true, "최근 임시 등록 기록을 다운로드하는 중입니다.");
         try {
           const response = await fetch("/api/admin/adcopy/draft-audit.csv?limit=50", {
             credentials: "same-origin",
@@ -4844,7 +4844,7 @@
             },
           });
           if (!response.ok) {
-            const message = (await response.text()) || response.statusText || "draft 실행 기록 CSV 다운로드에 실패했습니다.";
+            const message = (await response.text()) || response.statusText || "임시 등록 기록 다운로드에 실패했습니다.";
             throw new Error(message);
           }
           const blob = await response.blob();
@@ -4857,7 +4857,7 @@
           link.click();
           link.remove();
           URL.revokeObjectURL(url);
-          setStatus("adcopy-generator-status", "최근 draft 실행 기록 50건 요약 CSV를 다운로드했습니다. 키 원문과 원본 payload는 포함하지 않습니다.", "ok");
+          setStatus("adcopy-generator-status", "최근 임시 등록 기록 50건 요약 CSV를 다운로드했습니다. 키 원문과 원본 요청 내용은 포함하지 않습니다.", "ok");
         } catch (error) {
           if (error instanceof TypeError) {
             throw new Error("서버와 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
@@ -4887,14 +4887,14 @@
         $("#reset-adcopy-review-status").disabled = !result;
         renderAdcopyJsonPreview();
         $("#adcopy-result-note").textContent = result
-          ? `${data.model || "모델"} 생성 · ${data.notice || "운영 검수 필요"}`
-          : "아직 생성된 초안이 없습니다.";
+          ? `${data.model || "모델"} 생성 · ${data.notice || "담당자 확인 필요"}`
+          : "아직 생성된 문안이 없습니다.";
         const summary = report?.summary || {};
         $("#adcopy-summary-grid").innerHTML = `
           <div><span>캠페인</span><strong>${formatNumber(summary.campaigns || 0)}</strong></div>
           <div><span>광고그룹</span><strong>${formatNumber(summary.adgroups || 0)}</strong></div>
           <div><span>소재</span><strong>${formatNumber(summary.ads || 0)}</strong></div>
-          <div><span>검수</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
+          <div><span>점검</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
         `;
         renderAdcopyQualityPanel(report);
         renderAdcopyUploadChecklist(result, report);
@@ -4907,10 +4907,10 @@
         if (!adcopyLastResult?.generated) return;
         renderAdcopyJsonPreview();
         $("#adcopy-validation-badge").className = "tag tag-amber";
-        $("#adcopy-validation-badge").textContent = "재검수 필요";
+        $("#adcopy-validation-badge").textContent = "재점검 필요";
         $("#download-adcopy-report").disabled = true;
         $("#validate-adcopy-json").disabled = false;
-        setStatus("adcopy-generator-status", "제목 또는 카피가 수정되었습니다. 수정 재검수를 누르면 품질 점수와 검수 리포트를 다시 받을 수 있습니다.", "warning");
+        setStatus("adcopy-generator-status", "제목 또는 문구가 수정되었습니다. 수정 재점검을 누르면 완성도 점수와 점검 리포트를 다시 받을 수 있습니다.", "warning");
       }
 
       function adcopyLengthMeta(field, value) {
@@ -4932,7 +4932,7 @@
 
       function adcopyTrace(ad) {
         if (!ad.trace || typeof ad.trace !== "object") ad.trace = {};
-        ad.trace.validation_status = ad.trace.validation_status || "운영 검수 필요";
+        ad.trace.validation_status = ad.trace.validation_status || "담당자 확인 필요";
         ad.trace.review_comment = ad.trace.review_comment || "";
         ad.trace.exclusion_reason = ad.trace.exclusion_reason || "";
         return ad.trace;
@@ -4947,12 +4947,12 @@
 
       function renderAdcopyReviewControls(ad, index) {
         const trace = adcopyTrace(ad);
-        const status = trace.validation_status || "운영 검수 필요";
-        const statuses = ["운영 검수 필요", "승인", "수정 필요", "제외"];
+        const status = trace.validation_status || "담당자 확인 필요";
+        const statuses = ["담당자 확인 필요", "승인", "수정 필요", "제외"];
         return `
           <div class="adcopy-review-controls ${adcopyReviewStatusClass(status)}" data-adcopy-review-card data-review-status="${escapeHtml(status)}">
             <label>
-              <span>운영 검수</span>
+              <span>담당자 확인</span>
               <select class="adcopy-review-select" data-adcopy-review="validation_status" data-ad-index="${index}">
                 ${statuses.map((item) => `<option value="${escapeHtml(item)}" ${item === status ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}
               </select>
@@ -5048,7 +5048,7 @@
       }
 
       function renderAdcopyPreviewFilters(result, report) {
-        const labels = { all: "전체", issue: "문제", warning: "주의", error: "오류" };
+        const labels = { all: "전체", issue: "확인 필요", warning: "주의", error: "오류" };
         const counts = adcopyPreviewFilterCounts(result, report);
         $$("[data-adcopy-preview-filter]").forEach((button) => {
           const filter = button.dataset.adcopyPreviewFilter || "all";
@@ -5079,7 +5079,7 @@
         if (!select) return;
         const labels = {
           all: "운영 전체",
-          pending: "미검수",
+          pending: "미확인",
           approved: "승인",
           revise: "수정 필요",
           excluded: "제외",
@@ -5124,7 +5124,7 @@
           trace.exclusion_reason = "";
         });
         renderAdcopyResult(adcopyLastResult);
-        setStatus("adcopy-generator-status", "자동 검수 판정을 운영 검수 초안에 반영했습니다. 제외 판단은 운영자가 직접 선택해 주세요.", "ok");
+        setStatus("adcopy-generator-status", "자동 점검 판정을 담당자 확인 상태에 반영했습니다. 제외 판단은 운영자가 직접 선택해 주세요.", "ok");
       }
 
       function resetAdcopyReviewStatus() {
@@ -5133,12 +5133,12 @@
         adcopyReviewFilter = "all";
         ads.forEach((ad) => {
           const trace = adcopyTrace(ad);
-          trace.validation_status = "운영 검수 필요";
+          trace.validation_status = "담당자 확인 필요";
           trace.review_comment = "";
           trace.exclusion_reason = "";
         });
         renderAdcopyResult(adcopyLastResult);
-        setStatus("adcopy-generator-status", "소재별 운영 검수 상태와 메모를 초기화했습니다.", "warning");
+        setStatus("adcopy-generator-status", "소재별 확인 상태와 메모를 초기화했습니다.", "warning");
       }
 
       async function saveAdcopyReviewState() {
@@ -5148,7 +5148,7 @@
         const payload = {
           advertiser_name: $("#adcopy-advertiser-name").value.trim(),
           campaign_name: campaign.campaign_name || $("#adcopy-campaign-name").value.trim(),
-          source_label: adcopyLastResult.model || "AI 카피 생성기",
+          source_label: adcopyLastResult.model || "AI 광고 문안 생성기",
           generated: adcopyLastResult.generated,
           validation_report: adcopyLastResult.validation_report || {},
         };
@@ -5157,7 +5157,7 @@
           const data = await adminFetch("/api/admin/adcopy/review-state", {
             method: "POST",
             body: JSON.stringify(payload),
-            loadingMessage: "운영 검수 상태를 저장하는 중입니다.",
+            loadingMessage: "문안 검토 상태를 저장하는 중입니다.",
           });
           adcopyLastResult = {
             ...adcopyLastResult,
@@ -5166,7 +5166,7 @@
           };
           renderAdcopyResult(adcopyLastResult);
           const savedAt = formatDateTime(data.snapshot?.updated_at);
-          setStatus("adcopy-generator-status", `운영 검수 상태를 저장했습니다. 저장 시각 ${savedAt}`, "ok");
+          setStatus("adcopy-generator-status", `문안 검토 상태를 저장했습니다. 저장 시각 ${savedAt}`, "ok");
           loadAdcopyReviewSnapshots().catch(() => {});
         } finally {
           setButtonBusy(button, false);
@@ -5205,7 +5205,7 @@
 
       async function loadAdcopyReviewSnapshots() {
         const data = await adminFetch("/api/admin/adcopy/review-state?limit=20", {
-          loadingMessage: "검수 저장본을 불러오는 중입니다.",
+          loadingMessage: "작업 저장본을 불러오는 중입니다.",
         });
         adcopyReviewSnapshots = Array.isArray(data.items) ? data.items : [];
         adcopyReviewSnapshotsLoaded = true;
@@ -5215,7 +5215,7 @@
           "adcopy-review-snapshot-status",
           adcopyReviewSnapshots.length
             ? `최근 저장본 ${formatNumber(adcopyReviewSnapshots.length)}개를 불러왔습니다. (${storage})`
-            : "아직 저장된 검수본이 없습니다.",
+            : "아직 저장된 작업본이 없습니다.",
           adcopyReviewSnapshots.length ? "ok" : "",
         );
         return data;
@@ -5229,16 +5229,16 @@
           return;
         }
         const data = await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
-          loadingMessage: "선택한 검수 저장본을 불러오는 중입니다.",
+          loadingMessage: "선택한 작업 저장본을 불러오는 중입니다.",
         });
         const item = data.item || {};
         adcopyLastResult = {
           ok: Boolean(item.validation_report?.ok),
-          model: item.source_label || "검수 저장본",
+          model: item.source_label || "작업 저장본",
           generated: item.generated || {},
           validation_report: item.validation_report || {},
           summary: item.validation_report?.summary || {},
-          notice: "저장된 운영 검수 상태를 불러왔습니다.",
+          notice: "저장된 문안 검토 상태를 불러왔습니다.",
         };
         adcopyPreviewFilter = "all";
         adcopyReviewFilter = "all";
@@ -5246,8 +5246,8 @@
         resetAdcopyDraftWorkflow({ render: false });
         applyAdcopyImportedDefaults(adcopyLastResult.generated);
         renderAdcopyResult(adcopyLastResult);
-        setStatus("adcopy-review-snapshot-status", `${item.campaign_name || "검수 저장본"}을 불러왔습니다.`, "ok");
-        setStatus("adcopy-generator-status", "저장된 운영 검수 상태를 화면에 반영했습니다. draft plan은 다음 실행 전 다시 계산됩니다.", "ok");
+        setStatus("adcopy-review-snapshot-status", `${item.campaign_name || "작업 저장본"}을 불러왔습니다.`, "ok");
+        setStatus("adcopy-generator-status", "저장된 문안 검토 상태를 화면에 반영했습니다. 임시 등록 계획은 다음 실행 전 다시 계산됩니다.", "ok");
       }
 
       async function deleteAdcopyReviewSnapshot() {
@@ -5259,10 +5259,10 @@
         }
         const item = adcopyReviewSnapshots.find((snapshot) => snapshot.id === snapshotId);
         const label = item?.campaign_name || item?.advertiser_name || "선택한 저장본";
-        if (!window.confirm(`${label} 저장본을 삭제할까요? 생성된 draft 객체에는 영향을 주지 않습니다.`)) return;
+        if (!window.confirm(`${label} 저장본을 삭제할까요? 이미 임시 등록된 항목에는 영향을 주지 않습니다.`)) return;
         await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
           method: "DELETE",
-          loadingMessage: "검수 저장본을 삭제하는 중입니다.",
+          loadingMessage: "작업 저장본을 삭제하는 중입니다.",
         });
         adcopyReviewSnapshots = adcopyReviewSnapshots.filter((snapshot) => snapshot.id !== snapshotId);
         renderAdcopyReviewSnapshots();
@@ -5305,7 +5305,7 @@
         renderAdcopyPreviewFilters(result, report);
         renderAdcopyReviewFilter(result);
         if (!result) {
-          root.innerHTML = '<div class="empty-pane">초안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
+          root.innerHTML = '<div class="empty-pane">문안을 생성하면 광고그룹과 소재가 여기에 표시됩니다.</div>';
           return;
         }
         const checksByAd = new Map((report?.creative_checks || []).map((item) => [item.ad_name, item]));
@@ -5355,9 +5355,9 @@
                 <strong>${escapeHtml(group.adgroup_name || "-")}</strong>
                 <span>${formatNumber((adsByGroup.get(group.adgroup_name) || []).length)}개 소재</span>
               </div>
-              <div class="adcopy-keyword-row">${keywords || '<span class="muted-text">Context Hints 없음</span>'}</div>
+              <div class="adcopy-keyword-row">${keywords || '<span class="muted-text">검색 맥락 없음</span>'}</div>
               <table class="data-grid adcopy-mini-table">
-                <thead><tr><th>광고명</th><th>제목</th><th>카피</th></tr></thead>
+                <thead><tr><th>광고명</th><th>제목</th><th>문구</th></tr></thead>
                 <tbody>${rows || '<tr><td colspan="3">생성된 소재가 없습니다.</td></tr>'}</tbody>
               </table>
             </article>
@@ -5368,12 +5368,12 @@
       function renderAdcopyValidationList(report) {
         const root = $("#adcopy-validation-list");
         if (!report) {
-          root.innerHTML = '<div class="empty-pane">검수 결과가 없습니다.</div>';
+          root.innerHTML = '<div class="empty-pane">점검 결과가 없습니다.</div>';
           return;
         }
         const findings = [...(report.errors || []), ...(report.warnings || [])];
         if (!findings.length) {
-          root.innerHTML = '<div class="adcopy-validation-empty"><i class="ti ti-circle-check"></i><span>자동 검수에서 오류가 발견되지 않았습니다. 그래도 운영자 검수는 필요합니다.</span></div>';
+          root.innerHTML = '<div class="adcopy-validation-empty"><i class="ti ti-circle-check"></i><span>자동 점검에서 오류가 발견되지 않았습니다. 그래도 담당자 확인은 필요합니다.</span></div>';
           return;
         }
         root.innerHTML = findings.map((finding) => {
@@ -5404,12 +5404,12 @@
         const payload = readAdcopyPayload();
         validateAdcopyPayload(payload);
         setButtonBusy(button, true, "생성 중...");
-        setStatus("adcopy-generator-status", "카피 초안을 생성하는 중입니다. 대량 생성은 1분 정도 걸릴 수 있습니다.");
+        setStatus("adcopy-generator-status", "광고 문안을 생성하는 중입니다. 대량 생성은 1분 정도 걸릴 수 있습니다.");
         try {
           const data = await adminFetch("/api/admin/adcopy/generate", {
             method: "POST",
             body: JSON.stringify(payload),
-            loadingMessage: "AI 카피 초안을 생성하는 중입니다.",
+            loadingMessage: "AI 광고 문안을 생성하는 중입니다.",
           });
           adcopyLastResult = data;
           adcopyPreviewFilter = "all";
@@ -5417,7 +5417,7 @@
           adcopyExportMode = "all";
           resetAdcopyDraftWorkflow({ render: false });
           renderAdcopyResult(data);
-          setStatus("adcopy-generator-status", data.ok ? "초안 생성과 자동 검수를 완료했습니다." : "초안 생성 완료 · 검수 오류를 확인해 주세요.", data.ok ? "ok" : "warning");
+          setStatus("adcopy-generator-status", data.ok ? "문안 생성과 자동 점검을 완료했습니다." : "문안을 생성했습니다. 점검 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
         } finally {
           setButtonBusy(button, false);
         }
@@ -5428,7 +5428,7 @@
         try {
           const exported = buildAdcopyExportGenerated();
           await navigator.clipboard.writeText(JSON.stringify(exported.generated, null, 2));
-          setStatus("adcopy-generator-status", `${exported.label} 기준 generated.json 내용을 클립보드에 복사했습니다. (${formatNumber(exported.ads)}개 소재)`, "ok");
+          setStatus("adcopy-generator-status", `${exported.label} 기준 광고 업로드 파일 내용을 클립보드에 복사했습니다. (${formatNumber(exported.ads)}개 소재)`, "ok");
         } catch (error) {
           setStatus("adcopy-generator-status", error.message, "warning");
         }
@@ -5503,12 +5503,12 @@
         const campaignName = adcopyLastResult.generated.campaigns?.[0]?.campaign_name || "openai_ads";
         const safeName = adcopySafeDownloadName(campaignName);
         link.href = url;
-        link.download = `${safeName}_${adcopyExportModeSuffix()}_generated.json`;
+        link.download = `${safeName}_${adcopyExportModeSuffix()}_ads_upload.json`;
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        setStatus("adcopy-generator-status", `${exported.label} 기준 generated.json 파일을 다운로드했습니다. (${formatNumber(exported.ads)}개 소재)`, "ok");
+        setStatus("adcopy-generator-status", `${exported.label} 기준 광고 업로드 파일을 다운로드했습니다. (${formatNumber(exported.ads)}개 소재)`, "ok");
       }
 
       function adcopyCsvCell(value) {
@@ -5519,22 +5519,22 @@
       function adcopyReviewStatusText(status) {
         if (status === "error") return "오류";
         if (status === "warning") return "주의";
-        if (status === "stale") return "재검수 필요";
+        if (status === "stale") return "재점검 필요";
         return "양호";
       }
 
       function buildAdcopyCreativeCsv() {
         const generated = adcopyLastResult?.generated || {};
         const report = adcopyLastResult?.validation_report || {};
-        const stale = $("#adcopy-validation-badge").textContent.trim() === "재검수 필요";
+        const stale = $("#adcopy-validation-badge").textContent.trim() === "재점검 필요";
         const checksByAd = new Map((report.creative_checks || []).map((item) => [item.ad_name, item]));
         const adgroupsByName = new Map((generated.adgroups || []).map((group) => [group.adgroup_name, group]));
         const rows = [
-          ["광고그룹", "소재명", "제목", "제목 길이", "카피", "카피 길이", "자동 검수", "검수 이슈", "운영 상태", "운영 메모", "제외 사유", "Context Hints", "랜딩 URL", "이미지 URL"],
+          ["광고그룹", "소재명", "제목", "제목 길이", "문구", "문구 길이", "자동 점검", "확인 필요 항목", "담당자 상태", "담당자 메모", "제외 사유", "검색 맥락", "랜딩 URL", "이미지 URL"],
           ...(generated.ads || []).map((ad) => {
             const check = checksByAd.get(ad.ad_name || "") || {};
             const status = stale ? "stale" : (check.status || "pass");
-            const issues = (stale ? ["제목 또는 카피가 수정되어 자동 검수 결과가 최신이 아닙니다."] : (check.issues || []).map((issue) => issue.message)).join(" · ");
+            const issues = (stale ? ["제목 또는 문구가 수정되어 자동 점검 결과가 최신이 아닙니다."] : (check.issues || []).map((issue) => issue.message)).join(" · ");
             const group = adgroupsByName.get(ad.adgroup_name || "") || {};
             const keywords = (group.keywords || []).map((keyword) => typeof keyword === "object" ? keyword.text : keyword).filter(Boolean).join(", ");
             const trace = adcopyTrace(ad);
@@ -5547,7 +5547,7 @@
               adcopyLengthMeta("copy", ad.copy).text,
               adcopyReviewStatusText(status),
               issues,
-              trace.validation_status || "운영 검수 필요",
+              trace.validation_status || "담당자 확인 필요",
               trace.review_comment || "",
               trace.exclusion_reason || "",
               keywords,
@@ -5572,7 +5572,7 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        setStatus("adcopy-generator-status", "소재 검수용 CSV 파일을 다운로드했습니다.", "ok");
+        setStatus("adcopy-generator-status", "소재 검토용 CSV 파일을 다운로드했습니다.", "ok");
       }
 
       function adcopyMarkdownCell(value) {
@@ -5617,7 +5617,7 @@
         const excludedCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "제외").length;
         const reviseCount = ads.filter((ad) => adcopyTrace(ad).validation_status === "수정 필요").length;
         const lines = [
-          `# OpenAI Ads AI 카피 검수 리포트`,
+          `# OpenAI Ads 광고 문안 검토 리포트`,
           "",
           `- 생성 시각: ${createdAt} KST`,
           `- 모델: ${adcopyMarkdownCell(adcopyLastResult?.model || "-")}`,
@@ -5635,8 +5635,8 @@
           `| 소재 | ${formatNumber(summary.ads || ads.length || 0)} |`,
           `| 오류 | ${formatNumber(summary.errors || 0)} |`,
           `| 주의 | ${formatNumber(summary.warnings || 0)} |`,
-          `| 품질 스코어 | ${formatNumber(quality.score || 0)} / 100 |`,
-          `| 판정 | ${adcopyMarkdownCell(quality.readiness || (report.ok ? "자동 검수 통과" : "운영 검수 필요"))} |`,
+          `| 완성도 점수 | ${formatNumber(quality.score || 0)} / 100 |`,
+          `| 판정 | ${adcopyMarkdownCell(quality.readiness || (report.ok ? "자동 점검 통과" : "담당자 확인 필요"))} |`,
           `| 운영 승인 | ${formatNumber(approvedCount)} / ${formatNumber(ads.length)} |`,
           `| 수정 필요 | ${formatNumber(reviseCount)} |`,
           `| 제외 | ${formatNumber(excludedCount)} |`,
@@ -5649,11 +5649,11 @@
           "",
           findings.length
             ? findings.map((item) => `- [${item.level === "error" ? "오류" : "주의"}] ${adcopyMarkdownCell(item.rule)} · ${adcopyMarkdownCell(item.scope)} / ${adcopyMarkdownCell(item.item)} / ${adcopyMarkdownCell(item.field)} — ${adcopyMarkdownCell(item.message)}`).join("\n")
-            : "- 자동 검수에서 오류나 주의 항목이 발견되지 않았습니다. 최종 업로드 전 광고주명, URL, 이미지, 정책 표현은 수동 확인하세요.",
+            : "- 자동 점검에서 오류나 주의 항목이 발견되지 않았습니다. 최종 업로드 전 광고주명, URL, 이미지, 광고 기준 표현은 담당자가 확인하세요.",
           "",
-          "## 4. 광고그룹 Context Hints",
+          "## 4. 광고그룹 검색 맥락",
           "",
-          "| 광고그룹 | Context Hints |",
+          "| 광고그룹 | 검색 맥락 |",
           "| --- | --- |",
           ...(adgroups.length
             ? adgroups.map((group) => {
@@ -5662,9 +5662,9 @@
               })
             : ["| - | - |"]),
           "",
-          "## 5. 소재별 검수",
+          "## 5. 소재별 검토",
           "",
-          "| 소재명 | 제목 | 카피 | 자동 판정 | 운영 상태 | 운영 메모 | 제외 사유 |",
+          "| 소재명 | 제목 | 문구 | 자동 판정 | 담당자 상태 | 담당자 메모 | 제외 사유 |",
           "| --- | --- | --- | --- | --- | --- | --- |",
           ...(ads.length
             ? ads.map((ad) => {
@@ -5672,15 +5672,15 @@
                 const status = check.status === "error" ? "오류" : (check.status === "warning" ? "주의" : "양호");
                 const issues = (check.issues || []).map((issue) => issue.message).join("<br>");
                 const trace = adcopyTrace(ad);
-                return `| ${adcopyMarkdownCell(ad.ad_name)} | ${adcopyMarkdownCell(ad.title)} | ${adcopyMarkdownCell(ad.copy)} | ${adcopyMarkdownCell(issues ? `${status}: ${issues}` : status)} | ${adcopyMarkdownCell(trace.validation_status || "운영 검수 필요")} | ${adcopyMarkdownCell(trace.review_comment || "-")} | ${adcopyMarkdownCell(trace.exclusion_reason || "-")} |`;
+                return `| ${adcopyMarkdownCell(ad.ad_name)} | ${adcopyMarkdownCell(ad.title)} | ${adcopyMarkdownCell(ad.copy)} | ${adcopyMarkdownCell(issues ? `${status}: ${issues}` : status)} | ${adcopyMarkdownCell(trace.validation_status || "담당자 확인 필요")} | ${adcopyMarkdownCell(trace.review_comment || "-")} | ${adcopyMarkdownCell(trace.exclusion_reason || "-")} |`;
               })
             : ["| - | - | - | - | - | - | - |"]),
           "",
           "## 6. 업로드 전 확인",
           "",
-          "- 이 리포트는 자동 검수 보조 자료입니다.",
+          "- 이 리포트는 자동 점검 보조 자료입니다.",
           "- OpenAI Ads 업로드 전 landing_url, image_link, 금지 표현, 필수 문구를 운영자가 최종 확인해야 합니다.",
-          "- generated.json은 별도 다운로드 버튼의 최신 수정본을 사용하세요.",
+          "- 광고 업로드 파일은 별도 다운로드 버튼의 최신 수정본을 사용하세요.",
           "",
         ];
         return lines.join("\n");
@@ -5699,7 +5699,7 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        setStatus("adcopy-generator-status", "운영 검수용 마크다운 리포트를 다운로드했습니다.", "ok");
+        setStatus("adcopy-generator-status", "문안 검토용 마크다운 리포트를 다운로드했습니다.", "ok");
       }
 
       async function validateEditedAdcopy() {
@@ -5707,7 +5707,7 @@
         const data = await adminFetch("/api/admin/adcopy/validate", {
           method: "POST",
           body: JSON.stringify({ generated: adcopyLastResult.generated }),
-          loadingMessage: "수정된 카피를 다시 검수하는 중입니다.",
+          loadingMessage: "수정된 문구를 다시 점검하는 중입니다.",
         });
         adcopyLastResult = {
           ...adcopyLastResult,
@@ -5715,7 +5715,7 @@
           generated: data.generated || adcopyLastResult.generated,
         };
         renderAdcopyResult(adcopyLastResult);
-        setStatus("adcopy-generator-status", data.ok ? "수정본 재검수를 완료했습니다." : "수정본 재검수 완료 · 오류와 주의 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
+        setStatus("adcopy-generator-status", data.ok ? "수정본 재점검을 완료했습니다." : "수정본 재점검 완료 · 오류와 주의 항목을 확인해 주세요.", data.ok ? "ok" : "warning");
       }
 
       function resetAdsKeyForm() {
@@ -8855,7 +8855,7 @@
           renderAdcopyJsonPreview();
           adcopyDraftPlan = null;
           renderAdcopyDraftPanel();
-          setStatus("adcopy-generator-status", `generated.json 내보내기 기준을 ${adcopyExportModeLabel()}로 변경했습니다. 예상 소재 ${formatNumber(estimate)}개입니다.`, estimate ? "ok" : "warning");
+          setStatus("adcopy-generator-status", `광고 업로드 파일 내보내기 기준을 ${adcopyExportModeLabel()}로 변경했습니다. 예상 소재 ${formatNumber(estimate)}개입니다.`, estimate ? "ok" : "warning");
         }
       });
       ["adcopy-draft-max-bid", "adcopy-draft-location-ids"].forEach((id) => {
@@ -8863,7 +8863,7 @@
           adcopyDraftPlan = null;
           renderAdcopyDraftPanel();
           if (adcopyLastResult?.generated) {
-            setStatus("adcopy-generator-status", "draft 세팅 옵션이 변경되었습니다. 다음 실행 전 plan을 다시 계산합니다.", "warning");
+            setStatus("adcopy-generator-status", "임시 등록 옵션이 변경되었습니다. 다음 실행 전 실행 계획을 다시 계산합니다.", "warning");
           }
         });
       });
