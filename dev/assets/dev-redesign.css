@@ -2338,6 +2338,12 @@ body.dev-console.modal-open {
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
+}
+
+.adcopy-draft-head > div:first-child {
+  flex: 1 1 260px;
+  min-width: 220px;
 }
 
 .adcopy-draft-head h4 {
@@ -2352,6 +2358,9 @@ body.dev-console.modal-open {
   color: var(--oa-muted);
   font-size: 12px;
   line-height: 1.45;
+  max-width: 36rem;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .adcopy-draft-head .tag {
@@ -2364,6 +2373,12 @@ body.dev-console.modal-open {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  flex: 1 1 320px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.adcopy-draft-head-actions .btn-compact {
   flex: 0 0 auto;
 }
 
