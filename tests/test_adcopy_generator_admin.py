@@ -217,6 +217,9 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
             self.assertEqual(workbook.sheetnames, ["campaigns_검수", "adgroups_검수", "ads_검수"])
             self.assertEqual(workbook["campaigns_검수"]["A2"].value, "campaign_name")
             self.assertEqual(workbook["adgroups_검수"]["A2"].value, "adgroup_name")
+            self.assertEqual(workbook["adgroups_검수"]["A3"].value, "영어학습*초등학부모*학습루틴고민_문제정의")
+            self.assertIn("어떻게 시작하면 좋을까", workbook["adgroups_검수"]["B3"].value)
+            self.assertEqual(workbook["ads_검수"]["B3"].value, "영어학습*초등학부모*학습루틴고민_문제정의")
             self.assertEqual(workbook["ads_검수"]["A2"].value, "ad_name")
         finally:
             workbook.close()

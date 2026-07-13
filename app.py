@@ -436,11 +436,22 @@ ADCOPY_REVIEW_HOLD_TOKENS = (
 ADCOPY_CONTEXTUAL_HINT_TOKENS = (
     "?",
     "어떻게",
+    "어떤",
+    "어디",
+    "왜",
+    "언제",
+    "얼마",
     "무엇",
     "뭐가",
     "뭐부터",
+    "가능",
     "궁금",
     "고민",
+    "걱정",
+    "고를",
+    "선택",
+    "비교",
+    "차이",
     "좋을까",
     "할까",
     "때",
@@ -1222,35 +1233,47 @@ def _adcopy_sample_workbook_bytes() -> bytes:
     adgroup_sheet = workbook.create_sheet("adgroups_검수")
     adgroup_sheet.append(["광고그룹 검수 목록"])
     adgroup_sheet.append(["adgroup_name", "keywords", "카피 핵심 반영 요소", "필수 고정 문구", "검수상태"])
-    adgroup_sheet.append(["01_반복훈련", "초등 영어 앱, 영어 반복 학습, 파닉스, 학습 리포트, 집 공부", "반복 훈련, 학습 리포트", "", "확인 완료 검수"])
-    adgroup_sheet.append(["02_학부모설득", "초등 영어 학부모, 수준별 영어, 영어 습관, 학습 진단, 영어 자신감", "수준별 학습, 영어 습관", "", "확인 완료 검수"])
+    adgroup_sheet.append([
+        "영어학습*초등학부모*학습루틴고민_문제정의",
+        "초등 아이 영어를 집에서 어떻게 시작하면 좋을까?; 파닉스와 문법을 집에서 같이 챙길 수 있을까?; 영어 학습을 매일 이어가려면 어떤 루틴이 좋을까?; 학원 없이 아이 영어 습관을 만들 수 있을까?; 집 공부가 자꾸 끊길 때 무엇부터 바꾸면 좋을까?",
+        "학습 루틴",
+        "",
+        "확인 완료 검수",
+    ])
+    adgroup_sheet.append([
+        "영어학습*초등학부모*레벨테스트검토_단일제품평가",
+        "아이 영어 수준을 먼저 확인하려면 무엇부터 보면 좋을까?; 레벨테스트 결과로 어떤 학습 방향을 알 수 있을까?; 초등 영어 레벨테스트는 집에서 진행해도 괜찮을까?; 수준별 학습 리포트는 어떤 기준으로 봐야 할까?; 학습 상담 전에 아이 수준을 어떻게 점검하면 좋을까?",
+        "레벨테스트, 학습 리포트",
+        "",
+        "확인 완료 검수",
+    ])
 
     ads_sheet = workbook.create_sheet("ads_검수")
     ads_sheet.append(["소재 검수 목록"])
     ads_sheet.append(["ad_name", "adgroup_name", "title", "copy", "link", "image_link", "검수상태"])
     ads_sheet.append([
         "AD_001",
-        "01_반복훈련",
-        "초등 영어 반복 루틴",
-        "매일 짧게 이어지는 영어 학습 흐름을 확인하세요",
+        "영어학습*초등학부모*학습루틴고민_문제정의",
+        "집에서도 이어지는 초등 영어 루틴",
+        "학습 루틴과 반복 훈련 흐름 안내",
         "https://example.com/cats/landing",
         "https://example.com/cats/image.png",
         "확인 완료 검수",
     ])
     ads_sheet.append([
         "AD_002",
-        "01_반복훈련",
-        "반복 학습 보류 소재",
-        "운영자가 제외한 소재는 draft 생성에서 제외됩니다",
+        "영어학습*초등학부모*학습루틴고민_문제정의",
+        "보호자가 보기 쉬운 학습 리포트",
+        "보호자 관리에 맞춘 반복 학습 루틴",
         "https://example.com/cats/landing",
-        "https://example.com/cats/excluded.png",
-        "사용 불가",
+        "https://example.com/cats/image-2.png",
+        "확인 완료 검수",
     ])
     ads_sheet.append([
         "AD_003",
-        "02_학부모설득",
-        "학부모가 보는 영어",
-        "수준별 학습 리포트로 아이의 변화를 살펴보세요",
+        "영어학습*초등학부모*레벨테스트검토_단일제품평가",
+        "레벨테스트 후 학습 방향 안내",
+        "수준별 학습 방향을 리포트로 확인",
         "https://example.com/cats/landing",
         "https://example.com/cats/image.png",
         "확인 완료 검수",
@@ -1653,7 +1676,8 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             errors.append(_adcopy_finding("error", "campaigns", name or "-", "target_countries", "countries_required", "target_countries가 비어 있습니다."))
         if float(campaign.get("budget_max") or 0) <= 0:
             warnings.append(_adcopy_finding("warning", "campaigns", name or "-", "budget_max", "budget_empty", "예산이 0 또는 미입력입니다. 업로드 전 확인하세요."))
-    adgroup_names = {str(item.get("adgroup_name") or "").strip() for item in adgroups}
+    adgroup_by_name = {str(item.get("adgroup_name") or "").strip(): item for item in adgroups}
+    adgroup_names = set(adgroup_by_name)
     context_hint_owner: dict[str, str] = {}
     if not adgroups:
         errors.append(_adcopy_finding("error", "adgroups", "-", "adgroup_name", "adgroup_required", "광고그룹이 생성되지 않았습니다."))
@@ -1802,7 +1826,7 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
             if term and term in combined:
                 errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "banned_term", f"금지어 포함: {term}"))
                 ad_issues.append({"level": "error", "rule": "banned_term", "message": f"금지어 포함: {term}"})
-        group = next((group for group in adgroups if str(group.get("adgroup_name") or "").strip() == adgroup_name), None)
+        group = adgroup_by_name.get(adgroup_name)
         for phrase in [str(value).strip() for value in (group or {}).get("required_phrases") or [] if str(value).strip()]:
             terms = _adcopy_core_terms(phrase)
             if terms and not any(term in combined for term in terms):
