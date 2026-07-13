@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -79,6 +80,23 @@ class DevRoutesStaticTests(unittest.TestCase):
 
         self.assertIn("body.menu-settings-pending [data-menu-key]", css)
         self.assertIn("body.menu-settings-pending [data-guide-deck]", css)
+
+    def test_landing_checker_developer_guidance_is_exposed(self) -> None:
+        client = TestClient(app)
+        pages = [client.get("/").text, client.get("/dev").text]
+        css = client.get("/dev-assets/dev-redesign.css").text
+        public_html = (Path(__file__).resolve().parents[1] / "public" / "index.html").read_text(encoding="utf-8")
+
+        for page in pages:
+            self.assertIn("landingDeveloperMessage", page)
+            self.assertIn("OpenAI 공식 가이드 확인", page)
+            self.assertIn("developer_message", page)
+            self.assertIn("official_guide_url", page)
+
+        self.assertIn(".landing-action-cell", css)
+        self.assertIn("crawlerDeveloperMessage", public_html)
+        self.assertIn("개발팀 전달 문구", public_html)
+        self.assertIn("OpenAI 공식 가이드 확인", public_html)
 
     def test_dev_pages_use_new_command_center_markup(self) -> None:
         client = TestClient(app)

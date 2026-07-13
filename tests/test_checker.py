@@ -4,7 +4,13 @@ import unittest
 
 import httpx
 
-from checker import NormalizedUrl, check_url, evaluate_robots_txt, normalize_url
+from checker import (
+    OPENAI_CRAWLER_GUIDE_URL,
+    NormalizedUrl,
+    check_url,
+    evaluate_robots_txt,
+    normalize_url,
+)
 
 
 def normalized(url: str) -> NormalizedUrl:
@@ -34,6 +40,11 @@ class CheckerDecisionTests(unittest.TestCase):
             "User-agent: *\nDisallow:\n",
         )
         self.assertEqual(result.verdict, "allow")
+        self.assertIn("OpenAI 공식 가이드", result.developer_message)
+        self.assertIn("OAI-AdsBot 필수 허용", result.developer_message)
+        self.assertIn("robots.txt", result.developer_message)
+        self.assertIn("WAF/CDN", result.developer_message)
+        self.assertEqual(result.official_guide_url, OPENAI_CRAWLER_GUIDE_URL)
 
     def test_landing_path_disallow_warns(self) -> None:
         result = evaluate_robots_txt(
@@ -98,6 +109,7 @@ class CheckerFirewallHintTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result.verdict, "warn")
         self.assertIn("HTTP 403", result.reason)
+        self.assertIn("CAPTCHA", result.developer_message)
         self.assertTrue(any(detail.label == "robots.txt 접근" for detail in result.bot_details))
         self.assertTrue(
             all(

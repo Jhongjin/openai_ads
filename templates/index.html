@@ -1814,6 +1814,27 @@
         return "랜딩 접근 문제가 해소될 때까지 캠페인 활성화가 지연될 수 있습니다.";
       }
 
+      function landingDeveloperMessage(row) {
+        return row.developer_message || row.action || "-";
+      }
+
+      function landingGuideUrl(row) {
+        return row.official_guide_url || "https://help.openai.com/en/articles/20001243-advertiser-guidance-for-allowing-openai-web-crawlers";
+      }
+
+      function landingActionMarkup(row) {
+        const message = escapeHtml(landingDeveloperMessage(row));
+        const guideUrl = escapeHtml(landingGuideUrl(row));
+        return `
+          <div class="landing-action-cell">
+            <p>${message}</p>
+            <a class="source-chip source-official" href="${guideUrl}" target="_blank" rel="noopener noreferrer">
+              OpenAI 공식 가이드 확인
+            </a>
+          </div>
+        `;
+      }
+
       function faviconCampaignImpact(row) {
         const verdict = String(row.verdict || "").toLowerCase();
         const detail = `${row.reason || ""} ${row.action || ""}`.toLowerCase();
@@ -1848,7 +1869,7 @@
             <td><span class="${verdictTag(row.verdict)}">${escapeHtml(row.badge || row.verdict)}</span></td>
             <td>${escapeHtml(row.reason || "-")}</td>
             <td class="impact-cell">${escapeHtml(landingCampaignImpact(row))}</td>
-            <td>${escapeHtml(row.action || "-")}</td>
+            <td>${landingActionMarkup(row)}</td>
           </tr>
         `).join("");
       }
@@ -2577,7 +2598,7 @@
         trackVisit("landing-csv", "CSV 다운로드 · OAI-AdsBot 랜딩 점검");
         downloadCsv(
           "oai_adsbot_landing_check.csv",
-          ["input_url", "badge", "reason", "campaign_impact", "action"],
+          ["input_url", "badge", "reason", "campaign_impact", "action", "developer_message", "official_guide_url"],
           state.landingRows.map(withLandingImpact),
         );
       });

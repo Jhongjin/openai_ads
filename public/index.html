@@ -1592,6 +1592,25 @@
         line-height: 1.25;
       }
 
+      .crawler-action-cell {
+        display: grid;
+        gap: 8px;
+        min-width: 280px;
+        max-width: 540px;
+      }
+
+      .crawler-action-cell p {
+        margin: 0;
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .crawler-action-cell a {
+        width: fit-content;
+        text-decoration: none;
+      }
+
       details {
         margin-top: 8px;
       }
@@ -4736,6 +4755,35 @@ oaiq("measure", "order_created", {
         return td;
       }
 
+      function crawlerDeveloperMessage(item) {
+        return item.developer_message || item.action || "";
+      }
+
+      function crawlerGuideUrl(item) {
+        return item.official_guide_url || "https://help.openai.com/en/articles/20001243-advertiser-guidance-for-allowing-openai-web-crawlers";
+      }
+
+      function crawlerActionCell(item) {
+        const td = document.createElement("td");
+        const wrapper = document.createElement("div");
+        wrapper.className = "crawler-action-cell";
+
+        const message = document.createElement("p");
+        message.textContent = crawlerDeveloperMessage(item) || "-";
+        wrapper.append(message);
+
+        const guide = document.createElement("a");
+        guide.className = "source-chip source-official";
+        guide.href = crawlerGuideUrl(item);
+        guide.target = "_blank";
+        guide.rel = "noopener noreferrer";
+        guide.textContent = "OpenAI 공식 가이드 확인";
+        wrapper.append(guide);
+
+        td.append(wrapper);
+        return td;
+      }
+
       function clearChatEmpty() {
         const empty = chatHistory.querySelector(".chat-empty");
         if (empty) empty.remove();
@@ -4934,7 +4982,7 @@ oaiq("measure", "order_created", {
           details.append(detailsSummary, pre);
           reasonTd.append(details);
 
-          row.append(urlTd, verdictTd, reasonTd, textCell(item.action));
+          row.append(urlTd, verdictTd, reasonTd, crawlerActionCell(item));
           resultsBody.append(row);
         });
         tableWrap.style.display = "block";
@@ -5017,13 +5065,24 @@ oaiq("measure", "order_created", {
       }
 
       function downloadCrawlerCsv() {
-        const header = ["입력 URL", "판정", "사유", "봇별 세부 확인", "권장 조치", "robots.txt URL"];
+        const header = [
+          "입력 URL",
+          "판정",
+          "사유",
+          "봇별 세부 확인",
+          "권장 조치",
+          "개발팀 전달 문구",
+          "OpenAI 공식 가이드",
+          "robots.txt URL",
+        ];
         const rows = latestResults.map((item) => [
           item.input_url,
           crawlerVerdictLabel[item.verdict] || item.verdict,
           item.reason,
           crawlerDetailText(item),
           item.action,
+          crawlerDeveloperMessage(item),
+          crawlerGuideUrl(item),
           item.robots_url,
         ]);
         downloadCsv("oai_adsbot_check.csv", header, rows);
@@ -5270,7 +5329,7 @@ oaiq("measure", "order_created", {
             item.input_url,
             { label: crawlerVerdictLabel[item.verdict] || item.verdict, theme: crawlerTheme(item.verdict) },
             [item.reason, crawlerDetailText(item)].filter(Boolean).join(" / "),
-            item.action,
+            crawlerDeveloperMessage(item) || item.action,
           ]),
         });
       }

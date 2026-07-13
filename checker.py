@@ -12,6 +12,15 @@ import httpx
 
 TARGET_BOTS = ("OAI-AdsBot", "OAI-SearchBot")
 TARGET_BOTS_LOWER = tuple(bot.lower() for bot in TARGET_BOTS)
+OPENAI_CRAWLER_GUIDE_URL = (
+    "https://help.openai.com/en/articles/"
+    "20001243-advertiser-guidance-for-allowing-openai-web-crawlers"
+)
+OPENAI_CRAWLER_DOC_URL = "https://developers.openai.com/api/docs/bots"
+OPENAI_CRAWLER_DEVELOPER_CHECKLIST = (
+    "OAI-AdsBot 필수 허용(OAI-SearchBot 권장), 해당 랜딩 경로의 robots.txt 허용, "
+    "WAF/CDN·봇 차단·JavaScript 챌린지·CAPTCHA·로그인/세션·지역 제한·rate limit(429) 차단 여부"
+)
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
@@ -71,6 +80,10 @@ class CheckResult:
     robots_txt: str
     firewall_hint: bool = False
     firewall_badge: str | None = None
+    developer_message: str = ""
+    developer_checklist: str = OPENAI_CRAWLER_DEVELOPER_CHECKLIST
+    official_guide_url: str = OPENAI_CRAWLER_GUIDE_URL
+    official_crawler_doc_url: str = OPENAI_CRAWLER_DOC_URL
     bot_details: tuple[BotDetail, ...] = ()
 
     def to_dict(self) -> dict:
@@ -88,6 +101,10 @@ class CheckResult:
             "robots_txt": self.robots_txt,
             "firewall_hint": self.firewall_hint,
             "firewall_badge": self.firewall_badge,
+            "developer_message": self.developer_message,
+            "developer_checklist": self.developer_checklist,
+            "official_guide_url": self.official_guide_url,
+            "official_crawler_doc_url": self.official_crawler_doc_url,
             "bot_details": [detail.to_dict() for detail in self.bot_details],
         }
 
@@ -379,6 +396,18 @@ def _badge(verdict: Verdict) -> str:
     return {"allow": "✅", "warn": "⚠️", "block": "🚫"}[verdict]
 
 
+def _developer_message(verdict: Verdict) -> str:
+    assessment = {
+        "allow": "나스미디어 사전 점검에서는 URL 접근이 가능해 보이나",
+        "warn": "나스미디어 사전 점검에서 OpenAI 광고 로봇 접근 여부가 불확실하므로",
+        "block": "나스미디어 사전 점검에서 OpenAI 광고 로봇 접근 차단 가능성이 확인되어",
+    }[verdict]
+    return (
+        f"{assessment}, 광고주 개발팀에서는 OpenAI 공식 가이드({OPENAI_CRAWLER_GUIDE_URL}) 기준으로 "
+        f"{OPENAI_CRAWLER_DEVELOPER_CHECKLIST}를 반드시 확인해 주세요."
+    )
+
+
 def _detect_firewall_hint(headers: httpx.Headers, body: str) -> bool:
     body_lower = body[:10000].lower()
     if any(
@@ -427,6 +456,7 @@ def _result(
     http_status: int | None,
     robots_txt: str,
     bot_details: tuple[BotDetail, ...] = (),
+    developer_message: str | None = None,
 ) -> CheckResult:
     return CheckResult(
         input_url=normalized.input_url,
@@ -440,6 +470,7 @@ def _result(
         action=action,
         http_status=http_status,
         robots_txt=robots_txt[:MAX_ROBOTS_TEXT_CHARS],
+        developer_message=developer_message or _developer_message(verdict),
         bot_details=bot_details,
     )
 
@@ -540,7 +571,7 @@ def evaluate_robots_txt(
         normalized,
         verdict="allow",
         reason=base_reason,
-        action="광고주 개발팀에 실제 OpenAI 광고 로봇 접근 테스트로 최종 확인을 요청하세요",
+        action="개발팀 전달 문구로 OpenAI 공식 가이드 기준 최종 확인을 요청하세요",
         http_status=http_status,
         robots_txt=robots_txt,
         bot_details=bot_details,
@@ -632,6 +663,7 @@ async def check_url(raw_url: str, client: httpx.AsyncClient) -> CheckResult:
             action="https://example.com/path 형식으로 다시 입력",
             http_status=None,
             robots_txt="",
+            developer_message="점검할 랜딩 URL을 https://example.com/path 형식으로 다시 전달해 주세요.",
         )
 
     try:

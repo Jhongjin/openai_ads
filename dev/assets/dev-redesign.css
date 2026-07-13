@@ -4840,6 +4840,27 @@ body.dev-console.modal-open {
   font-size: 12px;
 }
 
+.landing-action-cell {
+  display: grid;
+  max-width: 560px;
+  min-width: 280px;
+  gap: 8px;
+}
+
+.landing-action-cell p {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.landing-action-cell .source-chip {
+  width: fit-content;
+  max-width: 100%;
+  text-decoration: none;
+}
+
 #landing-table,
 #favicon-table {
   min-width: 900px;

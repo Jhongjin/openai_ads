@@ -120,6 +120,10 @@ class CheckResultResponse(BaseModel):
     robots_txt: str
     firewall_hint: bool = False
     firewall_badge: str | None = None
+    developer_message: str | None = None
+    developer_checklist: str | None = None
+    official_guide_url: str | None = None
+    official_crawler_doc_url: str | None = None
     bot_details: list[dict[str, str]] = Field(default_factory=list)
 
 
