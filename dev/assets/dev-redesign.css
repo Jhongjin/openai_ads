@@ -1978,6 +1978,65 @@ body.dev-console.modal-open {
   gap: 12px;
 }
 
+.adcopy-panel-intro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #dfe8f5;
+  border-radius: var(--oa-radius-sm);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: 12px;
+}
+
+.adcopy-panel-intro-result {
+  border-color: #f1d8da;
+  background: linear-gradient(180deg, #fff 0%, #fff8f8 100%);
+}
+
+.adcopy-panel-step {
+  display: inline-grid;
+  place-items: center;
+  min-width: 52px;
+  height: 28px;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: var(--oa-blue);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-panel-intro-result .adcopy-panel-step {
+  background: #fff1f1;
+  color: var(--oa-red-dark);
+}
+
+.adcopy-panel-intro strong {
+  display: block;
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-panel-intro p {
+  margin: 4px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.adcopy-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-bottom: 3px;
+  color: var(--oa-red-dark);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
 .adcopy-brief-meter {
   display: grid;
   grid-template-columns: 118px minmax(0, 1fr);
@@ -2746,6 +2805,10 @@ body.dev-console.modal-open {
   min-width: 0;
 }
 
+.adcopy-result-section-head > div:first-child {
+  min-width: 0;
+}
+
 .adcopy-preview-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3129,6 +3192,63 @@ body.dev-console.modal-open {
   color: var(--oa-green);
   font-size: 13px;
   font-weight: 900;
+}
+
+.adcopy-validation-details {
+  gap: 0;
+  border: 1px solid #dfe7f1;
+  border-radius: var(--oa-radius-sm);
+  background: #fff;
+  overflow: hidden;
+}
+
+.adcopy-validation-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 54px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.adcopy-validation-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-validation-details summary strong {
+  display: block;
+  color: var(--oa-ink);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.adcopy-validation-details summary small {
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.adcopy-validation-details summary::after {
+  content: "\ea5f";
+  font-family: "tabler-icons";
+  color: var(--oa-muted);
+  font-size: 16px;
+  transition: transform .16s ease;
+}
+
+.adcopy-validation-details[open] summary {
+  border-bottom: 1px solid var(--oa-line);
+}
+
+.adcopy-validation-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.adcopy-validation-details .adcopy-validation-list {
+  padding: 10px;
 }
 
 .adcopy-validation-item > span {
@@ -4207,6 +4327,14 @@ body.dev-console.modal-open {
     grid-template-columns: 1fr;
   }
 
+  .adcopy-panel-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .adcopy-panel-step {
+    width: fit-content;
+  }
+
   .performance-controls,
   .performance-filter-grid,
   .performance-chart-grid,
@@ -4259,6 +4387,15 @@ body.dev-console.modal-open {
   .adcopy-result-section-head {
     display: grid;
     justify-items: start;
+  }
+
+  .adcopy-validation-details summary {
+    display: grid;
+    align-items: start;
+  }
+
+  .adcopy-validation-details summary small {
+    text-align: left;
   }
 
   .adcopy-preview-actions,
