@@ -357,7 +357,8 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
                             "copy": "무료 혜택은 광고주 확인 후 사용",
                             "link": "https://alt.example.com/landing",
                             "image_link": "https://example.com/image.png",
-                            "검수상태": "광고주 확인 필요",
+                            "validation_status": "의미 중복 후보 / 경고",
+                            "검수상태": "무수정 승인",
                         },
                         {
                             "ad_name": "AD_003",
@@ -386,7 +387,8 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
         self.assertEqual(body["generated"]["adgroups"][0]["keywords"][0]["origin"], "customer_data")
         self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
-        self.assertEqual(body["generated"]["ads"][1]["trace"]["validation_status"], "수정 필요")
+        self.assertEqual(body["generated"]["ads"][1]["trace"]["validation_status"], "광고주 확인 필요")
+        self.assertIn("의미 중복 후보", body["generated"]["ads"][1]["trace"]["review_comment"])
         self.assertEqual(body["generated"]["ads"][2]["trace"]["validation_status"], "제외")
         self.assertGreaterEqual(body["validation_report"]["summary"]["policy_risk_count"], 1)
         self.assertGreaterEqual(body["validation_report"]["summary"]["landing_domain_count"], 2)

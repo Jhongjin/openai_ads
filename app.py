@@ -288,6 +288,7 @@ class AdsAdcopyGenerateRequest(BaseModel):
     tone: str | None = Field(default="", max_length=300)
     banned_terms: str | None = Field(default="", max_length=1500)
     required_phrases: str | None = Field(default="", max_length=1500)
+    required_exact_phrases: str | None = Field(default="", max_length=1500)
     adgroup_count: int = Field(default=3, ge=1, le=12)
     ads_per_adgroup: int = Field(default=3, ge=1, le=8)
 
@@ -311,6 +312,7 @@ class AdsAdcopyImportRequest(BaseModel):
     image_link: str | None = Field(default="", max_length=1000)
     banned_terms: str | None = Field(default="", max_length=1500)
     required_phrases: str | None = Field(default="", max_length=1500)
+    required_exact_phrases: str | None = Field(default="", max_length=1500)
     source_label: str | None = Field(default="기존 작업 파일", max_length=120)
 
 
@@ -415,6 +417,96 @@ def _split_admin_list(value: str | None) -> list[str]:
 
 
 ADCOPY_LANDING_MAX_BYTES = 300_000
+ADCOPY_PURCHASE_JOURNEY_STAGES = (
+    "문제정의",
+    "제품발견",
+    "비교검토",
+    "단일제품평가",
+    "신청전환",
+    "사용도움",
+)
+ADCOPY_REVIEW_HOLD_TOKENS = (
+    "의미 중복 후보",
+    "경고",
+    "광고주 확인 필요",
+    "길이 초과",
+    "근거 확인 필요",
+    "정책 확인 필요",
+)
+ADCOPY_CONTEXTUAL_HINT_TOKENS = (
+    "?",
+    "어떻게",
+    "무엇",
+    "뭐가",
+    "뭐부터",
+    "궁금",
+    "고민",
+    "좋을까",
+    "할까",
+    "때",
+    "상황",
+    "필요",
+    "찾고",
+    "찾는",
+    "원할",
+)
+ADCOPY_CTA_ENDINGS = (
+    "확인해보세요",
+    "확인하세요",
+    "신청하세요",
+    "시작해보세요",
+    "비교해보세요",
+    "알아보세요",
+    "체험해보세요",
+    "선택해보세요",
+    "해보세요",
+    "하세요",
+)
+
+
+def _adcopy_stage_from_adgroup_name(name: str) -> str:
+    text = str(name or "").strip()
+    if not text:
+        return ""
+    suffix = re.split(r"[_*]", text)[-1].strip()
+    return suffix if suffix in ADCOPY_PURCHASE_JOURNEY_STAGES else ""
+
+
+def _adcopy_is_contextual_hint(value: Any) -> bool:
+    text = str(value or "").strip()
+    return bool(text and any(token in text for token in ADCOPY_CONTEXTUAL_HINT_TOKENS))
+
+
+def _adcopy_normalized_hint(value: Any) -> str:
+    return re.sub(r"\s+", "", str(value or "").strip().lower())
+
+
+def _adcopy_core_terms(value: Any) -> list[str]:
+    terms: list[str] = []
+    for chunk in re.split(r"[/,;\n]+", str(value or "")):
+        chunk = re.sub(r"\s+", " ", chunk).strip()
+        if len(chunk) >= 2:
+            terms.append(chunk)
+        for token in re.split(r"\s+", chunk):
+            token = token.strip()
+            if len(token) >= 2:
+                terms.append(token)
+    return list(dict.fromkeys(terms))
+
+
+def _adcopy_is_cta_like(value: Any) -> bool:
+    text = re.sub(r"[.!?。！？…~\s]+$", "", str(value or "").strip())
+    return bool(text and any(text.endswith(ending) for ending in ADCOPY_CTA_ENDINGS))
+
+
+def _adcopy_ending_bucket(value: Any) -> str:
+    text = re.sub(r"[.!?。！？…~\s]+$", "", str(value or "").strip())
+    if not text:
+        return ""
+    for ending in ADCOPY_CTA_ENDINGS:
+        if text.endswith(ending):
+            return ending
+    return text[-4:]
 
 
 def _clean_meta_text(value: str | None, max_length: int = 500) -> str:
@@ -626,9 +718,17 @@ def _adcopy_response_schema() -> dict[str, Any]:
                         "adgroup_name": {"type": "string"},
                         "keywords": {"type": "array", "items": keyword_schema},
                         "required_phrases": {"type": "array", "items": {"type": "string"}},
+                        "required_exact_phrases": {"type": "array", "items": {"type": "string"}},
                         "trace": trace_schema,
                     },
-                    "required": ["campaign_name", "adgroup_name", "keywords", "required_phrases", "trace"],
+                    "required": [
+                        "campaign_name",
+                        "adgroup_name",
+                        "keywords",
+                        "required_phrases",
+                        "required_exact_phrases",
+                        "trace",
+                    ],
                 },
             },
             "ads": {
@@ -665,14 +765,17 @@ def _adcopy_system_prompt() -> str:
         "Write natural Korean that a Korean ads operator would approve; avoid stiff phrases like '고려한', "
         "generic filler, awkward noun stacks, unverifiable superlatives, guarantees, sensitive targeting language, "
         "and banned terms. Each ad must carry one concrete product benefit or usage situation from the brief, "
-        "and ads inside the same adgroup must not repeat the same title/copy structure. Context hint keywords "
-        "must be concrete Korean search or intent phrases and each keyword origin must be customer_data or ai_inferred."
+        "and ads inside the same adgroup must not repeat the same title/copy structure. Purchase journey stage names "
+        "are fixed to 문제정의, 제품발견, 비교검토, 단일제품평가, 신청전환, 사용도움 only. Adgroup names must follow "
+        "상품/SKU*타깃*세부의도_구매여정. Context hints must mostly be Korean question or situation sentences, not "
+        "plain search keywords, and each keyword origin must be customer_data or ai_inferred."
     )
 
 
 def _adcopy_user_prompt(payload: AdsAdcopyGenerateRequest) -> str:
     banned_terms = _split_admin_list(payload.banned_terms)
     required_phrases = _split_admin_list(payload.required_phrases)
+    required_exact_phrases = _split_admin_list(payload.required_exact_phrases)
     brief = {
         "advertiser_name": payload.advertiser_name.strip(),
         "industry": (payload.industry or "").strip(),
@@ -692,7 +795,9 @@ def _adcopy_user_prompt(payload: AdsAdcopyGenerateRequest) -> str:
         "selling_points": (payload.selling_points or "").strip(),
         "tone": (payload.tone or "").strip(),
         "banned_terms": banned_terms,
-        "required_phrases": required_phrases,
+        "copy_core_elements": required_phrases,
+        "required_exact_phrases": required_exact_phrases,
+        "fixed_purchase_journey_stages": list(ADCOPY_PURCHASE_JOURNEY_STAGES),
         "generation_quantity": {
             "adgroups": payload.adgroup_count,
             "ads_per_adgroup": payload.ads_per_adgroup,
@@ -702,12 +807,20 @@ def _adcopy_user_prompt(payload: AdsAdcopyGenerateRequest) -> str:
         "Create Korean OpenAI Ads draft copy from this brief.\n"
         "- Return exactly one campaign, copied from brief.campaign.\n"
         "- Create the requested number of adgroups and ads.\n"
-        "- Set adgroups.required_phrases to the brief required_phrases array.\n"
+        "- Set adgroups.required_phrases to the brief copy_core_elements array. These are core elements to reflect naturally, not verbatim mandatory phrases.\n"
+        "- Set adgroups.required_exact_phrases to the brief required_exact_phrases array. These exact phrases must appear verbatim only when provided.\n"
         "- Use landing_url and image_link for every ad.\n"
-        "- Make adgroup themes distinct by audience intent, product benefit, or usage situation.\n"
+        "- Make adgroup themes distinct by campaign_name, product/SKU, detailed intent, and one fixed purchase journey stage.\n"
+        "- The final part of every adgroup_name must be one of: 문제정의, 제품발견, 비교검토, 단일제품평가, 신청전환, 사용도움.\n"
+        "- Format adgroup_name as 상품/SKU*타깃*세부의도_구매여정, for example 영어학습*초등학부모*학습시작고민_문제정의.\n"
+        "- Context hints must match only that adgroup's campaign, product/SKU, detailed intent, and purchase journey stage.\n"
+        "- Prefer question/situation context hints such as '초등 아이 영어를 집에서 어떻게 시작하면 좋을까?' over plain keywords.\n"
+        "- Avoid repeated context hints across adgroups; if a shared idea is needed, make it specific to that adgroup's intent.\n"
         "- Prefer title length 16~18 Korean characters; never exceed 24 characters.\n"
         "- Prefer copy length 18~42 Korean characters; never exceed 48 characters.\n"
-        "- If a required phrase exists, include it in every ad title or copy without forcing awkward grammar.\n"
+        "- Reflect copy_core_elements as benefits, conditions, or product traits without forcing awkward exact wording.\n"
+        "- Distribute title/copy forms inside each adgroup across question, empathy, information, benefit, comparison, condition, and result styles.\n"
+        "- Do not overuse endings like ~하세요, ~해보세요, ~확인하세요, ~합니다, ~있습니다. Direct CTA endings must be under 30% of ads in the same adgroup.\n"
         "- Keep Korean phrasing crisp, specific, and natural enough to be used after a human review.\n"
         "- Set trace.review_comment and trace.exclusion_reason to empty strings.\n"
         "- Set trace.validation_status to '담당자 확인 필요' unless a concrete warning is needed.\n"
@@ -731,8 +844,13 @@ async def _call_openai_adcopy(payload: AdsAdcopyGenerateRequest) -> dict[str, An
     api_key = os.getenv("OPENAI_ADCOPY_API_KEY") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="OPENAI_API_KEY 또는 OPENAI_ADCOPY_API_KEY가 설정되어 있지 않습니다.")
-    model = os.getenv("OPENAI_ADCOPY_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-5"
+    model = os.getenv("OPENAI_ADCOPY_MODEL") or os.getenv("OPENAI_MODEL") or os.getenv("OPENAI_CHAT_MODEL") or "gpt-5"
     base_url = (os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
+    try:
+        timeout_seconds = float(os.getenv("OPENAI_ADCOPY_TIMEOUT_SECONDS") or 55)
+    except (TypeError, ValueError):
+        timeout_seconds = 55
+    timeout_seconds = max(15.0, min(timeout_seconds, 85.0))
     request_body = {
         "model": model,
         "input": [
@@ -751,11 +869,25 @@ async def _call_openai_adcopy(payload: AdsAdcopyGenerateRequest) -> dict[str, An
         "store": False,
     }
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=90) as client:
-        response = await client.post(f"{base_url}/responses", headers=headers, json=request_body)
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout_seconds, connect=10.0)) as client:
+            response = await client.post(f"{base_url}/responses", headers=headers, json=request_body)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="AI 문안 생성 API 응답 시간이 초과되었습니다. 생성 수량을 줄이거나 잠시 후 다시 시도해 주세요.",
+        ) from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"AI 문안 생성 API에 연결하지 못했습니다: {exc.__class__.__name__}",
+        ) from exc
     if response.status_code >= 400:
         raise HTTPException(status_code=502, detail=f"OpenAI 광고 문안 생성 API 오류: HTTP {response.status_code} · {response.text[:600]}")
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="OpenAI 광고 문안 생성 API가 JSON이 아닌 응답을 반환했습니다.") from exc
     raw_text = _extract_openai_response_text(data)
     if not raw_text.strip():
         raise HTTPException(status_code=502, detail="OpenAI 광고 문안 생성 응답에서 JSON 텍스트를 찾지 못했습니다.")
@@ -780,6 +912,7 @@ def _normalize_generated_adcopy(data: dict[str, Any], payload: AdsAdcopyGenerate
     model_policy = data.get("policy") if isinstance(data.get("policy"), dict) else {}
     merged_banned_terms = list(dict.fromkeys([*banned_terms, *[str(item).strip() for item in model_policy.get("banned_terms") or [] if str(item).strip()]]))
     required_phrases = _split_admin_list(payload.required_phrases)
+    required_exact_phrases = _split_admin_list(payload.required_exact_phrases)
     adgroups: list[dict[str, Any]] = []
     seen_adgroups: set[str] = set()
     for index, item in enumerate(data.get("adgroups") or [], start=1):
@@ -807,6 +940,11 @@ def _normalize_generated_adcopy(data: dict[str, Any], payload: AdsAdcopyGenerate
             "adgroup_name": name,
             "keywords": keywords,
             "required_phrases": [str(value).strip() for value in (item.get("required_phrases") or required_phrases) if str(value).strip()],
+            "required_exact_phrases": [
+                str(value).strip()
+                for value in (item.get("required_exact_phrases") or required_exact_phrases)
+                if str(value).strip()
+            ],
             "trace": {**_adcopy_trace(), **trace, "review_comment": "", "exclusion_reason": ""},
         })
     valid_adgroup_names = {item["adgroup_name"] for item in adgroups}
@@ -1006,11 +1144,36 @@ def _adcopy_import_rows(source: dict[str, Any], keys: tuple[str, ...]) -> list[d
     return []
 
 
+def _adcopy_is_instruction_workbook_row(headers: list[str], values: list[str]) -> bool:
+    cells = [str(value or "").strip() for value in values if str(value or "").strip()]
+    if not cells:
+        return True
+    lowered = [cell.lower() for cell in cells]
+    if all(cell in {"required", "optional"} for cell in lowered):
+        return True
+    first = lowered[0]
+    instruction_prefixes = (
+        "how we will",
+        "maximum you will",
+        "when this campaign",
+        "when this",
+        "lifetime or daily",
+        "views or clicks",
+        "list of countries",
+    )
+    if any(first.startswith(prefix) for prefix in instruction_prefixes):
+        return True
+    header_set = {str(header or "").strip().lower() for header in headers}
+    if {"campaign_name", "budget_max", "budget_type"}.issubset(header_set) and first in {"required", "how we will identify each campaign"}:
+        return True
+    return False
+
+
 def _adcopy_workbook_dump(content: bytes, filename: str) -> dict[str, Any]:
     try:
         from openpyxl import load_workbook
 
-        workbook = load_workbook(BytesIO(content), data_only=True, read_only=True)
+        workbook = load_workbook(BytesIO(content), data_only=True, read_only=False)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"워크북을 읽을 수 없습니다: {exc}") from exc
 
@@ -1036,6 +1199,8 @@ def _adcopy_workbook_dump(content: bytes, filename: str) -> dict[str, Any]:
                 row: dict[str, Any] = {}
                 for index, header in enumerate(headers):
                     row[header] = values[index] if index < len(values) else ""
+                if _adcopy_is_instruction_workbook_row(headers, values):
+                    continue
                 if any(str(value or "").strip() for value in row.values()):
                     rows.append(row)
             sheets.append({"name": sheet.title, "preamble": preamble, "headers": headers, "rows": rows})
@@ -1056,9 +1221,9 @@ def _adcopy_sample_workbook_bytes() -> bytes:
 
     adgroup_sheet = workbook.create_sheet("adgroups_검수")
     adgroup_sheet.append(["광고그룹 검수 목록"])
-    adgroup_sheet.append(["adgroup_name", "keywords", "required_phrases", "검수상태"])
-    adgroup_sheet.append(["01_반복훈련", "초등 영어 앱, 영어 반복 학습, 파닉스, 학습 리포트, 집 공부", "", "확인 완료 검수"])
-    adgroup_sheet.append(["02_학부모설득", "초등 영어 학부모, 수준별 영어, 영어 습관, 학습 진단, 영어 자신감", "", "확인 완료 검수"])
+    adgroup_sheet.append(["adgroup_name", "keywords", "카피 핵심 반영 요소", "필수 고정 문구", "검수상태"])
+    adgroup_sheet.append(["01_반복훈련", "초등 영어 앱, 영어 반복 학습, 파닉스, 학습 리포트, 집 공부", "반복 훈련, 학습 리포트", "", "확인 완료 검수"])
+    adgroup_sheet.append(["02_학부모설득", "초등 영어 학부모, 수준별 영어, 영어 습관, 학습 진단, 영어 자신감", "수준별 학습, 영어 습관", "", "확인 완료 검수"])
 
     ads_sheet = workbook.create_sheet("ads_검수")
     ads_sheet.append(["소재 검수 목록"])
@@ -1128,37 +1293,59 @@ def _adcopy_import_nested_ads(group_rows: list[dict[str, Any]]) -> list[dict[str
 
 
 def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
-    trace = raw if isinstance(raw, dict) else {}
-    status_text = str(
-        status_source
-        or trace.get("review_status")
-        or trace.get("검수상태")
-        or trace.get("human_check")
-        or trace.get("휴먼 체크")
-        or trace.get("validation_status")
-        or trace.get("status")
-        or ""
-    ).strip().lower()
+    source = raw if isinstance(raw, dict) else {}
+    nested_trace = source.get("trace") if isinstance(source.get("trace"), dict) else {}
+    trace = nested_trace if isinstance(nested_trace, dict) else {}
+    status_candidates = [
+        source.get("validation_status"),
+        source.get("자동 판정"),
+        source.get("검수 결과"),
+        source.get("검수결과"),
+        source.get("status"),
+        status_source,
+        trace.get("review_status"),
+        trace.get("검수상태"),
+        trace.get("human_check"),
+        trace.get("휴먼 체크"),
+        trace.get("validation_status"),
+        trace.get("status"),
+    ]
+    status_text_raw = " ".join(str(item or "").strip() for item in status_candidates if str(item or "").strip())
+    status_text = status_text_raw.lower()
     validation_status = "담당자 확인 필요"
-    if any(token in status_text for token in ("무수정 승인", "수정 후 승인", "확인 완료", "승인", "approved", "approve", "ok", "pass")):
-        validation_status = "승인"
-    elif any(token in status_text for token in ("사용 불가", "사용불가", "불가", "제외", "excluded", "exclude", "drop", "reject")):
+    if any(token in status_text for token in ("사용 불가", "사용불가", "불가", "제외", "excluded", "exclude", "drop", "reject")):
         validation_status = "제외"
-    elif any(token in status_text for token in ("부분 재생성", "광고주 확인 필요", "확인 필요", "수정", "보류", "재생성", "revise", "hold", "needs")):
+    elif any(token.lower() in status_text for token in ADCOPY_REVIEW_HOLD_TOKENS):
+        validation_status = "광고주 확인 필요"
+    elif any(token in status_text for token in ("무수정 승인", "수정 후 승인", "확인 완료", "승인", "approved", "approve", "ok", "pass", "통과")):
+        validation_status = "승인"
+    elif any(token in status_text for token in ("부분 재생성", "확인 필요", "수정", "보류", "재생성", "revise", "hold", "needs")):
         validation_status = "수정 필요"
+    review_comment = str(
+        source.get("review_comment")
+        or source.get("검수 메모")
+        or source.get("review_note")
+        or source.get("운영 메모")
+        or trace.get("review_comment")
+        or trace.get("memo")
+        or trace.get("검수 메모")
+        or trace.get("review_note")
+        or trace.get("운영 메모")
+        or ""
+    ).strip()
+    if validation_status == "광고주 확인 필요" and not review_comment and status_text_raw:
+        review_comment = status_text_raw[:500]
     return {
         **_adcopy_trace(source_type="기존 작업 파일", generation_basis="기존 작업 파일 변환", confidence_score=0.62),
         **trace,
+        "source_type": str(source.get("source_type") or trace.get("source_type") or "기존 작업 파일").strip(),
+        "source_url": str(source.get("source_url") or trace.get("source_url") or "").strip(),
+        "source_excerpt": str(source.get("source_excerpt") or trace.get("source_excerpt") or "").strip(),
+        "generation_basis": str(source.get("generation_basis") or trace.get("generation_basis") or "기존 작업 파일 변환").strip(),
+        "confidence_score": _safe_float(source.get("confidence_score") or trace.get("confidence_score") or 0.62),
         "validation_status": validation_status,
-        "review_comment": str(
-            trace.get("review_comment")
-            or trace.get("memo")
-            or trace.get("검수 메모")
-            or trace.get("review_note")
-            or trace.get("운영 메모")
-            or ""
-        ).strip(),
-        "exclusion_reason": str(trace.get("exclusion_reason") or trace.get("제외 사유") or "").strip(),
+        "review_comment": review_comment,
+        "exclusion_reason": str(source.get("exclusion_reason") or source.get("제외 사유") or trace.get("exclusion_reason") or trace.get("제외 사유") or "").strip(),
     }
 
 
@@ -1190,23 +1377,43 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
     first_ad = ad_rows[0] if ad_rows else {}
     source_label = str(payload.source_label or "기존 작업 파일").strip()
 
-    campaign_name = _adcopy_import_text(
-        first_campaign,
-        ("campaign_name", "campaign", "name", "Campaign", "캠페인명", "캠페인"),
-        str(payload.campaign_name or "").strip(),
-    ) or _adcopy_import_text(first_group, ("campaign_name", "campaign", "캠페인명", "캠페인")) or _adcopy_import_text(first_ad, ("campaign_name", "campaign", "캠페인명", "캠페인")) or "외부_캠페인"
-    budget_value = _adcopy_import_first_value(first_campaign, ("budget_max", "budget", "daily_budget", "total_budget", "예산", "일예산", "총예산"))
-    budget_max = _adcopy_import_number(budget_value, float(payload.budget_max or 0))
-    budget_type = _adcopy_import_text(first_campaign, ("budget_type", "budgetType", "예산유형", "예산 유형"), str(payload.budget_type or "daily").strip() or "daily")
-    if budget_type in {"일 예산", "일예산"}:
-        budget_type = "daily"
-    elif budget_type in {"총 예산", "총예산"}:
-        budget_type = "total"
-    target_countries = [
-        str(item).strip().upper()
-        for item in _adcopy_import_items(_adcopy_import_first_value(first_campaign, ("target_countries", "countries", "국가", "타겟 국가")) or payload.target_countries)
-        if str(item).strip()
-    ] or ["KR"]
+    fallback_campaign_name = (
+        str(payload.campaign_name or "").strip()
+        or _adcopy_import_text(first_group, ("campaign_name", "campaign", "캠페인명", "캠페인"))
+        or _adcopy_import_text(first_ad, ("campaign_name", "campaign", "캠페인명", "캠페인"))
+        or "외부_캠페인"
+    )
+
+    def build_campaign(row: dict[str, Any], index: int) -> dict[str, Any]:
+        name = _adcopy_import_text(
+            row,
+            ("campaign_name", "campaign", "name", "Campaign", "캠페인명", "캠페인"),
+            fallback_campaign_name if index == 1 else f"{fallback_campaign_name}_{index:02d}",
+        )
+        budget_value = _adcopy_import_first_value(row, ("budget_max", "budget", "daily_budget", "total_budget", "예산", "일예산", "총예산"))
+        budget_max = _adcopy_import_number(budget_value, float(payload.budget_max or 0))
+        budget_type = _adcopy_import_text(row, ("budget_type", "budgetType", "예산유형", "예산 유형"), str(payload.budget_type or "daily").strip() or "daily")
+        if budget_type in {"일 예산", "일예산"}:
+            budget_type = "daily"
+        elif budget_type in {"총 예산", "총예산"}:
+            budget_type = "total"
+        target_countries = [
+            str(item).strip().upper()
+            for item in _adcopy_import_items(_adcopy_import_first_value(row, ("target_countries", "countries", "국가", "타겟 국가")) or payload.target_countries)
+            if str(item).strip()
+        ] or ["KR"]
+        return {
+            "campaign_name": name,
+            "budget_max": budget_max,
+            "budget_type": budget_type or "daily",
+            "launch_date": _adcopy_import_text(row, ("launch_date", "start_date", "start", "시작일"), str(payload.launch_date or "").strip()),
+            "end_date": _adcopy_import_text(row, ("end_date", "end", "종료일"), str(payload.end_date or "").strip()),
+            "objective": _adcopy_import_objective(
+                _adcopy_import_text(row, ("objective", "goal", "campaign_objective", "목표", "유형"), str(payload.objective or "Views").strip()),
+                str(payload.objective or "Views").strip(),
+            ),
+            "target_countries": target_countries,
+        }
     banned_terms = list(dict.fromkeys([
         *_split_admin_list(payload.banned_terms),
         *[
@@ -1221,21 +1428,13 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
         ],
     ]))
     default_required_phrases = _split_admin_list(payload.required_phrases)
+    default_required_exact_phrases = _split_admin_list(payload.required_exact_phrases)
     default_link = str(payload.landing_url or "").strip()
     default_image = str(payload.image_link or "").strip()
 
-    campaign = {
-        "campaign_name": campaign_name,
-        "budget_max": budget_max,
-        "budget_type": budget_type or "daily",
-        "launch_date": _adcopy_import_text(first_campaign, ("launch_date", "start_date", "start", "시작일"), str(payload.launch_date or "").strip()),
-        "end_date": _adcopy_import_text(first_campaign, ("end_date", "end", "종료일"), str(payload.end_date or "").strip()),
-        "objective": _adcopy_import_objective(
-            _adcopy_import_text(first_campaign, ("objective", "goal", "campaign_objective", "목표", "유형"), str(payload.objective or "Views").strip()),
-            str(payload.objective or "Views").strip(),
-        ),
-        "target_countries": target_countries,
-    }
+    campaigns = [build_campaign(row, index) for index, row in enumerate(campaign_rows, start=1)] or [build_campaign(first_campaign, 1)]
+    campaign = campaigns[0]
+    campaign_name = campaign["campaign_name"]
 
     adgroups: list[dict[str, Any]] = []
     seen_adgroups: set[str] = set()
@@ -1262,7 +1461,33 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 keywords.append({"text": text, "origin": origin if origin in {"customer_data", "ai_inferred"} else "ai_inferred"})
         required = [
             str(value).strip()
-            for value in _adcopy_import_items(_adcopy_import_first_value(item, ("required_phrases", "required_terms", "필수 포함 문구", "필수 문구")) or default_required_phrases)
+            for value in _adcopy_import_items(
+                _adcopy_import_first_value(
+                    item,
+                    (
+                        "required_phrases",
+                        "copy_core_elements",
+                        "core_elements",
+                        "required_terms",
+                        "카피 핵심 반영 요소",
+                        "핵심 반영 요소",
+                        "필수 포함 문구",
+                        "필수 문구",
+                    ),
+                )
+                or default_required_phrases
+            )
+            if str(value).strip()
+        ]
+        required_exact = [
+            str(value).strip()
+            for value in _adcopy_import_items(
+                _adcopy_import_first_value(
+                    item,
+                    ("required_exact_phrases", "exact_required_phrases", "필수 고정 문구", "고정 문구", "필수 고지", "필수 고지·주의사항"),
+                )
+                or default_required_exact_phrases
+            )
             if str(value).strip()
         ]
         adgroups.append(
@@ -1271,7 +1496,8 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "adgroup_name": name,
                 "keywords": keywords,
                 "required_phrases": list(dict.fromkeys(required)),
-                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
+                "required_exact_phrases": list(dict.fromkeys(required_exact)),
+                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
             }
         )
 
@@ -1288,6 +1514,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "adgroup_name": name,
                 "keywords": [],
                 "required_phrases": default_required_phrases,
+                "required_exact_phrases": default_required_exact_phrases,
                 "trace": _adcopy_import_trace(None),
             }
         )
@@ -1298,6 +1525,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "adgroup_name": "01_광고그룹",
                 "keywords": [],
                 "required_phrases": default_required_phrases,
+                "required_exact_phrases": default_required_exact_phrases,
                 "trace": _adcopy_import_trace(None),
             }
         )
@@ -1318,13 +1546,13 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "copy": _adcopy_import_text(item, ("copy", "body", "description", "text", "카피", "본문", "설명")),
                 "link": _adcopy_import_text(item, ("link", "landing_url", "target_url", "url", "랜딩 URL", "랜딩URL"), default_link),
                 "image_link": _adcopy_import_text(item, ("image_link", "image_url", "image", "이미지 URL", "이미지URL"), default_image),
-                "trace": _adcopy_import_trace(item.get("trace"), _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
+                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
             }
         )
 
     generated = {
         "policy": {"banned_terms": banned_terms},
-        "campaigns": [campaign],
+        "campaigns": campaigns,
         "adgroups": adgroups,
         "ads": ads,
     }
@@ -1426,20 +1654,75 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
         if float(campaign.get("budget_max") or 0) <= 0:
             warnings.append(_adcopy_finding("warning", "campaigns", name or "-", "budget_max", "budget_empty", "예산이 0 또는 미입력입니다. 업로드 전 확인하세요."))
     adgroup_names = {str(item.get("adgroup_name") or "").strip() for item in adgroups}
+    context_hint_owner: dict[str, str] = {}
     if not adgroups:
         errors.append(_adcopy_finding("error", "adgroups", "-", "adgroup_name", "adgroup_required", "광고그룹이 생성되지 않았습니다."))
     for adgroup in adgroups:
         name = str(adgroup.get("adgroup_name") or "").strip()
         if not name:
             errors.append(_adcopy_finding("error", "adgroups", "-", "adgroup_name", "adgroup_name_required", "광고그룹명이 비어 있습니다."))
+        elif not _adcopy_stage_from_adgroup_name(name):
+            warnings.append(
+                _adcopy_finding(
+                    "warning",
+                    "adgroups",
+                    name or "-",
+                    "adgroup_name",
+                    "purchase_journey_stage",
+                    "광고그룹명 끝의 구매여정 단계는 문제정의, 제품발견, 비교검토, 단일제품평가, 신청전환, 사용도움 중 하나여야 합니다.",
+                )
+            )
+        if name and "*" not in name:
+            warnings.append(
+                _adcopy_finding(
+                    "warning",
+                    "adgroups",
+                    name,
+                    "adgroup_name",
+                    "adgroup_name_structure",
+                    "광고그룹명은 상품/SKU*타깃*세부의도_구매여정 구조를 권장합니다.",
+                )
+            )
         if adgroup.get("max_bid") not in (None, "", []):
             errors.append(_adcopy_finding("error", "adgroups", name or "-", "max_bid", "max_bid_must_be_empty", "max_bid는 항상 빈칸이어야 합니다."))
         keywords = adgroup.get("keywords") or []
         if len(keywords) < 5:
-            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "keywords", "검색 맥락이 5개 미만입니다."))
+            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "keywords", "context_hint_min_count", "검색 맥락이 5개 미만입니다."))
+        keyword_texts = [str(keyword.get("text") if isinstance(keyword, dict) else keyword).strip() for keyword in keywords]
+        if keyword_texts:
+            contextual_count = sum(1 for text in keyword_texts if _adcopy_is_contextual_hint(text))
+            if contextual_count / len(keyword_texts) < 0.5:
+                warnings.append(
+                    _adcopy_finding(
+                        "warning",
+                        "adgroups",
+                        name or "-",
+                        "keywords",
+                        "context_hint_question_ratio",
+                        "Context Hints는 검색어형보다 질문형·상황형 문장 비중을 높이는 편이 좋습니다.",
+                    )
+                )
+        for keyword_text in keyword_texts:
+            normalized_hint = _adcopy_normalized_hint(keyword_text)
+            if not normalized_hint:
+                continue
+            owner = context_hint_owner.get(normalized_hint)
+            if owner and owner != name:
+                warnings.append(
+                    _adcopy_finding(
+                        "warning",
+                        "adgroups",
+                        name or "-",
+                        "keywords",
+                        "context_hint_duplicate",
+                        f"'{keyword_text}' 문맥 힌트가 {owner} 광고그룹과 중복됩니다.",
+                    )
+                )
+            else:
+                context_hint_owner[normalized_hint] = name
         required_phrases = [str(value).strip() for value in adgroup.get("required_phrases") or [] if str(value).strip()]
         if required_phrases and not any(str(ad.get("adgroup_name") or "").strip() == name for ad in ads):
-            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "required_phrases", "required_phrase_no_ads", "필수 문구를 확인할 대상 광고가 없습니다."))
+            warnings.append(_adcopy_finding("warning", "adgroups", name or "-", "required_phrases", "core_element_no_ads", "카피 핵심 반영 요소를 확인할 대상 광고가 없습니다."))
         for keyword in keywords:
             keyword_text = str(keyword.get("text") if isinstance(keyword, dict) else keyword).strip()
             if any(term in keyword_text for term in banned_terms):
@@ -1447,6 +1730,7 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
     seen_creatives: dict[str, str] = {}
     seen_titles: dict[str, str] = {}
     landing_hosts: list[str] = []
+    ads_by_group: dict[str, list[dict[str, str]]] = {}
     risk_finding_count = 0
     if not ads:
         errors.append(_adcopy_finding("error", "ads", "-", "title", "ads_required", "광고 소재가 생성되지 않았습니다."))
@@ -1456,6 +1740,7 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
         title = str(ad.get("title") or "").strip()
         copy = str(ad.get("copy") or "").strip()
         combined = f"{title} {copy}"
+        ads_by_group.setdefault(adgroup_name, []).append({"ad_name": ad_name, "title": title, "copy": copy})
         ad_issues: list[dict[str, str]] = []
         if adgroup_name not in adgroup_names:
             errors.append(_adcopy_finding("error", "ads", ad_name, "adgroup_name", "adgroup_missing", "존재하지 않는 광고그룹을 참조합니다."))
@@ -1519,9 +1804,14 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
                 ad_issues.append({"level": "error", "rule": "banned_term", "message": f"금지어 포함: {term}"})
         group = next((group for group in adgroups if str(group.get("adgroup_name") or "").strip() == adgroup_name), None)
         for phrase in [str(value).strip() for value in (group or {}).get("required_phrases") or [] if str(value).strip()]:
+            terms = _adcopy_core_terms(phrase)
+            if terms and not any(term in combined for term in terms):
+                warnings.append(_adcopy_finding("warning", "ads", ad_name, "title/copy", "core_element_weak", f"카피 핵심 반영 요소 확인 필요: {phrase}"))
+                ad_issues.append({"level": "warning", "rule": "core_element_weak", "message": f"카피 핵심 반영 요소 확인 필요: {phrase}"})
+        for phrase in [str(value).strip() for value in (group or {}).get("required_exact_phrases") or [] if str(value).strip()]:
             if phrase not in combined:
-                errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "required_phrase_missing", f"필수 문구 누락: {phrase}"))
-                ad_issues.append({"level": "error", "rule": "required_phrase_missing", "message": f"필수 문구 누락: {phrase}"})
+                errors.append(_adcopy_finding("error", "ads", ad_name, "title/copy", "required_exact_phrase_missing", f"필수 고정 문구 누락: {phrase}"))
+                ad_issues.append({"level": "error", "rule": "required_exact_phrase_missing", "message": f"필수 고정 문구 누락: {phrase}"})
         status = "error" if any(issue["level"] == "error" for issue in ad_issues) else ("warning" if ad_issues else "pass")
         creative_checks.append(
             {
@@ -1533,6 +1823,38 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
                 "issues": ad_issues[:5],
             }
         )
+    for group_name, group_ads in ads_by_group.items():
+        if len(group_ads) < 3:
+            continue
+        cta_count = sum(1 for item in group_ads if _adcopy_is_cta_like(item.get("copy")))
+        if cta_count / len(group_ads) > 0.3:
+            warnings.append(
+                _adcopy_finding(
+                    "warning",
+                    "ads",
+                    group_name or "-",
+                    "copy",
+                    "cta_ending_ratio",
+                    "동일 광고그룹 내 직접 행동 유도형 종결은 전체 카피의 30% 이하로 분산하는 편이 좋습니다.",
+                )
+            )
+        ending_counts: dict[str, int] = {}
+        for item in group_ads:
+            bucket = _adcopy_ending_bucket(item.get("copy"))
+            if bucket:
+                ending_counts[bucket] = ending_counts.get(bucket, 0) + 1
+        repeated_ending = next((ending for ending, count in ending_counts.items() if count >= 3 and count / len(group_ads) >= 0.6), "")
+        if repeated_ending:
+            warnings.append(
+                _adcopy_finding(
+                    "warning",
+                    "ads",
+                    group_name or "-",
+                    "copy",
+                    "copy_ending_repetition",
+                    f"동일 광고그룹 내 카피 종결 '{repeated_ending}' 반복이 많습니다.",
+                )
+            )
     unique_landing_hosts = sorted(set(landing_hosts))
     if len(unique_landing_hosts) > 1:
         message = f"소재 랜딩 도메인이 {len(unique_landing_hosts)}개입니다: {', '.join(unique_landing_hosts[:4])}"
@@ -1574,7 +1896,13 @@ def _validate_generated_adcopy(data: dict[str, Any]) -> dict[str, Any]:
         readiness = "수정 권장"
     recommendations: list[dict[str, str]] = []
     if errors:
-        recommendations.append(_adcopy_recommendation("error", "오류 우선 수정", "필수 문구 누락, URL, 길이 초과 같은 오류를 먼저 해결해야 합니다."))
+        recommendations.append(_adcopy_recommendation("error", "오류 우선 수정", "필수 고정 문구 누락, URL, 길이 초과 같은 오류를 먼저 해결해야 합니다."))
+    if any(rule in warning_rules for rule in ("purchase_journey_stage", "adgroup_name_structure")):
+        recommendations.append(_adcopy_recommendation("brief", "구매여정 구조 확인", "광고그룹명은 상품/SKU*타깃*세부의도_구매여정 구조와 6개 고정 단계로 맞춰 주세요."))
+    if any(rule in warning_rules for rule in ("context_hint_question_ratio", "context_hint_duplicate")):
+        recommendations.append(_adcopy_recommendation("brief", "대화 맥락 보강", "Context Hints는 질문형·상황형 문장 중심으로, 광고그룹 간 중복을 줄여 주세요."))
+    if any(rule in warning_rules for rule in ("cta_ending_ratio", "copy_ending_repetition")):
+        recommendations.append(_adcopy_recommendation("copy", "카피 종결 분산", "같은 광고그룹 안에서는 질문형, 공감형, 정보형, 조건형, 결과형 등으로 문장 끝을 분산하는 편이 좋습니다."))
     if "title_len_recommended" in warning_rules:
         recommendations.append(_adcopy_recommendation("copy", "제목 길이 보정", "제목은 가능하면 16~18자로 맞추면 노출 영역에서 더 안정적으로 보입니다."))
     if "copy_len_recommended" in warning_rules:
