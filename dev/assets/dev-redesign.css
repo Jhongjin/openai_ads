@@ -2145,9 +2145,9 @@ body.dev-console.modal-open {
 }
 
 .adcopy-preset-panel {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   min-width: 0;
   border: 1px solid #e1e8f2;
@@ -2172,11 +2172,35 @@ body.dev-console.modal-open {
 }
 
 .adcopy-preset-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(96px, 1fr));
   gap: 6px;
-  min-width: 224px;
+  width: 220px;
+  justify-content: end;
+}
+
+.adcopy-preset-actions .btn-secondary {
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.adcopy-policy-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, .86fr) minmax(0, 1.14fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.adcopy-policy-grid .field:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.adcopy-policy-grid .field {
+  align-content: start;
+}
+
+.adcopy-policy-grid .textarea {
+  min-height: 126px;
 }
 
 .adcopy-landing-insight {
@@ -4178,7 +4202,8 @@ body.dev-console.modal-open {
   .adcopy-draft-controls,
   .adcopy-draft-steps,
   .adcopy-form .grid-2,
-  .adcopy-form .grid-3 {
+  .adcopy-form .grid-3,
+  .adcopy-policy-grid {
     grid-template-columns: 1fr;
   }
 
@@ -4224,7 +4249,11 @@ body.dev-console.modal-open {
 
   .adcopy-preset-actions {
     justify-content: flex-start;
-    min-width: 0;
+    width: 100%;
+  }
+
+  .adcopy-policy-grid .field:nth-child(3) {
+    grid-column: auto;
   }
 
   .adcopy-result-section-head {
