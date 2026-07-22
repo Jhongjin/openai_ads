@@ -351,6 +351,57 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         finally:
             workbook.close()
 
+    def test_admin_adcopy_review_workbook_downloads_current_human_review_and_checks(self) -> None:
+        from openpyxl import load_workbook
+
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["campaigns"] = [{
+            "campaign_name": "검토작업본_캠페인",
+            "advertiser_name": "캐츠잉글리시",
+            "budget_max": 50000,
+            "budget_type": "daily",
+            "launch_date": "2026-07-22",
+            "end_date": "2026-07-31",
+            "objective": "Views",
+            "target_countries": ["KR"],
+        }]
+        generated["ads"][0]["trace"] = {
+            **generated["ads"][0]["trace"],
+            "validation_status": "이미지 확인 필요",
+            "review_status": "수정 필요",
+            "review_comment": "이미지 URL 확인",
+        }
+        generated["ads"][1]["title"] = '=HYPERLINK("https://example.com","열기")'
+
+        blocked = client.post("/api/admin/adcopy/review-workbook", json={"generated": generated})
+        self.assertEqual(blocked.status_code, 403)
+
+        response = client.post(
+            "/api/admin/adcopy/review-workbook",
+            json={
+                "advertiser_name": "캐츠잉글리시",
+                "campaign_name": "검토작업본_캠페인",
+                "source_label": "unit-test",
+                "generated": generated,
+            },
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("adcopy_review_working_copy.xlsx", response.headers.get("content-disposition", ""))
+        workbook = load_workbook(BytesIO(response.content), data_only=True, read_only=True)
+        try:
+            self.assertEqual(workbook.sheetnames, ["campaigns_검수", "adgroups_검수", "ads_검수"])
+            ads = workbook["ads_검수"]
+            self.assertEqual(ads["J2"].value, "검수상태")
+            self.assertEqual(ads["J3"].value, "수정 필요")
+            self.assertEqual(ads["K3"].value, "이미지 URL 확인")
+            self.assertEqual(ads["G3"].value, "이미지 확인 필요")
+            self.assertTrue(str(ads["C4"].value).startswith("'="))
+        finally:
+            workbook.close()
+
     def test_admin_adcopy_import_workbook_explains_protected_office_file(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 
