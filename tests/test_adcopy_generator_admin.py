@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 from fastapi.testclient import TestClient
 
-from app import app
+from app import AdsAdcopyGenerateRequest, _adcopy_is_contextual_hint, _adcopy_user_prompt, _adcopy_warning_penalty, app
 
 
 ADMIN_HEADERS = {"x-admin-password": "nas2026@"}
@@ -174,6 +174,67 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertLess(body["validation_report"]["quality"]["score"], 100)
         self.assertEqual(body["validation_report"]["creative_checks"][0]["status"], "warning")
 
+    def test_adcopy_prompt_requires_title_copy_continuity_and_role_diversity(self) -> None:
+        prompt = _adcopy_user_prompt(AdsAdcopyGenerateRequest(**adcopy_payload()))
+
+        self.assertIn("user's tension", prompt)
+        self.assertIn("continue the title instead of paraphrasing it", prompt)
+        self.assertIn("solution direction -> benefit or judgment point", prompt)
+        self.assertIn("Assign distinct roles before writing", prompt)
+
+    def test_adcopy_context_hint_accepts_long_situation_sentences(self) -> None:
+        self.assertTrue(_adcopy_is_contextual_hint("아이 영어 숙제를 봐주다가 문법 설명에서 막혔어요"))
+        self.assertTrue(_adcopy_is_contextual_hint("사 준 영어 원서가 너무 어려워서 아이가 덮어버려요"))
+        self.assertFalse(_adcopy_is_contextual_hint("초등 영어 원서 추천"))
+
+    def test_adcopy_warning_penalty_caps_repeated_rule_instances(self) -> None:
+        warnings = [
+            {"rule": "policy_risk_phrase"}
+            for _ in range(20)
+        ]
+
+        self.assertEqual(_adcopy_warning_penalty(warnings), 8)
+
+    def test_admin_adcopy_validate_warns_when_copy_repeats_title(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["ads"][0]["title"] = "아이 영어 수준이 궁금해요"
+        generated["ads"][0]["copy"] = "아이 영어 수준이 궁금해요 지금 확인해보세요"
+
+        response = client.post("/api/admin/adcopy/validate", json={"generated": generated}, headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        warning_rules = {item["rule"] for item in response.json()["validation_report"]["warnings"]}
+        self.assertIn("copy_repeats_title", warning_rules)
+
+    def test_admin_adcopy_validate_warns_on_repeated_title_and_copy_forms(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        generated["ads"] = [
+            {
+                **generated["ads"][0],
+                "ad_name": f"KID_REPEAT_{index}",
+                "title": title,
+                "copy": copy,
+            }
+            for index, (title, copy) in enumerate(
+                [
+                    ("학습 순서가 자꾸 막힌다면", "로드맵을 따라 매일 순서를 확인할 수 있어요"),
+                    ("영어 진도가 늘 고민이라면", "로드맵을 따라 다음 단계를 확인할 수 있어요"),
+                    ("다음 공부가 늘 막막하다면", "로드맵을 따라 학습 방향을 확인할 수 있어요"),
+                ],
+                start=1,
+            )
+        ]
+
+        response = client.post("/api/admin/adcopy/validate", json={"generated": generated}, headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        warning_rules = {item["rule"] for item in response.json()["validation_report"]["warnings"]}
+        self.assertIn("title_form_repetition", warning_rules)
+        self.assertIn("copy_opening_repetition", warning_rules)
+        self.assertIn("copy_role_diversity", warning_rules)
+
     def test_admin_adcopy_validate_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 
@@ -223,6 +284,19 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
             self.assertEqual(workbook["ads_검수"]["A2"].value, "ad_name")
         finally:
             workbook.close()
+
+    def test_admin_adcopy_import_workbook_explains_protected_office_file(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post(
+            "/api/admin/adcopy/import-workbook",
+            files={"file": ("protected.xlsx", b"SCDSA004-protected", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("민감도 레이블", response.json()["detail"])
+        self.assertIn("표준 .xlsx 복사본", response.json()["detail"])
 
     def test_admin_adcopy_import_normalizes_native_generated_json(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
@@ -395,6 +469,68 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["generated"]["ads"][2]["trace"]["validation_status"], "제외")
         self.assertGreaterEqual(body["validation_report"]["summary"]["policy_risk_count"], 1)
         self.assertGreaterEqual(body["validation_report"]["summary"]["landing_domain_count"], 2)
+
+    def test_admin_adcopy_import_canonicalizes_legacy_underscore_adgroup_names(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        generated = generated_payload()
+        legacy_name = "무료학습_초등학부모_체험조건확인_신청전환"
+        generated["adgroups"][0]["adgroup_name"] = legacy_name
+        for ad in generated["ads"]:
+            ad["adgroup_name"] = legacy_name
+
+        response = client.post(
+            "/api/admin/adcopy/import",
+            json={"generated": generated},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        canonical_name = "무료학습*초등학부모*체험조건확인_신청전환"
+        self.assertEqual(body["generated"]["adgroups"][0]["adgroup_name"], canonical_name)
+        self.assertTrue(all(ad["adgroup_name"] == canonical_name for ad in body["generated"]["ads"]))
+
+    def test_admin_adcopy_import_derives_campaigns_from_adgroup_rows(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        external = {
+            "adgroups_검수": [
+                {"campaign_name": "01_학습자료", "adgroup_name": "훈련앱_학부모_반복연습_제품발견", "keywords": ["반복 연습이 필요해요"]},
+                {"campaign_name": "02_학습가이드", "adgroup_name": "로드맵_학부모_학습순서_제품발견", "keywords": ["다음 단계가 궁금해요"]},
+            ],
+            "ads_검수": [
+                {
+                    "ad_name": "AD_001",
+                    "adgroup_name": "훈련앱_학부모_반복연습_제품발견",
+                    "title": "반복 연습이 필요한 순간",
+                    "copy": "교재와 연동된 앱으로 배운 내용을 이어서 연습해요",
+                    "link": "https://example.com",
+                    "image_link": "https://example.com/image.png",
+                },
+                {
+                    "ad_name": "AD_002",
+                    "adgroup_name": "로드맵_학부모_학습순서_제품발견",
+                    "title": "다음 학습 순서가 고민이라면",
+                    "copy": "영역별 로드맵을 보며 다음 학습 방향을 정할 수 있어요",
+                    "link": "https://example.com",
+                    "image_link": "https://example.com/image.png",
+                },
+            ],
+        }
+
+        response = client.post(
+            "/api/admin/adcopy/import",
+            json={"generated": external},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual([item["campaign_name"] for item in body["generated"]["campaigns"]], ["01_학습자료", "02_학습가이드"])
+        self.assertEqual(
+            [item["campaign_name"] for item in body["generated"]["adgroups"]],
+            ["01_학습자료", "02_학습가이드"],
+        )
+        self.assertIn("캠페인 2개를 복원", body["import_report"]["warnings"][0])
 
     def test_admin_adcopy_import_workbook_normalizes_review_xlsx(self) -> None:
         from openpyxl import Workbook
