@@ -167,6 +167,66 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(empty_response.status_code, 403)
 
+    def test_admin_adcopy_regeneration_requires_admin_password(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.post(
+            "/api/admin/adcopy/regenerate",
+            json={"engine": "admate", "generated": generated_payload(), "ad_index": 0},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_adcopy_regeneration_rejects_external_plugin_without_api_call(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("app._call_openai_adcopy_regeneration", AsyncMock()) as regenerate_call:
+            response = client.post(
+                "/api/admin/adcopy/regenerate",
+                json={"engine": "ai_team_plugin", "generated": generated_payload(), "ad_index": 0},
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("Claude Code 플러그인", response.json()["detail"])
+        regenerate_call.assert_not_awaited()
+
+    def test_admin_adcopy_regeneration_returns_reviewable_pair_and_rechecks(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        mocked_call = AsyncMock(
+            return_value={
+                "model": "gpt-test",
+                "raw_response_id": "resp_rewrite",
+                "proposal": {
+                    "title": "매일 이어가는 초등 영어",
+                    "copy": "짧은 반복 학습으로 아이의 영어 루틴을 만들어보세요",
+                    "rationale": "담당자 메모에 따라 문장을 간결하게 다듬었습니다.",
+                },
+            }
+        )
+
+        with patch("app._call_openai_adcopy_regeneration", mocked_call):
+            response = client.post(
+                "/api/admin/adcopy/regenerate",
+                json={
+                    "engine": "admate",
+                    "generated": generated_payload(),
+                    "ad_index": 0,
+                    "review_comment": "브랜드명은 유지하고 간결하게",
+                },
+                headers=ADMIN_HEADERS,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["proposal"]["title"], "매일 이어가는 초등 영어")
+        self.assertTrue(body["used_review_comment"])
+        self.assertEqual(body["ad_index"], 0)
+        self.assertIn("validation_report", body)
+        context = mocked_call.await_args.args[0]
+        self.assertEqual(context["review_comment"], "브랜드명은 유지하고 간결하게")
+        self.assertEqual(context["current"]["ad_name"], "KID_01_001")
+        self.assertEqual(len(context["sibling_ads"]), 1)
+
     def test_admin_adcopy_generation_normalizes_and_validates_generated_json(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
         mocked_call = AsyncMock(
