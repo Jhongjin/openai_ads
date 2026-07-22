@@ -1443,6 +1443,138 @@ def _adcopy_sample_workbook_bytes() -> bytes:
     return buffer.getvalue()
 
 
+def _adcopy_review_workbook_bytes(generated: dict[str, Any], validation_report: dict[str, Any] | None = None) -> bytes:
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    report = validation_report if isinstance(validation_report, dict) else {}
+    checks_by_ad = {
+        str(item.get("ad_name") or ""): item
+        for item in report.get("creative_checks", [])
+        if isinstance(item, dict)
+    }
+    workbook = Workbook()
+    campaign_sheet = workbook.active
+    campaign_sheet.title = "campaigns_검수"
+    campaign_headers = [
+        "campaign_name", "advertiser_name", "budget_max", "budget_type", "launch_date",
+        "end_date", "objective", "target_countries",
+    ]
+    campaign_sheet.append(["광고 문안 검토 작업본 · 서버 저장과 별개인 다운로드 파일입니다."])
+    campaign_sheet.append(campaign_headers)
+    for campaign in generated.get("campaigns", []):
+        if not isinstance(campaign, dict):
+            continue
+        campaign_sheet.append([
+            campaign.get("campaign_name", ""),
+            campaign.get("advertiser_name", ""),
+            campaign.get("budget_max", ""),
+            campaign.get("budget_type", ""),
+            campaign.get("launch_date", ""),
+            campaign.get("end_date", ""),
+            campaign.get("objective", ""),
+            json.dumps(campaign.get("target_countries", []), ensure_ascii=False),
+        ])
+
+    adgroup_sheet = workbook.create_sheet("adgroups_검수")
+    adgroup_headers = [
+        "campaign_name", "adgroup_name", "max_bid", "keywords", "required_phrases",
+        "required_exact_phrases", "validation_status", "검수상태", "검수 메모", "제외 사유",
+    ]
+    adgroup_sheet.append(["광고그룹 검토 작업본"])
+    adgroup_sheet.append(adgroup_headers)
+    for group in generated.get("adgroups", []):
+        if not isinstance(group, dict):
+            continue
+        trace = group.get("trace") if isinstance(group.get("trace"), dict) else {}
+        adgroup_sheet.append([
+            group.get("campaign_name", ""),
+            group.get("adgroup_name", ""),
+            group.get("max_bid", ""),
+            json.dumps(group.get("keywords", []), ensure_ascii=False),
+            json.dumps(group.get("required_phrases", []), ensure_ascii=False),
+            json.dumps(group.get("required_exact_phrases", []), ensure_ascii=False),
+            trace.get("validation_status", ""),
+            trace.get("review_status", "담당자 확인 필요"),
+            trace.get("review_comment", ""),
+            trace.get("exclusion_reason", ""),
+        ])
+
+    ads_sheet = workbook.create_sheet("ads_검수")
+    ads_headers = [
+        "ad_name", "adgroup_name", "title", "copy", "link", "image_link",
+        "validation_status", "플랫폼 자동 점검", "확인 필요 항목", "검수상태", "검수 메모", "제외 사유",
+    ]
+    ads_sheet.append(["소재 검토 작업본 · 자동 점검은 참고 정보이며 검수상태는 담당자가 결정합니다."])
+    ads_sheet.append(ads_headers)
+    for ad in generated.get("ads", []):
+        if not isinstance(ad, dict):
+            continue
+        trace = ad.get("trace") if isinstance(ad.get("trace"), dict) else {}
+        check = checks_by_ad.get(str(ad.get("ad_name") or ""), {})
+        check_status = str(check.get("status") or "pass")
+        check_label = {"error": "오류", "warning": "주의", "pass": "양호"}.get(check_status, check_status)
+        issues = " · ".join(
+            str(item.get("message") or "").strip()
+            for item in check.get("issues", [])
+            if isinstance(item, dict) and str(item.get("message") or "").strip()
+        )
+        ads_sheet.append([
+            ad.get("ad_name", ""),
+            ad.get("adgroup_name", ""),
+            ad.get("title", ""),
+            ad.get("copy", ""),
+            ad.get("link", ""),
+            ad.get("image_link", ""),
+            trace.get("validation_status", ""),
+            check_label,
+            issues,
+            trace.get("review_status", "담당자 확인 필요"),
+            trace.get("review_comment", ""),
+            trace.get("exclusion_reason", ""),
+        ])
+
+    status_validation = DataValidation(
+        type="list",
+        formula1='"담당자 확인 필요,광고주 확인 필요,승인,수정 필요,제외"',
+        allow_blank=False,
+    )
+    ads_sheet.add_data_validation(status_validation)
+    if ads_sheet.max_row >= 3:
+        status_validation.add(f"J3:J{ads_sheet.max_row}")
+
+    header_fill = PatternFill("solid", fgColor="EAF0F8")
+    note_fill = PatternFill("solid", fgColor="FFF4F4")
+    for sheet in workbook.worksheets:
+        sheet.freeze_panes = "A3"
+        sheet.auto_filter.ref = f"A2:{sheet.cell(2, sheet.max_column).coordinate}"
+        sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=sheet.max_column)
+        note_cell = sheet.cell(1, 1)
+        note_cell.fill = note_fill
+        note_cell.font = Font(bold=True, color="9F1239")
+        note_cell.alignment = Alignment(vertical="center")
+        for cell in sheet[2]:
+            cell.fill = header_fill
+            cell.font = Font(bold=True, color="1E293B")
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        for row in sheet.iter_rows(min_row=3):
+            for cell in row:
+                if isinstance(cell.value, str) and cell.value.lstrip().startswith(("=", "+", "-", "@")):
+                    cell.value = f"'{cell.value}"
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+        for column_index, column_cells in enumerate(sheet.columns, start=1):
+            letter = get_column_letter(column_index)
+            longest = max((len(str(cell.value or "")) for cell in column_cells[:40]), default=0)
+            sheet.column_dimensions[letter].width = min(max(longest + 2, 12), 42)
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    return buffer.getvalue()
+
+
 def _adcopy_import_campaign_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
     rows = _adcopy_import_rows(source, ADCOPY_IMPORT_CAMPAIGN_LIST_KEYS)
     if rows:
@@ -3200,6 +3332,21 @@ def admin_list_adcopy_review_state(request: Request) -> dict[str, Any]:
     _require_admin(request)
     limit = _query_int(request, "limit", 20, maximum=50)
     return list_adcopy_review_snapshots(limit=limit)
+
+
+@app.post("/api/admin/adcopy/review-workbook", include_in_schema=False)
+async def admin_download_adcopy_review_workbook(request: Request) -> StreamingResponse:
+    _require_admin(request)
+    payload = await _validated_admin_payload(request, AdsAdcopyReviewStateRequest, "다운로드할 문안 검토 내용이 올바르지 않습니다.")
+    generated = payload.generated if isinstance(payload.generated, dict) else {}
+    if not generated:
+        raise HTTPException(status_code=400, detail="다운로드할 문안 검토 내용이 없습니다.")
+    validation_report = _validate_generated_adcopy(generated)
+    return StreamingResponse(
+        BytesIO(_adcopy_review_workbook_bytes(generated, validation_report)),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="adcopy_review_working_copy.xlsx"'},
+    )
 
 
 @app.get("/api/admin/adcopy/review-state/{snapshot_id}", include_in_schema=False)

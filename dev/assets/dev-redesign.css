@@ -3079,7 +3079,7 @@ body.dev-console.modal-open {
 
 .adcopy-result-section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
@@ -3095,6 +3095,83 @@ body.dev-console.modal-open {
   justify-content: flex-end;
   gap: 6px;
   min-width: 0;
+}
+
+.adcopy-review-workbench {
+  display: grid;
+  flex: 1 1 520px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.adcopy-review-lane {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dfe7f1;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.adcopy-review-lane.is-human {
+  background: #fff;
+}
+
+.adcopy-review-lane-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.adcopy-review-lane-head > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adcopy-review-lane-head strong {
+  color: var(--oa-navy);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-review-lane-head > div:first-child > span,
+.adcopy-review-storage-note {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.adcopy-review-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.adcopy-review-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.adcopy-review-counts span {
+  min-height: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 4px 8px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.adcopy-review-counts b {
+  color: var(--oa-navy);
 }
 
 .adcopy-preview-filter {
@@ -3173,6 +3250,88 @@ body.dev-console.modal-open {
 .adcopy-bulk-actions .btn-compact:disabled {
   cursor: not-allowed;
   opacity: .5;
+}
+
+.adcopy-review-more {
+  position: relative;
+}
+
+.adcopy-review-more summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.adcopy-review-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-review-more-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  right: 0;
+  min-width: 180px;
+  border: 1px solid #dfe7f1;
+  border-radius: 8px;
+  background: #fff;
+  padding: 5px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+}
+
+.adcopy-review-more-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 8px;
+  color: #b4232c;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adcopy-review-more-menu button:hover,
+.adcopy-review-more-menu button:focus-visible {
+  background: #fff1f2;
+  outline: none;
+}
+
+.adcopy-review-more-menu button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.adcopy-review-save-state {
+  min-height: 24px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  padding: 4px 8px;
+  color: #067647;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.adcopy-review-save-state.is-unsaved {
+  background: #fff7ed;
+  color: #b54708;
+}
+
+.adcopy-review-save-state.is-temporary {
+  background: #fff1f2;
+  color: #b4232c;
+}
+
+.adcopy-review-storage-note {
+  margin: 0;
 }
 
 .adcopy-review-action-guide {
@@ -4718,6 +4877,21 @@ body.dev-console.modal-open {
   .adcopy-preview-actions,
   .adcopy-bulk-actions {
     justify-content: flex-start;
+  }
+
+  .adcopy-review-lane-head,
+  .adcopy-review-toolbar {
+    display: grid;
+    justify-items: start;
+  }
+
+  .adcopy-review-counts {
+    justify-content: flex-start;
+  }
+
+  .adcopy-review-more-menu {
+    right: auto;
+    left: 0;
   }
 
   .adcopy-preview-filter,
