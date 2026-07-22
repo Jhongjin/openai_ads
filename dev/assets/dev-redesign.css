@@ -2759,12 +2759,11 @@ body.dev-console.modal-open {
 }
 
 .adcopy-draft-panel {
-  display: grid;
-  gap: 10px;
+  display: block;
   border: 1px solid #dfe7f1;
   border-radius: var(--oa-radius-sm);
   background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
-  padding: 12px;
+  overflow: hidden;
 }
 
 .adcopy-draft-head {
@@ -2774,6 +2773,51 @@ body.dev-console.modal-open {
   gap: 10px;
   min-width: 0;
   flex-wrap: wrap;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.adcopy-draft-head::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-draft-head:focus-visible {
+  outline: 2px solid var(--oa-red);
+  outline-offset: -2px;
+}
+
+.adcopy-draft-body {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #e8edf4;
+  padding: 12px;
+}
+
+.adcopy-draft-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.adcopy-draft-toggle i {
+  transition: transform .18s ease;
+}
+
+.adcopy-draft-panel[open] .adcopy-draft-toggle i {
+  transform: rotate(180deg);
+}
+
+.adcopy-draft-panel[open] .adcopy-draft-toggle-label {
+  font-size: 0;
+}
+
+.adcopy-draft-panel[open] .adcopy-draft-toggle-label::after {
+  content: "접기";
+  font-size: 12px;
 }
 
 .adcopy-draft-head > div:first-child {
@@ -3129,6 +3173,43 @@ body.dev-console.modal-open {
 .adcopy-bulk-actions .btn-compact:disabled {
   cursor: not-allowed;
   opacity: .5;
+}
+
+.adcopy-review-action-guide {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.adcopy-review-action-guide strong {
+  color: #334155;
+}
+
+.adcopy-ai-review-note {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 2px;
+  border-left: 3px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 6px 8px;
+}
+
+.adcopy-ai-review-note span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.adcopy-ai-review-note strong {
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .adcopy-preview-filter button {
@@ -8636,4 +8717,3 @@ body.dev-console.modal-open {
     font-size: 8pt;
   }
 }
-

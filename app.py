@@ -1477,31 +1477,37 @@ def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
     source = raw if isinstance(raw, dict) else {}
     nested_trace = source.get("trace") if isinstance(source.get("trace"), dict) else {}
     trace = nested_trace if isinstance(nested_trace, dict) else {}
-    status_candidates = [
-        source.get("validation_status"),
-        source.get("자동 판정"),
-        source.get("검수 결과"),
-        source.get("검수결과"),
-        source.get("status"),
+    ai_validation_status = str(
+        source.get("validation_status")
+        or source.get("자동 판정")
+        or source.get("검수 결과")
+        or source.get("검수결과")
+        or trace.get("validation_status")
+        or ""
+    ).strip()
+    explicit_review_keys = ("human_check", "review_status", "검수상태", "휴먼 체크", "검수")
+    has_explicit_review_field = any(key in source for key in explicit_review_keys) or any(key in trace for key in explicit_review_keys)
+    review_status_candidates = [
         status_source,
         trace.get("review_status"),
         trace.get("검수상태"),
         trace.get("human_check"),
         trace.get("휴먼 체크"),
-        trace.get("validation_status"),
-        trace.get("status"),
     ]
-    status_text_raw = " ".join(str(item or "").strip() for item in status_candidates if str(item or "").strip())
+    if not has_explicit_review_field:
+        review_status_candidates.extend([source.get("status"), ai_validation_status, trace.get("status")])
+    status_text_raw = " ".join(str(item or "").strip() for item in review_status_candidates if str(item or "").strip())
     status_text = status_text_raw.lower()
-    validation_status = "담당자 확인 필요"
+    review_status = "담당자 확인 필요"
     if any(token in status_text for token in ("사용 불가", "사용불가", "불가", "제외", "excluded", "exclude", "drop", "reject")):
-        validation_status = "제외"
+        review_status = "제외"
     elif any(token.lower() in status_text for token in ADCOPY_REVIEW_HOLD_TOKENS):
-        validation_status = "광고주 확인 필요"
+        review_status = "광고주 확인 필요"
     elif any(token in status_text for token in ("무수정 승인", "수정 후 승인", "확인 완료", "승인", "approved", "approve", "ok", "pass", "통과")):
-        validation_status = "승인"
+        review_status = "승인"
     elif any(token in status_text for token in ("부분 재생성", "확인 필요", "수정", "보류", "재생성", "revise", "hold", "needs")):
-        validation_status = "수정 필요"
+        review_status = "수정 필요"
+    validation_status = ai_validation_status if has_explicit_review_field and ai_validation_status else review_status
     review_comment = str(
         source.get("review_comment")
         or source.get("검수 메모")
@@ -1514,7 +1520,7 @@ def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
         or trace.get("운영 메모")
         or ""
     ).strip()
-    if validation_status == "광고주 확인 필요" and not review_comment and status_text_raw:
+    if review_status == "광고주 확인 필요" and not review_comment and status_text_raw:
         review_comment = status_text_raw[:500]
     return {
         **_adcopy_trace(source_type="기존 작업 파일", generation_basis="기존 작업 파일 변환", confidence_score=0.62),
@@ -1525,6 +1531,7 @@ def _adcopy_import_trace(raw: Any, status_source: Any = None) -> dict[str, Any]:
         "generation_basis": str(source.get("generation_basis") or trace.get("generation_basis") or "기존 작업 파일 변환").strip(),
         "confidence_score": _safe_float(source.get("confidence_score") or trace.get("confidence_score") or 0.62),
         "validation_status": validation_status,
+        "review_status": review_status,
         "review_comment": review_comment,
         "exclusion_reason": str(source.get("exclusion_reason") or source.get("제외 사유") or trace.get("exclusion_reason") or trace.get("제외 사유") or "").strip(),
     }
@@ -1701,7 +1708,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "keywords": keywords,
                 "required_phrases": list(dict.fromkeys(required)),
                 "required_exact_phrases": list(dict.fromkeys(required_exact)),
-                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
+                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "휴먼 체크", "검수"))),
             }
         )
 
@@ -1754,7 +1761,7 @@ def _normalize_external_generated_adcopy(payload: AdsAdcopyImportRequest) -> dic
                 "copy": _adcopy_import_text(item, ("copy", "body", "description", "text", "카피", "본문", "설명")),
                 "link": _adcopy_import_text(item, ("link", "landing_url", "target_url", "url", "랜딩 URL", "랜딩URL"), default_link),
                 "image_link": _adcopy_import_text(item, ("image_link", "image_url", "image", "이미지 URL", "이미지URL"), default_image),
-                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "validation_status", "휴먼 체크", "검수"))),
+                "trace": _adcopy_import_trace(item, _adcopy_import_first_value(item, ("human_check", "review_status", "검수상태", "휴먼 체크", "검수"))),
             }
         )
 
@@ -2284,7 +2291,7 @@ def _campaign_day_count(start_date: Any, end_date: Any) -> int:
 
 def _adcopy_trace_status(item: dict[str, Any]) -> str:
     trace = item.get("trace") if isinstance(item.get("trace"), dict) else {}
-    return str(trace.get("validation_status") or "").strip()
+    return str(trace.get("review_status") or trace.get("validation_status") or "").strip()
 
 
 def _adcopy_is_excluded(item: dict[str, Any]) -> bool:

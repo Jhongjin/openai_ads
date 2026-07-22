@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 from fastapi.testclient import TestClient
 
-from app import AdsAdcopyGenerateRequest, _adcopy_is_contextual_hint, _adcopy_user_prompt, _adcopy_warning_penalty, app
+from app import AdsAdcopyGenerateRequest, _adcopy_import_trace, _adcopy_is_contextual_hint, _adcopy_user_prompt, _adcopy_warning_penalty, app
 
 
 ADMIN_HEADERS = {"x-admin-password": "nas2026@"}
@@ -92,6 +92,17 @@ def generated_payload() -> dict:
 
 
 class AdcopyGeneratorAdminTests(unittest.TestCase):
+    def test_ai_validation_and_blank_human_review_remain_separate(self) -> None:
+        trace = _adcopy_import_trace(
+            {
+                "validation_status": "광고주 확인 필요: 이미지 소재 미제공",
+                "검수상태": "",
+            }
+        )
+
+        self.assertEqual(trace["validation_status"], "광고주 확인 필요: 이미지 소재 미제공")
+        self.assertEqual(trace["review_status"], "담당자 확인 필요")
+
     def test_admin_adcopy_engines_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 
@@ -516,12 +527,16 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["import_report"]["adgroups"], 1)
         self.assertEqual(body["import_report"]["ads"], 3)
-        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "통과")
+        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["review_status"], "승인")
         self.assertEqual(body["generated"]["adgroups"][0]["keywords"][0]["origin"], "customer_data")
-        self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
-        self.assertEqual(body["generated"]["ads"][1]["trace"]["validation_status"], "광고주 확인 필요")
-        self.assertIn("의미 중복 후보", body["generated"]["ads"][1]["trace"]["review_comment"])
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "통과")
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["review_status"], "승인")
+        self.assertEqual(body["generated"]["ads"][1]["trace"]["validation_status"], "의미 중복 후보 / 경고")
+        self.assertEqual(body["generated"]["ads"][1]["trace"]["review_status"], "승인")
+        self.assertEqual(body["generated"]["ads"][1]["trace"]["review_comment"], "")
         self.assertEqual(body["generated"]["ads"][2]["trace"]["validation_status"], "제외")
+        self.assertEqual(body["generated"]["ads"][2]["trace"]["review_status"], "제외")
         self.assertGreaterEqual(body["validation_report"]["summary"]["policy_risk_count"], 1)
         self.assertGreaterEqual(body["validation_report"]["summary"]["landing_domain_count"], 2)
 
@@ -631,7 +646,9 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         self.assertEqual(body["import_report"]["ads"], 1)
         self.assertEqual(body["generated"]["campaigns"][0]["campaign_name"], "엑셀흡수_캠페인")
         self.assertEqual(body["generated"]["adgroups"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["adgroups"][0]["trace"]["review_status"], "승인")
         self.assertEqual(body["generated"]["ads"][0]["trace"]["validation_status"], "승인")
+        self.assertEqual(body["generated"]["ads"][0]["trace"]["review_status"], "승인")
 
     def test_admin_adcopy_workbook_to_paused_draft_e2e(self) -> None:
         from openpyxl import Workbook
