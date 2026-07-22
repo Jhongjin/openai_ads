@@ -92,6 +92,61 @@ def generated_payload() -> dict:
 
 
 class AdcopyGeneratorAdminTests(unittest.TestCase):
+    def test_admin_adcopy_engines_requires_admin_password(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        response = client.get("/api/admin/adcopy/engines")
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_adcopy_engines_defaults_to_external_ai_team_plugin(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        with patch.dict(os.environ, {}, clear=True):
+            response = client.get("/api/admin/adcopy/engines", headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["default_engine"], "ai_team_plugin")
+        self.assertEqual(body["effective_default_engine"], "ai_team_plugin")
+        self.assertFalse(body["default_fallback_used"])
+        plugin = next(item for item in body["engines"] if item["id"] == "ai_team_plugin")
+        self.assertTrue(plugin["available"])
+        self.assertEqual(plugin["execution_mode"], "external_plugin")
+
+    def test_admin_adcopy_engines_reports_admate_server_availability(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-admate-key"}, clear=True):
+            response = client.get("/api/admin/adcopy/engines", headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        admate = next(item for item in body["engines"] if item["id"] == "admate")
+        self.assertTrue(admate["available"])
+        self.assertEqual(admate["execution_mode"], "server")
+
+    def test_admin_adcopy_generation_routes_ai_team_plugin_to_local_workflow(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        payload = {**adcopy_payload(), "engine": "ai_team_plugin"}
+
+        with patch("app._call_openai_adcopy", AsyncMock()) as admate_call:
+            response = client.post("/api/admin/adcopy/generate", json=payload, headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("Claude Code 플러그인", response.json()["detail"])
+        admate_call.assert_not_awaited()
+
+    def test_admin_adcopy_generation_rejects_unknown_engine(self) -> None:
+        client = TestClient(app, raise_server_exceptions=False)
+        payload = {**adcopy_payload(), "engine": "unknown"}
+
+        with patch("app._call_openai_adcopy", AsyncMock()) as admate_call:
+            response = client.post("/api/admin/adcopy/generate", json=payload, headers=ADMIN_HEADERS)
+
+        self.assertEqual(response.status_code, 400)
+        admate_call.assert_not_awaited()
+
     def test_admin_adcopy_generation_requires_admin_password(self) -> None:
         client = TestClient(app, raise_server_exceptions=False)
 

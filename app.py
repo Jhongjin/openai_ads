@@ -271,6 +271,7 @@ class AdsCampaignObjectiveRequest(BaseModel):
 
 
 class AdsAdcopyGenerateRequest(BaseModel):
+    engine: str = Field(default="admate", min_length=1, max_length=30)
     advertiser_name: str = Field(..., min_length=1, max_length=120)
     industry: str | None = Field(default="", max_length=40)
     campaign_name: str = Field(..., min_length=1, max_length=160)
@@ -1002,6 +1003,60 @@ async def _call_openai_adcopy(payload: AdsAdcopyGenerateRequest) -> dict[str, An
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=502, detail="OpenAI 광고 문안 생성 응답 JSON 파싱에 실패했습니다.") from exc
     return {"model": model, "raw_response_id": data.get("id"), "generated": generated}
+
+
+ADCOPY_ENGINE_LABELS = {
+    "ai_team_plugin": "AI부서 플러그인",
+    "admate": "AdMate 엔진",
+}
+
+
+def _configured_adcopy_default_engine() -> str:
+    configured = os.getenv("ADCOPY_DEFAULT_ENGINE", "ai_team_plugin").strip().lower()
+    return configured if configured in ADCOPY_ENGINE_LABELS else "ai_team_plugin"
+
+
+def _adcopy_engine_settings() -> dict[str, Any]:
+    configured_default = _configured_adcopy_default_engine()
+    engines = {
+        "ai_team_plugin": {
+            "label": "AI부서 플러그인",
+            "available": True,
+            "execution_mode": "external_plugin",
+            "description": "Claude Code에서 생성한 review.xlsx를 웹 검수 화면으로 가져옵니다.",
+        },
+        "admate": {
+            "label": "AdMate 엔진",
+            "available": bool((os.getenv("OPENAI_ADCOPY_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()),
+            "execution_mode": "server",
+            "description": "현재 서비스에서 광고 문안을 직접 생성합니다.",
+        },
+    }
+    return {
+        "default_engine": configured_default,
+        "effective_default_engine": configured_default,
+        "default_fallback_used": False,
+        "engines": [
+            {
+                "id": engine_id,
+                **engine,
+                "is_configured_default": engine_id == configured_default,
+            }
+            for engine_id, engine in engines.items()
+        ],
+    }
+
+
+def _resolve_adcopy_engine(requested_engine: str) -> str:
+    requested = (requested_engine or "admate").strip().lower()
+    if requested not in ADCOPY_ENGINE_LABELS:
+        raise HTTPException(status_code=400, detail="지원하지 않는 광고 문안 생성 엔진입니다.")
+    if requested == "ai_team_plugin":
+        raise HTTPException(
+            status_code=409,
+            detail="AI부서 엔진은 Claude Code 플러그인에서 실행합니다. 생성된 review.xlsx를 관리자 화면에서 불러와 주세요.",
+        )
+    return requested
 
 
 def _normalize_generated_adcopy(data: dict[str, Any], payload: AdsAdcopyGenerateRequest) -> dict[str, Any]:
@@ -3041,11 +3096,16 @@ def admin_save_ads_campaign_objective(
 async def admin_generate_adcopy(request: Request) -> dict[str, Any]:
     _require_admin(request)
     payload = await _validated_admin_payload(request, AdsAdcopyGenerateRequest, "생성할 카피 브리프 본문이 올바르지 않습니다.")
+    engine = _resolve_adcopy_engine(payload.engine)
     generated_payload = await _call_openai_adcopy(payload)
     generated = _normalize_generated_adcopy(generated_payload.get("generated") or {}, payload)
     validation_report = _validate_generated_adcopy(generated)
     return {
         "ok": validation_report["ok"],
+        "engine": engine,
+        "engine_label": ADCOPY_ENGINE_LABELS[engine],
+        "requested_engine": payload.engine,
+        "fallback_used": False,
         "model": generated_payload.get("model"),
         "response_id": generated_payload.get("raw_response_id"),
         "generated": generated,
@@ -3053,6 +3113,12 @@ async def admin_generate_adcopy(request: Request) -> dict[str, Any]:
         "summary": validation_report["summary"],
         "notice": "광고 문안 생성 결과입니다. 업로드 또는 임시 등록 전 담당자와 광고주 확인이 필요합니다.",
     }
+
+
+@app.get("/api/admin/adcopy/engines", include_in_schema=False)
+def admin_adcopy_engines(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    return _adcopy_engine_settings()
 
 
 @app.post("/api/admin/adcopy/validate", include_in_schema=False)

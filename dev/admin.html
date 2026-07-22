@@ -808,10 +808,65 @@
                       <div class="adcopy-panel-intro">
                         <span class="adcopy-panel-step">1단계</span>
                         <div>
-                          <strong>입력값을 위에서 아래로 채우기</strong>
-                          <p>기본 정보부터 광고 기준까지 확인한 뒤 하단의 <b>초안 생성</b>을 누릅니다. 생성 결과는 오른쪽 패널에서 검토합니다.</p>
+                          <strong id="adcopy-step-title">AI부서 플러그인 결과 가져오기</strong>
+                          <p id="adcopy-step-description">Claude Code에서 생성한 review.xlsx를 불러오면 오른쪽 패널에서 이어서 검토할 수 있습니다.</p>
                         </div>
                       </div>
+                      <section class="adcopy-engine-panel" id="adcopy-engine-panel" aria-labelledby="adcopy-engine-title">
+                        <div class="adcopy-engine-head">
+                          <div>
+                            <span class="adcopy-section-kicker">생성 엔진</span>
+                            <h3 id="adcopy-engine-title">사내 표준 엔진으로 시작</h3>
+                            <p>같은 브리프를 유지한 채 엔진만 바꿔 결과를 비교할 수 있습니다.</p>
+                          </div>
+                          <span class="tag" id="adcopy-engine-default-badge">확인 중</span>
+                        </div>
+                        <div class="adcopy-engine-options">
+                          <label class="adcopy-engine-card is-selected" data-adcopy-engine-card="ai_team_plugin">
+                            <input type="radio" name="adcopy-engine" value="ai_team_plugin" checked />
+                            <span class="adcopy-engine-icon"><i class="ti ti-building-cog"></i></span>
+                            <span class="adcopy-engine-copy">
+                              <strong>AI부서 플러그인 <em>사내 표준</em></strong>
+                              <small>Claude Code에서 생성하고 검수 파일을 가져옵니다.</small>
+                            </span>
+                            <i class="ti ti-circle-check adcopy-engine-check"></i>
+                          </label>
+                          <label class="adcopy-engine-card" data-adcopy-engine-card="admate">
+                            <input type="radio" name="adcopy-engine" value="admate" />
+                            <span class="adcopy-engine-icon"><i class="ti ti-adjustments-alt"></i></span>
+                            <span class="adcopy-engine-copy">
+                              <strong>AdMate 엔진 <em>비교·보완</em></strong>
+                              <small>기존 독립 생성 기준으로 교차 검토합니다.</small>
+                            </span>
+                            <i class="ti ti-circle-check adcopy-engine-check"></i>
+                          </label>
+                        </div>
+                        <p class="status-line" id="adcopy-engine-status">사용 가능한 생성 엔진을 확인하고 있습니다.</p>
+                      </section>
+                      <section class="adcopy-plugin-workflow" id="adcopy-plugin-workflow">
+                        <div class="adcopy-plugin-workflow-head">
+                          <span class="adcopy-section-kicker">Claude Code 실행</span>
+                          <h3>플러그인에서 생성하고 여기서 검토</h3>
+                          <p>AI부서 엔진은 웹 서버가 아니라 사용자 PC의 Claude Code 안에서 실행됩니다.</p>
+                        </div>
+                        <ol class="adcopy-plugin-steps">
+                          <li>
+                            <span>1</span>
+                            <div><strong>최초 1회 플러그인 설치</strong><code>/plugin marketplace add https://github.com/SUPERWORK-MARKETPLACE/openai-adcopy-generator.git<br />/plugin install adcopy@nasmedia-tools</code></div>
+                            <button class="btn-secondary btn-compact" type="button" id="copy-adcopy-plugin-install"><i class="ti ti-copy"></i> 설치 명령 복사</button>
+                          </li>
+                          <li>
+                            <span>2</span>
+                            <div><strong>입력 워크북으로 카피 생성</strong><code>/adcopy:generate &lt;입력 워크북.xlsx 경로&gt;</code></div>
+                            <button class="btn-secondary btn-compact" type="button" id="copy-adcopy-plugin-generate"><i class="ti ti-copy"></i> 생성 명령 복사</button>
+                          </li>
+                          <li>
+                            <span>3</span>
+                            <div><strong>생성된 review.xlsx 불러오기</strong><small>플러그인이 만든 검수 워크북을 선택하면 자동 점검과 검토 화면이 이어집니다.</small></div>
+                            <button class="btn-command btn-compact" type="button" id="import-adcopy-plugin-review"><i class="ti ti-file-upload"></i> review.xlsx 불러오기</button>
+                          </li>
+                        </ol>
+                      </section>
                       <section class="adcopy-brief-meter" id="adcopy-brief-meter">
                         <div class="adcopy-brief-score">
                           <span>브리프 완성도</span>
@@ -1764,6 +1819,7 @@
         },
       };
       let adcopyLastResult = null;
+      let adcopyEngineSettings = null;
       let adcopyPreviewFilter = "all";
       let adcopyReviewFilter = "all";
       let adcopyExportMode = "all";
@@ -3857,6 +3913,7 @@
           .map((item) => item.trim().toUpperCase())
           .filter(Boolean);
         return {
+          engine: $("input[name='adcopy-engine']:checked")?.value || adcopyEngineSettings?.effective_default_engine || "auto",
           advertiser_name: $("#adcopy-advertiser-name").value.trim(),
           industry: $("#adcopy-industry").value.trim(),
           campaign_name: $("#adcopy-campaign-name").value.trim(),
@@ -3878,6 +3935,62 @@
           adgroup_count: Number($("#adcopy-adgroup-count").value || 3),
           ads_per_adgroup: Number($("#adcopy-ads-per-adgroup").value || 3),
         };
+      }
+
+      function renderAdcopyEngineSettings() {
+        const settings = adcopyEngineSettings;
+        const engines = new Map((settings?.engines || []).map((engine) => [engine.id, engine]));
+        const effective = settings?.effective_default_engine || "ai_team_plugin";
+        const current = $("input[name='adcopy-engine']:checked")?.value;
+        const selected = engines.get(current)?.available ? current : effective;
+        $$('[data-adcopy-engine-card]').forEach((card) => {
+          const input = card.querySelector("input[name='adcopy-engine']");
+          const engine = engines.get(input.value);
+          const available = Boolean(engine?.available);
+          input.disabled = !available;
+          input.checked = available && input.value === selected;
+          card.classList.toggle("is-selected", input.checked);
+          card.classList.toggle("is-disabled", !available);
+          card.title = available ? "" : `${engine?.label || "이 엔진"} 연동 설정이 필요합니다.`;
+        });
+        const effectiveEngine = engines.get(effective);
+        const selectedEngine = engines.get(selected);
+        const pluginMode = selected === "ai_team_plugin";
+        $("#adcopy-generator-form").classList.toggle("is-plugin-mode", pluginMode);
+        $("#adcopy-plugin-workflow").hidden = !pluginMode;
+        $("#adcopy-step-title").textContent = pluginMode ? "AI부서 플러그인 결과 가져오기" : "입력값을 위에서 아래로 채우기";
+        $("#adcopy-step-description").innerHTML = pluginMode
+          ? "Claude Code에서 생성한 <b>review.xlsx</b>를 불러오면 오른쪽 패널에서 이어서 검토할 수 있습니다."
+          : "기본 정보부터 광고 기준까지 확인한 뒤 하단의 <b>초안 생성</b>을 누릅니다. 생성 결과는 오른쪽 패널에서 검토합니다.";
+        const generateButton = $("#generate-adcopy");
+        generateButton.innerHTML = pluginMode
+          ? '<i class="ti ti-file-upload"></i> review.xlsx 불러오기'
+          : '<i class="ti ti-sparkles"></i> 초안 생성';
+        const badge = $("#adcopy-engine-default-badge");
+        badge.className = "tag tag-blue";
+        badge.textContent = effectiveEngine ? `${effectiveEngine.label} 기본` : "엔진 확인 필요";
+        if (pluginMode) {
+          setStatus("adcopy-engine-status", "AI부서 플러그인이 기본입니다. Claude Code에서 생성한 review.xlsx를 아래에서 불러와 주세요.", "ok");
+        } else if (selectedEngine?.available) {
+          setStatus("adcopy-engine-status", "AdMate 엔진을 선택했습니다. 아래 브리프를 입력해 웹에서 직접 생성합니다.", "ok");
+        } else {
+          setStatus("adcopy-engine-status", "AdMate 엔진용 OpenAI 키 설정이 필요합니다.", "warning");
+        }
+      }
+
+      async function copyAdcopyPluginCommand(kind) {
+        const command = kind === "install"
+          ? "/plugin marketplace add https://github.com/SUPERWORK-MARKETPLACE/openai-adcopy-generator.git\n/plugin install adcopy@nasmedia-tools"
+          : "/adcopy:generate <입력 워크북.xlsx 경로>";
+        await navigator.clipboard.writeText(command);
+        setStatus("adcopy-generator-status", kind === "install" ? "플러그인 설치 명령을 복사했습니다." : "카피 생성 명령을 복사했습니다.", "ok");
+      }
+
+      async function loadAdcopyEngines() {
+        adcopyEngineSettings = await adminFetch("/api/admin/adcopy/engines", {
+          loadingMessage: "생성 엔진 설정을 확인하는 중입니다.",
+        });
+        renderAdcopyEngineSettings();
       }
 
       function readAdcopyImportDefaults() {
@@ -3989,6 +4102,11 @@
             body: formData,
             loadingMessage: "엑셀 작업 파일을 불러오는 중입니다.",
           });
+          if ($("input[name='adcopy-engine']:checked")?.value === "ai_team_plugin") {
+            data.engine = "ai_team_plugin";
+            data.engine_label = "AI부서 플러그인";
+            data.model = "adcopy Claude Code plugin";
+          }
           adcopyLastResult = data;
           adcopyPreviewFilter = "all";
           adcopyReviewFilter = "all";
@@ -4403,6 +4521,7 @@
 
       function resetAdcopyGenerator() {
         $("#adcopy-generator-form").reset();
+        renderAdcopyEngineSettings();
         $("#adcopy-target-countries").value = "KR";
         $("#adcopy-adgroup-count").value = "3";
         $("#adcopy-ads-per-adgroup").value = "3";
@@ -4958,7 +5077,7 @@
         $("#reset-adcopy-review-status").disabled = !result;
         renderAdcopyJsonPreview();
         $("#adcopy-result-note").textContent = result
-          ? `${data.model || "모델"} 생성 · ${data.notice || "담당자 확인 필요"}`
+          ? `${data.engine_label || "생성 엔진"} · ${data.model || "모델"} 생성 · ${data.notice || "담당자 확인 필요"}`
           : "아직 생성된 문안이 없습니다.";
         const summary = report?.summary || {};
         $("#adcopy-summary-grid").innerHTML = `
@@ -5471,6 +5590,11 @@
 
       async function generateAdcopy(event) {
         event?.preventDefault();
+        if ($("input[name='adcopy-engine']:checked")?.value === "ai_team_plugin") {
+          setStatus("adcopy-generator-status", "Claude Code 플러그인이 만든 review.xlsx를 선택해 주세요.");
+          $("#adcopy-import-workbook").click();
+          return;
+        }
         const button = $("#generate-adcopy");
         const payload = readAdcopyPayload();
         validateAdcopyPayload(payload);
@@ -8715,6 +8839,7 @@
         if (name === "ads") await ensureAdsKeysLoaded(force);
         if (name === "adcopyGenerator") {
           await ensureAdsKeysLoaded(force);
+          await loadAdcopyEngines();
           await ensureAdcopyReviewSnapshotsLoaded(force);
         }
         if (name === "performance") {
@@ -8830,6 +8955,13 @@
         document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
       });
       $("#adcopy-existing-advertiser").addEventListener("change", applyAdcopyAdvertiserSelection);
+      $("#copy-adcopy-plugin-install").addEventListener("click", () => {
+        copyAdcopyPluginCommand("install").catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#copy-adcopy-plugin-generate").addEventListener("click", () => {
+        copyAdcopyPluginCommand("generate").catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
+      });
+      $("#import-adcopy-plugin-review").addEventListener("click", () => $("#adcopy-import-workbook").click());
       $("#fill-adcopy-sample").addEventListener("click", applyAdcopySampleBrief);
       $("#inspect-adcopy-landing").addEventListener("click", () => {
         inspectAdcopyLanding().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
@@ -8840,6 +8972,7 @@
       });
       $("#adcopy-generator-form").addEventListener("change", (event) => {
         clearAdcopyFieldIssue(event.target);
+        if (event.target.matches("input[name='adcopy-engine']")) renderAdcopyEngineSettings();
         renderAdcopyBriefMeter();
       });
       $("#adcopy-generator-form").addEventListener("click", (event) => {

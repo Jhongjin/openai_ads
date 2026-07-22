@@ -335,6 +335,9 @@ Invoke-RestMethod -Method Post `
 Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 
 - `OPENAI_API_KEY`
+- `OPENAI_ADCOPY_API_KEY` (선택, AdMate 광고 문안 엔진 전용 키. 미설정 시 `OPENAI_API_KEY` 사용)
+- `OPENAI_ADCOPY_MODEL` (선택, AdMate 광고 문안 모델. 기본 `gpt-5`)
+- `ADCOPY_DEFAULT_ENGINE` (선택, 광고 문안 기본 모드. 기본 `ai_team_plugin`)
 - `OPENAI_CHAT_MODEL`
 - `OPENAI_EMBEDDING_MODEL`
 - `OPENAI_EMBEDDING_DIMENSIONS`
@@ -351,6 +354,8 @@ Vercel 프로젝트 환경변수에 아래 값을 등록합니다.
 - `GOOGLE_SHEETS_WEBHOOK_URL` (소재 업로드/워크북 기록용 Apps Script 웹앱 URL)
 - `SHEETS_SHARED_SECRET` (Apps Script와 동일한 공유 토큰)
 - `ADMIN_PASSWORD` (선택, `/admin` 관리자 페이지 비밀번호. 미설정 시 기본값 `nas2026@`)
+
+광고 문안 화면의 기본 모드는 AI부서의 `adcopy@nasmedia-tools` Claude Code 플러그인입니다. 별도 API나 API 키를 사용하지 않으며, 사용자가 로컬 Claude Code에서 `/adcopy:generate <입력 워크북.xlsx 경로>`를 실행한 뒤 생성된 `review.xlsx`를 관리자 화면에 불러옵니다. AdMate 엔진은 화면에서 선택할 수 있는 웹 직접 생성 방식으로 유지하며 `OPENAI_ADCOPY_API_KEY` 또는 `OPENAI_API_KEY`가 필요합니다.
 
 배포 전 로컬에서 `python ingest.py`로 Supabase에 문서를 인덱싱합니다. 민감 환경변수를 로컬로 내려받을 수 없는 경우에는 `INGEST_TOKEN`을 설정한 뒤 배포된 `POST /admin/reindex`를 호출해 Vercel 런타임에서 재인덱싱할 수 있습니다.
 

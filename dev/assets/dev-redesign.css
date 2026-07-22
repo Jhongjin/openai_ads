@@ -2037,6 +2037,242 @@ body.dev-console.modal-open {
   letter-spacing: 0;
 }
 
+.adcopy-engine-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #cbdff3;
+  border-radius: var(--oa-radius);
+  background: linear-gradient(145deg, #f8fbff 0%, #fff 62%);
+  padding: 14px;
+}
+
+.adcopy-engine-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.adcopy-engine-head h3 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.adcopy-engine-head p {
+  margin: 3px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-engine-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.adcopy-engine-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.adcopy-engine-card:hover {
+  border-color: #9dbfe0;
+}
+
+.adcopy-engine-card.is-selected {
+  border-color: var(--oa-blue);
+  background: #f4f9ff;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.08);
+}
+
+.adcopy-engine-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.adcopy-engine-card > input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+.adcopy-engine-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #edf5ff;
+  color: var(--oa-blue);
+  font-size: 18px;
+}
+
+.adcopy-engine-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.adcopy-engine-copy strong {
+  color: var(--oa-ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adcopy-engine-copy strong em {
+  display: inline-flex;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: #e8f2ff;
+  color: var(--oa-blue);
+  padding: 2px 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 950;
+  vertical-align: 1px;
+}
+
+.adcopy-engine-copy small {
+  color: var(--oa-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.adcopy-engine-check {
+  color: #c7d2df;
+  font-size: 18px;
+}
+
+.adcopy-engine-card.is-selected .adcopy-engine-check {
+  color: var(--oa-blue);
+}
+
+.adcopy-plugin-workflow {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #b9d8c8;
+  border-radius: var(--oa-radius);
+  background: linear-gradient(145deg, #f4fbf7 0%, #fff 65%);
+  padding: 14px;
+}
+
+.adcopy-plugin-workflow[hidden] {
+  display: none;
+}
+
+.adcopy-plugin-workflow-head h3 {
+  margin: 0;
+  color: var(--oa-ink);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.adcopy-plugin-workflow-head p {
+  margin: 3px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.adcopy-plugin-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adcopy-plugin-steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #d9e9e0;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+}
+
+.adcopy-plugin-steps li > span {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #e7f5ed;
+  color: var(--oa-green);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-plugin-steps li > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.adcopy-plugin-steps strong {
+  color: var(--oa-ink);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-plugin-steps code {
+  overflow-wrap: anywhere;
+  border-radius: 7px;
+  background: #f2f6f4;
+  color: #274438;
+  padding: 6px 8px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.adcopy-plugin-steps small {
+  color: var(--oa-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.adcopy-form.is-plugin-mode > .adcopy-brief-meter,
+.adcopy-form.is-plugin-mode > .adcopy-form-section {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .adcopy-engine-options {
+    grid-template-columns: 1fr;
+  }
+
+  .adcopy-engine-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .adcopy-plugin-steps li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .adcopy-plugin-steps li > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
 .adcopy-brief-meter {
   display: grid;
   grid-template-columns: 118px minmax(0, 1fr);
