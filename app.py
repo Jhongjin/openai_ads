@@ -1443,6 +1443,131 @@ def _adcopy_sample_workbook_bytes() -> bytes:
     return buffer.getvalue()
 
 
+def _adcopy_brief_sample_workbook_bytes() -> bytes:
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    workbook = Workbook()
+    campaign_sheet = workbook.active
+    campaign_sheet.title = "campaigns"
+    campaign_sheet.append([
+        "campaign_name", "advertiser_name", "industry", "budget_max", "budget_type",
+        "launch_date", "end_date", "objective", "target_countries", "adgroup_count", "ads_per_adgroup",
+    ])
+    campaign_sheet.append([
+        "SAMPLE_영어학습", "캐츠잉글리시", "교육", 50000, "daily",
+        "2026-07-22", "2026-08-31", "Views", "KR", 3, 3,
+    ])
+
+    brief_sheet = workbook.create_sheet("상품.브리프")
+    brief_sheet.append([
+        "campaign_name", "상품·SKU명", "대표 랜딩 URL", "이미지 URL", "타깃 고객",
+        "핵심 문제·니즈", "상품 특징·혜택", "카피 핵심 반영 요소", "톤앤매너", "금지 표현", "필수 고정 문구",
+    ])
+    brief_sheet.append([
+        "SAMPLE_영어학습", "초등 영어 학습 서비스", "https://www.catsenglish.net", "https://example.com/image.png",
+        "초등 자녀의 영어 학습을 고민하는 학부모", "아이에게 맞는 학습 시작점을 찾기 어려움",
+        "집에서 이용하는 온라인 영어 학습 콘텐츠", "영어 학습 시작; 아이에게 맞는 학습 확인; 먼저 경험 후 결정",
+        "담백하고 신뢰감 있는 교육 정보형", "무조건; 1위; 최고", "",
+    ])
+
+    header_fill = PatternFill("solid", fgColor="EAF0F8")
+    for sheet in workbook.worksheets:
+        sheet.freeze_panes = "A2"
+        sheet.auto_filter.ref = sheet.dimensions
+        for cell in sheet[1]:
+            cell.fill = header_fill
+            cell.font = Font(bold=True, color="1E293B")
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        for row in sheet.iter_rows(min_row=2):
+            for cell in row:
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+        for column_index, column_cells in enumerate(sheet.columns, start=1):
+            longest = max((len(str(cell.value or "")) for cell in column_cells), default=0)
+            sheet.column_dimensions[get_column_letter(column_index)].width = min(max(longest + 2, 14), 38)
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    return buffer.getvalue()
+
+
+def _adcopy_brief_from_workbook_dump(workbook_dump: dict[str, Any]) -> dict[str, Any]:
+    sheets = workbook_dump.get("sheets") if isinstance(workbook_dump.get("sheets"), list) else []
+
+    def sheet_rows(*tokens: str) -> list[dict[str, Any]]:
+        for sheet in sheets:
+            if not isinstance(sheet, dict):
+                continue
+            name = str(sheet.get("name") or "").strip().lower()
+            if any(token in name for token in tokens):
+                rows = sheet.get("rows") if isinstance(sheet.get("rows"), list) else []
+                return [row for row in rows if isinstance(row, dict)]
+        return []
+
+    campaign_row = (sheet_rows("campaign", "캠페인") or [{}])[0]
+    brief_row = (sheet_rows("brief", "브리프", "상품") or [{}])[0]
+    source = {**campaign_row, **brief_row}
+
+    def text(*keys: str, fallback: str = "") -> str:
+        return _adcopy_import_text(source, keys, fallback)
+
+    audience_parts = [
+        text("audience", "target_customer", "target_audience", "타깃 고객", "타겟 고객", "타깃", "타겟"),
+        text("problem_need", "core_need", "핵심 문제·니즈", "핵심 문제", "문제·니즈", "니즈"),
+    ]
+    target_countries = [
+        str(item).strip().upper()
+        for item in _adcopy_import_items(
+            _adcopy_import_first_value(source, ("target_countries", "countries", "target_country", "타겟 국가", "타깃 국가", "국가"))
+        )
+        if str(item).strip()
+    ] or ["KR"]
+    budget_type = text("budget_type", "budgetType", "예산유형", "예산 유형", fallback="daily")
+    if budget_type in {"일 예산", "일예산"}:
+        budget_type = "daily"
+    elif budget_type in {"총 예산", "총예산"}:
+        budget_type = "total"
+
+    brief = {
+        "advertiser_name": text("advertiser_name", "advertiser", "광고주명", "광고주"),
+        "industry": text("industry", "category", "업종", "산업"),
+        "campaign_name": text("campaign_name", "campaign", "캠페인명", "캠페인"),
+        "objective": _adcopy_import_objective(text("objective", "goal", "목표", fallback="Views")),
+        "budget_max": _adcopy_import_number(
+            _adcopy_import_first_value(source, ("budget_max", "budget", "예산", "일예산", "총예산")),
+            0,
+        ),
+        "budget_type": budget_type or "daily",
+        "launch_date": text("launch_date", "start_date", "시작일"),
+        "end_date": text("end_date", "종료일"),
+        "target_countries": target_countries,
+        "product_name": text(
+            "product_name", "product", "service_name", "sku", "제품·서비스명", "상품·SKU명", "상품/SKU명", "상품명", "서비스명",
+        ),
+        "landing_url": text("landing_url", "representative_landing_url", "url", "대표 랜딩 URL", "랜딩 URL", "랜딩URL"),
+        "image_link": text("image_link", "image_url", "이미지 URL", "이미지URL"),
+        "audience": "\n".join(dict.fromkeys(part for part in audience_parts if part)),
+        "selling_points": text("selling_points", "features_benefits", "상품 특징·혜택", "상품 특장점", "상품 특징", "혜택"),
+        "tone": text("tone", "tone_and_manner", "톤앤매너", "톤앤 매너"),
+        "banned_terms": text("banned_terms", "금지 표현", "금지어"),
+        "required_phrases": text("required_phrases", "copy_core_elements", "카피 핵심 반영 요소", "핵심 반영 요소"),
+        "required_exact_phrases": text("required_exact_phrases", "필수 고정 문구", "고정 문구", "필수 고지"),
+        "adgroup_count": int(_adcopy_import_number(_adcopy_import_first_value(source, ("adgroup_count", "광고그룹 수", "광고그룹수")), 3)),
+        "ads_per_adgroup": int(_adcopy_import_number(_adcopy_import_first_value(source, ("ads_per_adgroup", "소재/그룹", "그룹별 소재 수")), 3)),
+    }
+    required = {
+        "advertiser_name": "광고주명",
+        "campaign_name": "캠페인명",
+        "product_name": "제품·서비스명",
+        "landing_url": "랜딩 URL",
+        "image_link": "이미지 URL",
+    }
+    missing_fields = [label for key, label in required.items() if not str(brief.get(key) or "").strip()]
+    return {"brief": brief, "missing_fields": missing_fields, "ready": not missing_fields}
+
+
 def _adcopy_review_workbook_bytes(generated: dict[str, Any], validation_report: dict[str, Any] | None = None) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
@@ -3380,6 +3505,36 @@ def admin_download_adcopy_sample_workbook(request: Request) -> StreamingResponse
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.get("/api/admin/adcopy/brief-sample-workbook", include_in_schema=False)
+def admin_download_adcopy_brief_sample_workbook(request: Request) -> StreamingResponse:
+    _require_admin(request)
+    filename = "openai_ads_adcopy_brief_sample.xlsx"
+    return StreamingResponse(
+        BytesIO(_adcopy_brief_sample_workbook_bytes()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/admin/adcopy/brief-workbook", include_in_schema=False)
+async def admin_import_adcopy_brief_workbook(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
+    _require_admin(request)
+    filename = file.filename or "brief.xlsx"
+    if not filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="xlsx 파일만 업로드할 수 있습니다.")
+    content = await file.read()
+    if len(content) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일은 8MB 이하만 업로드할 수 있습니다.")
+    workbook_dump = _adcopy_workbook_dump(content, filename)
+    parsed = _adcopy_brief_from_workbook_dump(workbook_dump)
+    return {
+        "ok": True,
+        **parsed,
+        "workbook": {"file": filename, "sheets": len(workbook_dump.get("sheets") or [])},
+        "notice": "브리프 파일의 내용을 입력 화면에 채웠습니다. 생성 전에 누락 항목을 확인해 주세요.",
+    }
 
 
 @app.post("/api/admin/adcopy/import-workbook", include_in_schema=False)
