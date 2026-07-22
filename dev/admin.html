@@ -5303,7 +5303,7 @@
             </label>
             <label>
               <span>메모</span>
-              <textarea class="adcopy-review-input" data-adcopy-review="review_comment" data-ad-index="${index}" rows="2" placeholder="수정 요청이나 광고주 확인 사항">${escapeHtml(trace.review_comment || "")}</textarea>
+              <textarea class="adcopy-review-input" data-adcopy-review="review_comment" data-ad-index="${index}" rows="1" placeholder="수정 요청이나 광고주 확인 사항">${escapeHtml(trace.review_comment || "")}</textarea>
             </label>
             <label class="adcopy-exclusion-field">
               <span>제외 사유</span>
@@ -5770,8 +5770,8 @@
                 ${renderAdcopyLengthBadge("copy", ad.copy)}
                 <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
                 ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
-                ${renderAdcopyReviewControls(ad, index)}
               </td>
+              <td class="adcopy-review-cell">${renderAdcopyReviewControls(ad, index)}</td>
             </tr>
               `;
             })()}
@@ -5785,8 +5785,8 @@
               </div>
               <div class="adcopy-keyword-row">${keywords || '<span class="muted-text">검색 맥락 없음</span>'}</div>
               <table class="data-grid adcopy-mini-table">
-                <thead><tr><th>광고명</th><th>제목</th><th>문구</th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="3">생성된 소재가 없습니다.</td></tr>'}</tbody>
+                <thead><tr><th>광고명</th><th>제목</th><th>문구</th><th>검수·담당자 판단</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="4">생성된 소재가 없습니다.</td></tr>'}</tbody>
               </table>
             </article>
           `;
