@@ -3963,9 +3963,8 @@
           ? "Claude Code에서 생성한 <b>review.xlsx</b>를 불러오면 오른쪽 패널에서 이어서 검토할 수 있습니다."
           : "기본 정보부터 광고 기준까지 확인한 뒤 하단의 <b>초안 생성</b>을 누릅니다. 생성 결과는 오른쪽 패널에서 검토합니다.";
         const generateButton = $("#generate-adcopy");
-        generateButton.innerHTML = pluginMode
-          ? '<i class="ti ti-file-upload"></i> review.xlsx 불러오기'
-          : '<i class="ti ti-sparkles"></i> 초안 생성';
+        generateButton.hidden = pluginMode;
+        generateButton.innerHTML = '<i class="ti ti-sparkles"></i> 초안 생성';
         const badge = $("#adcopy-engine-default-badge");
         badge.className = "tag tag-blue";
         badge.textContent = effectiveEngine ? `${effectiveEngine.label} 기본` : "엔진 확인 필요";
