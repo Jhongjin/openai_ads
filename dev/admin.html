@@ -726,7 +726,7 @@
                         </li>
                         <li>
                           <strong>저장·내보내기</strong>
-                          <p><b>검토 저장</b>은 서버 작업본 보관, <b>검토 작업본 XLSX</b>는 사람에게 전달할 파일입니다. 요약 공유에는 <b>소재 CSV</b>와 <b>검토 리포트</b>를 사용합니다.</p>
+                          <p><b>서버 작업본 저장</b>은 이어서 검토할 상태를 보관하고, <b>검토 작업본 XLSX</b>는 사람에게 전달할 파일을 내려받습니다. 요약 공유에는 <b>소재 CSV</b>와 <b>검토 리포트</b>를 사용합니다.</p>
                         </li>
                         <li>
                           <strong>임시 등록 전 확인</strong>
@@ -800,7 +800,7 @@
                           삭제
                         </button>
                       </div>
-                      <p class="status-line" id="adcopy-review-snapshot-status">검토 저장은 서버 작업본입니다. 별도 보관과 전달에는 검토 작업본 XLSX를 사용하세요.</p>
+                      <p class="status-line" id="adcopy-review-snapshot-status">서버 작업본은 이 화면에서 이어서 검토할 때 사용합니다. 별도 보관과 전달에는 검토 작업본 XLSX를 사용하세요.</p>
                     </div>
                   </details>
                   <div class="adcopy-generator-layout">
@@ -1066,6 +1066,10 @@
                           <strong>결과를 확인하고 필요한 항목만 수정</strong>
                           <p>요약 점수와 확인 항목을 먼저 본 뒤, 소재별 제목·문구를 고치고 검토 상태를 저장합니다.</p>
                         </div>
+                        <button class="btn-secondary btn-compact adcopy-source-toggle" type="button" id="toggle-adcopy-source-panel" hidden aria-expanded="false">
+                          <i class="ti ti-layout-sidebar-left-expand" aria-hidden="true"></i>
+                          <span>생성 안내 다시 보기</span>
+                        </button>
                       </div>
                       <div class="adcopy-preview-head">
                         <div>
@@ -1147,9 +1151,9 @@
                                     <i class="ti ti-filter-exclamation"></i>
                                     이슈 자동 분류
                                   </button>
-                                  <button class="btn-primary btn-compact" type="button" id="save-adcopy-review-state" title="현재 문안과 담당자 판단을 서버 작업 저장본으로 보관합니다. 광고 등록은 실행하지 않습니다." disabled>
+                                  <button class="btn-primary btn-compact" type="button" id="save-adcopy-review-state" title="현재 문안과 담당자 판단을 서버 작업본으로 보관합니다. 광고 등록은 실행하지 않습니다." disabled>
                                     <i class="ti ti-device-floppy"></i>
-                                    검토 저장
+                                    서버 작업본 저장
                                   </button>
                                   <button class="btn-secondary btn-compact" type="button" id="download-adcopy-review-workbook" title="현재 문안, 자동 점검과 담당자 판단이 포함된 검토 작업본 XLSX를 다운로드합니다." disabled>
                                     <i class="ti ti-file-spreadsheet"></i>
@@ -1169,7 +1173,7 @@
                                 </div>
                                 <span class="adcopy-review-save-state is-unsaved" id="adcopy-review-save-state" role="status">저장 안 됨</span>
                               </div>
-                              <p class="adcopy-review-storage-note" id="adcopy-review-storage-note">검토 저장은 서버 작업본 보관, XLSX는 사람에게 전달할 파일 다운로드입니다.</p>
+                              <p class="adcopy-review-storage-note" id="adcopy-review-storage-note">서버 작업본은 이어서 검토할 상태를 보관하고, XLSX는 사람에게 전달할 파일을 다운로드합니다.</p>
                             </section>
                           </div>
                         </div>
@@ -5105,9 +5109,36 @@
         }
       }
 
+      function syncAdcopyWorkspaceLayout(hasResult) {
+        const layout = $(".adcopy-generator-layout");
+        const toggle = $("#toggle-adcopy-source-panel");
+        if (!layout || !toggle) return;
+        const alreadyHadResult = layout.classList.contains("has-result");
+        layout.classList.toggle("has-result", Boolean(hasResult));
+        if (!hasResult) {
+          layout.classList.remove("show-source-panel");
+        } else if (!alreadyHadResult) {
+          layout.classList.remove("show-source-panel");
+        }
+        const sourceVisible = layout.classList.contains("show-source-panel");
+        toggle.hidden = !hasResult;
+        toggle.setAttribute("aria-expanded", sourceVisible ? "true" : "false");
+        toggle.querySelector("span").textContent = sourceVisible ? "생성 안내 접기" : "생성 안내 다시 보기";
+        const icon = toggle.querySelector("i");
+        if (icon) icon.className = sourceVisible ? "ti ti-layout-sidebar-left-collapse" : "ti ti-layout-sidebar-left-expand";
+      }
+
+      function toggleAdcopySourcePanel() {
+        const layout = $(".adcopy-generator-layout");
+        if (!layout?.classList.contains("has-result")) return;
+        layout.classList.toggle("show-source-panel");
+        syncAdcopyWorkspaceLayout(true);
+      }
+
       function renderAdcopyResult(data) {
         const result = data?.generated || null;
         const report = data?.validation_report || null;
+        syncAdcopyWorkspaceLayout(Boolean(result));
         const badge = adcopyValidationLabel(report);
         $("#adcopy-validation-badge").className = badge.cls;
         $("#adcopy-validation-badge").textContent = badge.text;
@@ -5191,13 +5222,13 @@
         if (!adcopyLastResult?.generated) {
           status.className = "adcopy-review-save-state is-unsaved";
           status.textContent = "저장 안 됨";
-          note.textContent = "검토 저장은 서버 작업본 보관, XLSX는 사람에게 전달할 파일 다운로드입니다.";
+          note.textContent = "서버 작업본은 이어서 검토할 상태를 보관하고, XLSX는 사람에게 전달할 파일을 다운로드합니다.";
           return;
         }
         if (adcopyReviewSaveMeta.dirty || !adcopyReviewSaveMeta.savedAt) {
           status.className = "adcopy-review-save-state is-unsaved";
           status.textContent = "저장 안 됨";
-          note.textContent = "변경 내용을 서버에 보관하려면 검토 저장을, 파일로 전달하려면 검토 작업본 XLSX를 사용하세요.";
+          note.textContent = "변경 내용을 이어서 검토하려면 서버 작업본 저장을, 파일로 전달하려면 검토 작업본 XLSX를 사용하세요.";
           return;
         }
         const isTemporary = adcopyReviewSaveMeta.storage === "memory";
@@ -9131,6 +9162,7 @@
         copyAdcopyPluginCommand("generate").catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
       });
       $("#import-adcopy-plugin-review").addEventListener("click", () => $("#adcopy-import-workbook").click());
+      $("#toggle-adcopy-source-panel").addEventListener("click", toggleAdcopySourcePanel);
       $("#fill-adcopy-sample").addEventListener("click", applyAdcopySampleBrief);
       $("#inspect-adcopy-landing").addEventListener("click", () => {
         inspectAdcopyLanding().catch((error) => setStatus("adcopy-generator-status", error.message, "error"));
