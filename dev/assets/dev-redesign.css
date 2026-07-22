@@ -1705,6 +1705,92 @@ body.dev-console.modal-open {
   align-items: flex-start;
 }
 
+.adcopy-generator-surface.is-plugin-engine .adcopy-admate-only,
+.adcopy-generator-surface.is-admate-engine .adcopy-plugin-only {
+  display: none !important;
+}
+
+.adcopy-purpose-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #cfe0f4;
+  border-radius: var(--oa-radius);
+  background: linear-gradient(135deg, #f7fbff 0%, #fff 72%);
+  padding: 18px;
+}
+
+.adcopy-purpose-head {
+  display: grid;
+  gap: 5px;
+}
+
+.adcopy-purpose-head h3,
+.adcopy-purpose-head p,
+.adcopy-purpose-limit {
+  margin: 0;
+}
+
+.adcopy-purpose-head h3 {
+  color: var(--oa-navy);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.adcopy-purpose-head p {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.adcopy-purpose-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adcopy-purpose-steps > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  border: 1px solid #e1eaf4;
+  border-radius: 10px;
+  background: #fff;
+  padding: 11px;
+}
+
+.adcopy-purpose-steps i {
+  color: var(--oa-blue);
+  font-size: 18px;
+}
+
+.adcopy-purpose-steps span,
+.adcopy-purpose-steps strong,
+.adcopy-purpose-steps small {
+  display: block;
+}
+
+.adcopy-purpose-steps strong {
+  color: var(--oa-navy);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.adcopy-purpose-steps small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.adcopy-purpose-limit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #7c3d42;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .adcopy-generator-surface .doc-actions {
   display: grid;
   justify-items: end;
@@ -1962,7 +2048,7 @@ body.dev-console.modal-open {
 
 .adcopy-generator-layout {
   display: grid;
-  grid-template-columns: minmax(520px, 1fr) minmax(360px, 520px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
   min-width: 0;
@@ -1977,7 +2063,7 @@ body.dev-console.modal-open {
 }
 
 .adcopy-generator-layout.has-result.show-source-panel {
-  grid-template-columns: minmax(480px, .86fr) minmax(560px, 1.14fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .adcopy-generator-layout.has-result .adcopy-preview {
@@ -1987,8 +2073,8 @@ body.dev-console.modal-open {
 }
 
 .adcopy-generator-layout.has-result.show-source-panel .adcopy-preview {
-  grid-column: auto;
-  position: sticky;
+  grid-column: 1 / -1;
+  position: static;
 }
 
 .adcopy-form,
@@ -2558,8 +2644,7 @@ body.dev-console.modal-open {
 }
 
 .adcopy-preview {
-  position: sticky;
-  top: 18px;
+  position: static;
   display: grid;
   gap: 12px;
   max-width: 100%;
@@ -3112,11 +3197,28 @@ body.dev-console.modal-open {
 }
 
 .adcopy-result-section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
+}
+
+.adcopy-review-stage-title {
+  display: grid;
+  gap: 3px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.adcopy-review-stage-title h4,
+.adcopy-review-stage-title p {
+  margin: 0;
+}
+
+.adcopy-review-stage-title p {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .adcopy-result-section-head > div:first-child {
@@ -3133,8 +3235,9 @@ body.dev-console.modal-open {
 
 .adcopy-review-workbench {
   display: grid;
-  flex: 1 1 520px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+  width: 100%;
   min-width: 0;
 }
 
@@ -3145,6 +3248,7 @@ body.dev-console.modal-open {
   border-radius: 10px;
   background: #f8fafc;
   padding: 10px;
+  min-width: 0;
 }
 
 .adcopy-review-lane.is-human {
@@ -3181,15 +3285,17 @@ body.dev-console.modal-open {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 6px;
 }
 
 .adcopy-review-counts {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .adcopy-review-counts span {
@@ -3199,7 +3305,7 @@ body.dev-console.modal-open {
   background: #fff;
   padding: 4px 8px;
   color: #475569;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 850;
   white-space: nowrap;
 }
@@ -3210,9 +3316,11 @@ body.dev-console.modal-open {
 
 .adcopy-preview-filter {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .adcopy-export-filter,
@@ -3271,14 +3379,22 @@ body.dev-console.modal-open {
 
 .adcopy-bulk-actions {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .adcopy-bulk-actions .btn-compact {
   min-height: 28px;
   padding-inline: 8px;
+  white-space: nowrap;
+}
+
+.adcopy-auto-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .adcopy-bulk-actions .btn-compact:disabled {
@@ -3412,8 +3528,10 @@ body.dev-console.modal-open {
   background: #fff;
   color: var(--oa-muted);
   padding: 0 9px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -3446,13 +3564,12 @@ body.dev-console.modal-open {
 }
 
 .adcopy-generator-layout.has-result .adcopy-result-section-head {
-  display: grid;
-  grid-template-columns: minmax(150px, .32fr) minmax(0, 1.68fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
 }
 
 .adcopy-generator-layout.has-result .adcopy-review-workbench {
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th:first-child,
@@ -3891,6 +4008,7 @@ body.dev-console.modal-open {
   font-size: 13px;
 }
 
+.adcopy-export-details,
 .adcopy-json-details {
   min-width: 0;
   max-width: 100%;
@@ -3900,6 +4018,7 @@ body.dev-console.modal-open {
   background: #fff;
 }
 
+.adcopy-export-details summary,
 .adcopy-json-details summary {
   display: flex;
   align-items: center;
@@ -3912,6 +4031,7 @@ body.dev-console.modal-open {
   font-weight: 900;
 }
 
+.adcopy-export-details summary small,
 .adcopy-json-details summary small {
   color: var(--oa-muted);
   font-size: 11px;
@@ -3932,6 +4052,16 @@ body.dev-console.modal-open {
   font-size: 12px;
   line-height: 1.55;
   white-space: pre;
+}
+
+.adcopy-export-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid var(--oa-line);
+  padding: 12px;
 }
 
 .performance-surface .surface-head {
@@ -4832,6 +4962,10 @@ body.dev-console.modal-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .adcopy-purpose-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .adcopy-draft-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4901,6 +5035,7 @@ body.dev-console.modal-open {
   }
 
   .adcopy-summary-grid,
+  .adcopy-purpose-steps,
   .adcopy-guide-steps,
   .adcopy-upload-checklist,
   .adcopy-snapshot-controls,
@@ -5010,6 +5145,14 @@ body.dev-console.modal-open {
   .adcopy-preview-filter,
   .adcopy-review-filter {
     justify-content: flex-start;
+  }
+
+  .adcopy-review-lane-head,
+  .adcopy-review-toolbar,
+  .adcopy-preview-filter,
+  .adcopy-review-counts,
+  .adcopy-bulk-actions {
+    width: 100%;
   }
 }
 
