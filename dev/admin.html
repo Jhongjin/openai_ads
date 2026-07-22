@@ -650,20 +650,25 @@
                   </div>
                 </div>
                 <div class="surface-body stack">
-                  <section class="adcopy-purpose-panel" aria-labelledby="adcopy-purpose-title">
-                    <div class="adcopy-purpose-head">
-                      <span class="adcopy-section-kicker">이 화면에서 할 수 있는 일</span>
-                      <h3 id="adcopy-purpose-title">생성된 광고 문안을 사람이 판단할 수 있는 검토 파일로 정리합니다</h3>
+                  <details class="adcopy-purpose-panel" id="adcopy-purpose-panel" open>
+                    <summary class="adcopy-purpose-summary">
+                      <span>
+                        <span class="adcopy-section-kicker">이 화면에서 할 수 있는 일</span>
+                        <strong id="adcopy-purpose-title">생성된 문안을 자동 점검하고 담당자 검토 파일로 정리합니다</strong>
+                      </span>
+                      <small>결과를 불러오면 자동으로 접힙니다.</small>
+                    </summary>
+                    <div class="adcopy-purpose-body">
                       <p id="adcopy-purpose-engine-note">AI부서 엔진은 Claude Code에서 문안을 생성합니다. 이 화면은 생성된 review.xlsx를 불러온 다음 단계입니다.</p>
+                      <div class="adcopy-purpose-steps">
+                        <div><i class="ti ti-file-upload"></i><span><strong>결과 불러오기</strong><small>review.xlsx를 읽어 캠페인·광고그룹·소재를 표시합니다.</small></span></div>
+                        <div><i class="ti ti-shield-check"></i><span><strong>자동 점검 후 수정</strong><small>길이·필수값·URL·중복을 확인한 뒤 필요한 제목과 문구를 직접 수정합니다.</small></span></div>
+                        <div><i class="ti ti-user-check"></i><span><strong>담당자 판단</strong><small>승인·수정 필요·제외 상태와 검토 메모를 직접 기록합니다.</small></span></div>
+                        <div><i class="ti ti-file-download"></i><span><strong>저장과 전달</strong><small>서버에 이어서 작업할 상태를 저장하거나 검토 파일을 내려받습니다.</small></span></div>
+                      </div>
+                      <p class="adcopy-purpose-limit"><i class="ti ti-lock"></i> 자동 승인이나 광고 게시를 실행하지 않습니다. 최종 판단과 등록은 담당자가 진행합니다.</p>
                     </div>
-                    <div class="adcopy-purpose-steps">
-                      <div><i class="ti ti-file-upload"></i><span><strong>결과 불러오기</strong><small>review.xlsx를 읽어 캠페인·광고그룹·소재를 표시합니다.</small></span></div>
-                      <div><i class="ti ti-shield-check"></i><span><strong>자동 점검과 수정</strong><small>길이·필수값·URL·중복을 확인하고 제목과 문구를 고칩니다.</small></span></div>
-                      <div><i class="ti ti-user-check"></i><span><strong>담당자 판단</strong><small>승인·수정 필요·제외 상태와 검토 메모를 직접 기록합니다.</small></span></div>
-                      <div><i class="ti ti-file-download"></i><span><strong>저장과 전달</strong><small>서버에 이어서 작업할 상태를 저장하거나 검토 파일을 내려받습니다.</small></span></div>
-                    </div>
-                    <p class="adcopy-purpose-limit"><i class="ti ti-lock"></i> 자동 승인이나 광고 게시를 실행하지 않습니다. 최종 판단과 업로드는 담당자가 진행합니다.</p>
-                  </section>
+                  </details>
                   <div class="adcopy-safe-note adcopy-admate-only">
                     <div>
                       <strong>검토용 생성</strong>
@@ -671,7 +676,7 @@
                     </div>
                     <button class="btn-secondary btn-compact" type="button" id="fill-adcopy-sample">
                       <i class="ti ti-flask"></i>
-                      테스트 브리프
+                      예시 브리프 채우기
                     </button>
                   </div>
                   <details class="adcopy-guide-panel adcopy-admate-only">
@@ -680,13 +685,13 @@
                         <i class="ti ti-route"></i>
                         사용 순서 가이드
                       </span>
-                      <small>샘플·저장본을 불러온 뒤 생성 품질을 확인하는 순서입니다.</small>
+                      <small>샘플·저장된 검토를 불러온 뒤 문안 품질을 확인하는 순서입니다.</small>
                     </summary>
                     <div class="adcopy-guide-body">
                       <ol class="adcopy-guide-steps">
                         <li>
                           <strong>작업 불러오기</strong>
-                          <p><b>테스트 브리프</b>는 입력 예시를 채우고, <b>샘플 바로 적용</b>은 샘플 XLSX를 검토 화면까지 불러옵니다. 저장한 문안은 <b>작업 저장본</b>에서 복원합니다.</p>
+                          <p><b>예시 브리프 채우기</b>는 입력 예시를 채우고, <b>샘플 결과 불러오기</b>는 샘플 XLSX를 검토 화면까지 불러옵니다. 저장한 문안은 <b>저장된 검토</b>에서 복원합니다.</p>
                         </li>
                         <li>
                           <strong>입력 정보 확인</strong>
@@ -698,7 +703,7 @@
                         </li>
                         <li>
                           <strong>소재별 수정</strong>
-                          <p><b>이슈 있음</b>, <b>주의</b>, <b>오류</b> 필터로 제목과 문구를 점검합니다. 수정한 뒤에는 <b>수정 내용 다시 점검</b>을 눌러 길이, 중복, 광고 기준 경고가 최신인지 확인합니다.</p>
+                          <p><b>주의·오류</b> 필터로 확인이 필요한 제목과 문구를 먼저 점검합니다. 수정한 뒤에는 <b>수정본 다시 점검</b>을 눌러 길이, 중복, 광고 기준 경고가 최신인지 확인합니다.</p>
                         </li>
                         <li>
                           <strong>저장·내보내기</strong>
@@ -715,7 +720,7 @@
                     <summary>
                       <span>
                         <i class="ti ti-file-import"></i>
-                        고급 파일 불러오기
+                        기존 결과 불러오기
                       </span>
                       <small>이미 생성된 JSON·결과 XLSX를 검토 화면으로 가져옵니다.</small>
                     </summary>
@@ -736,15 +741,15 @@
                         </button>
                         <button class="btn-secondary" type="button" id="download-adcopy-sample-workbook">
                           <i class="ti ti-download"></i>
-                          결과 XLSX 샘플
+                          샘플 결과 파일 다운로드
                         </button>
                         <button class="btn-secondary" type="button" id="import-adcopy-sample-workbook">
                           <i class="ti ti-flask"></i>
-                          샘플 바로 적용
+                          샘플 결과 불러오기
                         </button>
                         <button class="btn-secondary" type="button" id="clear-adcopy-import-json">
                           <i class="ti ti-x"></i>
-                          비우기
+                          입력 지우기
                         </button>
                         <p class="status-line" id="adcopy-import-status">생성이 끝난 결과 파일을 검토 화면으로 가져옵니다.</p>
                       </div>
@@ -754,7 +759,7 @@
                     <summary>
                       <span>
                         <i class="ti ti-history"></i>
-                        작업 저장본
+                        저장된 검토
                       </span>
                       <small>저장한 문안 검토 상태를 다시 불러옵니다.</small>
                     </summary>
@@ -791,9 +796,9 @@
                       <section class="adcopy-engine-panel" id="adcopy-engine-panel" aria-labelledby="adcopy-engine-title">
                         <div class="adcopy-engine-head">
                           <div>
-                            <span class="adcopy-section-kicker">생성 엔진</span>
+                            <span class="adcopy-section-kicker">문안 생성 방식</span>
                             <h3 id="adcopy-engine-title">사내 표준 엔진으로 시작</h3>
-                            <p>같은 브리프를 유지한 채 엔진만 바꿔 결과를 비교할 수 있습니다.</p>
+                            <p>AI부서 플러그인 또는 AdMate 중 문안을 생성할 방식을 선택하세요.</p>
                           </div>
                           <span class="tag" id="adcopy-engine-default-badge">확인 중</span>
                         </div>
@@ -803,7 +808,7 @@
                             <span class="adcopy-engine-icon"><i class="ti ti-building-cog"></i></span>
                             <span class="adcopy-engine-copy">
                               <strong>AI부서 플러그인 <em>사내 표준</em></strong>
-                              <small>Claude Code에서 생성하고 검수 파일을 가져옵니다.</small>
+                              <small>Claude Code에서 생성한 검토 파일을 가져옵니다.</small>
                             </span>
                             <i class="ti ti-circle-check adcopy-engine-check"></i>
                           </label>
@@ -812,12 +817,12 @@
                             <span class="adcopy-engine-icon"><i class="ti ti-adjustments-alt"></i></span>
                             <span class="adcopy-engine-copy">
                               <strong>AdMate 엔진 <em>비교·보완</em></strong>
-                              <small>기존 독립 생성 기준으로 교차 검토합니다.</small>
+                              <small>웹에서 브리프를 불러와 문안을 생성하고 검토합니다.</small>
                             </span>
                             <i class="ti ti-circle-check adcopy-engine-check"></i>
                           </label>
                         </div>
-                        <p class="status-line" id="adcopy-engine-status">사용 가능한 생성 엔진을 확인하고 있습니다.</p>
+                        <p class="status-line" id="adcopy-engine-status">사용 가능한 문안 생성 방식을 확인하고 있습니다.</p>
                       </section>
                       <section class="adcopy-brief-upload-panel adcopy-admate-only" id="adcopy-brief-upload-panel" aria-labelledby="adcopy-brief-upload-title">
                         <div class="adcopy-brief-upload-head">
@@ -832,7 +837,7 @@
                           <input class="sr-only" id="adcopy-brief-workbook" type="file" accept=".xlsx" />
                           <button class="btn-command" type="button" id="upload-adcopy-brief-workbook">
                             <i class="ti ti-file-upload"></i>
-                            브리프 XLSX 업로드
+                            브리프 파일 불러오기
                           </button>
                           <button class="btn-secondary" type="button" id="download-adcopy-brief-sample">
                             <i class="ti ti-download"></i>
@@ -866,7 +871,7 @@
                           </li>
                           <li>
                             <span>3</span>
-                            <div><strong>생성된 review.xlsx 불러오기</strong><small>플러그인이 만든 검수 워크북을 선택하면 자동 점검과 검토 화면이 이어집니다.</small></div>
+                            <div><strong>생성된 review.xlsx 불러오기</strong><small>플러그인이 만든 검토 파일을 선택하면 자동 점검과 담당자 검토가 이어집니다.</small></div>
                             <button class="btn-command btn-compact" type="button" id="import-adcopy-plugin-review"><i class="ti ti-file-upload"></i> review.xlsx 불러오기</button>
                           </li>
                         </ol>
@@ -1089,7 +1094,7 @@
                       <div class="adcopy-preview-head">
                         <div>
                           <span class="adcopy-section-kicker">결과 요약</span>
-                          <h3>생성 결과</h3>
+                          <h3>문안 결과</h3>
                           <p id="adcopy-result-note">아직 생성된 초안이 없습니다.</p>
                         </div>
                         <span class="tag" id="adcopy-validation-badge">대기</span>
@@ -1098,16 +1103,16 @@
                         <div><span>캠페인</span><strong>-</strong></div>
                         <div><span>광고그룹</span><strong>-</strong></div>
                         <div><span>소재</span><strong>-</strong></div>
-                        <div><span>점검</span><strong>-</strong></div>
+                        <div><span>자동 점검</span><strong>-</strong></div>
                       </div>
                       <div class="adcopy-quality-panel" id="adcopy-quality-panel">
                         <div class="adcopy-quality-score">
-                          <span>완성도 점수</span>
+                          <span>자동 점검 점수</span>
                           <strong>-</strong>
                         </div>
                         <div class="adcopy-quality-meta">
                           <span class="tag">대기 중</span>
-                          <p>문안을 생성하면 완성도와 추천 수정 포인트가 표시됩니다.</p>
+                          <p>문안을 불러오면 규칙 점검 결과와 추천 수정 포인트가 표시됩니다. 담당자 승인률은 포함하지 않습니다.</p>
                         </div>
                       </div>
                       <div class="adcopy-upload-checklist" id="adcopy-upload-checklist">
@@ -1132,7 +1137,7 @@
                                 </div>
                                 <div class="adcopy-preview-filter" role="group" aria-label="자동 점검 결과 필터">
                                   <button class="is-active" type="button" data-adcopy-preview-filter="all" disabled>전체</button>
-                                  <button type="button" data-adcopy-preview-filter="issue" disabled>이슈 있음</button>
+                                  <button type="button" data-adcopy-preview-filter="issue" disabled>주의·오류</button>
                                   <button type="button" data-adcopy-preview-filter="warning" disabled>주의</button>
                                   <button type="button" data-adcopy-preview-filter="error" disabled>오류</button>
                                 </div>
@@ -1140,7 +1145,7 @@
                               <div class="adcopy-auto-actions">
                                 <button class="btn-secondary btn-compact" type="button" id="validate-adcopy-json" title="수정한 제목과 문구를 다시 자동 점검합니다." disabled>
                                   <i class="ti ti-checkup-list"></i>
-                                  수정 내용 다시 점검
+                                  수정본 다시 점검
                                 </button>
                               </div>
                             </section>
@@ -1164,14 +1169,14 @@
                                     <option value="all">전체</option>
                                     <option value="pending">미확인</option>
                                     <option value="approved">승인</option>
-                                    <option value="revise">확인/수정 필요</option>
+                                    <option value="revise">확인·수정 필요</option>
                                     <option value="excluded">제외</option>
                                   </select>
                                 </label>
                                 <div class="adcopy-bulk-actions">
                                   <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" title="오류나 주의가 있는 미확인 소재만 ‘수정 필요’로 바꿉니다. 나머지는 그대로 둡니다." disabled>
                                     <i class="ti ti-filter-exclamation"></i>
-                                    문제 소재 수정 필요
+                                    주의·오류 → 수정 필요
                                   </button>
                                   <button class="btn-primary btn-compact" type="button" id="save-adcopy-review-state" title="현재 문안과 담당자 판단을 서버에 저장해 나중에 이어서 검토합니다. 광고 등록은 실행하지 않습니다." disabled>
                                     <i class="ti ti-device-floppy"></i>
@@ -1188,12 +1193,12 @@
                                     <div class="adcopy-review-more-menu">
                                       <button type="button" id="reset-adcopy-review-status" title="담당자 상태·메모·제외 사유만 초기화합니다. 문안과 자동 점검 결과는 유지됩니다." disabled>
                                         <i class="ti ti-rotate-2"></i>
-                                        검토 상태 초기화
+                                        판단·메모 초기화
                                       </button>
                                     </div>
                                   </details>
                                 </div>
-                                <span class="adcopy-review-save-state is-unsaved" id="adcopy-review-save-state" role="status">저장 안 됨</span>
+                                <span class="adcopy-review-save-state is-unsaved" id="adcopy-review-save-state" role="status">변경사항 미저장</span>
                               </div>
                               <p class="adcopy-review-storage-note" id="adcopy-review-storage-note"><b>검토 내용 저장</b>은 서버에서 이어서 작업할 상태를 보관하고, <b>검토 파일 다운로드</b>는 사람에게 전달할 XLSX를 내려받습니다.</p>
                             </section>
@@ -1206,8 +1211,8 @@
                           <section class="adcopy-regenerate-dialog">
                             <header>
                               <div>
-                                <span class="adcopy-section-kicker">소재 한 건 다시 만들기</span>
-                                <h4 id="adcopy-regenerate-title">기존 문안과 새 제안을 비교하세요</h4>
+                                <span class="adcopy-section-kicker">제목·문구 다시 만들기</span>
+                                <h4 id="adcopy-regenerate-title">기존 문안과 새 문안을 비교하세요</h4>
                                 <p id="adcopy-regenerate-description">자동 점검 사유와 담당자 메모를 반영한 제안입니다.</p>
                               </div>
                               <button class="icon-button" type="button" id="close-adcopy-regenerate" aria-label="재작성 비교 닫기"><i class="ti ti-x"></i></button>
@@ -1954,6 +1959,7 @@
       let adcopyEngineSettings = null;
       let adcopyRegenerationProposal = null;
       let adcopyRegenerationBusy = false;
+      let adcopyRegenerationTrigger = null;
       const adcopyRegenerationHistory = new Map();
       let adcopyPreviewFilter = "all";
       let adcopyReviewFilter = "all";
@@ -4037,7 +4043,7 @@
         renderAdcopyBriefMeter();
         setStatus(
           "adcopy-generator-status",
-          `테스트 브리프를 채웠습니다. 구매여정 6단계와 질문형 검색 맥락 기준으로 초안을 생성해 볼 수 있습니다.`,
+          `예시 브리프를 채웠습니다. 구매여정 6단계와 질문형 검색 맥락 기준으로 초안을 생성해 볼 수 있습니다.`,
           "ok",
         );
         $("#adcopy-product-name").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -4123,7 +4129,7 @@
         if (pluginMode) {
           setStatus("adcopy-engine-status", "AI부서 플러그인이 기본입니다. Claude Code에서 생성한 review.xlsx를 아래에서 불러와 주세요.", "ok");
         } else if (selectedEngine?.available) {
-          setStatus("adcopy-engine-status", "AdMate 엔진을 선택했습니다. 브리프 XLSX 업로드가 기본이며, 필요할 때만 직접 입력·수정을 펼쳐 주세요.", "ok");
+          setStatus("adcopy-engine-status", "AdMate 엔진을 선택했습니다. 브리프 파일 불러오기가 기본이며, 필요할 때만 직접 입력·수정을 펼쳐 주세요.", "ok");
         } else {
           setStatus("adcopy-engine-status", "AdMate 엔진용 OpenAI 키 설정이 필요합니다.", "warning");
         }
@@ -4139,7 +4145,7 @@
 
       async function loadAdcopyEngines() {
         adcopyEngineSettings = await adminFetch("/api/admin/adcopy/engines", {
-          loadingMessage: "생성 엔진 설정을 확인하는 중입니다.",
+          loadingMessage: "문안 생성 방식 설정을 확인하는 중입니다.",
         });
         renderAdcopyEngineSettings();
       }
@@ -4857,12 +4863,12 @@
           root.className = "adcopy-quality-panel";
           root.innerHTML = `
             <div class="adcopy-quality-score">
-              <span>완성도 점수</span>
+              <span>자동 점검 점수</span>
               <strong>-</strong>
             </div>
             <div class="adcopy-quality-meta">
               <span class="tag">대기 중</span>
-              <p>문안을 생성하면 완성도와 추천 수정 포인트가 표시됩니다.</p>
+              <p>문안을 불러오면 규칙 점검 결과와 추천 수정 포인트가 표시됩니다. 담당자 승인률은 포함하지 않습니다.</p>
             </div>
           `;
           return;
@@ -4877,7 +4883,7 @@
         root.className = `adcopy-quality-panel ${adcopyQualityClass(score)}`;
         root.innerHTML = `
           <div class="adcopy-quality-score">
-            <span>완성도 점수</span>
+            <span>자동 점검 점수</span>
             <strong>${formatNumber(score)}</strong>
             <small>${escapeHtml(quality.grade || "-")} 등급</small>
           </div>
@@ -5345,9 +5351,13 @@
       function syncAdcopyWorkspaceLayout(hasResult) {
         const layout = $(".adcopy-generator-layout");
         const toggle = $("#toggle-adcopy-source-panel");
+        const purpose = $("#adcopy-purpose-panel");
         if (!layout || !toggle) return;
         const alreadyHadResult = layout.classList.contains("has-result");
         layout.classList.toggle("has-result", Boolean(hasResult));
+        if (purpose && Boolean(hasResult) !== alreadyHadResult) {
+          purpose.open = !hasResult;
+        }
         if (!hasResult) {
           layout.classList.remove("show-source-panel");
         } else if (!alreadyHadResult) {
@@ -5371,6 +5381,11 @@
       function renderAdcopyResult(data) {
         const result = data?.generated || null;
         const report = data?.validation_report || null;
+        const alreadyHadResult = $(".adcopy-generator-layout")?.classList.contains("has-result");
+        const summary = report?.summary || {};
+        if (result && !alreadyHadResult && (Number(summary.errors || 0) + Number(summary.warnings || 0) > 0)) {
+          adcopyPreviewFilter = "issue";
+        }
         syncAdcopyWorkspaceLayout(Boolean(result));
         const badge = adcopyValidationLabel(report);
         $("#adcopy-validation-badge").className = badge.cls;
@@ -5389,14 +5404,13 @@
         renderAdcopyReviewSaveState();
         renderAdcopyJsonPreview();
         $("#adcopy-result-note").textContent = result
-          ? `${data.engine_label || "생성 엔진"} · ${data.model || "모델"} 생성 · ${data.notice || "담당자 확인 필요"}`
+          ? `${data.engine_label || "문안 생성 방식"} · ${data.model || "모델"} 생성 · ${data.notice || "담당자 확인 필요"}`
           : "아직 생성된 문안이 없습니다.";
-        const summary = report?.summary || {};
         $("#adcopy-summary-grid").innerHTML = `
           <div><span>캠페인</span><strong>${formatNumber(summary.campaigns || 0)}</strong></div>
           <div><span>광고그룹</span><strong>${formatNumber(summary.adgroups || 0)}</strong></div>
           <div><span>소재</span><strong>${formatNumber(summary.ads || 0)}</strong></div>
-          <div><span>점검</span><strong>${formatNumber(summary.errors || 0)} / ${formatNumber(summary.warnings || 0)}</strong></div>
+          <div><span>자동 점검</span><strong>오류 ${formatNumber(summary.errors || 0)} · 주의 ${formatNumber(summary.warnings || 0)}</strong></div>
         `;
         renderAdcopyQualityPanel(report);
         renderAdcopyUploadChecklist(result, report);
@@ -5412,7 +5426,7 @@
         $("#adcopy-validation-badge").textContent = "재점검 필요";
         $("#download-adcopy-report").disabled = true;
         $("#validate-adcopy-json").disabled = false;
-        setStatus("adcopy-generator-status", "제목 또는 문구가 수정되었습니다. 수정 내용 다시 점검을 누르면 완성도 점수와 점검 리포트를 갱신할 수 있습니다.", "warning");
+        setStatus("adcopy-generator-status", "제목 또는 문구가 수정되었습니다. 수정본 다시 점검을 누르면 자동 점검 점수와 점검 리포트를 갱신할 수 있습니다.", "warning");
       }
 
       function adcopyLengthMeta(field, value) {
@@ -5454,13 +5468,13 @@
         if (!status || !note) return;
         if (!adcopyLastResult?.generated) {
           status.className = "adcopy-review-save-state is-unsaved";
-          status.textContent = "저장 안 됨";
+          status.textContent = "변경사항 미저장";
           note.textContent = "검토 내용 저장은 나중에 이어서 작업할 상태를 서버에 보관하고, 검토 파일 다운로드는 전달용 XLSX를 내려받습니다.";
           return;
         }
         if (adcopyReviewSaveMeta.dirty || !adcopyReviewSaveMeta.savedAt) {
           status.className = "adcopy-review-save-state is-unsaved";
-          status.textContent = "저장 안 됨";
+          status.textContent = "변경사항 미저장";
           note.textContent = "변경 내용을 이어서 검토하려면 검토 내용 저장을, 파일로 전달하려면 검토 파일 다운로드를 사용하세요.";
           return;
         }
@@ -5480,12 +5494,12 @@
       function renderAdcopyReviewControls(ad, index) {
         const trace = adcopyTrace(ad);
         const status = trace.review_status || "담당자 확인 필요";
-        const aiStatus = trace.validation_status || "자동 검수 정보 없음";
+        const aiStatus = trace.validation_status || "자동 점검 정보 없음";
         const statuses = ["담당자 확인 필요", "광고주 확인 필요", "승인", "수정 필요", "제외"];
         return `
           <div class="adcopy-review-controls ${adcopyReviewStatusClass(status)}" data-adcopy-review-card data-review-status="${escapeHtml(status)}">
             <div class="adcopy-ai-review-note">
-              <span>AI 자동 검수</span>
+              <span>자동 점검</span>
               <strong>${escapeHtml(aiStatus)}</strong>
             </div>
             <label>
@@ -5587,7 +5601,7 @@
       }
 
       function renderAdcopyPreviewFilters(result, report) {
-        const labels = { all: "전체", issue: "이슈 있음", warning: "주의", error: "오류" };
+        const labels = { all: "전체", issue: "주의·오류", warning: "주의", error: "오류" };
         const counts = adcopyPreviewFilterCounts(result, report);
         $$("[data-adcopy-preview-filter]").forEach((button) => {
           const filter = button.dataset.adcopyPreviewFilter || "all";
@@ -5825,7 +5839,7 @@
 
       async function loadAdcopyReviewSnapshots() {
         const data = await adminFetch("/api/admin/adcopy/review-state?limit=20", {
-          loadingMessage: "작업 저장본을 불러오는 중입니다.",
+          loadingMessage: "저장된 검토 목록을 불러오는 중입니다.",
         });
         adcopyReviewSnapshots = Array.isArray(data.items) ? data.items : [];
         adcopyReviewSnapshotsLoaded = true;
@@ -5849,12 +5863,12 @@
           return;
         }
         const data = await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
-          loadingMessage: "선택한 작업 저장본을 불러오는 중입니다.",
+          loadingMessage: "선택한 검토 내용을 불러오는 중입니다.",
         });
         const item = data.item || {};
         adcopyLastResult = {
           ok: Boolean(item.validation_report?.ok),
-          model: item.source_label || "작업 저장본",
+          model: item.source_label || "저장된 검토",
           generated: item.generated || {},
           validation_report: item.validation_report || {},
           summary: item.validation_report?.summary || {},
@@ -5868,7 +5882,7 @@
         resetAdcopyDraftWorkflow({ render: false });
         applyAdcopyImportedDefaults(adcopyLastResult.generated);
         renderAdcopyResult(adcopyLastResult);
-        setStatus("adcopy-review-snapshot-status", `${item.campaign_name || "작업 저장본"}을 불러왔습니다.`, "ok");
+        setStatus("adcopy-review-snapshot-status", `${item.campaign_name || "저장된 검토"}을 불러왔습니다.`, "ok");
         setStatus("adcopy-generator-status", "저장된 문안 검토 상태를 화면에 반영했습니다. 임시 등록 계획은 다음 실행 전 다시 계산됩니다.", "ok");
       }
 
@@ -5884,7 +5898,7 @@
         if (!window.confirm(`${label} 저장본을 삭제할까요? 이미 임시 등록된 항목에는 영향을 주지 않습니다.`)) return;
         await adminFetch(`/api/admin/adcopy/review-state/${encodeURIComponent(snapshotId)}`, {
           method: "DELETE",
-          loadingMessage: "작업 저장본을 삭제하는 중입니다.",
+          loadingMessage: "저장된 검토를 삭제하는 중입니다.",
         });
         adcopyReviewSnapshots = adcopyReviewSnapshots.filter((snapshot) => snapshot.id !== snapshotId);
         renderAdcopyReviewSnapshots();
@@ -5910,15 +5924,15 @@
         const group = (adcopyLastResult.generated.adgroups || []).find((item) => item.adgroup_name === ad.adgroup_name) || {};
         return [
           "아래 광고 소재 한 건의 제목과 문구를 다시 작성해 주세요.",
-          "현재 광고명·광고그룹·링크·이미지는 변경하지 말고 제목과 문구만 수정합니다.",
+          "현재 소재명·광고그룹·링크·이미지는 변경하지 말고 제목과 문구만 수정합니다.",
           "제목은 24자 이하, 문구는 48자 이하로 작성하고 같은 광고그룹의 다른 소재와 겹치지 않게 해 주세요.",
           "",
-          `광고명: ${ad.ad_name || "-"}`,
+          `소재명: ${ad.ad_name || "-"}`,
           `광고그룹: ${ad.adgroup_name || "-"}`,
           `현재 제목: ${ad.title || "-"}`,
           `현재 문구: ${ad.copy || "-"}`,
           `자동 점검: ${issues.length ? issues.join(" · ") : "별도 메모 없음 — 현재 문안을 자연스럽게 개선"}`,
-          `검수 담당자 메모: ${trace.review_comment || "없음 — 자동 점검 사유를 기준으로 개선"}`,
+          `담당자 메모: ${trace.review_comment || "없음 — 자동 점검 사유를 기준으로 개선"}`,
           `핵심 반영 요소: ${(group.required_phrases || []).join(" / ") || "없음"}`,
           `필수 고정 문구: ${(group.required_exact_phrases || []).join(" / ") || "없음"}`,
           "",
@@ -5930,7 +5944,7 @@
         const requestText = adcopyRewriteRequestText(index);
         if (!requestText) return;
         await navigator.clipboard.writeText(requestText);
-        setStatus("adcopy-generator-status", "Claude에 붙여넣을 소재 수정 요청을 복사했습니다.", "ok");
+        setStatus("adcopy-generator-status", "Claude Code에 붙여넣을 수정 요청을 복사했습니다.", "ok");
       }
 
       function closeAdcopyRegeneration() {
@@ -5940,6 +5954,8 @@
         document.body.classList.remove("modal-open");
         adcopyRegenerationProposal = null;
         $("#apply-adcopy-regenerate").disabled = true;
+        adcopyRegenerationTrigger?.focus();
+        adcopyRegenerationTrigger = null;
       }
 
       function renderAdcopyRegenerationComparison(data) {
@@ -5949,8 +5965,8 @@
         const proposedCheck = data.creative_check || {};
         const proposedLabel = proposedCheck.status === "error" ? "오류" : (proposedCheck.status === "warning" ? "주의" : "양호");
         $("#adcopy-regenerate-description").textContent = data.used_review_comment
-          ? "담당자 메모를 우선 반영하고 자동 점검 사유도 함께 고려했습니다."
-          : "메모가 없어 자동 점검 사유를 기준으로 개선했습니다.";
+          ? `반영한 담당자 메모: ${data.review_comment || "입력된 메모"}`
+          : "담당자 메모 없음 — 자동 점검 사유를 기준으로 새 문안을 제안했습니다.";
         $("#adcopy-regenerate-body").innerHTML = `
           <div class="adcopy-regenerate-context">
             <span class="adcopy-row-check is-warning">주의</span>
@@ -5967,7 +5983,7 @@
             </article>
             <i class="ti ti-arrow-right" aria-hidden="true"></i>
             <article class="is-proposal">
-              <span>새 제안</span>
+              <span>새 문안</span>
               <label><b>제목</b><p>${escapeHtml(proposal.title || "-")}</p>${renderAdcopyLengthBadge("title", proposal.title)}</label>
               <label><b>문구</b><p>${escapeHtml(proposal.copy || "-")}</p>${renderAdcopyLengthBadge("copy", proposal.copy)}</label>
               <div class="adcopy-regenerate-check is-${escapeHtml(proposedCheck.status || "pass")}">적용 후 자동 점검: ${escapeHtml(proposedLabel)}</div>
@@ -5987,13 +6003,15 @@
         if (!ad || adcopyRegenerationBusy) return;
         const trace = adcopyTrace(ad);
         const overlay = $("#adcopy-regenerate-overlay");
+        adcopyRegenerationTrigger = button;
         overlay.hidden = false;
         document.body.classList.add("modal-open");
         adcopyRegenerationBusy = true;
         setButtonBusy(button, true, "다시 만드는 중...");
         $("#adcopy-regenerate-body").innerHTML = '<div class="adcopy-regenerate-loading"><i class="ti ti-loader-2"></i><strong>메모와 주의 사유를 반영하고 있습니다.</strong><span>적용 전까지 기존 문안은 유지됩니다.</span></div>';
-        $("#adcopy-regenerate-status").textContent = "AI 호출 비용이 발생하며 소재 한 건만 다시 만듭니다.";
+        $("#adcopy-regenerate-status").textContent = "AI를 사용해 이 소재의 제목과 문구만 다시 만듭니다. 호출 비용이 발생합니다.";
         $("#apply-adcopy-regenerate").disabled = true;
+        $("#close-adcopy-regenerate").focus();
         try {
           const data = await adminFetch("/api/admin/adcopy/regenerate", {
             method: "POST",
@@ -6116,23 +6134,24 @@
               const label = status === "error" ? "오류" : (status === "warning" ? "주의" : "양호");
               const issueText = issues.map((issue) => issue.message).join(" · ");
               const engine = adcopyCurrentEngine();
+              const adLabel = ad.ad_name || `소재 ${index + 1}`;
               const rewriteAction = status === "warning"
                 ? (engine === "admate"
-                  ? `<button class="adcopy-regenerate-button" type="button" data-adcopy-regenerate="${index}" title="자동 점검 사유와 담당자 메모를 반영해 제목과 문구를 다시 제안합니다."><i class="ti ti-sparkles"></i> 이 소재 다시 만들기</button>`
-                  : `<button class="adcopy-regenerate-button is-copy" type="button" data-adcopy-copy-rewrite="${index}" title="Claude에 붙여넣을 소재 수정 요청을 복사합니다."><i class="ti ti-copy"></i> Claude 수정 요청 복사</button>`)
+                  ? `<button class="adcopy-regenerate-button" type="button" data-adcopy-regenerate="${index}" title="자동 점검 사유와 담당자 메모를 반영해 제목과 문구를 다시 제안합니다."><i class="ti ti-sparkles"></i> AI로 제목·문구 다시 쓰기</button>`
+                  : `<button class="adcopy-regenerate-button is-copy" type="button" data-adcopy-copy-rewrite="${index}" title="Claude Code에 붙여넣을 수정 요청을 복사합니다."><i class="ti ti-copy"></i> 수정 요청 복사</button>`)
                 : "";
               const undoAction = adcopyRegenerationHistory.has(index)
-                ? `<button class="adcopy-regenerate-button is-undo" type="button" data-adcopy-undo-regenerate="${index}"><i class="ti ti-arrow-back-up"></i> 이전 문안</button>`
+                ? `<button class="adcopy-regenerate-button is-undo" type="button" data-adcopy-undo-regenerate="${index}"><i class="ti ti-arrow-back-up"></i> 이전 문안 복원</button>`
                 : "";
               return `
             <tr>
-              <td>${escapeHtml(ad.ad_name || "-")}</td>
-              <td>
-                <textarea class="adcopy-edit-control" data-adcopy-edit="title" data-ad-index="${index}" rows="2">${escapeHtml(ad.title || "")}</textarea>
+              <td data-label="소재명">${escapeHtml(adLabel)}</td>
+              <td data-label="제목">
+                <textarea class="adcopy-edit-control" data-adcopy-edit="title" data-ad-index="${index}" rows="2" aria-label="${escapeHtml(adLabel)} 제목">${escapeHtml(ad.title || "")}</textarea>
                 ${renderAdcopyLengthBadge("title", ad.title)}
               </td>
-              <td>
-                <textarea class="adcopy-edit-control" data-adcopy-edit="copy" data-ad-index="${index}" rows="3">${escapeHtml(ad.copy || "")}</textarea>
+              <td data-label="문구">
+                <textarea class="adcopy-edit-control" data-adcopy-edit="copy" data-ad-index="${index}" rows="3" aria-label="${escapeHtml(adLabel)} 문구">${escapeHtml(ad.copy || "")}</textarea>
                 ${renderAdcopyLengthBadge("copy", ad.copy)}
                 <div class="adcopy-row-check-actions">
                   <span class="adcopy-row-check is-${escapeHtml(status)}">${escapeHtml(label)}</span>
@@ -6141,24 +6160,24 @@
                 </div>
                 ${issueText ? `<em>${escapeHtml(issueText)}</em>` : ""}
               </td>
-              <td class="adcopy-review-cell">${renderAdcopyReviewControls(ad, index)}</td>
+              <td class="adcopy-review-cell" data-label="담당자 검토">${renderAdcopyReviewControls(ad, index)}</td>
             </tr>
               `;
             })()}
           `).join("").trim();
           if ((adcopyPreviewFilter !== "all" || adcopyReviewFilter !== "all") && !rows) return "";
           return `
-            <article class="adcopy-group-card">
-              <div class="adcopy-group-head">
+            <details class="adcopy-group-card" open>
+              <summary class="adcopy-group-head">
                 <strong>${escapeHtml(group.adgroup_name || "-")}</strong>
-                <span>${formatNumber((adsByGroup.get(group.adgroup_name) || []).length)}개 소재</span>
-              </div>
+                <span>${formatNumber((adsByGroup.get(group.adgroup_name) || []).length)}개 소재 <i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+              </summary>
               <div class="adcopy-keyword-row">${keywords || '<span class="muted-text">검색 맥락 없음</span>'}</div>
               <table class="data-grid adcopy-mini-table">
-                <thead><tr><th>광고명</th><th>제목</th><th>문구</th><th>검수·담당자 판단</th></tr></thead>
+                <thead><tr><th>소재명</th><th>제목</th><th>문구</th><th>담당자 검토</th></tr></thead>
                 <tbody>${rows || '<tr><td colspan="4">생성된 소재가 없습니다.</td></tr>'}</tbody>
               </table>
-            </article>
+            </details>
           `;
         }).join("").trim() || '<div class="empty-pane">선택한 필터에 해당하는 소재가 없습니다.</div>';
       }
@@ -6441,7 +6460,7 @@
           `| 소재 | ${formatNumber(summary.ads || ads.length || 0)} |`,
           `| 오류 | ${formatNumber(summary.errors || 0)} |`,
           `| 주의 | ${formatNumber(summary.warnings || 0)} |`,
-          `| 완성도 점수 | ${formatNumber(quality.score || 0)} / 100 |`,
+          `| 자동 점검 점수 | ${formatNumber(quality.score || 0)} / 100 |`,
           `| 판정 | ${adcopyMarkdownCell(quality.readiness || (report.ok ? "자동 점검 통과" : "담당자 확인 필요"))} |`,
           `| 운영 승인 | ${formatNumber(approvedCount)} / ${formatNumber(ads.length)} |`,
           `| 확인/수정 필요 | ${formatNumber(reviseCount)} |`,
@@ -9739,7 +9758,25 @@
         if (event.target === event.currentTarget && !adcopyRegenerationBusy) closeAdcopyRegeneration();
       });
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !$("#adcopy-regenerate-overlay").hidden && !adcopyRegenerationBusy) closeAdcopyRegeneration();
+        const overlay = $("#adcopy-regenerate-overlay");
+        if (overlay.hidden) return;
+        if (event.key === "Escape" && !adcopyRegenerationBusy) {
+          closeAdcopyRegeneration();
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const focusable = $$('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])', overlay)
+          .filter((element) => !element.hidden && element.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       });
       $("#adcopy-validation-list").addEventListener("click", (event) => {
         const button = event.target.closest("[data-adcopy-focus-index]");

@@ -1719,6 +1719,55 @@ body.dev-console.modal-open {
   padding: 18px;
 }
 
+.adcopy-purpose-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.adcopy-purpose-summary::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-purpose-summary > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adcopy-purpose-summary strong {
+  color: var(--oa-navy);
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.adcopy-purpose-summary > small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.adcopy-purpose-body {
+  display: grid;
+  gap: 14px;
+}
+
+.adcopy-purpose-body > p:first-child {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.adcopy-purpose-panel:not([open]) {
+  padding-block: 13px;
+}
+
 .adcopy-purpose-head {
   display: grid;
   gap: 5px;
@@ -2530,6 +2579,15 @@ body.dev-console.modal-open {
 }
 
 @media (max-width: 760px) {
+  .adcopy-purpose-summary {
+    display: grid;
+    align-items: start;
+  }
+
+  .adcopy-purpose-summary > small {
+    white-space: normal;
+  }
+
   .adcopy-engine-options {
     grid-template-columns: 1fr;
   }
@@ -3737,6 +3795,14 @@ body.dev-console.modal-open {
 
 .adcopy-generator-layout.has-result .adcopy-review-workbench {
   grid-template-columns: minmax(0, 1fr);
+  position: sticky;
+  z-index: 12;
+  top: 8px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 96%);
+  padding-bottom: 6px;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 6%);
+  backdrop-filter: blur(8px);
 }
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th:first-child,
@@ -3819,6 +3885,22 @@ body.dev-console.modal-open {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.adcopy-group-head::-webkit-details-marker {
+  display: none;
+}
+
+.adcopy-group-head i {
+  display: inline-block;
+  margin-left: 3px;
+  transition: transform .16s ease;
+}
+
+.adcopy-group-card:not([open]) .adcopy-group-head i {
+  transform: rotate(-90deg);
 }
 
 .adcopy-group-head strong {
@@ -3999,7 +4081,7 @@ body.dev-console.modal-open {
   color: #8a5a00;
   padding: 3px 7px;
   font: inherit;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.2;
   cursor: pointer;
@@ -5560,6 +5642,66 @@ body.dev-console.modal-open {
   .adcopy-result-section-head {
     display: grid;
     justify-items: start;
+  }
+
+  .adcopy-generator-layout.has-result .adcopy-review-workbench {
+    position: static;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .adcopy-mini-table {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .adcopy-mini-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .adcopy-mini-table tbody,
+  .adcopy-mini-table tr,
+  .adcopy-mini-table td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .adcopy-mini-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .adcopy-mini-table tr {
+    overflow: hidden;
+    border: 1px solid #dfe7f1;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .adcopy-mini-table td {
+    border: 0;
+    border-bottom: 1px solid #edf1f5;
+    padding: 10px;
+  }
+
+  .adcopy-mini-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .adcopy-mini-table td::before {
+    display: block;
+    margin-bottom: 5px;
+    color: #64748b;
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 950;
   }
 
   .adcopy-validation-details summary {

@@ -9,6 +9,28 @@ ADMIN_HTML = ROOT / "dev" / "admin.html"
 
 
 class AdminStaticTests(unittest.TestCase):
+    def test_adcopy_review_copy_layout_and_accessibility_contract(self) -> None:
+        html = ADMIN_HTML.read_text(encoding="utf-8")
+        css = (ROOT / "dev" / "assets" / "dev-redesign.css").read_text(encoding="utf-8")
+
+        for phrase in [
+            'id="adcopy-purpose-panel"',
+            "자동 점검 후 수정",
+            "주의·오류 → 수정 필요",
+            "변경사항 미저장",
+            "AI로 제목·문구 다시 쓰기",
+            "이전 문안 복원",
+            'aria-label="${escapeHtml(adLabel)} 제목"',
+            'data-label="담당자 검토"',
+            "adcopyPreviewFilter = \"issue\"",
+        ]:
+            self.assertIn(phrase, html)
+
+        self.assertIn("position: sticky", css)
+        self.assertIn("content: attr(data-label)", css)
+        self.assertNotIn("문제 소재 수정 필요", html)
+        self.assertNotIn("완성도 점수", html)
+
     def test_notice_editor_and_visit_chart_present(self) -> None:
         html = ADMIN_HTML.read_text(encoding="utf-8")
         app_py = (ROOT / "app.py").read_text(encoding="utf-8")

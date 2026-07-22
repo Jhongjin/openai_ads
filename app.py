@@ -3572,6 +3572,7 @@ async def admin_regenerate_adcopy(request: Request) -> dict[str, Any]:
         "current": context["current"],
         "proposal": proposal,
         "used_review_comment": bool(context["review_comment"]),
+        "review_comment": context["review_comment"],
         "automatic_issues": context["automatic_issues"],
         "creative_check": creative_check,
         "validation_report": validation_report,

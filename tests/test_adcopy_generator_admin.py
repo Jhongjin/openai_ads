@@ -220,6 +220,7 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["proposal"]["title"], "매일 이어가는 초등 영어")
         self.assertTrue(body["used_review_comment"])
+        self.assertEqual(body["review_comment"], "브랜드명은 유지하고 간결하게")
         self.assertEqual(body["ad_index"], 0)
         self.assertIn("validation_report", body)
         context = mocked_call.await_args.args[0]
