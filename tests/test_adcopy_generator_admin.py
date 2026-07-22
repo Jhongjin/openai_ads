@@ -351,6 +351,58 @@ class AdcopyGeneratorAdminTests(unittest.TestCase):
         finally:
             workbook.close()
 
+    def test_admin_adcopy_brief_sample_workbook_downloads_input_template(self) -> None:
+        from openpyxl import load_workbook
+
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked = client.get("/api/admin/adcopy/brief-sample-workbook")
+        self.assertEqual(blocked.status_code, 403)
+
+        response = client.get("/api/admin/adcopy/brief-sample-workbook", headers=ADMIN_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("openai_ads_adcopy_brief_sample.xlsx", response.headers.get("content-disposition", ""))
+        workbook = load_workbook(BytesIO(response.content), data_only=True, read_only=True)
+        try:
+            self.assertEqual(workbook.sheetnames, ["campaigns", "상품.브리프"])
+            self.assertEqual(workbook["campaigns"]["A1"].value, "campaign_name")
+            self.assertEqual(workbook["상품.브리프"]["B1"].value, "상품·SKU명")
+        finally:
+            workbook.close()
+
+    def test_admin_adcopy_brief_workbook_parses_campaign_and_product_brief(self) -> None:
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        campaign = workbook.active
+        campaign.title = "campaigns"
+        campaign.append(["campaign_name", "advertiser_name", "budget_max", "budget_type", "objective", "target_countries"])
+        campaign.append(["SAMPLE_영어학습", "캐츠잉글리시", 50000, "daily", "Views", "KR"])
+        brief = workbook.create_sheet("상품.브리프")
+        brief.append(["campaign_name", "상품·SKU명", "대표 랜딩 URL", "이미지 URL", "타깃 고객", "핵심 문제·니즈", "상품 특징·혜택", "카피 핵심 반영 요소"])
+        brief.append(["SAMPLE_영어학습", "초등 영어 학습 서비스", "https://example.com/landing", "https://example.com/image.png", "초등 학부모", "시작점 확인", "온라인 학습 콘텐츠", "영어 학습 시작; 먼저 경험"])
+        content = BytesIO()
+        workbook.save(content)
+        workbook.close()
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/api/admin/adcopy/brief-workbook",
+            files={"file": ("input.xlsx", content.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            headers=ADMIN_HEADERS,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ready"])
+        self.assertEqual(body["missing_fields"], [])
+        self.assertEqual(body["brief"]["advertiser_name"], "캐츠잉글리시")
+        self.assertEqual(body["brief"]["campaign_name"], "SAMPLE_영어학습")
+        self.assertEqual(body["brief"]["product_name"], "초등 영어 학습 서비스")
+        self.assertEqual(body["brief"]["target_countries"], ["KR"])
+        self.assertIn("초등 학부모", body["brief"]["audience"])
+        self.assertIn("시작점 확인", body["brief"]["audience"])
+        self.assertIn("먼저 경험", body["brief"]["required_phrases"])
+
     def test_admin_adcopy_review_workbook_downloads_current_human_review_and_checks(self) -> None:
         from openpyxl import load_workbook
 
