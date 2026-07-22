@@ -105,6 +105,7 @@ class DevRoutesStaticTests(unittest.TestCase):
         public_home = client.get("/").text
         admin = client.get("/dev/admin").text
         intake = client.get("/dev/creative-upload-draft").text
+        css = client.get("/dev-assets/dev-redesign.css").text
 
         for page in (home, admin, intake):
             self.assertIn('id="global-loading"', page)
@@ -456,14 +457,24 @@ class DevRoutesStaticTests(unittest.TestCase):
         self.assertIn("resetAdcopyReviewStatus", admin)
         self.assertIn('data-adcopy-review="review_status"', admin)
         self.assertIn("AI 자동 검수", admin)
-        self.assertIn("이슈 자동 분류", admin)
-        self.assertIn("서버 작업본 저장", admin)
-        self.assertIn("검토 작업본 XLSX", admin)
+        self.assertIn("이슈를 수정 필요로 표시", admin)
+        self.assertIn("검토 내용 저장", admin)
+        self.assertIn("검토 파일 다운로드", admin)
         self.assertIn("검토 상태 초기화", admin)
+        self.assertIn('class="surface adcopy-generator-surface is-plugin-engine"', admin)
+        self.assertIn('class="adcopy-purpose-panel"', admin)
+        self.assertIn('id="adcopy-purpose-engine-note"', admin)
+        self.assertIn("adcopy-admate-only", admin)
+        self.assertIn("adcopy-plugin-only", admin)
+        self.assertIn('class="adcopy-export-details adcopy-admate-only"', admin)
+        self.assertEqual(admin.count('id="validate-adcopy-json"'), 1)
+        self.assertEqual(admin.count('id="copy-adcopy-json"'), 1)
+        self.assertIn(".adcopy-generator-surface.is-plugin-engine .adcopy-admate-only", css)
+        self.assertIn(".adcopy-generator-layout.has-result .adcopy-review-workbench", css)
         self.assertIn("syncAdcopyWorkspaceLayout", admin)
         self.assertIn("toggleAdcopySourcePanel", admin)
         self.assertIn("서버 메모리에 임시 저장", admin)
-        self.assertIn('<details class="adcopy-draft-panel" id="adcopy-draft-panel">', admin)
+        self.assertIn('<details class="adcopy-draft-panel adcopy-admate-only" id="adcopy-draft-panel">', admin)
         self.assertNotIn('checkStatus === "pass" ? "승인"', admin)
         self.assertIn("adcopyFindingAdIndex", admin)
         self.assertIn("focusAdcopyCreative", admin)
