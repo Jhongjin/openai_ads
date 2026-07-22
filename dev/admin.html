@@ -1130,9 +1130,9 @@
                                   </select>
                                 </label>
                                 <div class="adcopy-bulk-actions">
-                                  <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" title="미확인 소재 중 오류·주의 항목만 수정 필요로 분류합니다. 통과 항목은 승인하지 않습니다." disabled>
+                                  <button class="btn-secondary btn-compact" type="button" id="apply-adcopy-auto-review" title="오류나 주의가 있는 미확인 소재만 ‘수정 필요’로 바꿉니다. 나머지는 그대로 둡니다." disabled>
                                     <i class="ti ti-filter-exclamation"></i>
-                                    이슈를 수정 필요로 표시
+                                    문제 소재 수정 필요
                                   </button>
                                   <button class="btn-primary btn-compact" type="button" id="save-adcopy-review-state" title="현재 문안과 담당자 판단을 서버에 저장해 나중에 이어서 검토합니다. 광고 등록은 실행하지 않습니다." disabled>
                                     <i class="ti ti-device-floppy"></i>
@@ -5483,8 +5483,8 @@
         setStatus(
           "adcopy-generator-status",
           classifiedCount
-            ? `미확인 소재 중 자동 점검 이슈 ${formatNumber(classifiedCount)}건을 ‘수정 필요’로 분류했습니다. 통과 소재는 승인하지 않고 미확인으로 유지했습니다.`
-            : "새로 분류할 자동 점검 이슈가 없습니다. 기존 담당자 판단과 미확인 상태는 유지했습니다.",
+            ? `문제가 있는 미확인 소재 ${formatNumber(classifiedCount)}개를 ‘수정 필요’로 바꿨습니다. 나머지 소재는 그대로 유지했습니다.`
+            : "변경할 문제 소재가 없습니다. 현재 상태를 그대로 유지했습니다.",
           classifiedCount ? "warning" : "ok",
         );
       }
