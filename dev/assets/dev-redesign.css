@@ -3574,17 +3574,22 @@ body.dev-console.modal-open {
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th:first-child,
 .adcopy-generator-layout.has-result .adcopy-mini-table td:first-child {
-  width: 18%;
+  width: 13%;
 }
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th:nth-child(2),
 .adcopy-generator-layout.has-result .adcopy-mini-table td:nth-child(2) {
-  width: 32%;
+  width: 23%;
 }
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th:nth-child(3),
 .adcopy-generator-layout.has-result .adcopy-mini-table td:nth-child(3) {
-  width: 50%;
+  width: 30%;
+}
+
+.adcopy-generator-layout.has-result .adcopy-mini-table th:nth-child(4),
+.adcopy-generator-layout.has-result .adcopy-mini-table td:nth-child(4) {
+  width: 34%;
 }
 
 .adcopy-generator-layout.has-result .adcopy-mini-table th,
@@ -3599,13 +3604,23 @@ body.dev-console.modal-open {
 }
 
 .adcopy-generator-layout.has-result .adcopy-review-controls {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 10px;
-  padding: 12px;
+  grid-template-columns: minmax(130px, .9fr) minmax(160px, 1.1fr);
+  gap: 8px;
+  margin-top: 0;
+  padding: 10px;
 }
 
 .adcopy-generator-layout.has-result .adcopy-ai-review-note {
+  grid-column: 1 / -1;
   padding: 8px 10px;
+}
+
+.adcopy-generator-layout.has-result .adcopy-exclusion-field {
+  grid-column: 1 / -1;
+}
+
+.adcopy-generator-layout.has-result .adcopy-exclusion-field:has(input:disabled) {
+  display: none;
 }
 
 .adcopy-generator-layout.has-result .adcopy-review-controls label > span,
@@ -3680,6 +3695,7 @@ body.dev-console.modal-open {
 
 .adcopy-mini-table {
   width: 100%;
+  min-width: 980px;
   table-layout: fixed;
   border-radius: var(--oa-radius-sm);
 }
@@ -3705,7 +3721,16 @@ body.dev-console.modal-open {
 
 .adcopy-mini-table th:nth-child(3),
 .adcopy-mini-table td:nth-child(3) {
-  width: 38%;
+  width: 30%;
+}
+
+.adcopy-mini-table th:nth-child(4),
+.adcopy-mini-table td:nth-child(4) {
+  width: 34%;
+}
+
+.adcopy-review-cell {
+  vertical-align: top;
 }
 
 .adcopy-mini-table small {
